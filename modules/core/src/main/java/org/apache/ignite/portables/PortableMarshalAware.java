@@ -21,20 +21,20 @@ package org.apache.ignite.portables;
  * serialization is already very fast and implementing custom serialization
  * logic for portables does not provide significant performance gains.
  */
-public interface GridPortableMarshalAware {
+public interface PortableMarshalAware {
     /**
      * Writes fields to provided writer.
      *
      * @param writer Portable object writer.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writePortable(GridPortableWriter writer) throws GridPortableException;
+    public void writePortable(GridPortableWriter writer) throws PortableException;
 
     /**
      * Reads fields from provided reader.
      *
      * @param reader Portable object reader.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void readPortable(GridPortableReader reader) throws GridPortableException;
+    public void readPortable(GridPortableReader reader) throws PortableException;
 }

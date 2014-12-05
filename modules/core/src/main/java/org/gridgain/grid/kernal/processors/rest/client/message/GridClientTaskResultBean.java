@@ -18,7 +18,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable, GridPortableMarshalAware {
+public class GridClientTaskResultBean implements Externalizable, PortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -92,7 +92,7 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableMar
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(id);
@@ -104,7 +104,7 @@ public class GridClientTaskResultBean implements Externalizable, GridPortableMar
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
 
         id = raw.readString();

@@ -2171,7 +2171,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         map0.put(key, val);
                     }
                 }
-                catch (GridPortableException e) {
+                catch (PortableException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2188,7 +2188,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         transformMap0.put(key, e.getValue());
                     }
                 }
-                catch (GridPortableException e) {
+                catch (PortableException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2375,7 +2375,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 else
                     keys0 = null;
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 return new GridFinishedFuture<>(cctx.kernalContext(), e);
             }
         }

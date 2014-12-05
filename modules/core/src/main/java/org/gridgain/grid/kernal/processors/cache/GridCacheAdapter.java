@@ -1287,7 +1287,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             try {
                 key = (K)ctx.marshalToPortable(key);
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 throw new GridRuntimeException(e);
             }
         }
@@ -3001,7 +3001,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     try {
                         key0 = (K)ctx.marshalToPortable(key);
                     }
-                    catch (GridPortableException e) {
+                    catch (PortableException e) {
                         return new GridFinishedFuture<>(ctx.kernalContext(), e);
                     }
                 }
@@ -3352,7 +3352,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
             ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
                 @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
-                    throws GridPortableException {
+                    throws PortableException {
                     assert ver == null;
 
                     if (p != null && !p.apply(key, val))
@@ -4132,7 +4132,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             try {
                 key = (K)ctx.marshalToPortable(key);
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 throw new GridRuntimeException(e);
             }
         }

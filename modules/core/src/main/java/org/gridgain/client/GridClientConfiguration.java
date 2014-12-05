@@ -110,7 +110,7 @@ public class GridClientConfiguration {
     private boolean daemon;
 
     /** Portable configuration. */
-    private GridPortableConfiguration portableCfg;
+    private PortableConfiguration portableCfg;
 
     /**
      * Creates default configuration.
@@ -628,7 +628,7 @@ public class GridClientConfiguration {
      *
      * @return Portable configuration.
      */
-    public GridPortableConfiguration getPortableConfiguration() {
+    public PortableConfiguration getPortableConfiguration() {
         return portableCfg;
     }
 
@@ -637,7 +637,7 @@ public class GridClientConfiguration {
      *
      * @param portableCfg Portable configuration.
      */
-    public void setPortableConfiguration(@Nullable GridPortableConfiguration portableCfg) {
+    public void setPortableConfiguration(@Nullable PortableConfiguration portableCfg) {
         this.portableCfg = portableCfg;
     }
 

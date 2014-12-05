@@ -19,7 +19,7 @@ import java.util.*;
  * Test portable object.
  */
 @SuppressWarnings("PublicField")
-public class GridClientTestPortable implements GridPortableMarshalAware, Serializable {
+public class GridClientTestPortable implements PortableMarshalAware, Serializable {
     /** */
     public byte b;
 
@@ -303,7 +303,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         writer.writeByte("_b", b);
         writer.writeShort("_s", s);
         writer.writeInt("_i", i);
@@ -368,7 +368,7 @@ public class GridClientTestPortable implements GridPortableMarshalAware, Seriali
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         b = reader.readByte("_b");
         s = reader.readShort("_s");
         i = reader.readInt("_i");

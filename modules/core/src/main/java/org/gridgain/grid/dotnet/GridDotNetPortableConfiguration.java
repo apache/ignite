@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Mirror of .Net class GridDotNetPortableConfiguration.cs
  */
-public class GridDotNetPortableConfiguration implements GridPortableMarshalAware {
+public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     /** */
     private Collection<GridDotNetPortableTypeConfiguration> typesCfg;
 
@@ -167,7 +167,7 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeCollection(typesCfg);
@@ -186,7 +186,7 @@ public class GridDotNetPortableConfiguration implements GridPortableMarshalAware
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader rawReader = reader.rawReader();
 
         typesCfg = rawReader.readCollection();

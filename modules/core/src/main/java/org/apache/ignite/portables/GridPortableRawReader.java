@@ -23,192 +23,192 @@ import java.util.Date;
 public interface GridPortableRawReader {
     /**
      * @return Byte value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public byte readByte() throws GridPortableException;
+    public byte readByte() throws PortableException;
 
     /**
      * @return Short value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public short readShort() throws GridPortableException;
+    public short readShort() throws PortableException;
 
     /**
      * @return Integer value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public int readInt() throws GridPortableException;
+    public int readInt() throws PortableException;
 
     /**
      * @return Long value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public long readLong() throws GridPortableException;
+    public long readLong() throws PortableException;
 
     /**
      * @return Float value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public float readFloat() throws GridPortableException;
+    public float readFloat() throws PortableException;
 
     /**
      * @return Double value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public double readDouble() throws GridPortableException;
+    public double readDouble() throws PortableException;
 
     /**
      * @return Char value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public char readChar() throws GridPortableException;
+    public char readChar() throws PortableException;
 
     /**
      * @return Boolean value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public boolean readBoolean() throws GridPortableException;
+    public boolean readBoolean() throws PortableException;
 
     /**
      * @return String value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public String readString() throws GridPortableException;
+    @Nullable public String readString() throws PortableException;
 
     /**
      * @return UUID.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public UUID readUuid() throws GridPortableException;
+    @Nullable public UUID readUuid() throws PortableException;
 
     /**
      * @return Date.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public Date readDate() throws GridPortableException;
+    @Nullable public Date readDate() throws PortableException;
 
     /**
      * @return Timestamp.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public Timestamp readTimestamp() throws GridPortableException;
+    @Nullable public Timestamp readTimestamp() throws PortableException;
 
     /**
      * @return Object.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public Object readObject() throws GridPortableException;
+    @Nullable public Object readObject() throws PortableException;
 
     /**
      * @return Byte array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public byte[] readByteArray() throws GridPortableException;
+    @Nullable public byte[] readByteArray() throws PortableException;
 
     /**
      * @return Short array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public short[] readShortArray() throws GridPortableException;
+    @Nullable public short[] readShortArray() throws PortableException;
 
     /**
      * @return Integer array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public int[] readIntArray() throws GridPortableException;
+    @Nullable public int[] readIntArray() throws PortableException;
 
     /**
      * @return Long array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public long[] readLongArray() throws GridPortableException;
+    @Nullable public long[] readLongArray() throws PortableException;
 
     /**
      * @return Float array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public float[] readFloatArray() throws GridPortableException;
+    @Nullable public float[] readFloatArray() throws PortableException;
 
     /**
      * @return Byte array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public double[] readDoubleArray() throws GridPortableException;
+    @Nullable public double[] readDoubleArray() throws PortableException;
 
     /**
      * @return Char array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public char[] readCharArray() throws GridPortableException;
+    @Nullable public char[] readCharArray() throws PortableException;
 
     /**
      * @return Boolean array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public boolean[] readBooleanArray() throws GridPortableException;
+    @Nullable public boolean[] readBooleanArray() throws PortableException;
 
     /**
      * @return String array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public String[] readStringArray() throws GridPortableException;
+    @Nullable public String[] readStringArray() throws PortableException;
 
     /**
      * @return UUID array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public UUID[] readUuidArray() throws GridPortableException;
+    @Nullable public UUID[] readUuidArray() throws PortableException;
 
     /**
      * @return Date array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public Date[] readDateArray() throws GridPortableException;
+    @Nullable public Date[] readDateArray() throws PortableException;
 
     /**
      * @return Object array.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public Object[] readObjectArray() throws GridPortableException;
+    @Nullable public Object[] readObjectArray() throws PortableException;
 
     /**
      * @return Collection.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection() throws GridPortableException;
+    @Nullable public <T> Collection<T> readCollection() throws PortableException;
 
     /**
      * @param colCls Collection class.
      * @return Collection.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
     @Nullable public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
-        throws GridPortableException;
+        throws PortableException;
 
     /**
      * @return Map.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap() throws GridPortableException;
+    @Nullable public <K, V> Map<K, V> readMap() throws PortableException;
 
     /**
      * @param mapCls Map class.
      * @return Map.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls) throws GridPortableException;
+    @Nullable public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls) throws PortableException;
 
     /**
      * @param enumCls Enum class.
      * @return Value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T readEnum(Class<T> enumCls) throws GridPortableException;
+    @Nullable public <T extends Enum<?>> T readEnum(Class<T> enumCls) throws PortableException;
 
     /**
      * @param enumCls Enum class.
      * @return Value.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T[] readEnumArray(Class<T> enumCls) throws GridPortableException;
+    @Nullable public <T extends Enum<?>> T[] readEnumArray(Class<T> enumCls) throws PortableException;
 }

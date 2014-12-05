@@ -252,7 +252,7 @@ public class GridAffinityAssignmentCache {
             try {
                 key = ctx.marshalToPortable(key);
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 U.error(log, "Failed to marshal key to portable: " + key, e);
             }
         }

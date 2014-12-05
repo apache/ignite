@@ -316,7 +316,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         super.readPortable(reader);
 
         GridPortableRawReader rawReader = reader.rawReader();
@@ -338,7 +338,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
         GridPortableRawWriter rawWriter = writer.rawWriter();

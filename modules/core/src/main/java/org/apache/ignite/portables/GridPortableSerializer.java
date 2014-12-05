@@ -11,11 +11,11 @@ package org.apache.ignite.portables;
 
 /**
  * Interface that allows to implement custom serialization logic for portable objects.
- * Can be used instead of {@link GridPortableMarshalAware} in case if the class
+ * Can be used instead of {@link PortableMarshalAware} in case if the class
  * cannot be changed directly.
  * <p>
  * Portable serializer can be configured for all portable objects via
- * {@link GridPortableConfiguration#getSerializer()} method, or for a specific
+ * {@link PortableConfiguration#getSerializer()} method, or for a specific
  * portable type via {@link GridPortableTypeConfiguration#getSerializer()} method.
  */
 public interface GridPortableSerializer {
@@ -24,16 +24,16 @@ public interface GridPortableSerializer {
      *
      * @param obj Empty object.
      * @param writer Portable object writer.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writePortable(Object obj, GridPortableWriter writer) throws GridPortableException;
+    public void writePortable(Object obj, GridPortableWriter writer) throws PortableException;
 
     /**
      * Reads fields from provided reader.
      *
      * @param obj Empty object
      * @param reader Portable object reader.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void readPortable(Object obj, GridPortableReader reader) throws GridPortableException;
+    public void readPortable(Object obj, GridPortableReader reader) throws PortableException;
 }

@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 public interface GridPortableRawReaderEx extends GridPortableRawReader {
     /**
      * @return Object.
-     * @throws org.apache.ignite.portables.GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public Object readObjectDetached() throws GridPortableException;
+    @Nullable public Object readObjectDetached() throws PortableException;
 }

@@ -82,7 +82,7 @@ import java.util.*;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  * <h1 class="header">Building Portable Objects</h1>
- * GridGain comes with {@link GridPortableBuilder} which allows to build portable objects dynamically:
+ * GridGain comes with {@link PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
  *
@@ -121,27 +121,27 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * Gets meta data for this portable object.
      *
      * @return Meta data.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metaData() throws GridPortableException;
+    @Nullable public GridPortableMetadata metaData() throws PortableException;
 
     /**
      * Gets field value.
      *
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridPortableException In case of any other error.
+     * @throws PortableException In case of any other error.
      */
-    @Nullable public <F> F field(String fieldName) throws GridPortableException;
+    @Nullable public <F> F field(String fieldName) throws PortableException;
 
     /**
      * Gets fully deserialized instance of portable object.
      *
      * @return Fully deserialized instance of portable object.
-     * @throws GridPortableInvalidClassException If class doesn't exist.
-     * @throws GridPortableException In case of any other error.
+     * @throws PortableInvalidClassException If class doesn't exist.
+     * @throws PortableException In case of any other error.
      */
-    @Nullable public <T> T deserialize() throws GridPortableException;
+    @Nullable public <T> T deserialize() throws PortableException;
 
     /**
      * Creates a copy of this portable object and optionally changes field values
@@ -150,12 +150,12 @@ public interface GridPortableObject extends Serializable, Cloneable {
      *
      * @param fields Fields to modify in copy.
      * @return Copy of this portable object.
-     * @throws GridPortableException In case of error.
-     * @deprecated Use {@link GridPortableBuilder} instead.
-     * @see GridPortableBuilder
+     * @throws PortableException In case of error.
+     * @deprecated Use {@link PortableBuilder} instead.
+     * @see PortableBuilder
      */
     @Deprecated
-    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws GridPortableException;
+    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws PortableException;
 
     /**
      * Copies this portable object.

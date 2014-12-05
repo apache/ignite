@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * Thrown from {@link GridPortableObject#deserialize()} method.
  */
-public class GridPortableInvalidClassException extends GridPortableException {
+public class PortableInvalidClassException extends PortableException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -25,7 +25,7 @@ public class GridPortableInvalidClassException extends GridPortableException {
      *
      * @param msg Error message.
      */
-    public GridPortableInvalidClassException(String msg) {
+    public PortableInvalidClassException(String msg) {
         super(msg);
     }
 
@@ -34,7 +34,7 @@ public class GridPortableInvalidClassException extends GridPortableException {
      *
      * @param cause Cause.
      */
-    public GridPortableInvalidClassException(Throwable cause) {
+    public PortableInvalidClassException(Throwable cause) {
         super(cause);
     }
 
@@ -44,7 +44,7 @@ public class GridPortableInvalidClassException extends GridPortableException {
      * @param msg Error message.
      * @param cause Cause.
      */
-    public GridPortableInvalidClassException(String msg, @Nullable Throwable cause) {
+    public PortableInvalidClassException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

@@ -55,7 +55,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         if (portables) {
-            GridPortableConfiguration portableCfg = new GridPortableConfiguration();
+            PortableConfiguration portableCfg = new PortableConfiguration();
 
             portableCfg.setTypeConfigurations(Arrays.asList(
                 new GridPortableTypeConfiguration(TestObject.class.getName())));
@@ -251,7 +251,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestObject implements GridPortableMarshalAware, Serializable {
+    private static class TestObject implements PortableMarshalAware, Serializable {
         /** */
         private int val;
 
@@ -283,12 +283,12 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+        @Override public void writePortable(GridPortableWriter writer) throws PortableException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+        @Override public void readPortable(GridPortableReader reader) throws PortableException {
             val = reader.readInt("val");
         }
     }

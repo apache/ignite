@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Portable meta data sent from client.
  */
-public class GridClientPortableMetaData implements GridPortableMarshalAware {
+public class GridClientPortableMetaData implements PortableMarshalAware {
     /** */
     private int typeId;
 
@@ -59,7 +59,7 @@ public class GridClientPortableMetaData implements GridPortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter raw = writer.rawWriter();
 
         raw.writeInt(typeId);
@@ -69,7 +69,7 @@ public class GridClientPortableMetaData implements GridPortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader raw = reader.rawReader();
 
         typeId = raw.readInt();

@@ -19,9 +19,9 @@ import org.jetbrains.annotations.*;
 public interface GridPortableRawWriterEx extends GridPortableRawWriter, AutoCloseable {
     /**
      * @param obj Object to write.
-     * @throws org.apache.ignite.portables.GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public void writeObjectDetached(@Nullable Object obj) throws GridPortableException;
+    public void writeObjectDetached(@Nullable Object obj) throws PortableException;
 
     /**
      * @return Output stream.

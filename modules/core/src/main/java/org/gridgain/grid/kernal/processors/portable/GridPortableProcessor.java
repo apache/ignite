@@ -31,41 +31,41 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param obj Object to marshal.
      * @param trim If {@code true} trims result byte buffer.
      * @return Object bytes.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws GridPortableException;
+    public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws PortableException;
 
     /**
      * @param arr Byte array.
      * @param off Offset.
      * @return Unmarshalled object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Object unmarshal(byte[] arr, int off) throws GridPortableException;
+    public Object unmarshal(byte[] arr, int off) throws PortableException;
 
     /**
      * @param ptr Offheap pointer.
      * @param forceHeap If {@code true} creates heap-based object.
      * @return Unmarshalled object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Object unmarshal(long ptr, boolean forceHeap) throws GridPortableException;
+    public Object unmarshal(long ptr, boolean forceHeap) throws PortableException;
 
     /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
      * @return Heap-based object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws GridPortableException;
+    @Nullable public Object unwrapTemporary(@Nullable Object obj) throws PortableException;
 
     /**
      * @param obj Object to marshal.
      * @return Portable object.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Object marshalToPortable(@Nullable Object obj) throws GridPortableException;
+    public Object marshalToPortable(@Nullable Object obj) throws PortableException;
 
     /**
      * @param obj Object (portable or not).
@@ -88,12 +88,12 @@ public interface GridPortableProcessor extends GridProcessor {
     /**
      * @return Builder.
      */
-    public GridPortableBuilder builder(int typeId);
+    public PortableBuilder builder(int typeId);
 
     /**
      * @return Builder.
      */
-    public GridPortableBuilder builder(String clsName);
+    public PortableBuilder builder(String clsName);
 
     /**
      * Creates builder initialized by existing portable object.
@@ -101,42 +101,42 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public GridPortableBuilder builder(GridPortableObject portableObj);
+    public PortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * @param typeId Type ID.
      * @param newMeta New meta data.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public void addMeta(int typeId, final GridPortableMetadata newMeta) throws GridPortableException;
+    public void addMeta(int typeId, final GridPortableMetadata newMeta) throws PortableException;
 
     /**
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
      * @param fieldTypeIds Fields map.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
     public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws GridPortableException;
+        Map<String, Integer> fieldTypeIds) throws PortableException;
 
     /**
      * @param typeId Type ID.
      * @return Meta data.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(int typeId) throws PortableException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) throws GridPortableException;
+    public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) throws PortableException;
 
     /**
      * @return Metadata for all types.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Collection<GridPortableMetadata> metadata() throws GridPortableException;
+    public Collection<GridPortableMetadata> metadata() throws PortableException;
 }

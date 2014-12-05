@@ -23,175 +23,175 @@ import java.util.Date;
 public interface GridPortableRawWriter {
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeByte(byte val) throws GridPortableException;
+    public void writeByte(byte val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeShort(short val) throws GridPortableException;
+    public void writeShort(short val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeInt(int val) throws GridPortableException;
+    public void writeInt(int val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeLong(long val) throws GridPortableException;
+    public void writeLong(long val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeFloat(float val) throws GridPortableException;
+    public void writeFloat(float val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeDouble(double val) throws GridPortableException;
+    public void writeDouble(double val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeChar(char val) throws GridPortableException;
+    public void writeChar(char val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeBoolean(boolean val) throws GridPortableException;
+    public void writeBoolean(boolean val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeString(@Nullable String val) throws GridPortableException;
+    public void writeString(@Nullable String val) throws PortableException;
 
     /**
      * @param val UUID to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeUuid(@Nullable UUID val) throws GridPortableException;
+    public void writeUuid(@Nullable UUID val) throws PortableException;
 
     /**
      * @param val Date to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeDate(@Nullable Date val) throws GridPortableException;
+    public void writeDate(@Nullable Date val) throws PortableException;
 
     /**
      * @param val Timestamp to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeTimestamp(@Nullable Timestamp val) throws GridPortableException;
+    public void writeTimestamp(@Nullable Timestamp val) throws PortableException;
 
     /**
      * @param obj Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeObject(@Nullable Object obj) throws GridPortableException;
+    public void writeObject(@Nullable Object obj) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeByteArray(@Nullable byte[] val) throws GridPortableException;
+    public void writeByteArray(@Nullable byte[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeShortArray(@Nullable short[] val) throws GridPortableException;
+    public void writeShortArray(@Nullable short[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeIntArray(@Nullable int[] val) throws GridPortableException;
+    public void writeIntArray(@Nullable int[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeLongArray(@Nullable long[] val) throws GridPortableException;
+    public void writeLongArray(@Nullable long[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeFloatArray(@Nullable float[] val) throws GridPortableException;
+    public void writeFloatArray(@Nullable float[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeDoubleArray(@Nullable double[] val) throws GridPortableException;
+    public void writeDoubleArray(@Nullable double[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeCharArray(@Nullable char[] val) throws GridPortableException;
+    public void writeCharArray(@Nullable char[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeBooleanArray(@Nullable boolean[] val) throws GridPortableException;
+    public void writeBooleanArray(@Nullable boolean[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeStringArray(@Nullable String[] val) throws GridPortableException;
+    public void writeStringArray(@Nullable String[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeUuidArray(@Nullable UUID[] val) throws GridPortableException;
+    public void writeUuidArray(@Nullable UUID[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeDateArray(@Nullable Date[] val) throws GridPortableException;
+    public void writeDateArray(@Nullable Date[] val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public void writeObjectArray(@Nullable Object[] val) throws GridPortableException;
+    public void writeObjectArray(@Nullable Object[] val) throws PortableException;
 
     /**
      * @param col Collection to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public <T> void writeCollection(@Nullable Collection<T> col) throws GridPortableException;
+    public <T> void writeCollection(@Nullable Collection<T> col) throws PortableException;
 
     /**
      * @param map Map to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public <K, V> void writeMap(@Nullable Map<K, V> map) throws GridPortableException;
+    public <K, V> void writeMap(@Nullable Map<K, V> map) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public <T extends Enum<?>> void writeEnum(T val) throws GridPortableException;
+    public <T extends Enum<?>> void writeEnum(T val) throws PortableException;
 
     /**
      * @param val Value to write.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public <T extends Enum<?>> void writeEnumArray(T[] val) throws GridPortableException;
+    public <T extends Enum<?>> void writeEnumArray(T[] val) throws PortableException;
 }

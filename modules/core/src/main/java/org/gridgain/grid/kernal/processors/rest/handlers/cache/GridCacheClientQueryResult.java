@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Client query result.
  */
-public class GridCacheClientQueryResult implements GridPortableMarshalAware, Serializable {
+public class GridCacheClientQueryResult implements PortableMarshalAware, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,7 +90,7 @@ public class GridCacheClientQueryResult implements GridPortableMarshalAware, Ser
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeBoolean(last);
@@ -100,7 +100,7 @@ public class GridCacheClientQueryResult implements GridPortableMarshalAware, Ser
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader rawReader = reader.rawReader();
 
         last = rawReader.readBoolean();

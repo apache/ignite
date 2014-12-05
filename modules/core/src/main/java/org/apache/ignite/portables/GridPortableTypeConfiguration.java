@@ -16,19 +16,19 @@ import java.sql.*;
 /**
  * Defines configuration properties for a specific portable type. Providing per-type
  * configuration is optional, as it is generally enough to provide global
- * portable configuration in {@link GridPortableConfiguration} instance. However,
+ * portable configuration in {@link PortableConfiguration} instance. However,
  * this class allows you to change configuration properties for a specific
  * portable type without affecting configuration for other portable types.
  * <p>
  * Per-type portable configuration can be specified in
- * {@link GridPortableConfiguration#getTypeConfigurations()} method.
+ * {@link PortableConfiguration#getTypeConfigurations()} method.
  */
 public class GridPortableTypeConfiguration {
     /** Class name. */
     private String clsName;
 
     /** ID mapper. */
-    private GridPortableIdMapper idMapper;
+    private PortableIdMapper idMapper;
 
     /** Serializer. */
     private GridPortableSerializer serializer;
@@ -81,7 +81,7 @@ public class GridPortableTypeConfiguration {
      *
      * @return ID mapper.
      */
-    public GridPortableIdMapper getIdMapper() {
+    public PortableIdMapper getIdMapper() {
         return idMapper;
     }
 
@@ -90,7 +90,7 @@ public class GridPortableTypeConfiguration {
      *
      * @param idMapper ID mapper.
      */
-    public void setIdMapper(GridPortableIdMapper idMapper) {
+    public void setIdMapper(PortableIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 
@@ -130,7 +130,7 @@ public class GridPortableTypeConfiguration {
 
     /**
      * Defines whether meta data is collected for this type. If provided, this value will override
-     * {@link GridPortableConfiguration#isMetaDataEnabled()} property.
+     * {@link PortableConfiguration#isMetaDataEnabled()} property.
      *
      * @return Whether meta data is collected.
      */
@@ -147,7 +147,7 @@ public class GridPortableTypeConfiguration {
 
     /**
      * Defines whether {@link GridPortableObject} should cache deserialized instance. If provided,
-     * this value will override {@link GridPortableConfiguration#isKeepDeserialized()} property.
+     * this value will override {@link PortableConfiguration#isKeepDeserialized()} property.
      *
      * @return Whether deserialized value is kept.
      */

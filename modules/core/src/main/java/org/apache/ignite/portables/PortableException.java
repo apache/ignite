@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * Exception indicating portable object serialization error.
  */
-public class GridPortableException extends GridRuntimeException {
+public class PortableException extends GridRuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class GridPortableException extends GridRuntimeException {
      *
      * @param msg Error message.
      */
-    public GridPortableException(String msg) {
+    public PortableException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridPortableException extends GridRuntimeException {
      *
      * @param cause Cause.
      */
-    public GridPortableException(Throwable cause) {
+    public PortableException(Throwable cause) {
         super(cause);
     }
 
@@ -43,7 +43,7 @@ public class GridPortableException extends GridRuntimeException {
      * @param msg Error message.
      * @param cause Cause.
      */
-    public GridPortableException(String msg, @Nullable Throwable cause) {
+    public PortableException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

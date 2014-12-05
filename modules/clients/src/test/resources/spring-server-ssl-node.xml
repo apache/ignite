@@ -318,7 +318,7 @@
         <property name="systemExecutorServiceShutdown" value="true"/>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.GridPortableConfiguration">
+            <bean class="org.apache.ignite.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.GridPortableTypeConfiguration">

@@ -57,7 +57,7 @@ import org.jetbrains.annotations.*;
  * @see org.apache.ignite.IgnitePortables#builder(String)
  * @see org.apache.ignite.IgnitePortables#builder(GridPortableObject)
  */
-public interface GridPortableBuilder {
+public interface PortableBuilder {
     /**
      * Returns value assigned to the specified field.
      * If the value is a portable object instance of {@code GridPortableBuilder} will be returned,
@@ -77,7 +77,7 @@ public interface GridPortableBuilder {
      * @param val Field value (cannot be {@code null}).
      * @see GridPortableObject#metaData()
      */
-    public GridPortableBuilder setField(String name, Object val);
+    public PortableBuilder setField(String name, Object val);
 
     /**
      * Sets field value with value type specification.
@@ -89,7 +89,7 @@ public interface GridPortableBuilder {
      * @param type Field type.
      * @see GridPortableObject#metaData()
      */
-    public <T> GridPortableBuilder setField(String name, @Nullable T val, Class<? super T> type);
+    public <T> PortableBuilder setField(String name, @Nullable T val, Class<? super T> type);
 
     /**
      * Sets field value.
@@ -99,7 +99,7 @@ public interface GridPortableBuilder {
      * @param name Field name.
      * @param builder Builder for object field.
      */
-    public GridPortableBuilder setField(String name, @Nullable GridPortableBuilder builder);
+    public PortableBuilder setField(String name, @Nullable PortableBuilder builder);
 
     /**
      * Removes field from this builder.
@@ -107,7 +107,7 @@ public interface GridPortableBuilder {
      * @param fieldName Field name.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder removeField(String fieldName);
+    public PortableBuilder removeField(String fieldName);
 
     /**
      * Sets hash code for resulting portable object returned by {@link #build()} method.
@@ -117,13 +117,13 @@ public interface GridPortableBuilder {
      * @param hashCode Hash code.
      * @return {@code this} instance for chaining.
      */
-    public GridPortableBuilder hashCode(int hashCode);
+    public PortableBuilder hashCode(int hashCode);
 
     /**
      * Builds portable object.
      *
      * @return Portable object.
-     * @throws GridPortableException In case of error.
+     * @throws PortableException In case of error.
      */
-    public GridPortableObject build() throws GridPortableException;
+    public GridPortableObject build() throws PortableException;
 }

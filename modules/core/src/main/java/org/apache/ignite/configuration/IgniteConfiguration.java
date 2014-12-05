@@ -535,7 +535,7 @@ public class IgniteConfiguration {
     private GridClientConnectionConfiguration clientCfg;
 
     /** Portable configuration. */
-    private GridPortableConfiguration portableCfg;
+    private PortableConfiguration portableCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
@@ -3127,14 +3127,14 @@ public class IgniteConfiguration {
     /**
      * @return Portable configuration.
      */
-    public GridPortableConfiguration getPortableConfiguration() {
+    public PortableConfiguration getPortableConfiguration() {
         return portableCfg;
     }
 
     /**
      * @param portableCfg Portable configuration.
      */
-    public void setPortableConfiguration(GridPortableConfiguration portableCfg) {
+    public void setPortableConfiguration(PortableConfiguration portableCfg) {
         this.portableCfg = portableCfg;
     }
 

@@ -98,7 +98,7 @@ import java.util.Date;
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
  * <h1 class="header">Building Portable Objects</h1>
- * GridGain comes with {@link org.apache.ignite.portables.GridPortableBuilder} which allows to build portable objects dynamically:
+ * GridGain comes with {@link org.apache.ignite.portables.PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = GridGain.grid().portables().builder();
  *
@@ -138,7 +138,7 @@ import java.util.Date;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  * <h1 class="header">Configuration</h1>
- * To make any object portable, you have to specify it in {@link org.apache.ignite.portables.GridPortableConfiguration}
+ * To make any object portable, you have to specify it in {@link org.apache.ignite.portables.PortableConfiguration}
  * at startup. The only requirement GridGain imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
@@ -200,9 +200,9 @@ import java.util.Date;
  * &lt;/property&gt;
  * </pre>
  * <h1 class="header">Serialization</h1>
- * Once portable object is specified in {@link org.apache.ignite.portables.GridPortableConfiguration}, GridGain will
+ * Once portable object is specified in {@link org.apache.ignite.portables.PortableConfiguration}, GridGain will
  * be able to serialize and deserialize it. However, you can provide your own custom
- * serialization logic by optionally implementing {@link org.apache.ignite.portables.GridPortableMarshalAware} interface, like so:
+ * serialization logic by optionally implementing {@link org.apache.ignite.portables.PortableMarshalAware} interface, like so:
  * <pre name=code class=java>
  * public class Address implements GridPortableMarshalAware {
  *     private String street;
@@ -223,7 +223,7 @@ import java.util.Date;
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.portables.GridPortableSerializer} either globally in {@link org.apache.ignite.portables.GridPortableConfiguration} or
+ * logic in {@link org.apache.ignite.portables.GridPortableSerializer} either globally in {@link org.apache.ignite.portables.PortableConfiguration} or
  * for a specific type via {@link org.apache.ignite.portables.GridPortableTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
@@ -241,9 +241,9 @@ import java.util.Date;
  * <h1 class="header">Custom ID Mappers</h1>
  * GridGain implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
- * you can provide your own {@link org.apache.ignite.portables.GridPortableIdMapper} implementation.
+ * you can provide your own {@link org.apache.ignite.portables.PortableIdMapper} implementation.
  * <p>
- * ID-mapper may be provided either globally in {@link org.apache.ignite.portables.GridPortableConfiguration},
+ * ID-mapper may be provided either globally in {@link org.apache.ignite.portables.PortableConfiguration},
  * or for a specific type via {@link org.apache.ignite.portables.GridPortableTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
@@ -289,13 +289,13 @@ public interface IgnitePortables {
     /**
      * Converts provided object to instance of {@link org.apache.ignite.portables.GridPortableObject}.
      * <p>
-     * Note that object's type needs to be configured in {@link org.apache.ignite.portables.GridPortableConfiguration}.
+     * Note that object's type needs to be configured in {@link org.apache.ignite.portables.PortableConfiguration}.
      *
      * @param obj Object to convert.
      * @return Converted object.
-     * @throws org.apache.ignite.portables.GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public <T> T toPortable(@Nullable Object obj) throws GridPortableException;
+    public <T> T toPortable(@Nullable Object obj) throws PortableException;
 
     /**
      * Creates new portable builder.
@@ -303,7 +303,7 @@ public interface IgnitePortables {
      * @param typeId ID of the type.
      * @return Newly portable builder.
      */
-    public GridPortableBuilder builder(int typeId);
+    public PortableBuilder builder(int typeId);
 
     /**
      * Creates new portable builder.
@@ -311,7 +311,7 @@ public interface IgnitePortables {
      * @param typeName Type name.
      * @return Newly portable builder.
      */
-    public GridPortableBuilder builder(String typeName);
+    public PortableBuilder builder(String typeName);
 
     /**
      * Creates portable builder initialized by existing portable object.
@@ -319,40 +319,40 @@ public interface IgnitePortables {
      * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public GridPortableBuilder builder(GridPortableObject portableObj);
+    public PortableBuilder builder(GridPortableObject portableObj);
 
     /**
      * Gets metadata for provided class.
      *
      * @param cls Class.
      * @return Metadata.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(Class<?> cls) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(Class<?> cls) throws PortableException;
 
     /**
      * Gets metadata for provided class name.
      *
      * @param typeName Type name.
      * @return Metadata.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(String typeName) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(String typeName) throws PortableException;
 
     /**
      * Gets metadata for provided type ID.
      *
      * @param typeId Type ID.
      * @return Metadata.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(int typeId) throws GridPortableException;
+    @Nullable public GridPortableMetadata metadata(int typeId) throws PortableException;
 
     /**
      * Gets metadata for all known types.
      *
      * @return Metadata.
-     * @throws GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Collection<GridPortableMetadata> metadata() throws GridPortableException;
+    public Collection<GridPortableMetadata> metadata() throws PortableException;
 }

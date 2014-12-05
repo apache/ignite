@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Node bean.
  */
-public class GridClientNodeBean implements Externalizable, GridPortableMarshalAware {
+public class GridClientNodeBean implements Externalizable, PortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -247,7 +247,7 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter raw = writer.rawWriter();
 
         raw.writeInt(tcpPort);
@@ -263,7 +263,7 @@ public class GridClientNodeBean implements Externalizable, GridPortableMarshalAw
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader raw = reader.rawReader();
 
         tcpPort = raw.readInt();

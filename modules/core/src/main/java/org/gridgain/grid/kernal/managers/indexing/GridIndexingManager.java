@@ -1348,7 +1348,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             try {
                 return ((GridPortableObject)obj).field(propName);
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 throw new GridSpiException(e);
             }
         }

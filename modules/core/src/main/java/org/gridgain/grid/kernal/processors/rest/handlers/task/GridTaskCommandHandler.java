@@ -257,7 +257,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);
                                     }
-                                    catch (GridPortableException e) {
+                                    catch (PortableException e) {
                                         fut.onDone(new GridException("Failed to marshal task result: " +
                                             desc.result(), e));
                                     }

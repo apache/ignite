@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Node metrics bean.
  */
-public class GridClientNodeMetricsBean implements Externalizable, GridPortableMarshalAware {
+public class GridClientNodeMetricsBean implements Externalizable, PortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1341,7 +1341,7 @@ public class GridClientNodeMetricsBean implements Externalizable, GridPortableMa
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter raw = writer.rawWriter();
 
         raw.writeLong(lastUpdateTime);
@@ -1399,7 +1399,7 @@ public class GridClientNodeMetricsBean implements Externalizable, GridPortableMa
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader raw = reader.rawReader();
 
         lastUpdateTime = raw.readLong();

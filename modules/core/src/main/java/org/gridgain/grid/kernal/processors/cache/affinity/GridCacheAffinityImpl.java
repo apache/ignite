@@ -144,7 +144,7 @@ public class GridCacheAffinityImpl<K, V> implements GridCacheAffinity<K> {
             try {
                 key = (K)cctx.marshalToPortable(key);
             }
-            catch (GridPortableException e) {
+            catch (PortableException e) {
                 U.error(log, "Failed to marshal key to portable: " + key, e);
             }
         }

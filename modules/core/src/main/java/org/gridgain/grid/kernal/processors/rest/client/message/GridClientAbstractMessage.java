@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, GridPortableMarshalAware {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, PortableMarshalAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,14 +88,14 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter raw = writer.rawWriter();
 
         raw.writeByteArray(sesTok);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader raw = reader.rawReader();
 
         sesTok = raw.readByteArray();

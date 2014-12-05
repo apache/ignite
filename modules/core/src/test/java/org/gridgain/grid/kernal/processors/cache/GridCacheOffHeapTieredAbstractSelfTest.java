@@ -51,7 +51,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (portableEnabled()) {
-            GridPortableConfiguration pCfg = new GridPortableConfiguration();
+            PortableConfiguration pCfg = new PortableConfiguration();
 
             pCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
 

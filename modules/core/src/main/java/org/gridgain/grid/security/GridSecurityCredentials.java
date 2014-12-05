@@ -37,7 +37,7 @@ import java.io.*;
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
-public class GridSecurityCredentials implements Externalizable, GridPortableMarshalAware {
+public class GridSecurityCredentials implements Externalizable, PortableMarshalAware {
     /** */
     private static final long serialVersionUID = -2655741071578326256L;
 
@@ -176,14 +176,14 @@ public class GridSecurityCredentials implements Externalizable, GridPortableMars
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         writer.rawWriter().writeObject(login);
         writer.rawWriter().writeObject(password);
         writer.rawWriter().writeObject(userObj);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         login = reader.rawReader().readObject();
         password = reader.rawReader().readObject();
         userObj = reader.rawReader().readObject();

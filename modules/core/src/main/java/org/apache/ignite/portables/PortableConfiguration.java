@@ -20,12 +20,12 @@ import java.util.*;
  * {@link GridPortableTypeConfiguration}. Type configurations are provided via
  * {@link #getTypeConfigurations()} method.
  */
-public class GridPortableConfiguration {
+public class PortableConfiguration {
     /** Class names. */
     private Collection<String> clsNames;
 
     /** ID mapper. */
-    private GridPortableIdMapper idMapper;
+    private PortableIdMapper idMapper;
 
     /** Serializer. */
     private GridPortableSerializer serializer;
@@ -65,7 +65,7 @@ public class GridPortableConfiguration {
      *
      * @return ID mapper.
      */
-    public GridPortableIdMapper getIdMapper() {
+    public PortableIdMapper getIdMapper() {
         return idMapper;
     }
 
@@ -74,7 +74,7 @@ public class GridPortableConfiguration {
      *
      * @param idMapper ID mapper.
      */
-    public void setIdMapper(GridPortableIdMapper idMapper) {
+    public void setIdMapper(PortableIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 
@@ -176,6 +176,6 @@ public class GridPortableConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPortableConfiguration.class, this);
+        return S.toString(PortableConfiguration.class, this);
     }
 }

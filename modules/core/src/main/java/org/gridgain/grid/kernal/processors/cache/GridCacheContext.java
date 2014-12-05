@@ -1570,9 +1570,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @return Portable object.
-     * @throws org.apache.ignite.portables.GridPortableException In case of error.
+     * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public Object marshalToPortable(@Nullable Object obj) throws GridPortableException {
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws PortableException {
         assert portableEnabled();
 
         if (obj == null)

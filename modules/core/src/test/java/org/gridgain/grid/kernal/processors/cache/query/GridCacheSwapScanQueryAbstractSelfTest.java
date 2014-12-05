@@ -62,7 +62,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
 
         if (portableEnabled()) {
-            GridPortableConfiguration pCfg = new GridPortableConfiguration();
+            PortableConfiguration pCfg = new PortableConfiguration();
 
             pCfg.setClassNames(Arrays.asList(Key.class.getName(), Person.class.getName()));
 

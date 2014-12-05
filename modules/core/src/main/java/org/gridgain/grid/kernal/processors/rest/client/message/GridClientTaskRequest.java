@@ -94,7 +94,7 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
         GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
@@ -109,7 +109,7 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         super.readPortable(reader);
 
         GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();

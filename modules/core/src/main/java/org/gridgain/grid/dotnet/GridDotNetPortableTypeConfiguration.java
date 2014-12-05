@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 /**
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
  */
-public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalAware {
+public class GridDotNetPortableTypeConfiguration implements PortableMarshalAware {
     /** */
     private String assemblyName;
 
@@ -175,7 +175,7 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeString(assemblyName);
@@ -196,7 +196,7 @@ public class GridDotNetPortableTypeConfiguration implements GridPortableMarshalA
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader rawReader = reader.rawReader();
 
         assemblyName = rawReader.readString();

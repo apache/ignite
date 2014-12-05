@@ -20,10 +20,10 @@ package org.apache.ignite.portables;
  * generated hash code IDs for the type and field names.
  * <p>
  * Portable ID mapper can be configured for all portable objects via
- * {@link GridPortableConfiguration#getIdMapper()} method, or for a specific
+ * {@link PortableConfiguration#getIdMapper()} method, or for a specific
  * portable type via {@link GridPortableTypeConfiguration#getIdMapper()} method.
  */
-public interface GridPortableIdMapper {
+public interface PortableIdMapper {
     /**
      * Gets type ID for provided class name.
      * <p>

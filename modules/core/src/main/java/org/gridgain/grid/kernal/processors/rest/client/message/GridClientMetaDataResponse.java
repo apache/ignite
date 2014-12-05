@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Metadata response.
  */
-public class GridClientMetaDataResponse implements GridPortableMarshalAware {
+public class GridClientMetaDataResponse implements PortableMarshalAware {
     /** */
     private Map<Integer, GridPortableMetadata> meta;
 
@@ -29,14 +29,14 @@ public class GridClientMetaDataResponse implements GridPortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
         GridPortableRawWriter raw = writer.rawWriter();
 
         raw.writeMap(meta);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+    @Override public void readPortable(GridPortableReader reader) throws PortableException {
         GridPortableRawReader raw = reader.rawReader();
 
         meta = raw.readMap();
