@@ -256,14 +256,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
             f.onDone(new GridInterruptedException("Grid is stopping: " + cctx.gridName()));
 
-        exchFuts = null;
-
         U.cancel(exchWorker);
 
         if (log.isDebugEnabled())
             log.debug("Before joining on exchange worker: " + exchWorker);
 
         U.join(exchWorker, log);
+
+        exchFuts = null;
 
         ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
 

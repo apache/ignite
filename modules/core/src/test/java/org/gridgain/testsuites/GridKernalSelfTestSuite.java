@@ -61,11 +61,11 @@ public class GridKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
 
         // Managed Services.
-//        suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class); TODO GG-9141
-//        suite.addTestSuite(GridServiceProcessorMultiNodeSelfTest.class);
-//        suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
-//        suite.addTestSuite(GridServiceProcessorProxySelfTest.class);
-//        suite.addTestSuite(GridServiceReassignmentSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorMultiNodeSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
+        suite.addTestSuite(GridServiceProcessorProxySelfTest.class);
+        suite.addTestSuite(GridServiceReassignmentSelfTest.class);
 
         return suite;
     }
