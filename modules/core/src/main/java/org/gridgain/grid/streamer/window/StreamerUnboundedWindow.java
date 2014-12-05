@@ -18,7 +18,7 @@ import java.util.*;
  * Unbounded window which holds all events. Events can be evicted manually from window
  * via any of the {@code dequeue(...)} methods.
  */
-public class GridStreamerUnboundedWindow<E> extends GridStreamerWindowAdapter<E> {
+public class StreamerUnboundedWindow<E> extends StreamerWindowAdapter<E> {
     /** Events. */
     private ConcurrentLinkedDeque8<E> evts = new ConcurrentLinkedDeque8<>();
 

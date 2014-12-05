@@ -30,7 +30,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeWindowValidation() throws Exception {
-        final GridStreamerBoundedSizeWindow win = new GridStreamerBoundedSizeWindow();
+        final StreamerBoundedSizeWindow win = new StreamerBoundedSizeWindow();
 
         win.start();
 
@@ -49,7 +49,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeWindowValidation() throws Exception {
-        final GridStreamerBoundedTimeWindow win = new GridStreamerBoundedTimeWindow();
+        final StreamerBoundedTimeWindow win = new StreamerBoundedTimeWindow();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -78,7 +78,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeBatchWindowValidation() throws Exception {
-        final GridStreamerBoundedSizeBatchWindow win = new GridStreamerBoundedSizeBatchWindow();
+        final StreamerBoundedSizeBatchWindow win = new StreamerBoundedSizeBatchWindow();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -107,7 +107,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeBatchWindowValidation() throws Exception {
-        final GridStreamerBoundedTimeBatchWindow win = new GridStreamerBoundedTimeBatchWindow();
+        final StreamerBoundedTimeBatchWindow win = new StreamerBoundedTimeBatchWindow();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -157,7 +157,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedWindow() throws Exception {
-        final GridStreamerBoundedSizeWindow<Integer> win = new GridStreamerBoundedSizeWindow<>();
+        final StreamerBoundedSizeWindow<Integer> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(50);
 
@@ -192,7 +192,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedWindowUnique() throws Exception {
-        final GridStreamerBoundedSizeWindow<Integer> win = new GridStreamerBoundedSizeWindow<>();
+        final StreamerBoundedSizeWindow<Integer> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(50);
         win.setUnique(true);
@@ -231,7 +231,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSortedWindow() throws Exception {
-        final GridStreamerBoundedSizeSortedWindow<Integer> win = new GridStreamerBoundedSizeSortedWindow<>();
+        final StreamerBoundedSizeSortedWindow<Integer> win = new StreamerBoundedSizeSortedWindow<>();
 
         win.setMaximumSize(60);
 
@@ -268,7 +268,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSortedWindowUnique() throws Exception {
-        final GridStreamerBoundedSizeSortedWindow<Integer> win = new GridStreamerBoundedSizeSortedWindow<>();
+        final StreamerBoundedSizeSortedWindow<Integer> win = new StreamerBoundedSizeSortedWindow<>();
 
         win.setMaximumSize(-1);
 
@@ -319,7 +319,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeBatchDequeueWindow() throws Exception {
-        final GridStreamerBoundedSizeBatchWindow<Integer> win = new GridStreamerBoundedSizeBatchWindow<>();
+        final StreamerBoundedSizeBatchWindow<Integer> win = new StreamerBoundedSizeBatchWindow<>();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -394,7 +394,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeDequeueWindow() throws Exception {
-        final GridStreamerBoundedTimeWindow<Integer> win = new GridStreamerBoundedTimeWindow<>();
+        final StreamerBoundedTimeWindow<Integer> win = new StreamerBoundedTimeWindow<>();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -446,7 +446,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeBatchDequeueWindow() throws Exception {
-        final GridStreamerBoundedTimeBatchWindow<Integer> win = new GridStreamerBoundedTimeBatchWindow<>();
+        final StreamerBoundedTimeBatchWindow<Integer> win = new StreamerBoundedTimeBatchWindow<>();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -516,7 +516,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUnboundedDequeueWindow() throws Exception {
-        final GridStreamerUnboundedWindow<Integer> win = new GridStreamerUnboundedWindow<>();
+        final StreamerUnboundedWindow<Integer> win = new StreamerUnboundedWindow<>();
 
         win.start();
 
@@ -541,7 +541,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeDequeueWindowMultithreaded() throws Exception {
-        GridStreamerBoundedSizeWindow<Integer> win = new GridStreamerBoundedSizeWindow<>();
+        StreamerBoundedSizeWindow<Integer> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(500);
         win.setUnique(false);
@@ -559,7 +559,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeDequeueWindowUniqueMultithreaded() throws Exception {
-        GridStreamerBoundedSizeWindow<Integer> win = new GridStreamerBoundedSizeWindow<>();
+        StreamerBoundedSizeWindow<Integer> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(500);
         win.setUnique(true);
@@ -577,7 +577,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeBatchDequeueWindowMultithreaded() throws Exception {
-        GridStreamerBoundedSizeBatchWindow<Integer> win = new GridStreamerBoundedSizeBatchWindow<>();
+        StreamerBoundedSizeBatchWindow<Integer> win = new StreamerBoundedSizeBatchWindow<>();
 
         win.setMaximumBatches(10);
         win.setBatchSize(50);
@@ -595,7 +595,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeSortedDequeueWindowMultithreaded() throws Exception {
-        GridStreamerBoundedSizeSortedWindow<Integer> win = new GridStreamerBoundedSizeSortedWindow<>();
+        StreamerBoundedSizeSortedWindow<Integer> win = new StreamerBoundedSizeSortedWindow<>();
 
         win.setMaximumSize(500);
         win.setUnique(false);
@@ -613,7 +613,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedSizeSortedDequeueWindowUniqueMultithreaded() throws Exception {
-        GridStreamerBoundedSizeSortedWindow<Integer> win = new GridStreamerBoundedSizeSortedWindow<>();
+        StreamerBoundedSizeSortedWindow<Integer> win = new StreamerBoundedSizeSortedWindow<>();
 
         win.setMaximumSize(500);
         win.setUnique(true);
@@ -631,7 +631,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeDequeueWindowMultithreaded() throws Exception {
-        GridStreamerBoundedTimeWindow<Integer> win = new GridStreamerBoundedTimeWindow<>();
+        StreamerBoundedTimeWindow<Integer> win = new StreamerBoundedTimeWindow<>();
 
         win.setMaximumSize(500);
         win.setTimeInterval(40); // 40ms time interval.
@@ -654,7 +654,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeDequeueWindowUniqueMultithreaded() throws Exception {
-        GridStreamerBoundedTimeWindow<Integer> win = new GridStreamerBoundedTimeWindow<>();
+        StreamerBoundedTimeWindow<Integer> win = new StreamerBoundedTimeWindow<>();
 
         win.setMaximumSize(500);
         win.setTimeInterval(40); // 40ms time interval.
@@ -677,7 +677,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoundedTimeBatchDequeueWindowMultithreaded() throws Exception {
-        GridStreamerBoundedTimeBatchWindow<Integer> win = new GridStreamerBoundedTimeBatchWindow<>();
+        StreamerBoundedTimeBatchWindow<Integer> win = new StreamerBoundedTimeBatchWindow<>();
 
         win.setMaximumBatches(10);
         win.setBatchTimeInterval(100);

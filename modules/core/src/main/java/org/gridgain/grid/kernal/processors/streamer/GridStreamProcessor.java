@@ -111,8 +111,8 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                         ", window=" + win.name() + ']', e);
                 }
 
-                if (win instanceof GridStreamerWindowAdapter) {
-                    GridStreamerIndexProvider[] idxs = ((GridStreamerWindowAdapter)win).indexProviders();
+                if (win instanceof StreamerWindowAdapter) {
+                    GridStreamerIndexProvider[] idxs = ((StreamerWindowAdapter)win).indexProviders();
 
                     if (idxs != null && idxs.length > 0) {
                         for (GridStreamerIndexProvider idx : idxs) {

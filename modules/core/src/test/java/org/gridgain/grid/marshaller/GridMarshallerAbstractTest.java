@@ -126,7 +126,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(true);
-        cfg.setWindows(F.asList((StreamerWindow)new GridStreamerUnboundedWindow()));
+        cfg.setWindows(F.asList((StreamerWindow)new StreamerUnboundedWindow()));
         cfg.setStages(stages);
 
         return cfg;

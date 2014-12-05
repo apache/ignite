@@ -18,11 +18,11 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Size-bounded sorted window. Unlike {@link GridStreamerBoundedSizeWindow}, which limits
+ * Size-bounded sorted window. Unlike {@link StreamerBoundedSizeWindow}, which limits
  * window only on size, this window also provides events in sorted order.
  */
-public class GridStreamerBoundedSizeSortedWindow<E>
-    extends GridStreamerBoundedSizeWindowAdapter<E, GridStreamerBoundedSizeSortedWindow.Holder<E>> {
+public class StreamerBoundedSizeSortedWindow<E>
+    extends StreamerBoundedSizeWindowAdapter<E, StreamerBoundedSizeSortedWindow.Holder<E>> {
     /** Comparator. */
     private Comparator<E> comp;
 

@@ -67,7 +67,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
 
         cfg.setRouter(router);
 
-        GridStreamerBoundedTimeWindow window = new GridStreamerBoundedTimeWindow();
+        StreamerBoundedTimeWindow window = new StreamerBoundedTimeWindow();
 
         window.setName("window1");
         window.setTimeInterval(60000);

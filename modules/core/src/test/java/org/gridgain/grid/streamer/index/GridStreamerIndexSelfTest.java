@@ -61,7 +61,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         GridStreamerIndexProvider<String, String, String> idxProvider1 =
             indexProvider(true, "idx1", new UniqueStringIndexUpdater(), EVENT_TRACKING_ON, true);
 
-        GridStreamerBoundedSizeWindow<String> win = new GridStreamerBoundedSizeWindow<>();
+        StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(5);
         win.setIndexes(idxProvider, idxProvider1);
@@ -174,7 +174,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             indexProvider(false, "hash", updater, GridStreamerIndexPolicy.EVENT_TRACKING_ON, false));
 
         for (GridStreamerIndexProvider<String, String, Integer> idxp : idxps) {
-            GridStreamerUnboundedWindow<String> win = new GridStreamerUnboundedWindow<>();
+            StreamerUnboundedWindow<String> win = new StreamerUnboundedWindow<>();
 
             win.setIndexes(idxp);
 
@@ -237,7 +237,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             indexProvider(false, "idx", new IndexUpdater(), EVENT_TRACKING_ON_DEDUP, true);
 
         for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++) {
-            final GridStreamerBoundedSizeWindow<String> win = new GridStreamerBoundedSizeWindow<>();
+            final StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
 
             win.setMaximumSize(threadCnt * 2);
             win.setIndexes(idxProvider);
@@ -281,7 +281,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      */
     public void checkSortedIndexMultithreaded(final int threadCnt, final int iters, final boolean pollEvicted)
         throws Exception {
-        final GridStreamerBoundedSizeWindow<String> win = new GridStreamerBoundedSizeWindow<>();
+        final StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(threadCnt * 2);
         win.setIndexes(indexProvider(true, "idx", new IndexUpdater(), EVENT_TRACKING_ON_DEDUP, false));
@@ -373,7 +373,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     private void checkNonUniqueIndex(GridStreamerIndexProvider<String, String, Integer> idx) throws GridException {
         assert !idx.isUnique();
 
-        GridStreamerBoundedSizeWindow<String> win = new GridStreamerBoundedSizeWindow<>();
+        StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(5);
         win.setIndexes(idx);
@@ -508,7 +508,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     private void checkUniqueIndex(GridStreamerIndexProvider<String, String, String> idx) throws GridException {
         assert idx.isUnique();
 
-        GridStreamerBoundedSizeWindow<String> win = new GridStreamerBoundedSizeWindow<>();
+        StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(5);
         win.setIndexes(idx);

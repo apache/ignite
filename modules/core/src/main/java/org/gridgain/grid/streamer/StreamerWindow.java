@@ -11,7 +11,6 @@ package org.gridgain.grid.streamer;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.index.*;
-import org.gridgain.grid.streamer.window.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -25,12 +24,12 @@ import java.util.*;
  * <p>
  * GridGain comes with following rolling windows implementations out of the box:
  * <ul>
- * <li>{@link GridStreamerUnboundedWindow}</li>
- * <li>{@link GridStreamerBoundedSizeWindow}</li>
- * <li>{@link GridStreamerBoundedSizeBatchWindow}</li>
- * <li>{@link GridStreamerBoundedSizeSortedWindow}</li>
- * <li>{@link GridStreamerBoundedTimeWindow}</li>
- * <li>{@link GridStreamerBoundedTimeBatchWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerUnboundedWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeBatchWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedSizeSortedWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedTimeWindow}</li>
+ * <li>{@link org.gridgain.grid.streamer.window.StreamerBoundedTimeBatchWindow}</li>
  * </ul>
  * <p>
  * Streamer window is configured via {@link StreamerConfiguration#getWindows()} method.

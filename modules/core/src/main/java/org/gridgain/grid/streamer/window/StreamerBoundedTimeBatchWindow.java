@@ -23,17 +23,20 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Window that is bounded by size and accumulates events to batches.
+ * Window that accumulates events in batches, and is bounded by time and maximum number of batches.
  */
-public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAdapter<E> {
-    /** Max size. */
+public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> {
+    /** Batch size. */
     private int batchSize;
 
-    /** Min size. */
+    /** Maximum batches. */
     private int maxBatches;
 
-    /** Reference for queue and size. */
-    private volatile QueueHolder holder;
+    /** */
+    private long batchTimeInterval;
+
+    /** Atomic reference for queue and size. */
+    private AtomicReference<WindowHolder> ref = new AtomicReference<>();
 
     /** Enqueue lock. */
     private ReadWriteLock enqueueLock = new ReentrantReadWriteLock();
@@ -74,19 +77,48 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         this.batchSize = batchSize;
     }
 
+    /**
+     * Gets batch time interval.
+     *
+     * @return Batch time interval.
+     */
+    public long getBatchTimeInterval() {
+        return batchTimeInterval;
+    }
+
+    /**
+     * Sets batch time interval.
+     *
+     * @param batchTimeInterval Batch time interval.
+     */
+    public void setBatchTimeInterval(long batchTimeInterval) {
+        this.batchTimeInterval = batchTimeInterval;
+    }
+
     /** {@inheritDoc} */
     @Override public void checkConfiguration() throws GridException {
-        if (batchSize <= 0)
-            throw new GridException("Failed to initialize window (batchSize size must be positive) " +
-                "[windowClass=" + getClass().getSimpleName() +
-                ", maximumBatches=" + maxBatches +
-                ", batchSize=" + batchSize + ']');
-
         if (maxBatches < 0)
             throw new GridException("Failed to initialize window (maximumBatches cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
-                ", batchSize=" + batchSize + ']');
+                ", batchSize=" + batchSize +
+                ", batchTimeInterval=" + batchTimeInterval + ']');
+
+        if (batchSize < 0)
+            throw new GridException("Failed to initialize window (batchSize cannot be negative) " +
+                "[windowClass=" + getClass().getSimpleName() +
+                ", maximumBatches=" + maxBatches +
+                ", batchSize=" + batchSize +
+                ", batchTimeInterval=" + batchTimeInterval + ']');
+        else if (batchSize == 0)
+            batchSize = Integer.MAX_VALUE;
+
+        if (batchTimeInterval <= 0)
+            throw new GridException("Failed to initialize window (batchTimeInterval must be positive) " +
+                "[windowClass=" + getClass().getSimpleName() +
+                ", maximumBatches=" + maxBatches +
+                ", batchSize=" + batchSize +
+                ", batchTimeInterval=" + batchTimeInterval + ']');
     }
 
     /** {@inheritDoc} */
@@ -98,23 +130,23 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
     @Override protected void reset0() {
         ConcurrentLinkedDeque8<Batch> first = new ConcurrentLinkedDeque8<>();
 
-        Batch b = new Batch(batchSize);
+        Batch b = new Batch(batchSize, U.currentTimeMillis() + batchTimeInterval);
 
         ConcurrentLinkedDeque8.Node<Batch> n = first.offerLastx(b);
 
         b.node(n);
 
-        holder = new QueueHolder(first, new AtomicInteger(1), new AtomicInteger());
+        ref.set(new WindowHolder(first, new AtomicInteger(1), new AtomicInteger()));
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return holder.totalQueueSize().get();
+        return ref.get().totalQueueSize().get();
     }
 
     /** {@inheritDoc} */
     @Override protected GridStreamerWindowIterator<E> iterator0() {
-        final QueueHolder win = holder;
+        final WindowHolder win = ref.get();
 
         final Iterator<Batch> batchIt = win.batchQueue().iterator();
 
@@ -175,7 +207,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
             }
 
             /** {@inheritDoc} */
-            @Nullable @Override public E removex() {
+            @Override public E removex() {
                 if (curBatchIt == null)
                     throw new NoSuchElementException();
 
@@ -206,9 +238,11 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
 
     /** {@inheritDoc} */
     @Override public int evictionQueueSize() {
-        QueueHolder win = holder;
+        WindowHolder win = ref.get();
 
-        int oversizeCnt = Math.max(0, win.batchQueueSize().get() - maxBatches);
+        int oversizeCnt = maxBatches > 0 ? Math.max(0, win.batchQueueSize().get() - maxBatches) : 0;
+
+        long now = U.currentTimeMillis();
 
         Iterator<Batch> it = win.batchQueue().iterator();
 
@@ -219,7 +253,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         while (it.hasNext()) {
             Batch batch = it.next();
 
-            if (idx++ < oversizeCnt)
+            if (idx++ < oversizeCnt || batch.batchEndTs < now)
                 size += batch.size();
         }
 
@@ -229,7 +263,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
     /** {@inheritDoc} */
     @Override protected boolean enqueue0(E evt) {
         try {
-            return enqueueInternal(evt);
+            return enqueue0(evt, U.currentTimeMillis());
         }
         catch (GridInterruptedException ignored) {
             return false;
@@ -240,13 +274,13 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
      * Enqueue event to window.
      *
      * @param evt Event to add.
+     * @param ts Event timestamp.
      * @return {@code True} if event was added.
      *
      * @throws GridInterruptedException If thread was interrupted.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean enqueueInternal(E evt) throws GridInterruptedException {
-        QueueHolder tup = holder;
+    private boolean enqueue0(E evt, long ts) throws GridInterruptedException {
+        WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
         AtomicInteger size = tup.batchQueueSize();
@@ -254,7 +288,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         while (true) {
             Batch last = evts.peekLast();
 
-            if (last == null || !last.add(evt)) {
+            if (last == null || !last.add(evt, ts)) {
                 // This call will ensure that last object is actually added to batch
                 // before we add new batch to events queue.
                 // If exception is thrown here, window will be left in consistent state.
@@ -267,7 +301,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
                         Batch first0 = evts.peekLast();
 
                         if (first0 == last) {
-                            Batch batch = new Batch(batchSize);
+                            Batch batch = new Batch(batchSize, ts + batchTimeInterval);
 
                             ConcurrentLinkedDeque8.Node<Batch> node = evts.offerLastx(batch);
 
@@ -275,6 +309,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
 
                             size.incrementAndGet();
 
+                            // If batch was removed in other thread.
                             if (batch.removed() && evts.unlinkx(node))
                                 size.decrementAndGet();
                         }
@@ -287,7 +322,12 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
                     // Acquire read lock to wait for batch enqueue.
                     enqueueLock.readLock().lock();
 
-                    enqueueLock.readLock().unlock();
+                    try {
+                        evts.peekLast();
+                    }
+                    finally {
+                        enqueueLock.readLock().unlock();
+                    }
                 }
             }
             else {
@@ -301,7 +341,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
 
     /** {@inheritDoc} */
     @Override protected Collection<E> pollEvicted0(int cnt) {
-        QueueHolder tup = holder;
+        WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
         AtomicInteger size = tup.batchQueueSize();
@@ -311,31 +351,27 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         while (true) {
             int curSize = size.get();
 
-            if (curSize > maxBatches) {
-                // Just peek the first batch.
-                Batch first = evts.peekFirst();
+            // Just peek the first batch.
+            Batch first = evts.peekFirst();
 
-                if (first != null) {
-                    assert first.finished();
+            if (first != null && ((maxBatches > 0 && curSize > maxBatches) || first.checkExpired())) {
+                assert first.finished();
 
-                    Collection<E> polled = first.pollNonBatch(cnt - res.size());
+                Collection<E> polled = first.pollNonBatch(cnt - res.size());
 
-                    if (!polled.isEmpty())
-                        res.addAll(polled);
+                if (!polled.isEmpty())
+                    res.addAll(polled);
 
-                    if (first.isEmpty()) {
-                        ConcurrentLinkedDeque8.Node<Batch> node = first.node();
+                if (first.isEmpty()) {
+                    ConcurrentLinkedDeque8.Node<Batch> node = first.node();
 
-                        first.markRemoved();
+                    first.markRemoved();
 
-                        if (node != null && evts.unlinkx(node))
-                            size.decrementAndGet();
-                    }
-
-                    if (res.size() == cnt)
-                        break;
+                    if (node != null && evts.unlinkx(node))
+                        size.decrementAndGet();
                 }
-                else
+
+                if (res.size() == cnt)
                     break;
             }
             else
@@ -350,7 +386,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
 
     /** {@inheritDoc} */
     @Override protected Collection<E> pollEvictedBatch0() {
-        QueueHolder tup = holder;
+        WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
         AtomicInteger size = tup.batchQueueSize();
@@ -358,14 +394,14 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         while (true) {
             int curSize = size.get();
 
-            if (curSize > maxBatches) {
+            if (maxBatches > 0 && curSize > maxBatches) {
                 if (size.compareAndSet(curSize, curSize - 1)) {
                     Batch polled = evts.poll();
 
                     if (polled != null) {
                         assert polled.finished();
 
-                        // Mark batch deleted for consistency.
+                        // Mark batch removed for consistency.
                         polled.markRemoved();
 
                         Collection<E> polled0 = polled.shrink();
@@ -386,14 +422,38 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
                     }
                 }
             }
-            else
-                return Collections.emptyList();
+            else {
+                while (true) {
+                    Batch batch = evts.peekFirst();
+
+                    // This call will finish batch and return true if batch is expired.
+                    if (batch != null && batch.checkExpired()) {
+                        assert batch.finished();
+
+                        ConcurrentLinkedDeque8.Node<Batch> node = batch.node();
+
+                        batch.markRemoved();
+
+                        if (node != null && evts.unlinkx(node))
+                            size.decrementAndGet();
+
+                        Collection<E> col = batch.shrink();
+
+                        tup.totalQueueSize().addAndGet(-col.size());
+
+                        if (!col.isEmpty())
+                            return col;
+                    }
+                    else
+                        return Collections.emptyList();
+                }
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override protected Collection<E> dequeue0(int cnt) {
-        QueueHolder tup = holder;
+        WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
         AtomicInteger size = tup.batchQueueSize();
@@ -441,7 +501,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
      * Consistency check, used for testing.
      */
     void consistencyCheck() {
-        QueueHolder win = holder;
+        WindowHolder win = ref.get();
 
         Iterator<E> it = iterator();
 
@@ -468,14 +528,15 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
     /**
      * Window structure.
      */
-    private class QueueHolder extends GridTuple3<ConcurrentLinkedDeque8<Batch>, AtomicInteger, AtomicInteger> {
+    @SuppressWarnings("ConstantConditions")
+    private class WindowHolder extends GridTuple3<ConcurrentLinkedDeque8<Batch>, AtomicInteger, AtomicInteger> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Empty constructor required by {@link Externalizable}.
          */
-        public QueueHolder() {
+        public WindowHolder() {
             // No-op.
         }
 
@@ -484,7 +545,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
          * @param batchQueueSize Batch queue size counter.
          * @param globalSize Global size counter.
          */
-        private QueueHolder(ConcurrentLinkedDeque8<Batch> batchQueue,
+        private WindowHolder(ConcurrentLinkedDeque8<Batch> batchQueue,
             AtomicInteger batchQueueSize, @Nullable AtomicInteger globalSize) {
             super(batchQueue, batchQueueSize, globalSize);
 
@@ -495,7 +556,6 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         /**
          * @return Events queue.
          */
-        @SuppressWarnings("ConstantConditions")
         public ConcurrentLinkedDeque8<Batch> batchQueue() {
             return get1();
         }
@@ -503,7 +563,6 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         /**
          * @return Batch queue size.
          */
-        @SuppressWarnings("ConstantConditions")
         public AtomicInteger batchQueueSize() {
             return get2();
         }
@@ -511,7 +570,6 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         /**
          * @return Global queue size.
          */
-        @SuppressWarnings("ConstantConditions")
         public AtomicInteger totalQueueSize() {
             return get3();
         }
@@ -530,27 +588,32 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
         /** Capacity. */
         private AtomicInteger cap;
 
-        /** Finished. */
-        private volatile boolean finished;
+        /** Batch end timestamp. */
+        private final long batchEndTs;
+
+        /** Finished flag. */
+        private boolean finished;
 
         /** Queue node. */
         @GridToStringExclude
         private ConcurrentLinkedDeque8.Node<Batch> qNode;
 
-        /** Node removed flag. */
+        /** Removed flag. */
         private volatile boolean rmvd;
 
         /**
          * @param batchSize Batch size.
+         * @param batchEndTs Batch end timestamp.
          */
-        private Batch(int batchSize) {
+        private Batch(int batchSize, long batchEndTs) {
             cap = new AtomicInteger(batchSize);
+            this.batchEndTs = batchEndTs;
 
             evts = new ConcurrentLinkedDeque8<>();
         }
 
         /**
-         * @return {@code True} if batch is removed.
+         * @return {@code True} if removed.
          */
         public boolean removed() {
             return rmvd;
@@ -567,35 +630,52 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
          * Adds event to batch.
          *
          * @param evt Event to add.
+         * @param ts Event timestamp.
          * @return {@code True} if event was added, {@code false} if batch is full.
          */
-        public boolean add(E evt) {
-            readLock().lock();
+        public boolean add(E evt, long ts) {
+            if (ts <= batchEndTs) {
+                readLock().lock();
 
-            try {
-                if (finished)
-                    return false;
-
-                while (true) {
-                    int size = cap.get();
-
-                    if (size > 0) {
-                        if (cap.compareAndSet(size, size - 1)) {
-                            evts.add(evt);
-
-                            // Will go through write lock and finish batch.
-                            if (size == 1)
-                                finished = true;
-
-                            return true;
-                        }
-                    }
-                    else
+                try {
+                    if (finished)
+                        // Finished was set inside write lock.
                         return false;
+
+                    while (true) {
+                        int size = cap.get();
+
+                        if (size > 0) {
+                            if (cap.compareAndSet(size, size - 1)) {
+                                evts.add(evt);
+
+                                // Will go through write lock and finish batch.
+                                if (size == 1)
+                                    finished = true;
+
+                                return true;
+                            }
+                        }
+                        else
+                            return false;
+                    }
+                }
+                finally {
+                    readLock().unlock();
                 }
             }
-            finally {
-                readLock().unlock();
+            else {
+                writeLock().lock();
+
+                try {
+                    // No events could be added to this batch.
+                    finished = true;
+
+                    return false;
+                }
+                finally {
+                    writeLock().unlock();
+                }
             }
         }
 
@@ -623,8 +703,7 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
 
             try {
                 // Safety.
-                assert cap.get() == 0;
-                assert finished;
+                assert cap.get() == 0 || finished;
             }
             finally {
                 writeLock().unlock();
@@ -692,6 +771,28 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
             }
         }
 
+        /**
+         * Checks if the batch has expired.
+         *
+         * @return {@code True} if the batch has expired, {@code false} otherwise.
+         */
+        public boolean checkExpired() {
+            if (U.currentTimeMillis() > batchEndTs) {
+                writeLock().lock();
+
+                try {
+                    finished = true;
+
+                    return true;
+                }
+                finally {
+                    writeLock().unlock();
+                }
+            }
+
+            return false;
+        }
+
         /** {@inheritDoc} */
         @Override public ConcurrentLinkedDeque8.IteratorEx<E> iterator() {
             readLock().lock();
@@ -727,7 +828,8 @@ public class GridStreamerBoundedSizeBatchWindow<E> extends GridStreamerWindowAda
          * Polls up to {@code cnt} objects from batch in concurrent fashion.
          *
          * @param cnt Number of objects to poll.
-         * @return Collection of polled elements or empty collection if nothing to poll.
+         * @return Collection of polled elements (empty collection in case no events were
+         *         present).
          */
         public Collection<E> pollNonBatch(int cnt) {
             readLock().lock();

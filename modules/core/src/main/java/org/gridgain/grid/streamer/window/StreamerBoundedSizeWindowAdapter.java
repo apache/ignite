@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Abstract non-public class for size-bound windows. Support reset.
  */
-abstract class GridStreamerBoundedSizeWindowAdapter<E, T> extends GridStreamerWindowAdapter<E> {
+abstract class StreamerBoundedSizeWindowAdapter<E, T> extends StreamerWindowAdapter<E> {
     /** Reference. */
     private AtomicReference<WindowHolder> ref = new AtomicReference<>();
 

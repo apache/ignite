@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.*;
  * It is guaranteed that window size will never get less then maximum size when poling from this window
  * concurrently from different threads.
  */
-public class GridStreamerBoundedSizeWindow<E> extends GridStreamerBoundedSizeWindowAdapter<E, E> {
+public class StreamerBoundedSizeWindow<E> extends StreamerBoundedSizeWindowAdapter<E, E> {
     /** {@inheritDoc} */
     @Override protected Collection<E> newCollection() {
         return new ConcurrentLinkedDeque8<>();

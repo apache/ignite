@@ -95,7 +95,7 @@ public class GridStreamerIndexLoadTest {
 
         dumpProperties(System.out);
 
-        final GridStreamerBoundedSizeWindow<Integer> win = new GridStreamerBoundedSizeWindow<>();
+        final StreamerBoundedSizeWindow<Integer> win = new StreamerBoundedSizeWindow<>();
 
         win.setMaximumSize(winSize);
         win.setIndexes(idxCfg.indexProvider());

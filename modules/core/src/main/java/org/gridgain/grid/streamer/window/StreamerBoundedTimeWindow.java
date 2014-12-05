@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Window which is bounded by size and time interval.
  */
-public class GridStreamerBoundedTimeWindow<E> extends GridStreamerWindowAdapter<E> {
+public class StreamerBoundedTimeWindow<E> extends StreamerWindowAdapter<E> {
     /** Window structures holder. */
     private AtomicReference<WindowHolder> ref = new AtomicReference<>();
 

@@ -67,7 +67,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setRouter(router);
 
-        GridStreamerBoundedSizeWindow window = new GridStreamerBoundedSizeWindow();
+        StreamerBoundedSizeWindow window = new StreamerBoundedSizeWindow();
 
         window.setMaximumSize(100);
 

@@ -88,7 +88,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         cfg.setRouter(router);
 
-        cfg.setWindows(F.asList((StreamerWindow)new GridStreamerUnboundedWindow()));
+        cfg.setWindows(F.asList((StreamerWindow)new StreamerUnboundedWindow()));
 
         cfg.setStages(stages);
 
