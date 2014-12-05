@@ -14,7 +14,7 @@ import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 import org.gridgain.grid.util.typedef.*;
 
-import static org.gridgain.grid.ggfs.mapreduce.records.GridGgfsNewLineRecordResolver.*;
+import static org.gridgain.grid.ggfs.mapreduce.records.IgniteFsNewLineRecordResolver.*;
 
 /**
  * New line split resolver self test.
@@ -74,7 +74,7 @@ public class GridGgfsNewLineDelimiterRecordResolverSelfTest extends GridGgfsAbst
         throws Exception {
         write(data);
 
-        GridGgfsNewLineRecordResolver rslvr = resolver();
+        IgniteFsNewLineRecordResolver rslvr = resolver();
 
         IgniteFsFileRange split;
 
@@ -99,7 +99,7 @@ public class GridGgfsNewLineDelimiterRecordResolverSelfTest extends GridGgfsAbst
         throws Exception {
         write(data);
 
-        GridGgfsNewLineRecordResolver rslvr = resolver();
+        IgniteFsNewLineRecordResolver rslvr = resolver();
 
         IgniteFsFileRange split;
 
@@ -115,7 +115,7 @@ public class GridGgfsNewLineDelimiterRecordResolverSelfTest extends GridGgfsAbst
      *
      * @return Resolver.
      */
-    private GridGgfsNewLineRecordResolver resolver() {
-        return GridGgfsNewLineRecordResolver.NEW_LINE;
+    private IgniteFsNewLineRecordResolver resolver() {
+        return IgniteFsNewLineRecordResolver.NEW_LINE;
     }
 }

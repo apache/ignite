@@ -17,7 +17,7 @@ import java.util.*;
  * Convenient {@link IgniteFsTask} adapter with empty reduce step. Use this adapter in case you are not interested in
  * results returned by jobs.
  */
-public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends IgniteFsTask<T, R> {
+public abstract class IgniteFsTaskNoReduceAdapter<T, R> extends IgniteFsTask<T, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

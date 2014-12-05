@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * GGFS task arguments implementation.
  */
-public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externalizable {
+public class IgniteFsTaskArgsImpl<T> implements IgniteFsTaskArgs<T>,  Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
     /**
      * {@link Externalizable} support.
      */
-    public GridGgfsTaskArgsImpl() {
+    public IgniteFsTaskArgsImpl() {
         // No-op.
     }
 
@@ -58,8 +58,8 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public GridGgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
-        boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
+    public IgniteFsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
+                                boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
         this.recRslvr = recRslvr;
@@ -100,7 +100,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsTaskArgsImpl.class, this);
+        return S.toString(IgniteFsTaskArgsImpl.class, this);
     }
 
     /** {@inheritDoc} */

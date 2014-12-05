@@ -64,7 +64,7 @@ public class GgfsMapReduceExample {
 
                 writeFile(fs, fsPath, file);
 
-                Collection<Line> lines = fs.execute(new GrepTask(), GridGgfsNewLineRecordResolver.NEW_LINE,
+                Collection<Line> lines = fs.execute(new GrepTask(), IgniteFsNewLineRecordResolver.NEW_LINE,
                     Collections.singleton(fsPath), regexStr);
 
                 if (lines.isEmpty()) {
@@ -122,7 +122,7 @@ public class GgfsMapReduceExample {
     private static class GrepTask extends IgniteFsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            GridGgfsTaskArgs<String> args) throws GridException {
+            IgniteFsTaskArgs<String> args) throws GridException {
             return new GrepJob(args.userArgument());
         }
 

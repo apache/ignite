@@ -17,9 +17,9 @@ import java.nio.charset.*;
 
 /**
  * Record resolver based on delimiters represented as strings. Works in the same way as
- * {@link GridGgfsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
+ * {@link IgniteFsByteDelimiterRecordResolver}, but uses strings as delimiters instead of byte arrays.
  */
-public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiterRecordResolver {
+public class IgniteFsStringDelimiterRecordResolver extends IgniteFsByteDelimiterRecordResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiter
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public GridGgfsStringDelimiterRecordResolver() {
+    public IgniteFsStringDelimiterRecordResolver() {
         // No-op.
     }
 
@@ -56,7 +56,7 @@ public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiter
      * @param delims Delimiters.
      * @param charset Charset.
      */
-    public GridGgfsStringDelimiterRecordResolver(Charset charset, String... delims) {
+    public IgniteFsStringDelimiterRecordResolver(Charset charset, String... delims) {
         super(toBytes(charset, delims));
     }
 
@@ -65,12 +65,12 @@ public class GridGgfsStringDelimiterRecordResolver extends GridGgfsByteDelimiter
      *
      * @param delims Delimiters.
      */
-    public GridGgfsStringDelimiterRecordResolver(String... delims) {
+    public IgniteFsStringDelimiterRecordResolver(String... delims) {
         super(toBytes(Charset.defaultCharset(), delims));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsStringDelimiterRecordResolver.class, this);
+        return S.toString(IgniteFsStringDelimiterRecordResolver.class, this);
     }
 }

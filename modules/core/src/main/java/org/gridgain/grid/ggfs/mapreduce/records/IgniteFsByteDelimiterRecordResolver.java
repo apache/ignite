@@ -26,9 +26,9 @@ import java.util.*;
  * Record resolver which adjusts records based on provided delimiters. Both start position and length are
  * shifted to the right, based on delimiter positions.
  * <p>
- * Note that you can use {@link GridGgfsStringDelimiterRecordResolver} if your delimiter is a plain string.
+ * Note that you can use {@link IgniteFsStringDelimiterRecordResolver} if your delimiter is a plain string.
  */
-public class GridGgfsByteDelimiterRecordResolver implements IgniteFsRecordResolver, Externalizable {
+public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolver, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class GridGgfsByteDelimiterRecordResolver implements IgniteFsRecordResolv
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public GridGgfsByteDelimiterRecordResolver() {
+    public IgniteFsByteDelimiterRecordResolver() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class GridGgfsByteDelimiterRecordResolver implements IgniteFsRecordResolv
      *
      * @param delims Delimiters.
      */
-    public GridGgfsByteDelimiterRecordResolver(byte[]... delims) {
+    public IgniteFsByteDelimiterRecordResolver(byte[]... delims) {
         if (delims == null || delims.length == 0)
             throw new IllegalArgumentException("Delimiters cannot be null or empty.");
 
@@ -263,7 +263,7 @@ public class GridGgfsByteDelimiterRecordResolver implements IgniteFsRecordResolv
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsByteDelimiterRecordResolver.class, this);
+        return S.toString(IgniteFsByteDelimiterRecordResolver.class, this);
     }
 
     /** {@inheritDoc} */

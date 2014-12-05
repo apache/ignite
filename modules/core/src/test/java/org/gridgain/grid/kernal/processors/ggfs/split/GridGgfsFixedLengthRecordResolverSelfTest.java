@@ -90,7 +90,7 @@ public class GridGgfsFixedLengthRecordResolverSelfTest extends GridGgfsAbstractR
         throws Exception {
         write(data);
 
-        GridGgfsFixedLengthRecordResolver rslvr = resolver(len);
+        IgniteFsFixedLengthRecordResolver rslvr = resolver(len);
 
         IgniteFsFileRange split;
 
@@ -116,7 +116,7 @@ public class GridGgfsFixedLengthRecordResolverSelfTest extends GridGgfsAbstractR
         throws Exception {
         write(data);
 
-        GridGgfsFixedLengthRecordResolver rslvr = resolver(len);
+        IgniteFsFixedLengthRecordResolver rslvr = resolver(len);
 
         IgniteFsFileRange split;
 
@@ -133,7 +133,7 @@ public class GridGgfsFixedLengthRecordResolverSelfTest extends GridGgfsAbstractR
      * @param len Length.
      * @return Resolver.
      */
-    private GridGgfsFixedLengthRecordResolver resolver(int len) {
-        return new GridGgfsFixedLengthRecordResolver(len);
+    private IgniteFsFixedLengthRecordResolver resolver(int len) {
+        return new IgniteFsFixedLengthRecordResolver(len);
     }
 }

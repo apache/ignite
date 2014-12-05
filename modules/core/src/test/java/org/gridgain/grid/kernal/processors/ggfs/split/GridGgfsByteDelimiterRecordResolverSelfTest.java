@@ -278,7 +278,7 @@ public class GridGgfsByteDelimiterRecordResolverSelfTest extends GridGgfsAbstrac
         byte[]... delims) throws Exception {
         write(data);
 
-        GridGgfsByteDelimiterRecordResolver rslvr = resolver(delims);
+        IgniteFsByteDelimiterRecordResolver rslvr = resolver(delims);
 
         IgniteFsFileRange split;
 
@@ -304,7 +304,7 @@ public class GridGgfsByteDelimiterRecordResolverSelfTest extends GridGgfsAbstrac
         throws Exception {
         write(data);
 
-        GridGgfsByteDelimiterRecordResolver rslvr = resolver(delims);
+        IgniteFsByteDelimiterRecordResolver rslvr = resolver(delims);
 
         IgniteFsFileRange split;
 
@@ -321,7 +321,7 @@ public class GridGgfsByteDelimiterRecordResolverSelfTest extends GridGgfsAbstrac
      * @param delims Delimiters.
      * @return Resolver.
      */
-    private GridGgfsByteDelimiterRecordResolver resolver(byte[]... delims) {
-        return new GridGgfsByteDelimiterRecordResolver(delims);
+    private IgniteFsByteDelimiterRecordResolver resolver(byte[]... delims) {
+        return new IgniteFsByteDelimiterRecordResolver(delims);
     }
 }

@@ -26,7 +26,7 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
+ * {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
@@ -67,7 +67,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<GridGgfsTaskArgs<T>, R> {
+public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTaskArgs<T>, R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -77,7 +77,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
 
     /** {@inheritDoc} */
     @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable GridGgfsTaskArgs<T> args) throws GridException {
+        @Nullable IgniteFsTaskArgs<T> args) throws GridException {
         assert ignite != null;
         assert args != null;
 
@@ -146,7 +146,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
      * @throws GridException If job creation failed.
      */
     @Nullable public abstract IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-        GridGgfsTaskArgs<T> args) throws GridException;
+        IgniteFsTaskArgs<T> args) throws GridException;
 
     /**
      * Maps list by node ID.

@@ -18,7 +18,7 @@ import java.io.*;
  * <p>
  * Note that this resolver cannot be created and has one constant implementations: {@link #NEW_LINE}.
  */
-public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordResolver {
+public class IgniteFsNewLineRecordResolver extends IgniteFsByteDelimiterRecordResolver {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -26,7 +26,7 @@ public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordRe
      * Singleton new line resolver. This resolver will resolve records based on new lines
      * regardless if they have '\n' or '\r\n' patterns.
      */
-    public static final GridGgfsNewLineRecordResolver NEW_LINE = new GridGgfsNewLineRecordResolver(true);
+    public static final IgniteFsNewLineRecordResolver NEW_LINE = new IgniteFsNewLineRecordResolver(true);
 
     /** CR symbol. */
     public static final byte SYM_CR = 0x0D;
@@ -37,7 +37,7 @@ public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordRe
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public GridGgfsNewLineRecordResolver() {
+    public IgniteFsNewLineRecordResolver() {
         // No-op.
     }
 
@@ -47,12 +47,12 @@ public class GridGgfsNewLineRecordResolver extends GridGgfsByteDelimiterRecordRe
      * @param b Artificial flag to differentiate from empty constructor.
      */
     @SuppressWarnings("UnusedParameters")
-    private GridGgfsNewLineRecordResolver(boolean b) {
+    private IgniteFsNewLineRecordResolver(boolean b) {
         super(new byte[] { SYM_CR, SYM_LF }, new byte[] { SYM_LF });
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsNewLineRecordResolver.class, this);
+        return S.toString(IgniteFsNewLineRecordResolver.class, this);
     }
 }

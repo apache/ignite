@@ -21,7 +21,7 @@ import java.io.*;
  * Record resolver which adjusts records to fixed length. That is, start offset of the record is shifted to the
  * nearest position so that {@code newStart % length == 0}.
  */
-public class GridGgfsFixedLengthRecordResolver implements IgniteFsRecordResolver, Externalizable {
+public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class GridGgfsFixedLengthRecordResolver implements IgniteFsRecordResolver
     /**
      * Empty constructor required for {@link Externalizable} support.
      */
-    public GridGgfsFixedLengthRecordResolver() {
+    public IgniteFsFixedLengthRecordResolver() {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class GridGgfsFixedLengthRecordResolver implements IgniteFsRecordResolver
      *
      * @param recLen Record length.
      */
-    public GridGgfsFixedLengthRecordResolver(long recLen) {
+    public IgniteFsFixedLengthRecordResolver(long recLen) {
         this.recLen = recLen;
     }
 
@@ -64,7 +64,7 @@ public class GridGgfsFixedLengthRecordResolver implements IgniteFsRecordResolver
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsFixedLengthRecordResolver.class, this);
+        return S.toString(IgniteFsFixedLengthRecordResolver.class, this);
     }
 
     /** {@inheritDoc} */

@@ -148,7 +148,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             Long genLen = ggfs.info(FILE).length();
 
             IgniteBiTuple<Long, Integer> taskRes = ggfs.execute(new Task(),
-                new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+                new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
 
             assert F.eq(genLen, taskRes.getKey());
             assert F.eq(TOTAL_WORDS, taskRes.getValue());
@@ -176,7 +176,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             Long genLen = ggfs.info(FILE).length();
 
             assertNull(ggfsAsync.execute(
-                new Task(), new GridGgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
+                new Task(), new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
             IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
@@ -231,7 +231,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            GridGgfsTaskArgs<String> args) throws GridException {
+            IgniteFsTaskArgs<String> args) throws GridException {
             return new Job();
         }
 

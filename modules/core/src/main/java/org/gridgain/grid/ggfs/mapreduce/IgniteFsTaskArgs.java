@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
+ * passed to {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
@@ -28,7 +28,7 @@ import java.util.*;
  *     <li>Maximum file range length for that task (see {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
  */
-public interface GridGgfsTaskArgs<T> {
+public interface IgniteFsTaskArgs<T> {
     /**
      * Gets GGFS name.
      *
