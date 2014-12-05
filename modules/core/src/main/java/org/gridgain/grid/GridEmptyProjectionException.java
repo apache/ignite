@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
 /**
