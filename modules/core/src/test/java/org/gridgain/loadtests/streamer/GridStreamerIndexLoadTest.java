@@ -11,10 +11,10 @@ package org.gridgain.loadtests.streamer;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.index.*;
+import org.apache.ignite.streamer.index.hash.*;
+import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.streamer.index.hash.*;
-import org.gridgain.grid.streamer.index.tree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

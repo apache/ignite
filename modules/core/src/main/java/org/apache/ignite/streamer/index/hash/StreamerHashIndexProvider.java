@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.index.hash;
+package org.apache.ignite.streamer.index.hash;
 
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.streamer.index.*;
@@ -28,9 +28,9 @@ import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
  * ordering of entries, so, operations which imply ordering are not
  * supported.
  * <p>
- * If ordering is required, consider using {@link org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider}.
+ * If ordering is required, consider using {@link org.apache.ignite.streamer.index.tree.StreamerTreeIndexProvider}.
  *
- * @see org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider
+ * @see org.apache.ignite.streamer.index.tree.StreamerTreeIndexProvider
  *
  */
 public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAdapter<E, K, V> {

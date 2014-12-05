@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.streamer.index.tree;
+package org.apache.ignite.streamer.index.tree;
 
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.streamer.index.*;
@@ -33,11 +33,11 @@ import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
  * and you'll are likely to need to implement a custom comparator for values in
  * place of a default one.
  * <p>
- * If ordering is not required, consider using {@link org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider}
+ * If ordering is not required, consider using {@link org.apache.ignite.streamer.index.hash.StreamerHashIndexProvider}
  * instead, which is more efficient (O(1) vs. O(log(n))) and does not require
  * comparability.
  *
- * @see org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider
+ * @see org.apache.ignite.streamer.index.hash.StreamerHashIndexProvider
  *
  */
 public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAdapter<E, K, V> {

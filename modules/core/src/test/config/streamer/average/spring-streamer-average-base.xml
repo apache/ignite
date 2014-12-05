@@ -39,7 +39,7 @@
                             <property name="maximumSize" value="500"/>
                             <property name="indexes">
                                 <list>
-                                    <bean class="org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider">
+                                    <bean class="org.apache.ignite.streamer.index.tree.StreamerTreeIndexProvider">
                                         <property name="updater">
                                             <bean class="org.gridgain.loadtests.streamer.IndexUpdater"/>
                                         </property>
