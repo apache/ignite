@@ -23,7 +23,7 @@ import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.collision.fifoqueue.*;
 import org.gridgain.grid.spi.communication.*;

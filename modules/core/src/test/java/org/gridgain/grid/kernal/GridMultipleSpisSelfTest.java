@@ -16,7 +16,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.failover.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;

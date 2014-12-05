@@ -10,7 +10,7 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.checkpoint.s3.*;
+import org.apache.ignite.spi.checkpoint.s3.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.*;
 
 /**

@@ -24,7 +24,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;

@@ -10,9 +10,9 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.checkpoint.cache.*;
-import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.apache.ignite.spi.checkpoint.cache.*;
+import org.apache.ignite.spi.checkpoint.jdbc.*;
+import org.apache.ignite.spi.checkpoint.sharedfs.*;
 
 /**
  * Grid SPI checkpoint self test suite.

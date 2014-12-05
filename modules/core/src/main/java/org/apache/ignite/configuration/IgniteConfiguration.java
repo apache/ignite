@@ -27,7 +27,7 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
-import org.gridgain.grid.spi.checkpoint.*;
+import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.deployment.*;
@@ -2036,7 +2036,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured checkpoint SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.checkpoint.noop.NoopCheckpointSpi} will be used.
+     * {@link org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi} will be used.
      *
      * @return Grid checkpoint SPI implementation or {@code null} to use default implementation.
      */
@@ -2045,9 +2045,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}.
      *
-     * @param cpSpi Fully configured instance of {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi}.
+     * @param cpSpi Fully configured instance of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi}.
      * @see IgniteConfiguration#getCheckpointSpi()
      */
     public void setCheckpointSpi(CheckpointSpi... cpSpi) {

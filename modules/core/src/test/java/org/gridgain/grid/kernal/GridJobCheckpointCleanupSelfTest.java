@@ -7,7 +7,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.checkpoint.*;
+import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

@@ -647,7 +647,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
-                                            <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
+                                            <packages>org.gridgain.grid.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
@@ -849,7 +849,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
-                                            <packages>org.gridgain.grid.spi.checkpoint:org.gridgain.grid.spi.checkpoint.jdbc:org.gridgain.grid.spi.checkpoint.s3:org.gridgain.grid.spi.checkpoint.cache:org.gridgain.grid.spi.checkpoint.noop:org.gridgain.grid.spi.checkpoint.sharedfs</packages>
+                                            <packages>org.gridgain.grid.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>

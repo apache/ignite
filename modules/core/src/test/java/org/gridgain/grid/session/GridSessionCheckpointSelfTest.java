@@ -11,9 +11,9 @@ package org.gridgain.grid.session;
 
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.spi.checkpoint.cache.*;
-import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.sharedfs.*;
+import org.apache.ignite.spi.checkpoint.cache.*;
+import org.apache.ignite.spi.checkpoint.jdbc.*;
+import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.gridgain.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
 

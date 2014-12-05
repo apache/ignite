@@ -302,7 +302,7 @@ public interface ComputeTaskSession {
 
     /**
      * Saves intermediate state of a job or task to a storage. The storage implementation is defined
-     * by {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation used.
+     * by {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation used.
      * <p>
      * Long running jobs may decide to store intermediate state to protect themselves from failures.
      * This way whenever a job fails over to another node, it can load its previously saved state via
@@ -318,13 +318,13 @@ public interface ComputeTaskSession {
      * @throws GridException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
-     * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
+     * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public void saveCheckpoint(String key, Object state) throws GridException;
 
     /**
      * Saves intermediate state of a job to a storage. The storage implementation is defined
-     * by {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation used.
+     * by {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation used.
      * <p>
      * Long running jobs may decide to store intermediate state to protect themselves from failures.
      * This way whenever a job fails over to another node, it can load its previously saved state via
@@ -332,7 +332,7 @@ public interface ComputeTaskSession {
      * <p>
      * The life time of the checkpoint is determined by its timeout and scope.
      * If {@link ComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
-     * its session, and can only be removed by calling {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi#removeCheckpoint(String)}
+     * its session, and can only be removed by calling {@link org.apache.ignite.spi.checkpoint.CheckpointSpi#removeCheckpoint(String)}
      * from {@link org.apache.ignite.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
@@ -347,14 +347,14 @@ public interface ComputeTaskSession {
      * @throws GridException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
-     * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
+     * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
         throws GridException;
 
     /**
      * Saves intermediate state of a job or task to a storage. The storage implementation is defined
-     * by {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation used.
+     * by {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation used.
      * <p>
      * Long running jobs may decide to store intermediate state to protect themselves from failures.
      * This way whenever a job fails over to another node, it can load its previously saved state via
@@ -362,7 +362,7 @@ public interface ComputeTaskSession {
      * <p>
      * The life time of the checkpoint is determined by its timeout and scope.
      * If {@link ComputeTaskSessionScope#GLOBAL_SCOPE} is used, the checkpoint will outlive
-     * its session, and can only be removed by calling {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi#removeCheckpoint(String)}
+     * its session, and can only be removed by calling {@link org.apache.ignite.spi.checkpoint.CheckpointSpi#removeCheckpoint(String)}
      * from {@link org.apache.ignite.Ignite} or another task or job.
      *
      * @param key Key to be used to load this checkpoint in future.
@@ -378,7 +378,7 @@ public interface ComputeTaskSession {
      * @throws GridException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
-     * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
+     * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
         boolean overwrite) throws GridException;
@@ -387,7 +387,7 @@ public interface ComputeTaskSession {
      * Loads job's state previously saved via {@link #saveCheckpoint(String, Object, ComputeTaskSessionScope, long)}
      * method from an underlying storage for a given {@code key}. If state was not previously
      * saved, then {@code null} will be returned. The storage implementation is defined by
-     * {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation used.
+     * {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation used.
      * <p>
      * Long running jobs may decide to store intermediate state to protect themselves from failures.
      * This way whenever a job starts, it can load its previously saved state and continue
@@ -398,13 +398,13 @@ public interface ComputeTaskSession {
      * @return Previously saved state or {@code null} if no state was found for a given {@code key}.
      * @throws GridException If failed to load job state.
      * @see #removeCheckpoint(String)
-     * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
+     * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     @Nullable public <T> T loadCheckpoint(String key) throws GridException;
 
     /**
      * Removes previously saved job's state for a given {@code key} from an underlying storage.
-     * The storage implementation is defined by {@link org.gridgain.grid.spi.checkpoint.CheckpointSpi} implementation used.
+     * The storage implementation is defined by {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} implementation used.
      * <p>
      * Long running jobs may decide to store intermediate state to protect themselves from failures.
      * This way whenever a job starts, it can load its previously saved state and continue
@@ -414,7 +414,7 @@ public interface ComputeTaskSession {
      * @return {@code true} if job state was removed, {@code false} if state was not found.
      * @throws GridException If failed to remove job state.
      * @see #loadCheckpoint(String)
-     * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
+     * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public boolean removeCheckpoint(String key) throws GridException;
 
