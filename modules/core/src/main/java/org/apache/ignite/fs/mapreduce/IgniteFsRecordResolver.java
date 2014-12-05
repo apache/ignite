@@ -27,10 +27,10 @@ import java.io.*;
  * <p>
  * The following record resolvers are available out of the box:
  * <ul>
- *     <li>{@link org.gridgain.grid.ggfs.mapreduce.records.IgniteFsFixedLengthRecordResolver}</li>
- *     <li>{@link org.gridgain.grid.ggfs.mapreduce.records.IgniteFsByteDelimiterRecordResolver}</li>
- *     <li>{@link org.gridgain.grid.ggfs.mapreduce.records.IgniteFsStringDelimiterRecordResolver}</li>
- *     <li>{@link org.gridgain.grid.ggfs.mapreduce.records.IgniteFsNewLineRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.fs.mapreduce.records.IgniteFsFixedLengthRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.fs.mapreduce.records.IgniteFsByteDelimiterRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.fs.mapreduce.records.IgniteFsStringDelimiterRecordResolver}</li>
+ *     <li>{@link org.apache.ignite.fs.mapreduce.records.IgniteFsNewLineRecordResolver}</li>
  * </ul>
  */
 public interface IgniteFsRecordResolver extends Serializable {

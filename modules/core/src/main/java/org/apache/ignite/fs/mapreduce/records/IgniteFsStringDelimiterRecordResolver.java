@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs.mapreduce.records;
+package org.apache.ignite.fs.mapreduce.records;
 
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
