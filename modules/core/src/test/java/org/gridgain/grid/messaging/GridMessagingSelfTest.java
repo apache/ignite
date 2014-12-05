@@ -53,7 +53,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     public static final String EXT_RESOURCE_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
 
     /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * A test message topic.

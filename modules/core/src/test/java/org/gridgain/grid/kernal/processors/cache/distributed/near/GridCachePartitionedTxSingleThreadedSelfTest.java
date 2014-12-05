@@ -29,7 +29,7 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends GridCacheTxSin
     private static final boolean CACHE_DEBUG = false;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})

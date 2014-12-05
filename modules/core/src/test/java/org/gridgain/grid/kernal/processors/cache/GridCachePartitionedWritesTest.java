@@ -37,7 +37,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         c.setDiscoverySpi(disco);
 

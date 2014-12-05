@@ -49,7 +49,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));
 
         discoSpi.setIpFinder(ipFinder);

@@ -48,7 +48,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(disco);
 

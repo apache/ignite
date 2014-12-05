@@ -44,7 +44,7 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
     protected LifecycleBean lifecycleBean;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Default keys. */
     protected static final String[] DFLT_KEYS = new String[] {

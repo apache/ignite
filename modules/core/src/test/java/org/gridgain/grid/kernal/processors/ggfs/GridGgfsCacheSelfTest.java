@@ -44,7 +44,7 @@ public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
 

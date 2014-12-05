@@ -32,7 +32,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final boolean DISCO_DEBUG_MODE = false;

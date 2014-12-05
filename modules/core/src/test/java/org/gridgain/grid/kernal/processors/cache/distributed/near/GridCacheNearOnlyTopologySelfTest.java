@@ -33,7 +33,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     /** Shared ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Near only flag. */
     private boolean nearOnly;

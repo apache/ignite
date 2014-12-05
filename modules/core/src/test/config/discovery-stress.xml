@@ -44,7 +44,7 @@
                 <property name="ackTimeout" value="10000"/>
                 <property name="reconnectCount" value="3"/>
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>fosters-210:47500</value>

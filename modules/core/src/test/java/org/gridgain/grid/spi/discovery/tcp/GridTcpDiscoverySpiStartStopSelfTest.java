@@ -30,7 +30,7 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
      */
     @GridSpiTestConfig
     public TcpDiscoveryIpFinder getIpFinder() {
-        return new GridTcpDiscoveryVmIpFinder(true);
+        return new TcpDiscoveryVmIpFinder(true);
     }
 
     /**

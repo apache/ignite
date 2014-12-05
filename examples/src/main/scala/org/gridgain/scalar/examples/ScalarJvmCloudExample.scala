@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit._
 import javax.swing.{JComponent, JLabel, JOptionPane}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar.scalar
 
@@ -27,7 +27,7 @@ object ScalarJvmCloudExample {
     def main(args: Array[String]) {
         try {
             // Shared IP finder for in-VM node discovery.
-            val ipFinder = new GridTcpDiscoveryVmIpFinder(true)
+            val ipFinder = new TcpDiscoveryVmIpFinder(true)
 
             val pool = Executors.newFixedThreadPool(NODES.size)
 

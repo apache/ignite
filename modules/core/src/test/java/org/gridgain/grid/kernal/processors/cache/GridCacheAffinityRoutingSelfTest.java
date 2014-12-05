@@ -46,7 +46,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     private static final int KEY_CNT = 50;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs test.

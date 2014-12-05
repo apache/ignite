@@ -18,7 +18,7 @@ import java.util.*;
  * GridTcpDiscoveryVmIpFinder test.
  */
 public class GridTcpDiscoveryVmIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoveryVmIpFinder> {
+    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
     /**
      * Constructor.
      *
@@ -29,8 +29,8 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected GridTcpDiscoveryVmIpFinder ipFinder() {
-        GridTcpDiscoveryVmIpFinder finder = new GridTcpDiscoveryVmIpFinder();
+    @Override protected TcpDiscoveryVmIpFinder ipFinder() {
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
         assert !finder.isShared() : "Ip finder should NOT be shared by default.";
 
@@ -41,7 +41,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
      * @throws Exception If any error occurs.
      */
     public void testAddressesInitialization() throws Exception {
-        GridTcpDiscoveryVmIpFinder finder = ipFinder();
+        TcpDiscoveryVmIpFinder finder = ipFinder();
 
         try {
             finder.setAddresses(Arrays.asList("127.0.0.1:475000001"));
@@ -110,7 +110,7 @@ public class GridTcpDiscoveryVmIpFinderSelfTest
      * @throws Exception If any error occurs.
      */
     public void testIpV6AddressesInitialization() throws Exception {
-        GridTcpDiscoveryVmIpFinder finder = ipFinder();
+        TcpDiscoveryVmIpFinder finder = ipFinder();
 
         try {
             finder.setAddresses(Arrays.asList("[::1]:475000001"));

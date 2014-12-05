@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of keys to load via data loader. */
     private static final int KEYS_COUNT = 1000;

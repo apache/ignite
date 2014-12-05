@@ -33,7 +33,7 @@ import static org.gridgain.grid.kernal.processors.cache.distributed.GridCacheMod
  */
 public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final AtomicInteger CNT = new AtomicInteger(0);

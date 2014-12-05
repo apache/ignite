@@ -88,7 +88,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUp() throws Exception {
-        TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+        TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         Ignite node1 = G.start(dataNode(ipFinder, "node1"));
         Ignite node2 = G.start(dataNode(ipFinder, "node2"));

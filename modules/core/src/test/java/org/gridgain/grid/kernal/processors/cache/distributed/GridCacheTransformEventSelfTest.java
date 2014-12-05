@@ -59,7 +59,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private Set<Integer> keys;
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes. */
     private Ignite[] ignites;

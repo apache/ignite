@@ -29,7 +29,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

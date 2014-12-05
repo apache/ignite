@@ -41,7 +41,7 @@ import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint
  */
 public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid name. */
     private static final String GRID_NAME = "grid";

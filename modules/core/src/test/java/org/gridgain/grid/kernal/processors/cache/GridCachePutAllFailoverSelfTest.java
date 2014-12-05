@@ -31,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 100000;

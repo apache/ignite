@@ -302,7 +302,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         if (discoSpi instanceof TcpDiscoverySpi) {
             TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
 
-            tcpDisco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+            tcpDisco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
         }
 
         getTestData().setDiscoverySpi(discoSpi);

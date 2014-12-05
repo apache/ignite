@@ -28,7 +28,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

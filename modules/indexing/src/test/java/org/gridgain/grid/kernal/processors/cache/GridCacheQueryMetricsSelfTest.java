@@ -34,7 +34,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
     private static final GridCacheMode CACHE_MODE = REPLICATED;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

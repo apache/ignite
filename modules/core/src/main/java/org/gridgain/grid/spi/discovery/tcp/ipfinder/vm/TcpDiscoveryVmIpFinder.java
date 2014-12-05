@@ -37,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
  */
-public class GridTcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -79,7 +79,7 @@ public class GridTcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Constructs new IP finder.
      */
-    public GridTcpDiscoveryVmIpFinder() {
+    public TcpDiscoveryVmIpFinder() {
         // No-op.
     }
 
@@ -89,7 +89,7 @@ public class GridTcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param shared {@code true} if IP finder is shared.
      * @see #setShared(boolean)
      */
-    public GridTcpDiscoveryVmIpFinder(boolean shared) {
+    public TcpDiscoveryVmIpFinder(boolean shared) {
         setShared(shared);
     }
 
@@ -250,6 +250,6 @@ public class GridTcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryVmIpFinder.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryVmIpFinder.class, this, "super", super.toString());
     }
 }

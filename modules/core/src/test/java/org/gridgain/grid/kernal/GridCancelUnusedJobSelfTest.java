@@ -58,7 +58,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         c.setDiscoverySpi(discoSpi);
 

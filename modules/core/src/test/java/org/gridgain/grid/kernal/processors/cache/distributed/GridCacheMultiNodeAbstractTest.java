@@ -51,7 +51,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static GridCache<Integer, String> cache3;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Listeners. */
     private static Collection<CacheEventListener> lsnrs = new ArrayList<>();

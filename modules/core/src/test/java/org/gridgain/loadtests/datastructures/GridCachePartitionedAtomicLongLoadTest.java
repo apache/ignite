@@ -35,7 +35,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     private static final long DURATION = 8 * 60 * 60 * 1000;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final AtomicInteger idx = new AtomicInteger();

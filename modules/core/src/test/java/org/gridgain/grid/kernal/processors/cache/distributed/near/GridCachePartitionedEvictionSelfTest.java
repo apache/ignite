@@ -43,7 +43,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     private static final int KEY_CNT = 100;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {

@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.GridCacheAtomicityMode._
 import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.grid.{_}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
  */
 class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */
-    val ipFinder = new GridTcpDiscoveryVmIpFinder(true)
+    val ipFinder = new TcpDiscoveryVmIpFinder(true)
 
     /**
      * Creates grid configuration for provided grid host.

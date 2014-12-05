@@ -36,7 +36,7 @@ import static org.apache.ignite.fs.IgniteFsMode.*;
  */
 public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid #1 config. */
     private IgniteConfiguration g1Cfg;

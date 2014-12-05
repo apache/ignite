@@ -52,7 +52,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     private GridCachePreloadMode preloadMode;
 
     /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

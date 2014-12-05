@@ -52,7 +52,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private static TestStore store = new TestStore();
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid counter. */
     private AtomicInteger cntr = new AtomicInteger(0);

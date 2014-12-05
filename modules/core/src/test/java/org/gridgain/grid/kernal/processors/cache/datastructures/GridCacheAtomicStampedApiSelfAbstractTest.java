@@ -24,7 +24,7 @@ import java.util.*;
  */
 public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs a test.

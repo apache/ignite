@@ -17,7 +17,7 @@ import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.DiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 
@@ -26,7 +26,7 @@ import org.gridgain.visor.commands.alert.VisorAlertCommand._
  */
 class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
     /** */
-    val ipFinder = new GridTcpDiscoveryVmIpFinder(true)
+    val ipFinder = new TcpDiscoveryVmIpFinder(true)
 
     /**  */
     val out = new java.io.ByteArrayOutputStream

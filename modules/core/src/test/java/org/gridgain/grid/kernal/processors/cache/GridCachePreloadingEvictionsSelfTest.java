@@ -44,7 +44,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     private static final String VALUE = createValue();
 
     /** */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final AtomicInteger idxGen = new AtomicInteger();

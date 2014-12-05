@@ -25,7 +25,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Large entry count. */
     private static final int LARGE_ENTRY_CNT = 100000;

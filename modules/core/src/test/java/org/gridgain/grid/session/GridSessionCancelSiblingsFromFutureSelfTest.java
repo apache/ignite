@@ -62,7 +62,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         c.setDiscoverySpi(discoSpi);
 

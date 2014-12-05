@@ -25,7 +25,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

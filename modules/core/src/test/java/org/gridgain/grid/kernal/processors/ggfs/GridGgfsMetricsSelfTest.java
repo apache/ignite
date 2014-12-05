@@ -43,7 +43,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     private static final int NODES_CNT = 3;
 
     /** IP finder for the grid with the primary file system. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary GGFS instances. */
     private static IgniteFs[] ggfsPrimary;
@@ -184,7 +184,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);

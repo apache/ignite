@@ -48,7 +48,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
 
     /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @return Grids count to start.

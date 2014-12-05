@@ -25,7 +25,6 @@ import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -72,7 +71,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
  * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder}</li>
  * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
- * <li>{@link GridTcpDiscoveryVmIpFinder}</li>
+ * <li>{@link org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
  * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
  * </ul>
  * </li>

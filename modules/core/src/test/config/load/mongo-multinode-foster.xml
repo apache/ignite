@@ -134,7 +134,7 @@
             <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
                 <!-- Override default IP-finder.-->
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>10.1.10.212:47500</value>

@@ -116,7 +116,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
@@ -175,7 +175,7 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);

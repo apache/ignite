@@ -40,7 +40,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /** Ip-finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Communication spi for grid start. */
     private CommunicationSpi commSpi;

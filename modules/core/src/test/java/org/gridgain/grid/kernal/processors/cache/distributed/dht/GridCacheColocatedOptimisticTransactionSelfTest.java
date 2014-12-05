@@ -43,7 +43,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static final String VAL = "val";
 
     /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grids. */
     private static Ignite[] ignites;

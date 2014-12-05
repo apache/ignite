@@ -59,7 +59,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     private static final String CNTR_KEY = "CNTR_KEY";
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static CountDownLatch startLatchMultiNode;

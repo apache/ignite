@@ -31,7 +31,7 @@ import static java.util.concurrent.TimeUnit.*;
  */
 public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of events used in test. */
     private static final int EVENTS_COUNT = 10;

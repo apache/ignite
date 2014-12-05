@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 public class GridTcpDiscoverySpiRandomStartStopTest extends
     GridAbstractDiscoveryRandomStartStopTest<TcpDiscoverySpi> {
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int getMaxInterval() {

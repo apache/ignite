@@ -57,7 +57,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
 

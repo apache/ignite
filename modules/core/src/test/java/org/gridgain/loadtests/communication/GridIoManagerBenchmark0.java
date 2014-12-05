@@ -47,7 +47,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

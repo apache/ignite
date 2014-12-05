@@ -46,7 +46,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque8<>();
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

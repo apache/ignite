@@ -29,7 +29,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

@@ -57,7 +57,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();

@@ -36,7 +36,7 @@ public class GridCacheStoreValueBytesNode {
 
         disc.setLocalAddress("localhost");
 
-        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         Collection<String> addrs = new ArrayList<>();
 

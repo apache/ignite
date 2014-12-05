@@ -40,7 +40,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     private int gridInstanceNum;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {

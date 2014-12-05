@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.spi.*;
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
 public class GridTcpDiscoverySpiSelfTest extends GridAbstractDiscoverySelfTest<TcpDiscoverySpi> {
     /** */
-    private TcpDiscoveryIpFinder ipFinder =  new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder =  new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected DiscoverySpi getSpi(int idx) {

@@ -24,7 +24,7 @@ public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest 
     private static final int TOP_SIZE = 1;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static volatile boolean client;
@@ -34,7 +34,7 @@ public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
         if (client) {
-            GridTcpDiscoveryVmIpFinder clientIpFinder = new GridTcpDiscoveryVmIpFinder();
+            TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder();
 
             String addr = new ArrayList<>(ipFinder.getRegisteredAddresses()).iterator().next().toString();
 

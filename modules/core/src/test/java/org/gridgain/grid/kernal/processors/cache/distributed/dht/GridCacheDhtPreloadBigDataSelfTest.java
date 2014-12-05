@@ -59,7 +59,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     private LifecycleBean lbean;
 
     /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

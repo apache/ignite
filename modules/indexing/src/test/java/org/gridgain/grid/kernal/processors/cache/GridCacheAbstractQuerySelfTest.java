@@ -55,7 +55,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     private static TestStore store = new TestStore();
 
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final UUID subjId = UUID.fromString("8EB3B06D-0885-4B4A-9A54-02C93EF09B65");

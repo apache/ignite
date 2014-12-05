@@ -48,7 +48,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 2;
 
     /** Default IP finder for single-JVM cloud grid. */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Counts how many times master-leave interface implementation was called. */
     private static volatile CountDownLatch invokeLatch;

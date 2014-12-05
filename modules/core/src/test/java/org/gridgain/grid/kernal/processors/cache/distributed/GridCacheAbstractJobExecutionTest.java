@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Job counter. */
     private static final AtomicInteger cntr = new AtomicInteger(0);

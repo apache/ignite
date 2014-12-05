@@ -37,7 +37,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
  */
 public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Meta-information cache name. */
     private static final String META_CACHE_NAME = "replicated";

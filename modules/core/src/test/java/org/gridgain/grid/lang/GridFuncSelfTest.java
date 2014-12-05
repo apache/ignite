@@ -2843,7 +2843,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(disco);
 

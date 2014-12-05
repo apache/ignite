@@ -30,7 +30,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     private GridKernal grid;
 
     /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

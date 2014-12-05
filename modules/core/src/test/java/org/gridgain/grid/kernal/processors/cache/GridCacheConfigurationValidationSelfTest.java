@@ -51,7 +51,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     private static final String DUP_DFLT_CACHES_GRID_NAME = "duplicateDefaultCachesCheckFails";
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs test.

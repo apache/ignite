@@ -30,7 +30,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
     private static final String TASK_NAME = "task";
 
     /** IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Do not start grid initially.

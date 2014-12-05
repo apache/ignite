@@ -33,7 +33,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
  */
 public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Replicated cache. */
     private GridCacheMode mode = REPLICATED;

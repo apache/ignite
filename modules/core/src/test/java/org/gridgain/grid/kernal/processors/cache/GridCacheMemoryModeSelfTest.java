@@ -231,7 +231,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<GridCache<String, Integer>> x) throws Exception {
-        ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+        ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();
 

@@ -57,7 +57,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         c.setDiscoverySpi(disco);
 

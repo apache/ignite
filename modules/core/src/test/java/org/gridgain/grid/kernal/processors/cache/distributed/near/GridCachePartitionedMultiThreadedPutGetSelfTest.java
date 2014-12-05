@@ -45,7 +45,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     private static final int TX_CNT = 500;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

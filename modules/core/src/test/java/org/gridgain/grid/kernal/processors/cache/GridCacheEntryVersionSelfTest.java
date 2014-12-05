@@ -31,7 +31,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheVersionManager.
  */
 public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Atomicity mode. */
     private GridCacheAtomicityMode atomicityMode;

@@ -39,7 +39,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     private static final int TEST_TIMEOUT = 60 * 1000;
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

@@ -39,7 +39,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     private static final int GRID_CNT = 4;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int RETRIES = 20;

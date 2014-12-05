@@ -42,7 +42,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
     private static final int GRID_CNT = 3;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Don't start grid by default. */
     public GridCachePartitionedQueryMultiThreadedSelfTest() {

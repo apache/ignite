@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public static final int GRID_CNT = 4;

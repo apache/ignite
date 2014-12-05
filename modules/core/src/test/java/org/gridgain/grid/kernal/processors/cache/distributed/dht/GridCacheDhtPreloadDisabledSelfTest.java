@@ -57,7 +57,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     private int partitions = DFLT_PARTITIONS;
 
     /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

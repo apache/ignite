@@ -32,7 +32,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
     private static final int BACKUPS = 1;
 
     /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

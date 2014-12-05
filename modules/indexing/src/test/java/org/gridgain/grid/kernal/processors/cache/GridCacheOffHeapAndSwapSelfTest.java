@@ -97,7 +97,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     };
 
     /** */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

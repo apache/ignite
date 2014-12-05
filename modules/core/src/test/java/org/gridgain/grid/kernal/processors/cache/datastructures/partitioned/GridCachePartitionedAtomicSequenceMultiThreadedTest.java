@@ -31,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of threads for multithreaded test. */
     private static final int THREAD_NUM = 30;

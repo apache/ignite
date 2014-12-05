@@ -47,13 +47,13 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         marsh.setRequireSerializable(false);
 
-        byte[] bytes = marsh.marshal(new GridTcpDiscoveryVmIpFinder());
+        byte[] bytes = marsh.marshal(new TcpDiscoveryVmIpFinder());
 
         TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
         assertFalse(ipFinder.isShared());
 
-        ipFinder = marsh.unmarshal(marsh.marshal(new GridTcpDiscoveryVmIpFinder(true)), null);
+        ipFinder = marsh.unmarshal(marsh.marshal(new TcpDiscoveryVmIpFinder(true)), null);
 
         assertTrue(ipFinder.isShared());
     }

@@ -15,7 +15,7 @@ import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
 import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
 import org.jetbrains.annotations.Nullable
@@ -24,7 +24,7 @@ import scala.collection.JavaConversions._
 
 class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
     /** IP finder. */
-    val ipFinder = new GridTcpDiscoveryVmIpFinder(true)
+    val ipFinder = new TcpDiscoveryVmIpFinder(true)
 
     /**
      * Creates grid configuration for provided grid host.

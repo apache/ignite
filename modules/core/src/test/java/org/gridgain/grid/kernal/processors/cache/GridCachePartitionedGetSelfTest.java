@@ -35,7 +35,7 @@ import static org.gridgain.grid.kernal.GridTopic.*;
  */
 public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int GRID_CNT = 3;

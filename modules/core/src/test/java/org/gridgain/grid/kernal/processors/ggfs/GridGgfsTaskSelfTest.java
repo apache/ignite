@@ -46,7 +46,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static final IgniteFsPath FILE = new IgniteFsPath("/file");
 
     /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Block size: 64 Kb. */
     private static final int BLOCK_SIZE = 64 * 1024;

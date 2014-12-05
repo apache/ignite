@@ -80,7 +80,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     private static final int THREAD_CNT = 8;
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Barrier for multithreaded tests. */
     private static CyclicBarrier barrier;
@@ -197,7 +197,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-            discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+            discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
             cfg.setDiscoverySpi(discoSpi);
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);

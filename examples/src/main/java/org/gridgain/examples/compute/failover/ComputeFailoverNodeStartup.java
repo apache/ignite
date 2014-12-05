@@ -57,7 +57,7 @@ public class ComputeFailoverNodeStartup {
         // Configure discovery SPI.
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
 

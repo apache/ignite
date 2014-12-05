@@ -68,7 +68,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     private int cacheCnt = DFLT_CACHE_CNT;
 
     /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      *

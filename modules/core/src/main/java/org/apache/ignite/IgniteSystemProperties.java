@@ -9,7 +9,6 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -387,7 +386,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
-     * Makes sense only for {@link GridTcpDiscoveryVmIpFinder}.
+     * Makes sense only for {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
      */
     public static final String GG_TCP_DISCOVERY_ADDRESSES = "GRIDGAIN_TCP_DISCOVERY_ADDRESSES";
 

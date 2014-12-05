@@ -30,7 +30,7 @@ import static java.util.concurrent.TimeUnit.*;
  */
 public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final TestStore store = new TestStore();

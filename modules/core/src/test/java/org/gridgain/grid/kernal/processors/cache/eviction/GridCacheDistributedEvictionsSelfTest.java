@@ -36,7 +36,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
  */
 public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private int gridCnt = 2;

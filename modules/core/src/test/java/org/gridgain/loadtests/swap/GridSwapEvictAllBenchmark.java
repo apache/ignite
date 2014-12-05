@@ -247,7 +247,7 @@ public class GridSwapEvictAllBenchmark {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        TcpDiscoveryIpFinder finder = new GridTcpDiscoveryVmIpFinder(true);
+        TcpDiscoveryIpFinder finder = new TcpDiscoveryVmIpFinder(true);
 
         disco.setIpFinder(finder);
 

@@ -41,7 +41,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
     private boolean excNeighbores;
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static Collection<String> msgs = new ArrayList<>();

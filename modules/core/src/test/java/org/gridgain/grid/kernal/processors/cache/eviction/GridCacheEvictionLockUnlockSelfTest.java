@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Evict latch. */
     private static CountDownLatch evictLatch;

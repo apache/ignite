@@ -27,7 +27,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
 
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static IgniteDeploymentMode mode = SHARED;

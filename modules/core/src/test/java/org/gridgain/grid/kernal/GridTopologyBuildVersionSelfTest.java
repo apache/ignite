@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
  */
 public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Counter. */
     private static final AtomicInteger cnt = new AtomicInteger();

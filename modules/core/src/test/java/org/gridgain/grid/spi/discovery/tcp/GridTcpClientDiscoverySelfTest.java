@@ -36,7 +36,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final AtomicInteger srvIdx = new AtomicInteger();
@@ -90,7 +90,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         else if (gridName.startsWith("client")) {
             TcpClientDiscoverySpi disco = new TcpClientDiscoverySpi();
 
-            GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
             String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).
                 get((clientIdx.get() - 1) / clientsPerSrv).toString();
@@ -471,7 +471,7 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         TcpClientDiscoverySpi disco =
             (TcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi();
 
-        GridTcpDiscoveryVmIpFinder ipFinder = (GridTcpDiscoveryVmIpFinder)disco.getIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = (TcpDiscoveryVmIpFinder)disco.getIpFinder();
 
         String addr = IP_FINDER.getRegisteredAddresses().iterator().next().toString();
 

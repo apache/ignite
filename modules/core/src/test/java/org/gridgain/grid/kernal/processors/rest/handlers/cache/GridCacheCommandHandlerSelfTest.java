@@ -43,7 +43,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         // Discovery config.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         // Cache config.
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();

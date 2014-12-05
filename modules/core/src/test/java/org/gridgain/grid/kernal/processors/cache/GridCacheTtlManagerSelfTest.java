@@ -28,7 +28,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Test cache mode. */
     protected GridCacheMode cacheMode;

@@ -53,7 +53,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     private static AtomicBoolean failFlag = new AtomicBoolean(false);
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

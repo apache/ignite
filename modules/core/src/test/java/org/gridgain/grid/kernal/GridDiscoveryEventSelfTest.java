@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Daemon flag. */
     private boolean daemon;

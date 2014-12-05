@@ -31,7 +31,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     private static final int GRID_CNT = 3;
 
     /** IP_FINDER. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

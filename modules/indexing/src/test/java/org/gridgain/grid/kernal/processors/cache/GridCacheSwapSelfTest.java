@@ -52,7 +52,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     private final Map<Integer, Object> versions = new HashMap<>();
 
     /** */
-    private final TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean swapEnabled = true;

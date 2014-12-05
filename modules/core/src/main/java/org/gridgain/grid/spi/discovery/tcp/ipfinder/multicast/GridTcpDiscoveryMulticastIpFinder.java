@@ -52,7 +52,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
  *      <li>Local address (see {@link #setLocalAddress(String)})</li>
  * </ul>
  */
-public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinder {
+public class GridTcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** Default multicast IP address (value is {@code 228.1.2.4}). */
     public static final String DFLT_MCAST_GROUP = "228.1.2.4";
 

@@ -43,7 +43,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
  */
 public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
-    private GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
@@ -108,7 +108,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setNodeId(nodeId);
 
         if (gridName.contains("NonSharedIpFinder")) {
-            GridTcpDiscoveryVmIpFinder finder = new GridTcpDiscoveryVmIpFinder();
+            TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
             finder.setAddresses(Arrays.asList("127.0.0.1:47501"));
 

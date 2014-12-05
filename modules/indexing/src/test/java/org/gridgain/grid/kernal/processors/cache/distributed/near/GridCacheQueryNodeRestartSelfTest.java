@@ -42,7 +42,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
     private static final int KEY_CNT = 1000;
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {

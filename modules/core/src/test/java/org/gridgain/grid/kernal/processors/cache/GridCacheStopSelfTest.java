@@ -44,7 +44,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
-        disc.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
+        disc.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(disc);
 

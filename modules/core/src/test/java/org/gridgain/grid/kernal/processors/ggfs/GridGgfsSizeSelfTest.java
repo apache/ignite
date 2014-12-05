@@ -66,7 +66,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     private static final String GGFS_NAME = "ggfs";
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** GGFS management port */
     private static int mgmtPort;
