@@ -112,14 +112,14 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                 }
 
                 if (win instanceof StreamerWindowAdapter) {
-                    GridStreamerIndexProvider[] idxs = ((StreamerWindowAdapter)win).indexProviders();
+                    StreamerIndexProvider[] idxs = ((StreamerWindowAdapter)win).indexProviders();
 
                     if (idxs != null && idxs.length > 0) {
-                        for (GridStreamerIndexProvider idx : idxs) {
+                        for (StreamerIndexProvider idx : idxs) {
                             try {
                                 mBeans.add(U.registerMBean(mBeanSrv, ctx.gridName(), U.maskName(s.name()),
                                     "Window-" + win.name() + "-index-" + idx.name(), idx,
-                                    GridStreamerIndexProviderMBean.class));
+                                    StreamerIndexProviderMBean.class));
 
                                 if (log.isDebugEnabled())
                                     log.debug("Registered MBean for streamer window index [streamer=" + s.name() +

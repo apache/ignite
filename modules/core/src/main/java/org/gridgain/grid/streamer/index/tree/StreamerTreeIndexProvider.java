@@ -12,7 +12,6 @@ package org.gridgain.grid.streamer.index.tree;
 import com.romix.scala.collection.concurrent.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.index.*;
-import org.gridgain.grid.streamer.index.hash.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -22,10 +21,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
+import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
 
 /**
- * Tree index implementation of a {@link GridStreamerIndexProvider}.
+ * Tree index implementation of a {@link org.gridgain.grid.streamer.index.StreamerIndexProvider}.
  * <p>
  * The advantage of a tree index is that it maintains entries in a
  * sorted order, which is invaluable for many kinds of tasks, where
@@ -34,14 +33,14 @@ import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
  * and you'll are likely to need to implement a custom comparator for values in
  * place of a default one.
  * <p>
- * If ordering is not required, consider using {@link GridStreamerHashIndexProvider}
+ * If ordering is not required, consider using {@link org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider}
  * instead, which is more efficient (O(1) vs. O(log(n))) and does not require
  * comparability.
  *
- * @see GridStreamerHashIndexProvider
+ * @see org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider
  *
  */
-public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexProviderAdapter<E, K, V> {
+public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAdapter<E, K, V> {
     /** */
     private SnapTreeMap<IndexKey<V>, Entry<E, K, V>> idx;
 
@@ -67,7 +66,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected GridStreamerIndex<E, K, V> index0() {
+    @Override protected StreamerIndex<E, K, V> index0() {
         return new Index<>();
     }
 
@@ -94,7 +93,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void add(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -102,7 +101,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
 
         Entry<E, K, V> oldEntry = trieGet(key, key2Entry);
 
-        GridStreamerIndexUpdater<E, K, V> updater = getUpdater();
+        StreamerIndexUpdater<E, K, V> updater = getUpdater();
 
         if (oldEntry == null) {
             V val = updater.initialValue(evt, key);
@@ -213,7 +212,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -224,7 +223,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
         if (oldEntry == null)
             return;
 
-        GridStreamerIndexUpdater<E, K, V> updater = getUpdater();
+        StreamerIndexUpdater<E, K, V> updater = getUpdater();
 
         V val = updater.onRemoved(oldEntry, evt);
 
@@ -313,7 +312,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
      * @param sync Sync.
      * @throws GridException If interrupted.
      */
-    private void lockKeys(IndexKey<V> key1, IndexKey<V> key2, int order, GridStreamerIndexUpdateSync sync)
+    private void lockKeys(IndexKey<V> key1, IndexKey<V> key2, int order, StreamerIndexUpdateSync sync)
         throws GridException {
         assert isUnique();
         assert key1 != null;
@@ -357,7 +356,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void endUpdate0(GridStreamerIndexUpdateSync sync, E evt, K key, boolean rollback) {
+    @Override protected void endUpdate0(StreamerIndexUpdateSync sync, E evt, K key, boolean rollback) {
         State<E, K, V> state0 = state.get();
 
         if (state0 == null)
@@ -652,7 +651,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
     /**
      *
      */
-    private class Index<I extends IndexKey<V>> implements GridStreamerIndex<E, K, V> {
+    private class Index<I extends IndexKey<V>> implements StreamerIndex<E, K, V> {
         /** */
         private final TrieMap<K, Entry<E, K, V>> key2Entry0 = key2Entry.readOnlySnapshot();
 
@@ -678,7 +677,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Override public GridStreamerIndexPolicy policy() {
+        @Override public StreamerIndexPolicy policy() {
             return getPolicy();
         }
 
@@ -688,17 +687,17 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> entry(K key) {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> entry(K key) {
             A.notNull(key, "key");
 
             return trieGet(key, key2Entry0);
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridStreamerIndexEntry<E, K, V>> entries(int cnt) {
+        @Override public Collection<StreamerIndexEntry<E, K, V>> entries(int cnt) {
             Collection col = cnt >= 0 ? idx0.values() : idx0.descendingMap().values();
 
-            return (Collection<GridStreamerIndexEntry<E, K, V>>)(cnt == 0 ? Collections.unmodifiableCollection(col) :
+            return (Collection<StreamerIndexEntry<E, K, V>>)(cnt == 0 ? Collections.unmodifiableCollection(col) :
                 F.limit(col, U.safeAbs(cnt)));
         }
 
@@ -723,7 +722,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
 
         /** {@inheritDoc} */
         @Override public Collection<V> values(int cnt) {
-            Collection<GridStreamerIndexEntry<E, K, V>> col = entries(cnt);
+            Collection<StreamerIndexEntry<E, K, V>> col = entries(cnt);
 
             return F.viewReadOnly(col, entryToVal);
         }
@@ -736,20 +735,20 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Override public Set<GridStreamerIndexEntry<E, K, V>> entrySet(V val) {
+        @Override public Set<StreamerIndexEntry<E, K, V>> entrySet(V val) {
             return entrySet(true, val, true, val, true);
         }
 
         /** {@inheritDoc} */
-        @Override public Set<GridStreamerIndexEntry<E, K, V>> entrySet(final boolean asc, @Nullable final V fromVal,
+        @Override public Set<StreamerIndexEntry<E, K, V>> entrySet(final boolean asc, @Nullable final V fromVal,
             final boolean fromIncl, @Nullable final V toVal, final boolean toIncl) {
-            Set<GridStreamerIndexEntry<E, K, V>> set = new AbstractSet<GridStreamerIndexEntry<E, K, V>>() {
+            Set<StreamerIndexEntry<E, K, V>> set = new AbstractSet<StreamerIndexEntry<E, K, V>>() {
                 private Map<IndexKey<V>, Entry<E, K, V>> map = subMap(asc, fromVal, fromIncl, toVal, toIncl);
 
-                @NotNull @Override public Iterator<GridStreamerIndexEntry<E, K, V>> iterator() {
+                @NotNull @Override public Iterator<StreamerIndexEntry<E, K, V>> iterator() {
                     Collection vals = map.values();
 
-                    return (Iterator<GridStreamerIndexEntry<E, K, V>>)vals.iterator();
+                    return (Iterator<StreamerIndexEntry<E, K, V>>)vals.iterator();
                 }
 
                 @Override public int size() {
@@ -864,7 +863,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
                  * @return Events iterator.
                  */
                 @SuppressWarnings("fallthrough")
-                Iterator<E> eventsIterator(GridStreamerIndexEntry<E,K,V> entry) {
+                Iterator<E> eventsIterator(StreamerIndexEntry<E,K,V> entry) {
                     switch (getPolicy()) {
                         case EVENT_TRACKING_ON:
                         case EVENT_TRACKING_ON_DEDUP:
@@ -886,17 +885,17 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> firstEntry() {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> firstEntry() {
             return idx0.firstEntry().getValue();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> lastEntry() {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> lastEntry() {
             return idx0.lastEntry().getValue();
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<GridStreamerIndexEntry<E, K, V>> iterator() {
+        @Override public Iterator<StreamerIndexEntry<E, K, V>> iterator() {
             return entries(0).iterator();
         }
 
@@ -940,7 +939,7 @@ public class GridStreamerTreeIndexProvider<E, K, V> extends GridStreamerIndexPro
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Index.class, this, "provider", GridStreamerTreeIndexProvider.this);
+            return S.toString(Index.class, this, "provider", StreamerTreeIndexProvider.this);
         }
     }
 }

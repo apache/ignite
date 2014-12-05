@@ -50,7 +50,7 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * @param <V> Type of the index value.
      * @return Index with default name.
      */
-     public <K, V> GridStreamerIndex<E, K, V> index();
+     public <K, V> StreamerIndex<E, K, V> index();
 
     /**
      * Gets index by name, if not index with such name was configured then
@@ -61,7 +61,7 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * @param <V> Type of the index value.
      * @return Index with a given name.
      */
-    public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name);
+    public <K, V> StreamerIndex<E, K, V> index(@Nullable String name);
 
     /**
      * Gets all indexes configured for this window.
@@ -69,7 +69,7 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * @return All indexes configured for this window or empty collection, if no
      *         indexes were configured.
      */
-    public Collection<GridStreamerIndex<E, ?, ?>> indexes();
+    public Collection<StreamerIndex<E, ?, ?>> indexes();
 
     /**
      * Resets window. Usually will clear all events from window.

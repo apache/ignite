@@ -12,29 +12,28 @@ package org.gridgain.grid.streamer.index.hash;
 import com.romix.scala.collection.concurrent.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.streamer.index.*;
-import org.gridgain.grid.streamer.index.tree.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
+import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
 
 /**
- * Hash index implementation of a {@link GridStreamerIndexProvider}.
+ * Hash index implementation of a {@link org.gridgain.grid.streamer.index.StreamerIndexProvider}.
  * <p>
  * This implementation uses a concurrent hash map, which is extremely
  * efficient for CRUD operations. It does not, however, maintain the
  * ordering of entries, so, operations which imply ordering are not
  * supported.
  * <p>
- * If ordering is required, consider using {@link GridStreamerTreeIndexProvider}.
+ * If ordering is required, consider using {@link org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider}.
  *
- * @see GridStreamerTreeIndexProvider
+ * @see org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider
  *
  */
-public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexProviderAdapter<E, K, V> {
+public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAdapter<E, K, V> {
     /** */
     private TrieMap<K, Entry<E, K, V>> key2Entry;
 
@@ -42,7 +41,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
     private final ThreadLocal<State<E, K, V>> state = new ThreadLocal<>();
 
     /** {@inheritDoc} */
-    @Override protected GridStreamerIndex<E, K, V> index0() {
+    @Override protected StreamerIndex<E, K, V> index0() {
         return new Index<>();
     }
 
@@ -58,7 +57,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void add(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -66,7 +65,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
 
         Entry<E, K, V> oldEntry = trieGet(key, key2Entry);
 
-        GridStreamerIndexUpdater<E, K, V> updater = getUpdater();
+        StreamerIndexUpdater<E, K, V> updater = getUpdater();
 
         if (oldEntry == null) {
             V val = updater.initialValue(evt, key);
@@ -123,7 +122,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -134,7 +133,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
         if (oldEntry == null)
             return;
 
-        GridStreamerIndexUpdater<E, K, V> updater = getUpdater();
+        StreamerIndexUpdater<E, K, V> updater = getUpdater();
 
         V val = updater.onRemoved(oldEntry, evt);
 
@@ -169,7 +168,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
     }
 
     /** {@inheritDoc} */
-    @Override protected void endUpdate0(GridStreamerIndexUpdateSync sync, E evt, K key, boolean rollback) {
+    @Override protected void endUpdate0(StreamerIndexUpdateSync sync, E evt, K key, boolean rollback) {
         State<E, K, V> state0 = state.get();
 
         if (state0 == null)
@@ -212,7 +211,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
     /**
      *
      */
-    private class Index<I extends IndexKey<V>> implements GridStreamerIndex<E, K, V> {
+    private class Index<I extends IndexKey<V>> implements StreamerIndex<E, K, V> {
         /** */
         private final TrieMap<K, Entry<E, K, V>> key2Entry0 = key2Entry.readOnlySnapshot();
 
@@ -235,7 +234,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Override public GridStreamerIndexPolicy policy() {
+        @Override public StreamerIndexPolicy policy() {
             return getPolicy();
         }
 
@@ -245,19 +244,19 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> entry(K key) {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> entry(K key) {
             A.notNull(key, "key");
 
             return trieGet(key, key2Entry0);
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridStreamerIndexEntry<E, K, V>> entries(int cnt) {
+        @Override public Collection<StreamerIndexEntry<E, K, V>> entries(int cnt) {
             A.ensure(cnt >= 0, "cnt >= 0");
 
             Collection vals = Collections.unmodifiableCollection(key2Entry0.values());
 
-            return (Collection<GridStreamerIndexEntry<E, K, V>>)(cnt == 0 ? vals : F.limit(vals, cnt));
+            return (Collection<StreamerIndexEntry<E, K, V>>)(cnt == 0 ? vals : F.limit(vals, cnt));
         }
 
         /** {@inheritDoc} */
@@ -270,7 +269,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
 
         /** {@inheritDoc} */
         @Override public Collection<V> values(int cnt) {
-            Collection<GridStreamerIndexEntry<E, K, V>> col = entries(cnt);
+            Collection<StreamerIndexEntry<E, K, V>> col = entries(cnt);
 
             return F.viewReadOnly(col, entryToVal);
         }
@@ -337,7 +336,7 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
                  * @return Events iterator.
                  */
                 @SuppressWarnings("fallthrough")
-                Iterator<E> eventsIterator(GridStreamerIndexEntry<E,K,V> entry) {
+                Iterator<E> eventsIterator(StreamerIndexEntry<E,K,V> entry) {
                     switch (getPolicy()) {
                         case EVENT_TRACKING_ON:
                         case EVENT_TRACKING_ON_DEDUP:
@@ -360,12 +359,12 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Override public Set<GridStreamerIndexEntry<E, K, V>> entrySet(V val) {
+        @Override public Set<StreamerIndexEntry<E, K, V>> entrySet(V val) {
             return entrySet(true, val, true, val, true);
         }
 
         /** {@inheritDoc} */
-        @Override public Set<GridStreamerIndexEntry<E, K, V>> entrySet(final boolean asc, @Nullable final V fromVal,
+        @Override public Set<StreamerIndexEntry<E, K, V>> entrySet(final boolean asc, @Nullable final V fromVal,
             final boolean fromIncl, @Nullable final V toVal, final boolean toIncl) {
             throw new UnsupportedOperationException("Operation is not supported on hash index.");
         }
@@ -399,23 +398,23 @@ public class GridStreamerHashIndexProvider<E, K, V> extends GridStreamerIndexPro
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> firstEntry() {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> firstEntry() {
             throw new UnsupportedOperationException("Operation is not supported on hash index.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndexEntry<E, K, V> lastEntry() {
+        @Nullable @Override public StreamerIndexEntry<E, K, V> lastEntry() {
             throw new UnsupportedOperationException("Operation is not supported on hash index.");
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<GridStreamerIndexEntry<E, K, V>> iterator() {
+        @Override public Iterator<StreamerIndexEntry<E, K, V>> iterator() {
             return entries(0).iterator();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Index.class, this, "provider", GridStreamerHashIndexProvider.this);
+            return S.toString(Index.class, this, "provider", StreamerHashIndexProvider.this);
         }
     }
 

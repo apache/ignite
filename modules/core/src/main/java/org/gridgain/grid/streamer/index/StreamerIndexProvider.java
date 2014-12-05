@@ -16,9 +16,9 @@ import org.gridgain.grid.*;
  * to perform event indexing.
  * <p>
  * To configure index for a streamer window, use
- * {@link org.gridgain.grid.streamer.window.StreamerWindowAdapter#setIndexes(GridStreamerIndexProvider[])}.
+ * {@link org.gridgain.grid.streamer.window.StreamerWindowAdapter#setIndexes(StreamerIndexProvider[])}.
  */
-public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexProviderMBean {
+public interface StreamerIndexProvider<E, K, V> extends StreamerIndexProviderMBean {
     /**
      * Gets index name.
      *
@@ -33,7 +33,7 @@ public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexPro
      *
      * @return User view for this index.
      */
-    public GridStreamerIndex<E, K, V> index();
+    public StreamerIndex<E, K, V> index();
 
     /**
      * Initializes the index.
@@ -57,7 +57,7 @@ public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexPro
      * @param evt Event to add to an index.
      * @throws GridException If failed to add event to an index.
      */
-    public void add(GridStreamerIndexUpdateSync sync, E evt) throws GridException;
+    public void add(StreamerIndexUpdateSync sync, E evt) throws GridException;
 
     /**
      * Removes an event from index.
@@ -66,7 +66,7 @@ public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexPro
      * @param evt Event to remove from index.
      * @throws GridException If failed to add event to an index.
      */
-    public void remove(GridStreamerIndexUpdateSync sync, E evt) throws GridException;
+    public void remove(StreamerIndexUpdateSync sync, E evt) throws GridException;
 
     /**
      * Gets event indexing policy, which defines how events
@@ -74,7 +74,7 @@ public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexPro
      *
      * @return index policy.
      */
-    public GridStreamerIndexPolicy getPolicy();
+    public StreamerIndexPolicy getPolicy();
 
     /**
      * Checks whether this index is unique or not. If it is, equal events
@@ -95,5 +95,5 @@ public interface GridStreamerIndexProvider<E, K, V> extends GridStreamerIndexPro
      * @param rollback Rollback flag. If {@code true}, a rollback was made.
      * @param rmv Remove flag. If {@code true}, the event was removed from index.
      */
-    public void endUpdate(GridStreamerIndexUpdateSync sync, E evt, boolean rollback, boolean rmv);
+    public void endUpdate(StreamerIndexUpdateSync sync, E evt, boolean rollback, boolean rmv);
 }

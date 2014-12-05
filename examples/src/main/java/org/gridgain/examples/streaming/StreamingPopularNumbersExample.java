@@ -49,22 +49,22 @@ public class StreamingPopularNumbersExample {
     private static final int CNT = 10_000_000;
 
     /** Comparator sorting random number entries by number popularity. */
-    private static final Comparator<GridStreamerIndexEntry<Integer, Integer, Long>> CMP =
-        new Comparator<GridStreamerIndexEntry<Integer, Integer, Long>>() {
-            @Override public int compare(GridStreamerIndexEntry<Integer, Integer, Long> e1,
-                GridStreamerIndexEntry<Integer, Integer, Long> e2) {
+    private static final Comparator<StreamerIndexEntry<Integer, Integer, Long>> CMP =
+        new Comparator<StreamerIndexEntry<Integer, Integer, Long>>() {
+            @Override public int compare(StreamerIndexEntry<Integer, Integer, Long> e1,
+                StreamerIndexEntry<Integer, Integer, Long> e2) {
                 return e2.value().compareTo(e1.value());
             }
         };
 
     /** Reducer selecting first POPULAR_NUMBERS_CNT values. */
-    private static class PopularNumbersReducer implements IgniteReducer<Collection<GridStreamerIndexEntry<Integer, Integer, Long>>,
-            Collection<GridStreamerIndexEntry<Integer, Integer, Long>>> {
+    private static class PopularNumbersReducer implements IgniteReducer<Collection<StreamerIndexEntry<Integer, Integer, Long>>,
+            Collection<StreamerIndexEntry<Integer, Integer, Long>>> {
         /** */
-        private final List<GridStreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
+        private final List<StreamerIndexEntry<Integer, Integer, Long>> sorted = new ArrayList<>();
 
         /** {@inheritDoc} */
-        @Override public boolean collect(@Nullable Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col) {
+        @Override public boolean collect(@Nullable Collection<StreamerIndexEntry<Integer, Integer, Long>> col) {
             if (col != null && !col.isEmpty())
                 // Add result from remote node to sorted set.
                 sorted.addAll(col);
@@ -73,7 +73,7 @@ public class StreamingPopularNumbersExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> reduce() {
+        @Override public Collection<StreamerIndexEntry<Integer, Integer, Long>> reduce() {
             Collections.sort(sorted, CMP);
 
             return sorted.subList(0, POPULAR_NUMBERS_CNT < sorted.size() ? POPULAR_NUMBERS_CNT : sorted.size());
@@ -158,13 +158,13 @@ public class StreamingPopularNumbersExample {
                 try {
                     // Send reduce query to all 'popular-numbers' streamers
                     // running on local and remote nodes.
-                    Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col = streamer.context().reduce(
+                    Collection<StreamerIndexEntry<Integer, Integer, Long>> col = streamer.context().reduce(
                         // This closure will execute on remote nodes.
                         new IgniteClosure<StreamerContext,
-                                                                            Collection<GridStreamerIndexEntry<Integer, Integer, Long>>>() {
-                            @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> apply(
+                                                                            Collection<StreamerIndexEntry<Integer, Integer, Long>>>() {
+                            @Override public Collection<StreamerIndexEntry<Integer, Integer, Long>> apply(
                                 StreamerContext ctx) {
-                                GridStreamerIndex<Integer, Integer, Long> view = ctx.<Integer>window().index();
+                                StreamerIndex<Integer, Integer, Long> view = ctx.<Integer>window().index();
 
                                 return view.entries(-1 * POPULAR_NUMBERS_CNT);
                             }
@@ -173,7 +173,7 @@ public class StreamingPopularNumbersExample {
                         // that submitted the query.
                         new PopularNumbersReducer());
 
-                    for (GridStreamerIndexEntry<Integer, Integer, Long> cntr : col)
+                    for (StreamerIndexEntry<Integer, Integer, Long> cntr : col)
                         System.out.printf("%3d=%d\n", cntr.key(), cntr.value());
 
                     System.out.println("----------------");
@@ -219,7 +219,7 @@ public class StreamingPopularNumbersExample {
     /**
      * This class will be set as part of window index configuration.
      */
-    private static class IndexUpdater implements GridStreamerIndexUpdater<Integer, Integer, Long> {
+    private static class IndexUpdater implements StreamerIndexUpdater<Integer, Integer, Long> {
         /** {@inheritDoc} */
         @Override public Integer indexKey(Integer evt) {
             // We use event as index key, so event and key are the same.
@@ -227,12 +227,12 @@ public class StreamingPopularNumbersExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Long onAdded(GridStreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
+        @Nullable @Override public Long onAdded(StreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
             return entry.value() + 1;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Long onRemoved(GridStreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
+        @Nullable @Override public Long onRemoved(StreamerIndexEntry<Integer, Integer, Long> entry, Integer evt) {
             return entry.value() - 1 == 0 ? null : entry.value() - 1;
         }
 

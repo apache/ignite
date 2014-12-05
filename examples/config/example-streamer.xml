@@ -115,7 +115,7 @@
 
                             <property name="indexes">
                                 <list>
-                                    <bean class="org.gridgain.grid.streamer.index.tree.GridStreamerTreeIndexProvider">
+                                    <bean class="org.gridgain.grid.streamer.index.tree.StreamerTreeIndexProvider">
                                         <property name="updater">
                                             <bean class="org.gridgain.examples.streaming.StreamingPopularNumbersExample$IndexUpdater"/>
                                         </property>
@@ -225,7 +225,7 @@
                                 -->
                                 <property name="indexes">
                                     <list>
-                                        <bean class="org.gridgain.grid.streamer.index.hash.GridStreamerHashIndexProvider">
+                                        <bean class="org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider">
                                             <property name="unique" value="true"/>
 
                                             <property name="updater">
@@ -241,7 +241,7 @@
 
                                 <property name="indexes">
                                     <list>
-                                        <bean class="org.gridgain.grid.streamer.index.hash.GridStreamerHashIndexProvider">
+                                        <bean class="org.gridgain.grid.streamer.index.hash.StreamerHashIndexProvider">
                                             <property name="unique" value="true"/>
 
                                             <property name="updater">

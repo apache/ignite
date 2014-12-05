@@ -79,17 +79,17 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndex index() {
+        @Nullable @Override public StreamerIndex index() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridStreamerIndex index(@Nullable String name) {
+        @Nullable @Override public StreamerIndex index(@Nullable String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridStreamerIndex> indexes() {
+        @Override public Collection<StreamerIndex> indexes() {
             return null;
         }
 

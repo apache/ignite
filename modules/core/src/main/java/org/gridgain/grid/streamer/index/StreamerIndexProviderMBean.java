@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * Streamer window index provider MBean.
  */
-public interface GridStreamerIndexProviderMBean {
+public interface StreamerIndexProviderMBean {
     /**
      * Index name.
      *
@@ -54,7 +54,7 @@ public interface GridStreamerIndexProviderMBean {
      * @return Index policy.
      */
     @IgniteMBeanDescription("Index policy.")
-    public GridStreamerIndexPolicy policy();
+    public StreamerIndexPolicy policy();
 
     /**
      * Gets current index size.

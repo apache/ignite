@@ -23,39 +23,39 @@ import org.pcollections.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
+import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
 
 /**
- * Convenient {@link GridStreamerIndexProvider} adapter implementing base configuration methods.
+ * Convenient {@link StreamerIndexProvider} adapter implementing base configuration methods.
  */
-public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridStreamerIndexProvider<E, K, V> {
+public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerIndexProvider<E, K, V> {
     /** */
-    protected final IgniteClosure<GridStreamerIndexEntry<E, K, V>, V> entryToVal =
-        new C1<GridStreamerIndexEntry<E, K, V>, V>() {
-            @Override public V apply(GridStreamerIndexEntry<E, K, V> e) {
+    protected final IgniteClosure<StreamerIndexEntry<E, K, V>, V> entryToVal =
+        new C1<StreamerIndexEntry<E, K, V>, V>() {
+            @Override public V apply(StreamerIndexEntry<E, K, V> e) {
                 return e.value();
             }
         };
 
     /** */
-    protected final IgniteClosure<GridStreamerIndexEntry<E, K, V>, K> entryToKey =
-        new C1<GridStreamerIndexEntry<E, K, V>, K>() {
-            @Override public K apply(GridStreamerIndexEntry<E, K, V> e) {
+    protected final IgniteClosure<StreamerIndexEntry<E, K, V>, K> entryToKey =
+        new C1<StreamerIndexEntry<E, K, V>, K>() {
+            @Override public K apply(StreamerIndexEntry<E, K, V> e) {
                 return e.key();
             }
         };
 
     /** Keys currently being updated. */
-    private final ConcurrentMap<K, GridStreamerIndexUpdateSync> locks = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<K, StreamerIndexUpdateSync> locks = new ConcurrentHashMap8<>();
 
     /** Index name. */
     private String name;
 
     /** Index policy. */
-    private GridStreamerIndexPolicy plc = EVENT_TRACKING_OFF;
+    private StreamerIndexPolicy plc = EVENT_TRACKING_OFF;
 
     /** Index updater. */
-    private GridStreamerIndexUpdater<E, K, V> updater;
+    private StreamerIndexUpdater<E, K, V> updater;
 
     /** */
     private final LongAdder evtsCnt = new LongAdder();
@@ -70,7 +70,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     private final ThreadLocal<K> threadLocKey = new ThreadLocal<>();
 
     /** */
-    private final ConcurrentMap<IndexKey<V>, GridStreamerIndexUpdateSync> idxLocks = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IndexKey<V>, StreamerIndexUpdateSync> idxLocks = new ConcurrentHashMap8<>();
 
     /** */
     private boolean keyCheck = true;
@@ -94,12 +94,12 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      *
      * @param plc Policy.
      */
-    public void setPolicy(GridStreamerIndexPolicy plc) {
+    public void setPolicy(StreamerIndexPolicy plc) {
         this.plc = plc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerIndexPolicy getPolicy() {
+    @Override public StreamerIndexPolicy getPolicy() {
         return plc;
     }
 
@@ -122,7 +122,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      *
      * @param updater Updater.
      */
-    public void setUpdater(GridStreamerIndexUpdater<E, K, V> updater) {
+    public void setUpdater(StreamerIndexUpdater<E, K, V> updater) {
         this.updater = updater;
     }
 
@@ -131,7 +131,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      *
      * @return Updater.
      */
-    public GridStreamerIndexUpdater<E, K, V> getUpdater() {
+    public StreamerIndexUpdater<E, K, V> getUpdater() {
         return updater;
     }
 
@@ -146,7 +146,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void add(GridStreamerIndexUpdateSync sync, E evt) throws GridException {
+    @Override public void add(StreamerIndexUpdateSync sync, E evt) throws GridException {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -174,7 +174,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void remove(GridStreamerIndexUpdateSync sync, E evt) throws GridException {
+    @Override public void remove(StreamerIndexUpdateSync sync, E evt) throws GridException {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -196,7 +196,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public void endUpdate(GridStreamerIndexUpdateSync sync, E evt, boolean rollback, boolean rmv) {
+    @Override public void endUpdate(StreamerIndexUpdateSync sync, E evt, boolean rollback, boolean rmv) {
         K key = threadLocKey.get();
 
         if (key == null)
@@ -224,7 +224,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param key Key.
      * @param rollback Rollback flag.
      */
-    protected abstract void endUpdate0(GridStreamerIndexUpdateSync sync, E evt, K key, boolean rollback);
+    protected abstract void endUpdate0(StreamerIndexUpdateSync sync, E evt, K key, boolean rollback);
 
     /** {@inheritDoc} */
     @Override public void reset() {
@@ -239,7 +239,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerIndex<E, K, V> index() {
+    @Override public StreamerIndex<E, K, V> index() {
         writeLock();
 
         try {
@@ -258,7 +258,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     /**
      * @return Index
      */
-    protected abstract GridStreamerIndex<E, K, V> index0();
+    protected abstract StreamerIndex<E, K, V> index0();
 
     /**
      *
@@ -303,7 +303,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @throws GridException If failed.
      */
-    protected abstract void add(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException;
+    protected abstract void add(E evt, K key, StreamerIndexUpdateSync sync) throws GridException;
 
     /**
      * Remove event from the index.
@@ -313,7 +313,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @throws GridException If failed.
      */
-    protected abstract void remove(E evt, K key, GridStreamerIndexUpdateSync sync) throws GridException;
+    protected abstract void remove(E evt, K key, StreamerIndexUpdateSync sync) throws GridException;
 
     /**
      * Lock updates on particular key.
@@ -322,12 +322,12 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @throws GridException If failed.
      */
-    private void lockKey(K key, GridStreamerIndexUpdateSync sync) throws GridException {
+    private void lockKey(K key, StreamerIndexUpdateSync sync) throws GridException {
         assert key != null;
         assert sync != null;
 
         while (true) {
-            GridStreamerIndexUpdateSync old = locks.putIfAbsent(key, sync);
+            StreamerIndexUpdateSync old = locks.putIfAbsent(key, sync);
 
             if (old != null) {
                 try {
@@ -351,7 +351,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param key Key.
      * @param sync Sync.
      */
-    private void unlockKey(K key, GridStreamerIndexUpdateSync sync) {
+    private void unlockKey(K key, StreamerIndexUpdateSync sync) {
         assert key != null;
 
         locks.remove(key, sync);
@@ -364,13 +364,13 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param sync Sync.
      * @throws GridException If failed.
      */
-    protected void lockIndexKey(IndexKey<V> key, GridStreamerIndexUpdateSync sync) throws GridException {
+    protected void lockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) throws GridException {
         assert key != null;
         assert sync != null;
         assert isUnique();
 
         while (true) {
-            GridStreamerIndexUpdateSync old = idxLocks.putIfAbsent(key, sync);
+            StreamerIndexUpdateSync old = idxLocks.putIfAbsent(key, sync);
 
             if (old != null) {
                 try {
@@ -394,7 +394,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param key Key.
      * @param sync Sync.
      */
-    protected void unlockIndexKey(IndexKey<V> key, GridStreamerIndexUpdateSync sync) {
+    protected void unlockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) {
         assert key != null;
         assert isUnique();
 
@@ -409,7 +409,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @return Entry.
      */
     protected Entry<E, K, V> newEntry(K key, V val, @Nullable IndexKey<V> idxKey, E evt) {
-        GridStreamerIndexPolicy plc = getPolicy();
+        StreamerIndexPolicy plc = getPolicy();
 
         switch (plc) {
             case EVENT_TRACKING_OFF:
@@ -433,9 +433,9 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param evt Event.
      * @return Entry.
      */
-    protected Entry<E, K, V> addEvent(GridStreamerIndexEntry<E,K,V> oldEntry, K key, V val,
+    protected Entry<E, K, V> addEvent(StreamerIndexEntry<E,K,V> oldEntry, K key, V val,
         @Nullable IndexKey<V> idxKey, E evt) {
-        GridStreamerIndexPolicy plc = getPolicy();
+        StreamerIndexPolicy plc = getPolicy();
 
         switch (plc) {
             case EVENT_TRACKING_OFF:
@@ -460,9 +460,9 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
      * @param evt Event.
      * @return Entry.
      */
-    protected Entry<E, K, V> removeEvent(GridStreamerIndexEntry<E, K, V> oldEntry, K key, V val,
+    protected Entry<E, K, V> removeEvent(StreamerIndexEntry<E, K, V> oldEntry, K key, V val,
         @Nullable IndexKey<V> idxKey, E evt) {
-        GridStreamerIndexPolicy plc = getPolicy();
+        StreamerIndexPolicy plc = getPolicy();
 
         switch (plc) {
             case EVENT_TRACKING_OFF:
@@ -562,7 +562,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerIndexPolicy policy() {
+    @Override public StreamerIndexPolicy policy() {
         return plc;
     }
 
@@ -592,7 +592,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerIndexProviderAdapter.class, this);
+        return S.toString(StreamerIndexProviderAdapter.class, this);
     }
 
     /**
@@ -628,7 +628,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     /**
      * Streamer window index entry.
      */
-    protected abstract static class Entry<E, K, V> implements GridStreamerIndexEntry<E, K, V> {
+    protected abstract static class Entry<E, K, V> implements StreamerIndexEntry<E, K, V> {
         /** */
         private final K key;
 
@@ -675,7 +675,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
             if (!(obj instanceof Entry))
                 return false;
 
-            GridStreamerIndexEntry<E, K, V> e = (GridStreamerIndexEntry<E, K, V>)obj;
+            StreamerIndexEntry<E, K, V> e = (StreamerIndexEntry<E, K, V>)obj;
 
             return key.equals(e.key());
         }
@@ -692,7 +692,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /**
-     * Entry with index policy {@link GridStreamerIndexPolicy#EVENT_TRACKING_OFF}.
+     * Entry with index policy {@link StreamerIndexPolicy#EVENT_TRACKING_OFF}.
      */
     protected static class NonTrackingEntry<E, K, V> extends Entry<E, K, V> {
         /**
@@ -716,7 +716,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /**
-     * Entry with index policy {@link GridStreamerIndexPolicy#EVENT_TRACKING_ON}.
+     * Entry with index policy {@link StreamerIndexPolicy#EVENT_TRACKING_ON}.
      */
     protected static class EventTrackingEntry<E, K, V> extends Entry<E, K, V> {
         /** */
@@ -748,7 +748,7 @@ public abstract class GridStreamerIndexProviderAdapter<E, K, V> implements GridS
     }
 
     /**
-     * Entry with index policy {@link GridStreamerIndexPolicy#EVENT_TRACKING_ON_DEDUP}.
+     * Entry with index policy {@link StreamerIndexPolicy#EVENT_TRACKING_ON_DEDUP}.
      */
     protected static class DedupTrackingEntry<E, K, V> extends Entry<E, K, V> {
         /** */

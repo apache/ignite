@@ -19,13 +19,13 @@ import java.util.*;
  * associated with given key.
  *
  */
-public interface GridStreamerIndexEntry<E, K, V> {
+public interface StreamerIndexEntry<E, K, V> {
     /**
      * Gets events associated with given index key and value.
      * <p>
-     * Events are tracked only if {@link GridStreamerIndexProvider#getPolicy()}
-     * is set to {@link GridStreamerIndexPolicy#EVENT_TRACKING_ON} or
-     * {@link GridStreamerIndexPolicy#EVENT_TRACKING_ON_DEDUP}.
+     * Events are tracked only if {@link StreamerIndexProvider#getPolicy()}
+     * is set to {@link StreamerIndexPolicy#EVENT_TRACKING_ON} or
+     * {@link StreamerIndexPolicy#EVENT_TRACKING_ON_DEDUP}.
      *
      * @return Events associated with given index key and value or {@code null} if event tracking is off.
      */

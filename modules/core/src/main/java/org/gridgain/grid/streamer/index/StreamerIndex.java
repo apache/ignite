@@ -23,14 +23,14 @@ import java.util.*;
  * <li>{@link org.gridgain.grid.streamer.StreamerWindow#indexes()}</li>
  * </ul>
  * <p>
- * Indexes are created and provided for streamer windows by {@link GridStreamerIndexProvider} which is
+ * Indexes are created and provided for streamer windows by {@link StreamerIndexProvider} which is
  * specified in streamer configuration.
  * <h1 class="header">Example of how to use indexes</h1>
  * <p>
  * Stock price events are streamed into the system, the stock price event is an object containing stock symbol and price.
  * We need to get minimum price for GOOG instrument.
  * <p>
- * Here is {@link GridStreamerIndexUpdater} that maintains index values up to date:
+ * Here is {@link StreamerIndexUpdater} that maintains index values up to date:
  * <pre name="code" class="java">
  * class StockPriceIndexUpdater implements GridStreamerIndexUpdater&lt;StockPriceEvent, String, Double&gt; {
  *     &#64;Nullable &#64;Override public String indexKey(StockPriceEvent evt) {
@@ -80,7 +80,7 @@ import java.util.*;
  * );
  * </pre>
  */
-public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEntry<E, K, V>> {
+public interface StreamerIndex<E, K, V> extends Iterable<StreamerIndexEntry<E, K, V>> {
     /**
      * Index name.
      *
@@ -110,7 +110,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      *
      * @return Index policy.
      */
-    public GridStreamerIndexPolicy policy();
+    public StreamerIndexPolicy policy();
 
     /**
      * @return Number entries in the index.
@@ -123,7 +123,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      * @param key Key for which to retrieve entry.
      * @return Entry for given key, or {@code null} if one could not be found.
      */
-    @Nullable public GridStreamerIndexEntry<E, K, V> entry(K key);
+    @Nullable public StreamerIndexEntry<E, K, V> entry(K key);
 
     /**
      * Gets read-only collection of entries in the index.
@@ -137,7 +137,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      *      (in descending order for sorted indexes and not supported for unsorted indexes).
      * @return Collection of entries in the index.
      */
-    public Collection<GridStreamerIndexEntry<E, K, V>> entries(int cnt);
+    public Collection<StreamerIndexEntry<E, K, V>> entries(int cnt);
 
     /**
      * Gets read-only set of index keys.
@@ -180,7 +180,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      *      (in descending order of values for sorted indexes and not supported for unsorted indexes).
      * @return Read-only collections of index events.
      * @throws IllegalStateException If index is not configured to track events.
-     * @see GridStreamerIndexPolicy
+     * @see StreamerIndexPolicy
      */
     public Collection<E> events(int cnt);
 
@@ -192,7 +192,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      * @param val Value.
      * @return Read-only set of index entries with given value.
      */
-    public Set<GridStreamerIndexEntry<E, K, V>> entrySet(V val);
+    public Set<StreamerIndexEntry<E, K, V>> entrySet(V val);
 
     /**
      * Gets read-only set of index entries within given value range.
@@ -206,7 +206,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      * @param toIncl Whether or not right value is inclusive (ignored if {@code maxVal} is {@code null}).
      * @return Read-only set of index entries within given value range.
      */
-    public Set<GridStreamerIndexEntry<E, K, V>> entrySet(boolean asc, @Nullable V fromVal, boolean fromIncl,
+    public Set<StreamerIndexEntry<E, K, V>> entrySet(boolean asc, @Nullable V fromVal, boolean fromIncl,
         @Nullable V toVal, boolean toIncl);
 
     /**
@@ -284,7 +284,7 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      *
      * @return First entry in the index, or {@code null} if index is empty.
      */
-    @Nullable public GridStreamerIndexEntry<E, K, V> firstEntry();
+    @Nullable public StreamerIndexEntry<E, K, V> firstEntry();
 
     /**
      * Gets last entry in the index.
@@ -293,5 +293,5 @@ public interface GridStreamerIndex<E, K, V> extends Iterable<GridStreamerIndexEn
      *
      * @return Last entry in the index, or {@code null} if index is empty.
      */
-    @Nullable public GridStreamerIndexEntry<E, K, V> lastEntry();
+    @Nullable public StreamerIndexEntry<E, K, V> lastEntry();
 }

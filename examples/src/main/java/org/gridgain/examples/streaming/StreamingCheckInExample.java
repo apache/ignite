@@ -170,14 +170,14 @@ public class StreamingCheckInExample {
 
                                 assert win != null;
 
-                                GridStreamerIndex<LocationInfo, String, Place> idxView = win.index();
+                                StreamerIndex<LocationInfo, String, Place> idxView = win.index();
 
-                                Collection<GridStreamerIndexEntry<LocationInfo, String, Place>> entries =
+                                Collection<StreamerIndexEntry<LocationInfo, String, Place>> entries =
                                     idxView.entries(0);
 
                                 Map<String, Place> ret = new HashMap<>(entries.size(), 1.0f);
 
-                                for (GridStreamerIndexEntry<LocationInfo, String, Place> e : entries)
+                                for (StreamerIndexEntry<LocationInfo, String, Place> e : entries)
                                     ret.put(e.key(), e.value());
 
                                 return ret;
@@ -512,10 +512,10 @@ public class StreamingCheckInExample {
     }
 
     /**
-     * Index updater for check-in events. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * Index updater for check-in events. Updaters are specified for {@link org.gridgain.grid.streamer.index.StreamerIndexProviderAdapter} in
      * streamer configuration.
      */
-    private static class CheckInEventIndexUpdater implements GridStreamerIndexUpdater<CheckInEvent, String, Location> {
+    private static class CheckInEventIndexUpdater implements StreamerIndexUpdater<CheckInEvent, String, Location> {
         /** {@inheritDoc} */
         @Nullable @Override public String indexKey(CheckInEvent evt) {
             return evt.userName(); // Index key is an event user name.
@@ -529,24 +529,24 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Location onAdded(
-            GridStreamerIndexEntry<CheckInEvent, String, Location> entry,
+            StreamerIndexEntry<CheckInEvent, String, Location> entry,
             CheckInEvent evt) throws GridException {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Location onRemoved(
-            GridStreamerIndexEntry<CheckInEvent, String, Location> entry,
+            StreamerIndexEntry<CheckInEvent, String, Location> entry,
             CheckInEvent evt) {
             return null;
         }
     }
 
     /**
-     * Index updater for location info. Updaters are specified for {@link GridStreamerIndexProviderAdapter} in
+     * Index updater for location info. Updaters are specified for {@link org.gridgain.grid.streamer.index.StreamerIndexProviderAdapter} in
      * streamer configuration.
      */
-    private static class PlacesIndexUpdater implements GridStreamerIndexUpdater<LocationInfo, String, Place> {
+    private static class PlacesIndexUpdater implements StreamerIndexUpdater<LocationInfo, String, Place> {
         /** {@inheritDoc} */
         @Nullable @Override public String indexKey(LocationInfo info) {
             return info.userName();
@@ -560,14 +560,14 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Place onAdded(
-            GridStreamerIndexEntry<LocationInfo, String, Place> entry,
+            StreamerIndexEntry<LocationInfo, String, Place> entry,
             LocationInfo evt) throws GridException {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Place onRemoved(
-            GridStreamerIndexEntry<LocationInfo, String, Place> entry,
+            StreamerIndexEntry<LocationInfo, String, Place> entry,
             LocationInfo evt) {
             return null;
         }

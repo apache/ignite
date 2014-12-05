@@ -37,12 +37,13 @@ public class GridStreamerIndexLoadTest {
          */
         TREE_INDEX_NOT_UNIQUE {
             /** {@inheritDoc} */
-            @Override GridStreamerIndexProvider<Integer, Integer, Long> indexProvider() {
-                GridStreamerTreeIndexProvider<Integer, Integer, Long> idx = new GridStreamerTreeIndexProvider<>();
+            @Override
+            StreamerIndexProvider<Integer, Integer, Long> indexProvider() {
+                StreamerTreeIndexProvider<Integer, Integer, Long> idx = new StreamerTreeIndexProvider<>();
 
                 idx.setUpdater(new IndexUpdater());
                 idx.setUnique(false);
-                idx.setPolicy(GridStreamerIndexPolicy.EVENT_TRACKING_OFF);
+                idx.setPolicy(StreamerIndexPolicy.EVENT_TRACKING_OFF);
 
                 return idx;
             }
@@ -53,12 +54,13 @@ public class GridStreamerIndexLoadTest {
          */
         HASH_INDEX_NOT_UNIQUE {
             /** {@inheritDoc} */
-            @Override GridStreamerIndexProvider<Integer, Integer, Long> indexProvider() {
-                GridStreamerHashIndexProvider<Integer, Integer, Long> idx = new GridStreamerHashIndexProvider<>();
+            @Override
+            StreamerIndexProvider<Integer, Integer, Long> indexProvider() {
+                StreamerHashIndexProvider<Integer, Integer, Long> idx = new StreamerHashIndexProvider<>();
 
                 idx.setUpdater(new IndexUpdater());
                 idx.setUnique(false);
-                idx.setPolicy(GridStreamerIndexPolicy.EVENT_TRACKING_OFF);
+                idx.setPolicy(StreamerIndexPolicy.EVENT_TRACKING_OFF);
 
                 return idx;
             }
@@ -67,7 +69,7 @@ public class GridStreamerIndexLoadTest {
         /**
          * @return Index provider for this index configuration.
          */
-        abstract GridStreamerIndexProvider<Integer, Integer, Long> indexProvider();
+        abstract StreamerIndexProvider<Integer, Integer, Long> indexProvider();
     }
 
     /**

@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.streamer.index.GridStreamerIndexPolicy.*;
+import static org.gridgain.grid.streamer.index.StreamerIndexPolicy.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
@@ -33,7 +33,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTreeIndex() throws Exception {
-        for (GridStreamerIndexPolicy plc : GridStreamerIndexPolicy.values()) {
+        for (StreamerIndexPolicy plc : StreamerIndexPolicy.values()) {
             checkUniqueIndex(indexProvider(true, "idx", new UniqueStringIndexUpdater(), plc, true));
 
             checkNonUniqueIndex(indexProvider(true, "idx", new IndexUpdater(), plc, false));
@@ -44,7 +44,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testHashIndex() throws Exception {
-        for (GridStreamerIndexPolicy plc : GridStreamerIndexPolicy.values()) {
+        for (StreamerIndexPolicy plc : StreamerIndexPolicy.values()) {
             checkUniqueIndex(indexProvider(false, "idx", new UniqueStringIndexUpdater(), plc, true));
 
             checkNonUniqueIndex(indexProvider(false, "idx", new IndexUpdater(), plc, false));
@@ -55,10 +55,10 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMultipleIndexUpdate() throws Exception {
-        GridStreamerIndexProvider<String, String, Integer> idxProvider =
+        StreamerIndexProvider<String, String, Integer> idxProvider =
             indexProvider(true, "idx", new IndexUpdater(), EVENT_TRACKING_ON, false);
 
-        GridStreamerIndexProvider<String, String, String> idxProvider1 =
+        StreamerIndexProvider<String, String, String> idxProvider1 =
             indexProvider(true, "idx1", new UniqueStringIndexUpdater(), EVENT_TRACKING_ON, true);
 
         StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
@@ -74,8 +74,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         win.enqueue("D");
 
         // Snapshot both indexes.
-        GridStreamerIndex<String, String, Integer> idx = win.index("idx");
-        GridStreamerIndex<String, String, String> idx1 = win.index("idx1");
+        StreamerIndex<String, String, Integer> idx = win.index("idx");
+        StreamerIndex<String, String, String> idx1 = win.index("idx1");
 
         info("Idx: " + idx.entries(0));
         info("Idx1: " + idx1.entries(0));
@@ -89,8 +89,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-        GridStreamerIndex<String, String, Integer> idxAfter = win.index("idx");
-        GridStreamerIndex<String, String, String> idx1After = win.index("idx1");
+        StreamerIndex<String, String, Integer> idxAfter = win.index("idx");
+        StreamerIndex<String, String, String> idx1After = win.index("idx1");
 
         info("Idx (after): " + idxAfter.entries(0));
         info("Idx1 (after): " + idx1After.entries(0));
@@ -155,25 +155,25 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     public void testUpdaterOnAddedNull() throws Exception {
         checkIndexUpdater(new IndexUpdater() {
             @Nullable @Override
-            public Integer onAdded(GridStreamerIndexEntry<String, String, Integer> entry, String evt) {
+            public Integer onAdded(StreamerIndexEntry<String, String, Integer> entry, String evt) {
                 return "A".equals(evt) ? null : entry.value() + 1;
             }
         });
     }
 
     /**
-     * Checks the correct behaviour of {@link GridStreamerIndexUpdater}, given that
+     * Checks the correct behaviour of {@link StreamerIndexUpdater}, given that
      * it discards event "A" and accepts event "B".
      *
      * @param updater Index updater.
      * @throws GridException If failed.
      */
-    private void checkIndexUpdater(GridStreamerIndexUpdater<String, String, Integer> updater) throws GridException {
-        List<GridStreamerIndexProvider<String, String, Integer>> idxps = Arrays.asList(
-            indexProvider(true, "tree", updater, GridStreamerIndexPolicy.EVENT_TRACKING_ON, false),
-            indexProvider(false, "hash", updater, GridStreamerIndexPolicy.EVENT_TRACKING_ON, false));
+    private void checkIndexUpdater(StreamerIndexUpdater<String, String, Integer> updater) throws GridException {
+        List<StreamerIndexProvider<String, String, Integer>> idxps = Arrays.asList(
+            indexProvider(true, "tree", updater, StreamerIndexPolicy.EVENT_TRACKING_ON, false),
+            indexProvider(false, "hash", updater, StreamerIndexPolicy.EVENT_TRACKING_ON, false));
 
-        for (GridStreamerIndexProvider<String, String, Integer> idxp : idxps) {
+        for (StreamerIndexProvider<String, String, Integer> idxp : idxps) {
             StreamerUnboundedWindow<String> win = new StreamerUnboundedWindow<>();
 
             win.setIndexes(idxp);
@@ -184,7 +184,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             win.enqueue("A");
             win.enqueue("B");
 
-            GridStreamerIndex<String, Object, Object> idx = win.index(idxp.getName());
+            StreamerIndex<String, Object, Object> idx = win.index(idxp.getName());
 
             assertNotNull(idx);
 
@@ -202,10 +202,10 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @param unique Unique.
      * @return Index provider.
      */
-    private <E, K, V> GridStreamerIndexProvider<E, K, V> indexProvider(boolean treeIdx, String name,
-        GridStreamerIndexUpdater<E, K, V> updater, GridStreamerIndexPolicy plc, boolean unique) {
+    private <E, K, V> StreamerIndexProvider<E, K, V> indexProvider(boolean treeIdx, String name,
+        StreamerIndexUpdater<E, K, V> updater, StreamerIndexPolicy plc, boolean unique) {
         if (treeIdx) {
-            GridStreamerTreeIndexProvider<E, K, V> idx = new GridStreamerTreeIndexProvider<>();
+            StreamerTreeIndexProvider<E, K, V> idx = new StreamerTreeIndexProvider<>();
 
             idx.setName(name);
             idx.setUpdater(updater);
@@ -215,7 +215,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             return idx;
         }
         else {
-            GridStreamerHashIndexProvider<E, K, V> idx = new GridStreamerHashIndexProvider<>();
+            StreamerHashIndexProvider<E, K, V> idx = new StreamerHashIndexProvider<>();
 
             idx.setName(name);
             idx.setUpdater(updater);
@@ -233,7 +233,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      */
     private void checkUniqueHashIndexMultithreaded(int threadCnt, final int iters)
         throws Exception {
-        GridStreamerIndexProvider<String, String, Integer> idxProvider =
+        StreamerIndexProvider<String, String, Integer> idxProvider =
             indexProvider(false, "idx", new IndexUpdater(), EVENT_TRACKING_ON_DEDUP, true);
 
         for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++) {
@@ -265,7 +265,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // Only one thread should succeed, because the index is unique.
             assertEquals(threadCnt - 1, nIdxErrors.get());
 
-            GridStreamerIndex<String, String, Integer> idx = win.index("idx");
+            StreamerIndex<String, String, Integer> idx = win.index("idx");
 
             // Only one event should be present and have value 1.
             assertEquals(1, idx.entries(0).size());
@@ -297,12 +297,12 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                 @Override public void applyx() throws GridException {
                     try {
                         while (!Thread.currentThread().isInterrupted()) {
-                            GridStreamerIndex<String, String, Integer> idx = win.index("idx");
+                            StreamerIndex<String, String, Integer> idx = win.index("idx");
 
                             boolean canPoll = F.forAll(
                                 idx.entries(-1 * threadCnt),
-                                new P1<GridStreamerIndexEntry<String, String, Integer>>() {
-                                    @Override public boolean apply(GridStreamerIndexEntry<String, String, Integer> e) {
+                                new P1<StreamerIndexEntry<String, String, Integer>>() {
+                                    @Override public boolean apply(StreamerIndexEntry<String, String, Integer> e) {
                                         return e.value() > 2;
                                     }
                                 });
@@ -331,8 +331,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                     for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++) {
                         win.enqueue(evt);
 
-                        GridStreamerIndex<String, String, Integer> idx = win.index("idx");
-                        GridStreamerIndexEntry<String, String, Integer> entry = idx.entry(evt);
+                        StreamerIndex<String, String, Integer> idx = win.index("idx");
+                        StreamerIndexEntry<String, String, Integer> entry = idx.entry(evt);
 
                         assertNotNull(entry);
 
@@ -370,7 +370,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @throws GridException If failed.
      */
-    private void checkNonUniqueIndex(GridStreamerIndexProvider<String, String, Integer> idx) throws GridException {
+    private void checkNonUniqueIndex(StreamerIndexProvider<String, String, Integer> idx) throws GridException {
         assert !idx.isUnique();
 
         StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
@@ -387,20 +387,20 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             win.enqueue("D"); i++;
         }
 
-        GridStreamerIndex<String, String, Integer> idx0 = win.index("idx");
+        StreamerIndex<String, String, Integer> idx0 = win.index("idx");
 
         String s;
 
         while ((s = win.pollEvicted()) != null)
             info("Evicted String: " + s);
 
-        GridStreamerIndex<String, String, Integer> idx1 = win.index("idx");
+        StreamerIndex<String, String, Integer> idx1 = win.index("idx");
 
-        if (idx instanceof GridStreamerTreeIndexProvider) { // Tree index.
+        if (idx instanceof StreamerTreeIndexProvider) { // Tree index.
             assert idx0.sorted();
 
             // Users with unique names.
-            for (GridStreamerIndexEntry<String, String, Integer> e : idx0.entrySet(1)) {
+            for (StreamerIndexEntry<String, String, Integer> e : idx0.entrySet(1)) {
                 info("Entry [e=" + e + ", evts=" + e.events() + ']');
 
                 if (idx.getPolicy() == EVENT_TRACKING_ON || idx.getPolicy() == EVENT_TRACKING_ON_DEDUP) {
@@ -411,7 +411,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             assertTrue(idx0.entrySet(2).isEmpty());
 
-            for (GridStreamerIndexEntry<String, String, Integer> e : idx0.entrySet(5)) {
+            for (StreamerIndexEntry<String, String, Integer> e : idx0.entrySet(5)) {
                 info("Entry [e=" + e + ", evts=" + e.events() + ']');
 
                 if (idx.getPolicy() == EVENT_TRACKING_ON)
@@ -426,9 +426,9 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             assertEquals(5, idx0.entrySet(1).size());
 
-            List<GridStreamerIndexEntry<String, String, Integer>> asc =
+            List<StreamerIndexEntry<String, String, Integer>> asc =
                 new ArrayList<>(idx0.entrySet(true, null, true, null, true));
-            List<GridStreamerIndexEntry<String, String, Integer>> desc =
+            List<StreamerIndexEntry<String, String, Integer>> desc =
                 new ArrayList<>(idx0.entrySet(false, null, true, null, true));
 
             assertEquals(8, asc.size());
@@ -460,7 +460,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         assertEquals(4, idx1.size());
 
-        for (GridStreamerIndexEntry<String, String, Integer> e : idx1.entries(0)) {
+        for (StreamerIndexEntry<String, String, Integer> e : idx1.entries(0)) {
             Collection<String> evts = e.events();
 
             info("Entry [e=" + e + ", evts=" + evts + ']');
@@ -505,7 +505,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @throws GridException If failed.
      */
-    private void checkUniqueIndex(GridStreamerIndexProvider<String, String, String> idx) throws GridException {
+    private void checkUniqueIndex(StreamerIndexProvider<String, String, String> idx) throws GridException {
         assert idx.isUnique();
 
         StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
@@ -529,20 +529,20 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        GridStreamerIndex<String, String, String> idx0 = win.index("idx");
+        StreamerIndex<String, String, String> idx0 = win.index("idx");
 
         String s;
 
         while ((s = win.pollEvicted()) != null)
             info("Evicted string: " + s);
 
-        GridStreamerIndex<String, String, String> idx1 = win.index("idx");
+        StreamerIndex<String, String, String> idx1 = win.index("idx");
 
-        if (idx instanceof GridStreamerTreeIndexProvider) { // Tree index.
+        if (idx instanceof StreamerTreeIndexProvider) { // Tree index.
             assert idx0.sorted();
 
             // Users with unique names.
-            for (GridStreamerIndexEntry<String, String, String> e : idx0.entrySet("A0")) {
+            for (StreamerIndexEntry<String, String, String> e : idx0.entrySet("A0")) {
                 info("Entry [e=" + e + ", evts=" + e.events() + ']');
 
                 if (idx.getPolicy() == EVENT_TRACKING_ON || idx.getPolicy() == EVENT_TRACKING_ON_DEDUP) {
@@ -555,9 +555,9 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, idx0.entrySet("A0").size());
 
-            List<GridStreamerIndexEntry<String, String, String>> asc =
+            List<StreamerIndexEntry<String, String, String>> asc =
                 new ArrayList<>(idx0.entrySet(true, null, true, null, true));
-            List<GridStreamerIndexEntry<String, String, String>> desc =
+            List<StreamerIndexEntry<String, String, String>> desc =
                 new ArrayList<>(idx0.entrySet(false, null, true, null, true));
 
             assertEquals(20, asc.size());
@@ -571,7 +571,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5, idx1.size());
 
-        for (GridStreamerIndexEntry<String, String, String> e : idx1.entries(0)) {
+        for (StreamerIndexEntry<String, String, String> e : idx1.entries(0)) {
             Collection<String> evts = e.events();
 
             info("Entry [e=" + e + ", evts=" + evts + ']');
@@ -599,7 +599,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     /**
      * Name index updater.
      */
-    private static class IndexUpdater implements GridStreamerIndexUpdater<String, String, Integer> {
+    private static class IndexUpdater implements StreamerIndexUpdater<String, String, Integer> {
         /** {@inheritDoc} */
         @Nullable @Override public String indexKey(String evt) {
             return evt;
@@ -611,12 +611,12 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onAdded(GridStreamerIndexEntry<String, String, Integer> entry, String evt) {
+        @Nullable @Override public Integer onAdded(StreamerIndexEntry<String, String, Integer> entry, String evt) {
             return entry.value() + 1;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onRemoved(GridStreamerIndexEntry<String, String, Integer> entry,
+        @Nullable @Override public Integer onRemoved(StreamerIndexEntry<String, String, Integer> entry,
             String evt) {
             int res = entry.value() - 1;
 
@@ -627,7 +627,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     /**
      * Name index updater.
      */
-    private static class HashIndexUpdater implements GridStreamerIndexUpdater<String, String, Integer> {
+    private static class HashIndexUpdater implements StreamerIndexUpdater<String, String, Integer> {
         /** {@inheritDoc} */
         @Nullable @Override public String indexKey(String evt) {
             return evt;
@@ -639,12 +639,12 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onAdded(GridStreamerIndexEntry<String, String, Integer> entry, String evt) {
+        @Nullable @Override public Integer onAdded(StreamerIndexEntry<String, String, Integer> entry, String evt) {
             return entry.value() + 1;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onRemoved(GridStreamerIndexEntry<String, String, Integer> entry,
+        @Nullable @Override public Integer onRemoved(StreamerIndexEntry<String, String, Integer> entry,
             String evt) {
             int res = entry.value() - 1;
 
@@ -655,7 +655,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
     /**
      * Name index updater.
      */
-    private static class UniqueStringIndexUpdater implements GridStreamerIndexUpdater<String, String, String> {
+    private static class UniqueStringIndexUpdater implements StreamerIndexUpdater<String, String, String> {
         /** {@inheritDoc} */
         @Nullable @Override public String indexKey(String evt) {
             return evt;
@@ -667,13 +667,13 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String onAdded(GridStreamerIndexEntry<String, String, String> entry, String evt)
+        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt)
             throws GridException {
             throw new GridException("Unique key violation: " + evt);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String onRemoved(GridStreamerIndexEntry<String, String, String> entry,
+        @Nullable @Override public String onRemoved(StreamerIndexEntry<String, String, String> entry,
             String evt) {
             // On remove we return null as index is unique.
             return null;

@@ -17,9 +17,9 @@ import org.jetbrains.annotations.*;
  * up to date whenever events are added or removed from window.
  * <p>
  * Updater is provided to index provider in configuration usually via
- * {@link GridStreamerIndexProviderAdapter#setUpdater(GridStreamerIndexUpdater)} method.
+ * {@link StreamerIndexProviderAdapter#setUpdater(StreamerIndexUpdater)} method.
  */
-public interface GridStreamerIndexUpdater<E, K, V> {
+public interface StreamerIndexUpdater<E, K, V> {
     /**
      * Given an event, extract index key. For example, if you have a 'Person' object
      * with field 'age' and need to index based on this field, then this method
@@ -58,7 +58,7 @@ public interface GridStreamerIndexUpdater<E, K, V> {
      *      index entry will be removed the index.
      * @throws GridException If entry should not be added to index (e.g. if uniqueness is violated).
      */
-    @Nullable public V onAdded(GridStreamerIndexEntry<E, K, V> entry, E evt) throws GridException;
+    @Nullable public V onAdded(StreamerIndexEntry<E, K, V> entry, E evt) throws GridException;
 
     /**
      * Callback invoked whenever an event is being removed from the window and has
@@ -76,5 +76,5 @@ public interface GridStreamerIndexUpdater<E, K, V> {
      * @return New index value for given key, if {@code null}, then current
      *      index entry will be removed the index.
      */
-    @Nullable public V onRemoved(GridStreamerIndexEntry<E, K, V> entry, E evt);
+    @Nullable public V onRemoved(StreamerIndexEntry<E, K, V> entry, E evt);
 }

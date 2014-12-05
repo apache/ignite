@@ -14,13 +14,13 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Streamer index update synchronizer.
  * <p>
- * Used in {@link GridStreamerIndexProvider} to synchronize
+ * Used in {@link StreamerIndexProvider} to synchronize
  * operations on window index.
  *
- * @see GridStreamerIndexProvider
+ * @see StreamerIndexProvider
  *
  */
-public class GridStreamerIndexUpdateSync {
+public class StreamerIndexUpdateSync {
     /** */
     private volatile int res;
 
@@ -64,6 +64,6 @@ public class GridStreamerIndexUpdateSync {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerIndexUpdateSync.class, this);
+        return S.toString(StreamerIndexUpdateSync.class, this);
     }
 }

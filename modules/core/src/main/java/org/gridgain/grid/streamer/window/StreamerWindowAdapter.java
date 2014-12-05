@@ -34,10 +34,10 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     private IgnitePredicate<Object> filter;
 
     /** Indexes. */
-    private Map<String, GridStreamerIndexProvider<E, ?, ?>> idxsAsMap;
+    private Map<String, StreamerIndexProvider<E, ?, ?>> idxsAsMap;
 
     /** */
-    private GridStreamerIndexProvider<E, ?, ?>[] idxs;
+    private StreamerIndexProvider<E, ?, ?>[] idxs;
 
     /** Lock for updates and snapshot. */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
@@ -251,7 +251,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
         checkConfiguration();
 
         if (idxs != null) {
-            for (GridStreamerIndexProvider<E, ?, ?> idx : idxs)
+            for (StreamerIndexProvider<E, ?, ?> idx : idxs)
                 idx.initialize();
         }
 
@@ -264,7 +264,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
 
         try {
             if (idxs != null) {
-                for (GridStreamerIndexProvider<E, ?, ?> idx : idxs)
+                for (StreamerIndexProvider<E, ?, ?> idx : idxs)
                     idx.reset();
             }
 
@@ -359,14 +359,14 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridStreamerIndex<E, K, V> index() {
+    @Override public <K, V> StreamerIndex<E, K, V> index() {
         return index(null);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridStreamerIndex<E, K, V> index(@Nullable String name) {
+    @Override public <K, V> StreamerIndex<E, K, V> index(@Nullable String name) {
         if (idxsAsMap != null) {
-            GridStreamerIndexProvider<E, K, V> idx = (GridStreamerIndexProvider<E, K, V>)idxsAsMap.get(name);
+            StreamerIndexProvider<E, K, V> idx = (StreamerIndexProvider<E, K, V>)idxsAsMap.get(name);
 
             if (idx == null)
                 throw new IllegalArgumentException("Streamer index is not configured: " + name);
@@ -378,11 +378,11 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridStreamerIndex<E, ?, ?>> indexes() {
+    @Override public Collection<StreamerIndex<E, ?, ?>> indexes() {
         if (idxs != null) {
-            Collection<GridStreamerIndex<E, ?, ?>> res = new ArrayList<>(idxs.length);
+            Collection<StreamerIndex<E, ?, ?>> res = new ArrayList<>(idxs.length);
 
-            for (GridStreamerIndexProvider<E, ?, ?> idx : idxs)
+            for (StreamerIndexProvider<E, ?, ?> idx : idxs)
                 res.add(idx.index());
 
             return res;
@@ -396,7 +396,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
      *
      * @return Index providers.
      */
-    public GridStreamerIndexProvider<E, ?, ?>[] indexProviders() {
+    public StreamerIndexProvider<E, ?, ?>[] indexProviders() {
         return idxs;
     }
 
@@ -407,16 +407,16 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
      * @throws IllegalArgumentException If some index names are not unique.
      */
     @SuppressWarnings("unchecked")
-    public void setIndexes(GridStreamerIndexProvider<E, ?, ?>... idxs) throws IllegalArgumentException {
+    public void setIndexes(StreamerIndexProvider<E, ?, ?>... idxs) throws IllegalArgumentException {
         A.ensure(!F.isEmpty(idxs), "!F.isEmpty(idxs)");
 
         idxsAsMap = new HashMap<>(idxs.length, 1.0f);
-        this.idxs = new GridStreamerIndexProvider[idxs.length];
+        this.idxs = new StreamerIndexProvider[idxs.length];
 
         int i = 0;
 
-        for (GridStreamerIndexProvider<E, ?, ?> idx : idxs) {
-            GridStreamerIndexProvider<E, ?, ?> old = idxsAsMap.put(idx.getName(), idx);
+        for (StreamerIndexProvider<E, ?, ?> idx : idxs) {
+            StreamerIndexProvider<E, ?, ?> old = idxsAsMap.put(idx.getName(), idx);
 
             if (old != null)
                 throw new IllegalArgumentException("Index name is not unique [idx1=" + old + ", idx2=" + idx + ']');
@@ -439,12 +439,12 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
      */
     protected void updateIndexes(E evt, boolean rmv) throws GridException {
         if (idxs != null) {
-            GridStreamerIndexUpdateSync sync = new GridStreamerIndexUpdateSync();
+            StreamerIndexUpdateSync sync = new StreamerIndexUpdateSync();
 
             boolean rollback = true;
 
             try {
-                for (GridStreamerIndexProvider<E, ?, ?> idx : idxs) {
+                for (StreamerIndexProvider<E, ?, ?> idx : idxs) {
                     if (rmv)
                         idx.remove(sync, evt);
                     else
@@ -454,7 +454,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
                 rollback = false;
             }
             finally {
-                for (GridStreamerIndexProvider<E, ?, ?> idx : idxs)
+                for (StreamerIndexProvider<E, ?, ?> idx : idxs)
                     idx.endUpdate(sync, evt, rollback, rmv);
 
                 sync.finish(1);
