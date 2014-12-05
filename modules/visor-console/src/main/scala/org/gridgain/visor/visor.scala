@@ -14,7 +14,7 @@ package org.gridgain.visor
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.{IgniteSystemProperties, IgniteState, Ignition}
-import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{GridEmptyProjectionException, ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
 import org.apache.ignite.lang.IgnitePredicate

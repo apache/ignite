@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.ack
 
+import org.apache.ignite.cluster.GridEmptyProjectionException
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.misc.VisorAckTask
 

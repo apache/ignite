@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{GridEmptyProjectionException, ClusterNode}
 import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
 
 import java.lang.{Boolean => JavaBoolean}
