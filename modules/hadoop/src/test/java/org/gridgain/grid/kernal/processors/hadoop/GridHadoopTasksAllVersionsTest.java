@@ -50,11 +50,11 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      */
     @SuppressWarnings("ConstantConditions")
     public void testMapTask() throws Exception {
-        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
+        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);
 
-        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
 
@@ -203,11 +203,11 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      */
     @SuppressWarnings("ConstantConditions")
     public void testAllTasks() throws Exception {
-        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
+        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);
 
-        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         URI inFileUri = URI.create(ggfsScheme() + inFile.toString());
 

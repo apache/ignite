@@ -65,13 +65,13 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
     protected static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
 
     /** Directory. */
-    protected static final GridGgfsPath DIR = new GridGgfsPath("/dir");
+    protected static final IgniteFsPath DIR = new IgniteFsPath("/dir");
 
     /** Sub-directory. */
-    protected static final GridGgfsPath SUBDIR = new GridGgfsPath(DIR, "subdir");
+    protected static final IgniteFsPath SUBDIR = new IgniteFsPath(DIR, "subdir");
 
     /** File. */
-    protected static final GridGgfsPath FILE = new GridGgfsPath(SUBDIR, "file");
+    protected static final IgniteFsPath FILE = new IgniteFsPath(SUBDIR, "file");
 
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
@@ -192,7 +192,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
      * @param paths Paths to group.
      * @return Paths as array.
      */
-    protected GridGgfsPath[] paths(GridGgfsPath... paths) {
+    protected IgniteFsPath[] paths(IgniteFsPath... paths) {
         return paths;
     }
 

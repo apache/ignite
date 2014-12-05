@@ -78,7 +78,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridGgfsFileNotFoundException If path is not found.
      * @throws GridException If failed.
      */
-    public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException;
+    public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -88,7 +88,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(GridGgfsPath path) throws GridException;
+    public GridGgfsInputStream open(IgniteFsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -99,7 +99,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    @Override public GridGgfsInputStream open(GridGgfsPath path, int bufSize) throws GridException;
+    @Override public GridGgfsInputStream open(IgniteFsPath path, int bufSize) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -111,7 +111,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
+    public GridGgfsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -121,7 +121,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+    @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -135,7 +135,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws GridException;
 
     /**
@@ -152,7 +152,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+    public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException;
 
@@ -165,7 +165,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public GridGgfsOutputStream append(GridGgfsPath path, boolean create) throws GridException;
+    public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -178,7 +178,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    @Override public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+    @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException;
 
     /**
@@ -192,7 +192,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridGgfsFileNotFoundException If target was not found.
      * @throws GridException If error occurred.
      */
-    public void setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException;
+    public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException;
 
     /**
      * Gets affinity block locations for data blocks of the file, i.e. the nodes, on which the blocks
@@ -205,7 +205,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len) throws GridException;
+    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws GridException;
 
     /**
      * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
@@ -220,7 +220,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len, long maxLen)
+    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen)
         throws GridException;
 
     /**
@@ -246,7 +246,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @return Total size.
      * @throws GridException In case of error.
      */
-    public long size(GridGgfsPath path) throws GridException;
+    public long size(IgniteFsPath path) throws GridException;
 
     /**
      * Formats the file system removing all existing entries from it.
@@ -270,7 +270,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException If execution failed.
      */
     public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
+        Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
 
     /**
      * Executes GGFS task with overridden maximum range length (see
@@ -290,7 +290,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException If execution failed.
      */
     public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-        Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
+        Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException;
 
     /**
@@ -306,7 +306,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException If execution failed.
      */
     public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException;
+        @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
 
     /**
      * Executes GGFS task with overridden maximum range length (see
@@ -325,7 +325,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      * @throws GridException If execution failed.
      */
     public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
+        @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
 
     /** {@inheritDoc} */

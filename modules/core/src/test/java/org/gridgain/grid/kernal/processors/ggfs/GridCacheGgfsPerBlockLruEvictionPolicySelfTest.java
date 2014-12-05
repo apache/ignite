@@ -51,10 +51,10 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     private static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
 
     /** File working in PRIMARY mode. */
-    public static final GridGgfsPath FILE = new GridGgfsPath("/file");
+    public static final IgniteFsPath FILE = new IgniteFsPath("/file");
 
     /** File working in DUAL mode. */
-    public static final GridGgfsPath FILE_RMT = new GridGgfsPath("/fileRemote");
+    public static final IgniteFsPath FILE_RMT = new IgniteFsPath("/fileRemote");
 
     /** Primary GGFS instances. */
     private static GridGgfsImpl ggfsPrimary;
@@ -421,7 +421,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @param len Length.
      * @throws Exception If failed.
      */
-    private void read(GridGgfsPath path, int off, int len) throws Exception {
+    private void read(IgniteFsPath path, int off, int len) throws Exception {
         GridGgfsInputStream is = ggfsPrimary.open(path);
 
         is.readFully(off, new byte[len]);
@@ -436,7 +436,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @param len Data length.
      * @throws Exception If failed.
      */
-    private void append(GridGgfsPath path, int len) throws Exception {
+    private void append(IgniteFsPath path, int len) throws Exception {
         GridGgfsOutputStream os = ggfsPrimary.append(path, false);
 
         os.write(new byte[len]);

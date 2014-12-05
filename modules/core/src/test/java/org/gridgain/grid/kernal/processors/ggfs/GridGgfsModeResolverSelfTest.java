@@ -27,22 +27,22 @@ public class GridGgfsModeResolverSelfTest extends TestCase {
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         resolver = new GridGgfsModeResolver(DUAL_SYNC, Arrays.asList(
-            new T2<>(new GridGgfsPath("/a/b/"), PRIMARY),
-            new T2<>(new GridGgfsPath("/a/b/c/d"), PROXY)));
+            new T2<>(new IgniteFsPath("/a/b/"), PRIMARY),
+            new T2<>(new IgniteFsPath("/a/b/c/d"), PROXY)));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testResolve() throws Exception {
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new GridGgfsPath("/")));
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new GridGgfsPath("/a")));
-        assertEquals(DUAL_SYNC, resolver.resolveMode(new GridGgfsPath("/a/1")));
-        assertEquals(PRIMARY, resolver.resolveMode(new GridGgfsPath("/a/b")));
-        assertEquals(PRIMARY, resolver.resolveMode(new GridGgfsPath("/a/b/c")));
-        assertEquals(PRIMARY, resolver.resolveMode(new GridGgfsPath("/a/b/c/2")));
-        assertEquals(PROXY, resolver.resolveMode(new GridGgfsPath("/a/b/c/d")));
-        assertEquals(PROXY, resolver.resolveMode(new GridGgfsPath("/a/b/c/d/e")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/a")));
+        assertEquals(DUAL_SYNC, resolver.resolveMode(new IgniteFsPath("/a/1")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b/c")));
+        assertEquals(PRIMARY, resolver.resolveMode(new IgniteFsPath("/a/b/c/2")));
+        assertEquals(PROXY, resolver.resolveMode(new IgniteFsPath("/a/b/c/d")));
+        assertEquals(PROXY, resolver.resolveMode(new IgniteFsPath("/a/b/c/d/e")));
     }
 
     /**
@@ -50,20 +50,20 @@ public class GridGgfsModeResolverSelfTest extends TestCase {
      */
     public void testResolveChildren() throws Exception {
         assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/1")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/1")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/b")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/b")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY); add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/b/c")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/b/c/2")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/2")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/b/c/d")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d")));
         assertEquals(new HashSet<GridGgfsMode>(){{add(PROXY);}},
-            resolver.resolveChildrenModes(new GridGgfsPath("/a/b/c/d/e")));
+            resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d/e")));
     }
 }

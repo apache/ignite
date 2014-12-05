@@ -21,7 +21,7 @@ import java.io.*;
  * <p>
  * The class is expected to be used only from synchronized context and therefore is not tread-safe.
  */
-public class GridGgfsHadoopReader implements GridGgfsReader {
+public class GridGgfsHadoopReader implements IgniteFsReader {
     /** Secondary file system. */
     private final FileSystem fs;
 

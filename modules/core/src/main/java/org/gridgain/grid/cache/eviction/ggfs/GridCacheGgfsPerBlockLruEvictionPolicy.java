@@ -263,7 +263,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicy implements GridCacheEviction
      * @return {@code True} in case non block of related file must be excluded.
      * @throws GridException In case of faulty patterns.
      */
-    public boolean exclude(GridGgfsPath path) throws GridException {
+    public boolean exclude(IgniteFsPath path) throws GridException {
         assert path != null;
 
         Collection<Pattern> excludePatterns0;

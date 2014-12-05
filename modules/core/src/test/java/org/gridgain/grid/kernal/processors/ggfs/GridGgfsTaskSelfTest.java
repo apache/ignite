@@ -43,7 +43,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         "word6", "word7"};
 
     /** File path. */
-    private static final GridGgfsPath FILE = new GridGgfsPath("/file");
+    private static final IgniteFsPath FILE = new IgniteFsPath("/file");
 
     /** Shared IP finder. */
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
@@ -230,7 +230,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      */
     private static class Task extends GridGgfsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
-        @Override public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range,
+        @Override public GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
             return new Job();
         }

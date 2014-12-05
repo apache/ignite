@@ -16,12 +16,12 @@ import java.io.*;
 /**
  * Path summary: total files count, total directories count, total length.
  */
-public class GridGgfsPathSummary implements Externalizable {
+public class IgniteFsPathSummary implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Path. */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /** File count. */
     private int filesCnt;
@@ -35,7 +35,7 @@ public class GridGgfsPathSummary implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridGgfsPathSummary() {
+    public IgniteFsPathSummary() {
         // No-op.
     }
 
@@ -44,7 +44,7 @@ public class GridGgfsPathSummary implements Externalizable {
      *
      * @param path Path.
      */
-    public GridGgfsPathSummary(GridGgfsPath path) {
+    public IgniteFsPathSummary(IgniteFsPath path) {
         this.path = path;
     }
 
@@ -93,14 +93,14 @@ public class GridGgfsPathSummary implements Externalizable {
     /**
      * @return Path for which summary is obtained.
      */
-    public GridGgfsPath path() {
+    public IgniteFsPath path() {
         return path;
     }
 
     /**
      * @param path Path for which summary is obtained.
      */
-    public void path(GridGgfsPath path) {
+    public void path(IgniteFsPath path) {
         this.path = path;
     }
 
@@ -119,12 +119,12 @@ public class GridGgfsPathSummary implements Externalizable {
         dirCnt = in.readInt();
         totalLen = in.readLong();
 
-        path = new GridGgfsPath();
+        path = new IgniteFsPath();
         path.readExternal(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsPathSummary.class, this);
+        return S.toString(IgniteFsPathSummary.class, this);
     }
 }

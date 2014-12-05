@@ -46,7 +46,7 @@ public final class GgfsExample {
             IgniteFs fs = g.fileSystem("ggfs");
 
             // Working directory path.
-            GridGgfsPath workDir = new GridGgfsPath("/examples/ggfs");
+            IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");
 
             // Cleanup working directory.
             delete(fs, workDir);
@@ -58,7 +58,7 @@ public final class GgfsExample {
             printInfo(fs, workDir);
 
             // File path.
-            GridGgfsPath filePath = new GridGgfsPath(workDir, "file.txt");
+            IgniteFsPath filePath = new IgniteFsPath(workDir, "file.txt");
 
             // Create file.
             create(fs, filePath, new byte[] {1, 2, 3});
@@ -83,7 +83,7 @@ public final class GgfsExample {
 
             // Create several files.
             for (int i = 0; i < 5; i++)
-                create(fs, new GridGgfsPath(workDir, "file-" + i + ".txt"), null);
+                create(fs, new IgniteFsPath(workDir, "file-" + i + ".txt"), null);
 
             list(fs, workDir);
         }
@@ -100,7 +100,7 @@ public final class GgfsExample {
      * @param path File or directory path.
      * @throws GridException In case of error.
      */
-    private static void delete(IgniteFs fs, GridGgfsPath path) throws GridException {
+    private static void delete(IgniteFs fs, IgniteFsPath path) throws GridException {
         assert fs != null;
         assert path != null;
 
@@ -132,7 +132,7 @@ public final class GgfsExample {
      * @param path Directory path.
      * @throws GridException In case of error.
      */
-    private static void mkdirs(IgniteFs fs, GridGgfsPath path) throws GridException {
+    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws GridException {
         assert fs != null;
         assert path != null;
 
@@ -159,7 +159,7 @@ public final class GgfsExample {
      * @throws GridException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void create(IgniteFs fs, GridGgfsPath path, @Nullable byte[] data)
+    private static void create(IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
         throws GridException, IOException {
         assert fs != null;
         assert path != null;
@@ -188,7 +188,7 @@ public final class GgfsExample {
      * @throws GridException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(IgniteFs fs, GridGgfsPath path, byte[] data) throws GridException, IOException {
+    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws GridException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
@@ -213,7 +213,7 @@ public final class GgfsExample {
      * @throws GridException If file can't be opened.
      * @throws IOException If data can't be read.
      */
-    private static void read(IgniteFs fs, GridGgfsPath path) throws GridException, IOException {
+    private static void read(IgniteFs fs, IgniteFsPath path) throws GridException, IOException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isFile();
@@ -235,12 +235,12 @@ public final class GgfsExample {
      * @param path Directory path.
      * @throws GridException In case of error.
      */
-    private static void list(IgniteFs fs, GridGgfsPath path) throws GridException {
+    private static void list(IgniteFs fs, IgniteFsPath path) throws GridException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
 
-        Collection<GridGgfsPath> files = fs.listPaths(path);
+        Collection<IgniteFsPath> files = fs.listPaths(path);
 
         if (files.isEmpty()) {
             System.out.println();
@@ -250,7 +250,7 @@ public final class GgfsExample {
             System.out.println();
             System.out.println(">>> List of files in directory: " + path);
 
-            for (GridGgfsPath f : files)
+            for (IgniteFsPath f : files)
                 System.out.println(">>>     " + f.name());
         }
 
@@ -264,7 +264,7 @@ public final class GgfsExample {
      * @param path File or directory path.
      * @throws GridException In case of error.
      */
-    private static void printInfo(IgniteFs fs, GridGgfsPath path) throws GridException {
+    private static void printInfo(IgniteFs fs, IgniteFsPath path) throws GridException {
         System.out.println();
         System.out.println("Information for " + path + ": " + fs.info(path));
     }

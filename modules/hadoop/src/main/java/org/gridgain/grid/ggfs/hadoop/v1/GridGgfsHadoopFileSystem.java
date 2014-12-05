@@ -263,7 +263,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null && !paths.pathModes().isEmpty()) {
-                for (T2<GridGgfsPath, GridGgfsMode> pathMode : paths.pathModes()) {
+                for (T2<IgniteFsPath, GridGgfsMode> pathMode : paths.pathModes()) {
                     GridGgfsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
@@ -404,7 +404,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 secondaryFs.setTimes(toSecondary(p), mtime, atime);
             }
             else {
-                GridGgfsPath path = convert(p);
+                IgniteFsPath path = convert(p);
 
                 rmtClient.setTimes(path, atime, mtime);
             }
@@ -476,7 +476,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -544,7 +544,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         OutputStream out = null;
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
@@ -622,7 +622,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
@@ -687,8 +687,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath srcPath = convert(src);
-            GridGgfsPath dstPath = convert(dst);
+            IgniteFsPath srcPath = convert(src);
+            IgniteFsPath dstPath = convert(dst);
             GridGgfsMode mode = mode(srcPath);
 
             if (mode == PROXY) {
@@ -739,7 +739,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -784,7 +784,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -898,7 +898,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = mode(path);
 
             if (mode == PROXY) {
@@ -983,7 +983,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 return secondaryFs.getContentSummary(toSecondary(f));
             }
             else {
-                GridGgfsPathSummary sum = rmtClient.contentSummary(convert(f));
+                IgniteFsPathSummary sum = rmtClient.contentSummary(convert(f));
 
                 return new ContentSummary(sum.totalLength(), sum.filesCount(), sum.directoriesCount(),
                     -1, sum.totalLength(), rmtClient.fsStatus().spaceTotal());
@@ -1001,7 +1001,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(status.getPath());
+            IgniteFsPath path = convert(status.getPath());
 
             if (mode(status.getPath()) == PROXY) {
                 if (secondaryFs == null) {
@@ -1017,7 +1017,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             else {
                 long now = System.currentTimeMillis();
 
-                List<GridGgfsBlockLocation> affinity = new ArrayList<>(rmtClient.affinity(path, start, len));
+                List<IgniteFsBlockLocation> affinity = new ArrayList<>(rmtClient.affinity(path, start, len));
 
                 BlockLocation[] arr = new BlockLocation[affinity.size()];
 
@@ -1061,7 +1061,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param path GGFS path.
      * @return Path mode.
      */
-    public GridGgfsMode mode(GridGgfsPath path) {
+    public GridGgfsMode mode(IgniteFsPath path) {
         return modeRslvr.resolveMode(path);
     }
 
@@ -1133,7 +1133,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(GridGgfsPath path) {
+    private Path convert(IgniteFsPath path) {
         return new Path(GGFS_SCHEME, uriAuthority, path.toString());
     }
 
@@ -1143,12 +1143,12 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param path Hadoop path.
      * @return GGFS path.
      */
-    @Nullable private GridGgfsPath convert(@Nullable Path path) {
+    @Nullable private IgniteFsPath convert(@Nullable Path path) {
         if (path == null)
             return null;
 
-        return path.isAbsolute() ? new GridGgfsPath(path.toUri().getPath()) :
-            new GridGgfsPath(convert(workingDir.get()), path.toUri().getPath());
+        return path.isAbsolute() ? new IgniteFsPath(path.toUri().getPath()) :
+            new IgniteFsPath(convert(workingDir.get()), path.toUri().getPath());
     }
 
     /**
@@ -1157,7 +1157,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param block GGFS affinity block location.
      * @return Hadoop affinity block location.
      */
-    private BlockLocation convert(GridGgfsBlockLocation block) {
+    private BlockLocation convert(IgniteFsBlockLocation block) {
         Collection<String> names = block.names();
         Collection<String> hosts = block.hosts();
 

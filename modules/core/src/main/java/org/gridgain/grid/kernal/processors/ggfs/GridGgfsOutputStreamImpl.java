@@ -90,7 +90,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws GridException If stream creation failed.
      */
-    GridGgfsOutputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
+    GridGgfsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
         int bufSize, GridGgfsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
         throws GridException {
         super(path, optimizeBufferSize(bufSize, fileInfo));

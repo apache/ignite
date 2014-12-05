@@ -175,8 +175,8 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
 
-        mgr.removeIfEmpty(ROOT_ID, "dir", dir.id(), new GridGgfsPath("/dir"), true);
-        mgr.removeIfEmpty(ROOT_ID, "file", file.id(), new GridGgfsPath("/file"), true);
+        mgr.removeIfEmpty(ROOT_ID, "dir", dir.id(), new IgniteFsPath("/dir"), true);
+        mgr.removeIfEmpty(ROOT_ID, "file", file.id(), new IgniteFsPath("/file"), true);
 
         assertNull(mgr.updateProperties(ROOT_ID, dir.id(), "dir", F.asMap("p", "7")));
         assertNull(mgr.updateProperties(ROOT_ID, file.id(), "file", F.asMap("q", "8")));
@@ -230,15 +230,15 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         }
 
         // Validate 'file ID' operations.
-        assertEquals(ROOT_ID, mgr.fileId(new GridGgfsPath("/")));
-        assertEquals(a.id(), mgr.fileId(new GridGgfsPath("/a")));
-        assertEquals(b.id(), mgr.fileId(new GridGgfsPath("/a/b")));
-        assertEquals(f1.id(), mgr.fileId(new GridGgfsPath("/f1")));
-        assertEquals(f2.id(), mgr.fileId(new GridGgfsPath("/a/f2")));
-        assertEquals(f3.id(), mgr.fileId(new GridGgfsPath("/a/b/f3")));
-        assertNull(mgr.fileId(new GridGgfsPath("/f4")));
-        assertNull(mgr.fileId(new GridGgfsPath("/a/f5")));
-        assertNull(mgr.fileId(new GridGgfsPath("/a/b/f6")));
+        assertEquals(ROOT_ID, mgr.fileId(new IgniteFsPath("/")));
+        assertEquals(a.id(), mgr.fileId(new IgniteFsPath("/a")));
+        assertEquals(b.id(), mgr.fileId(new IgniteFsPath("/a/b")));
+        assertEquals(f1.id(), mgr.fileId(new IgniteFsPath("/f1")));
+        assertEquals(f2.id(), mgr.fileId(new IgniteFsPath("/a/f2")));
+        assertEquals(f3.id(), mgr.fileId(new IgniteFsPath("/a/b/f3")));
+        assertNull(mgr.fileId(new IgniteFsPath("/f4")));
+        assertNull(mgr.fileId(new IgniteFsPath("/a/f5")));
+        assertNull(mgr.fileId(new IgniteFsPath("/a/b/f6")));
 
         assertEquals(a.id(), mgr.fileId(ROOT_ID, "a"));
         assertEquals(b.id(), mgr.fileId(a.id(), "b"));
@@ -249,16 +249,16 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertNull(mgr.fileId(a.id(), "f5"));
         assertNull(mgr.fileId(b.id(), "f6"));
 
-        assertEquals(Arrays.asList(ROOT_ID), mgr.fileIds(new GridGgfsPath("/")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id()), mgr.fileIds(new GridGgfsPath("/a")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id()), mgr.fileIds(new GridGgfsPath("/a/b")));
-        assertEquals(Arrays.asList(ROOT_ID, f1.id()), mgr.fileIds(new GridGgfsPath("/f1")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), f2.id()), mgr.fileIds(new GridGgfsPath("/a/f2")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), f3.id()), mgr.fileIds(new GridGgfsPath("/a/b/f3")));
-        assertEquals(Arrays.asList(ROOT_ID, null), mgr.fileIds(new GridGgfsPath("/f4")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), null), mgr.fileIds(new GridGgfsPath("/a/f5")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new GridGgfsPath("/a/b/f6")));
-        assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new GridGgfsPath("/f7/a/b/f6")));
+        assertEquals(Arrays.asList(ROOT_ID), mgr.fileIds(new IgniteFsPath("/")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id()), mgr.fileIds(new IgniteFsPath("/a")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id()), mgr.fileIds(new IgniteFsPath("/a/b")));
+        assertEquals(Arrays.asList(ROOT_ID, f1.id()), mgr.fileIds(new IgniteFsPath("/f1")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id(), f2.id()), mgr.fileIds(new IgniteFsPath("/a/f2")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), f3.id()), mgr.fileIds(new IgniteFsPath("/a/b/f3")));
+        assertEquals(Arrays.asList(ROOT_ID, null), mgr.fileIds(new IgniteFsPath("/f4")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id(), null), mgr.fileIds(new IgniteFsPath("/a/f5")));
+        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgniteFsPath("/a/b/f6")));
+        assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgniteFsPath("/f7/a/b/f6")));
 
         // Validate 'rename' operation.
         final IgniteUuid rndId = IgniteUuid.randomUuid();
@@ -309,19 +309,19 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {
             // One of participants doesn't exist.
-            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", IgniteUuid.randomUuid(), new GridGgfsPath("/a"), true));
+            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", IgniteUuid.randomUuid(), new IgniteFsPath("/a"), true));
             assertNull(mgr.removeIfEmpty(IgniteUuid.randomUuid(), "a", IgniteUuid.randomUuid(),
-                new GridGgfsPath("/" + IgniteUuid.randomUuid() + "/a"), true));
+                new IgniteFsPath("/" + IgniteUuid.randomUuid() + "/a"), true));
         }
 
-        expectsRemoveFail(ROOT_ID, "a", a.id(), new GridGgfsPath("/a"),
+        expectsRemoveFail(ROOT_ID, "a", a.id(), new IgniteFsPath("/a"),
             "Failed to remove file (directory is not empty)");
-        expectsRemoveFail(a.id(), "b", b.id(), new GridGgfsPath("/a/b"),
+        expectsRemoveFail(a.id(), "b", b.id(), new IgniteFsPath("/a/b"),
             "Failed to remove file (directory is not empty)");
-        assertNull(mgr.removeIfEmpty(ROOT_ID, "a", f1.id(), new GridGgfsPath("/a"), true));
-        assertNull(mgr.removeIfEmpty(a.id(), "b", f1.id(), new GridGgfsPath("/a/b"), true));
+        assertNull(mgr.removeIfEmpty(ROOT_ID, "a", f1.id(), new IgniteFsPath("/a"), true));
+        assertNull(mgr.removeIfEmpty(a.id(), "b", f1.id(), new IgniteFsPath("/a/b"), true));
 
-        assertEquals(f3, mgr.removeIfEmpty(b.id(), "f3", f3.id(), new GridGgfsPath("/a/b/f3"), true));
+        assertEquals(f3, mgr.removeIfEmpty(b.id(), "f3", f3.id(), new IgniteFsPath("/a/b/f3"), true));
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -331,7 +331,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new GridGgfsPath("/a/b"), true));
+        assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new IgniteFsPath("/a/b"), true));
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -351,7 +351,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(f2.id(), newF2.id());
         assertNotSame(f2, newF2);
 
-        assertEquals(newF2, mgr.removeIfEmpty(a.id(), "f2", f2.id(), new GridGgfsPath("/a/f2"), true));
+        assertEquals(newF2, mgr.removeIfEmpty(a.id(), "f2", f2.id(), new IgniteFsPath("/a/f2"), true));
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a), "f1", new GridGgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -359,14 +359,14 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(f1, mgr.removeIfEmpty(ROOT_ID, "f1", f1.id(), new GridGgfsPath("/f1"), true));
+        assertEquals(f1, mgr.removeIfEmpty(ROOT_ID, "f1", f1.id(), new IgniteFsPath("/f1"), true));
 
         assertEquals(F.asMap("a", new GridGgfsListingEntry(a)), mgr.directoryListing(ROOT_ID));
 
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(a, mgr.removeIfEmpty(ROOT_ID, "a", a.id(), new GridGgfsPath("/a"), true));
+        assertEquals(a, mgr.removeIfEmpty(ROOT_ID, "a", a.id(), new IgniteFsPath("/a"), true));
 
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEmpty(mgr.directoryListing(a.id()));
@@ -446,7 +446,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param msg Failure message if expected exception was not thrown.
      */
     private void expectsRemoveFail(final IgniteUuid parentId, final String fileName, final IgniteUuid fileId,
-        final GridGgfsPath path, @Nullable String msg) {
+        final IgniteFsPath path, @Nullable String msg) {
         assertThrows(log, new Callable() {
             @Nullable @Override public Object call() throws Exception {
                 mgr.removeIfEmpty(parentId, fileName, fileId, path, true);

@@ -71,7 +71,7 @@ public final class GridGgfsFileInfo implements Externalizable {
      * Original file path. This is a helper field used only in some
      * operations like delete.
      */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /**
      * {@link Externalizable} support.
@@ -459,7 +459,7 @@ public final class GridGgfsFileInfo implements Externalizable {
     /**
      * @return Original file path. This is a helper field used only in some operations like delete.
      */
-    public GridGgfsPath path() {
+    public IgniteFsPath path() {
         return path;
     }
 
@@ -492,7 +492,7 @@ public final class GridGgfsFileInfo implements Externalizable {
         accessTime = in.readLong();
         modificationTime = in.readLong();
         evictExclude = in.readBoolean();
-        path = (GridGgfsPath)in.readObject();
+        path = (IgniteFsPath)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -541,7 +541,7 @@ public final class GridGgfsFileInfo implements Externalizable {
          * @param path A new path value.
          * @return This builder instance (for chaining).
          */
-        public Builder path(GridGgfsPath path) {
+        public Builder path(IgniteFsPath path) {
             info.path = path;
 
             return this;

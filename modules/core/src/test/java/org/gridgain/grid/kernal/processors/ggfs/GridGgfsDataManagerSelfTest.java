@@ -148,7 +148,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
-            GridGgfsPath path = new GridGgfsPath();
+            IgniteFsPath path = new IgniteFsPath();
             GridGgfsFileInfo info = new GridGgfsFileInfo(200, null, false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -229,7 +229,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
         final int blockSize = GGFS_BLOCK_SIZE;
 
         for (int i = 0; i < 10; i++) {
-            GridGgfsPath path = new GridGgfsPath();
+            IgniteFsPath path = new IgniteFsPath();
             GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, null, false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -316,7 +316,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
         final int writesCnt = 64;
 
         for (int i = 0; i < 10; i++) {
-            GridGgfsPath path = new GridGgfsPath();
+            IgniteFsPath path = new IgniteFsPath();
             GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, null, false, null);
 
             GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange();
@@ -388,17 +388,17 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
         GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
-            assertEquals("Expects no affinity for zero length.", Collections.<GridGgfsBlockLocation>emptyList(),
+            assertEquals("Expects no affinity for zero length.", Collections.<IgniteFsBlockLocation>emptyList(),
                 mgr.affinity(info, pos, 0));
 
             // Expects grouped data blocks are interpreted as a single block location.
             // And no guaranties for blocks out of the group.
             for (int len = 1, maxLen = grpSize - pos % grpSize; len < maxLen; len++) {
-                Collection<GridGgfsBlockLocation> aff = mgr.affinity(info, pos, len);
+                Collection<IgniteFsBlockLocation> aff = mgr.affinity(info, pos, len);
 
                 assertEquals("Unexpected affinity: " + aff, 1, aff.size());
 
-                GridGgfsBlockLocation loc = F.first(aff);
+                IgniteFsBlockLocation loc = F.first(aff);
 
                 assertEquals("Unexpected block location: " + loc, pos, loc.start());
                 assertEquals("Unexpected block location: " + loc, len, loc.length());
@@ -406,11 +406,11 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             // Validate ranges.
             for (int len = grpSize * 4 + 1, maxLen = 5 * grpSize - pos % grpSize; len < maxLen; len++) {
-                Collection<GridGgfsBlockLocation> aff = mgr.affinity(info, pos, len);
+                Collection<IgniteFsBlockLocation> aff = mgr.affinity(info, pos, len);
 
                 assertTrue("Unexpected affinity [aff=" + aff + ", pos=" + pos + ", len=" + len + ']', aff.size() <= 5);
 
-                GridGgfsBlockLocation first = F.first(aff);
+                IgniteFsBlockLocation first = F.first(aff);
 
                 assertEquals("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     pos, first.start());
@@ -418,7 +418,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
                 assertTrue("Unexpected the first block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     first.length() >= grpSize - pos % grpSize);
 
-                GridGgfsBlockLocation last = F.last(aff);
+                IgniteFsBlockLocation last = F.last(aff);
 
                 assertTrue("Unexpected the last block location [aff=" + aff + ", pos=" + pos + ", len=" + len + ']',
                     last.start() <= (pos / grpSize + 4) * grpSize);
@@ -435,9 +435,9 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         GridGgfsFileInfo info = new GridGgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
-        Collection<GridGgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
+        Collection<IgniteFsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
-        for (GridGgfsBlockLocation loc : affinity) {
+        for (IgniteFsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);
@@ -475,7 +475,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         info.fileMap(map);
 
-        Collection<GridGgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
+        Collection<IgniteFsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
         checkAffinity(blockSize, info, affinity);
 
@@ -507,10 +507,10 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param info File info.
      * @param affinity Affinity block locations to check.
      */
-    private void checkAffinity(int blockSize, GridGgfsFileInfo info, Iterable<GridGgfsBlockLocation> affinity) {
+    private void checkAffinity(int blockSize, GridGgfsFileInfo info, Iterable<IgniteFsBlockLocation> affinity) {
         GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
-        for (GridGgfsBlockLocation loc : affinity) {
+        for (IgniteFsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);
 
             int block = (int)(loc.start() / blockSize);

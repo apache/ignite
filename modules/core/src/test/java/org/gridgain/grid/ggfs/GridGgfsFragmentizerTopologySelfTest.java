@@ -23,7 +23,7 @@ public class GridGgfsFragmentizerTopologySelfTest extends GridGgfsFragmentizerAb
 
         // Now node 1 should be coordinator.
         try {
-            GridGgfsPath path = new GridGgfsPath("/someFile");
+            IgniteFsPath path = new IgniteFsPath("/someFile");
 
             IgniteFs ggfs = grid(1).fileSystem("ggfs");
 

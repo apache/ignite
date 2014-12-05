@@ -83,7 +83,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     private GridGgfsHadoopWrapper rmtClient;
 
     /** Working directory. */
-    private GridGgfsPath workingDir;
+    private IgniteFsPath workingDir;
 
     /** URI. */
     private URI uri;
@@ -143,7 +143,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             throw e;
         }
 
-        workingDir = new GridGgfsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
+        workingDir = new IgniteFsPath("/user/" + cfg.get(MRJobConfig.USER_NAME, DFLT_USER_NAME));
     }
 
     /** {@inheritDoc} */
@@ -258,7 +258,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null) {
-                for (T2<GridGgfsPath, GridGgfsMode> pathMode : paths.pathModes()) {
+                for (T2<IgniteFsPath, GridGgfsMode> pathMode : paths.pathModes()) {
                     GridGgfsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
@@ -421,7 +421,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -496,7 +496,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         OutputStream out = null;
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = modeRslvr.resolveMode(path);
 
             if (LOG.isDebugEnabled())
@@ -594,8 +594,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         enterBusy();
 
         try {
-            GridGgfsPath srcPath = convert(src);
-            GridGgfsPath dstPath = convert(dst);
+            IgniteFsPath srcPath = convert(src);
+            IgniteFsPath dstPath = convert(dst);
             Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
             if (childrenModes.contains(PROXY)) {
@@ -622,7 +622,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = modeRslvr.resolveMode(path);
             Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -667,7 +667,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -727,7 +727,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         enterBusy();
 
         try {
-            GridGgfsPath path = convert(f);
+            IgniteFsPath path = convert(f);
             GridGgfsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
@@ -775,7 +775,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
     @Override public BlockLocation[] getFileBlockLocations(Path path, long start, long len) throws IOException {
         A.notNull(path, "path");
 
-        GridGgfsPath ggfsPath = convert(path);
+        IgniteFsPath ggfsPath = convert(path);
 
         enterBusy();
 
@@ -785,7 +785,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             else {
                 long now = System.currentTimeMillis();
 
-                List<GridGgfsBlockLocation> affinity = new ArrayList<>(
+                List<IgniteFsBlockLocation> affinity = new ArrayList<>(
                     rmtClient.affinity(ggfsPath, start, len));
 
                 BlockLocation[] arr = new BlockLocation[affinity.size()];
@@ -882,7 +882,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(GridGgfsPath path) {
+    private Path convert(IgniteFsPath path) {
         return new Path(GGFS_SCHEME, uriAuthority, path.toString());
     }
 
@@ -892,12 +892,12 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @param path Hadoop path.
      * @return GGFS path.
      */
-    @Nullable private GridGgfsPath convert(Path path) {
+    @Nullable private IgniteFsPath convert(Path path) {
         if (path == null)
             return null;
 
-        return path.isAbsolute() ? new GridGgfsPath(path.toUri().getPath()) :
-            new GridGgfsPath(workingDir, path.toUri().getPath());
+        return path.isAbsolute() ? new IgniteFsPath(path.toUri().getPath()) :
+            new IgniteFsPath(workingDir, path.toUri().getPath());
     }
 
     /**
@@ -906,7 +906,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @param block GGFS affinity block location.
      * @return Hadoop affinity block location.
      */
-    private BlockLocation convert(GridGgfsBlockLocation block) {
+    private BlockLocation convert(IgniteFsBlockLocation block) {
         Collection<String> names = block.names();
         Collection<String> hosts = block.hosts();
 

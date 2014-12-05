@@ -23,7 +23,7 @@ import java.nio.*;
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 abstract class GridGgfsOutputStreamAdapter extends GridGgfsOutputStream {
     /** Path to file. */
-    protected final GridGgfsPath path;
+    protected final IgniteFsPath path;
 
     /** Buffer size. */
     private final int bufSize;
@@ -47,7 +47,7 @@ abstract class GridGgfsOutputStreamAdapter extends GridGgfsOutputStream {
      * @param path Path to stored file.
      * @param bufSize The size of the buffer to be used.
      */
-    GridGgfsOutputStreamAdapter(GridGgfsPath path, int bufSize) {
+    GridGgfsOutputStreamAdapter(IgniteFsPath path, int bufSize) {
         assert path != null;
         assert bufSize > 0;
 

@@ -370,8 +370,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws GridException If failed.
      */
-    @Nullable public IgniteFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final GridGgfsPath path,
-        final long blockIdx, @Nullable final GridGgfsReader secReader)
+    @Nullable public IgniteFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final IgniteFsPath path,
+        final long blockIdx, @Nullable final IgniteFsReader secReader)
         throws GridException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
@@ -729,7 +729,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Affinity blocks locations.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len)
+    public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len)
         throws GridException {
         return affinity(info, start, len, 0);
     }
@@ -744,7 +744,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @return Affinity blocks locations.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len, long maxLen)
+    public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len, long maxLen)
         throws GridException {
         assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
@@ -770,7 +770,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         // In case when affinity key is not null the whole file resides on one node.
         if (info.affinityKey() != null) {
-            Collection<GridGgfsBlockLocation> res = new LinkedList<>();
+            Collection<IgniteFsBlockLocation> res = new LinkedList<>();
 
             splitBlocks(start, len, maxLen, dataCache.affinity().mapKeyToPrimaryAndBackups(
                 new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 0)), res);
@@ -779,7 +779,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         // Need to merge ranges affinity with non-colocated affinity.
-        Deque<GridGgfsBlockLocation> res = new LinkedList<>();
+        Deque<IgniteFsBlockLocation> res = new LinkedList<>();
 
         if (info.fileMap().ranges().isEmpty()) {
             affinity0(info, start, len, maxLen, res);
@@ -803,7 +803,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 pos = partEnd;
             }
 
-            GridGgfsBlockLocation last = res.peekLast();
+            IgniteFsBlockLocation last = res.peekLast();
 
             if (range.belongs(pos)) {
                 long partEnd = Math.min(range.endOffset() + 1, end);
@@ -854,7 +854,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param res Result collection to add regions to.
      * @throws GridException If failed.
      */
-    private void affinity0(GridGgfsFileInfo info, long start, long len, long maxLen, Deque<GridGgfsBlockLocation> res)
+    private void affinity0(GridGgfsFileInfo info, long start, long len, long maxLen, Deque<IgniteFsBlockLocation> res)
         throws GridException {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
@@ -897,7 +897,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 log.debug("Mapped key to nodes [key=" + key + ", nodes=" + F.nodeIds(affNodes) +
                 ", blockStart=" + blockStart + ", blockLen=" + blockLen + ']');
 
-            GridGgfsBlockLocation last = res.peekLast();
+            IgniteFsBlockLocation last = res.peekLast();
 
             // Merge with previous affinity block location?
             if (last != null && equal(last.nodeIds(), F.viewReadOnly(affNodes, F.node2id()))) {
@@ -926,7 +926,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param res Where to put results.
      */
     private void splitBlocks(long start, long len, long maxLen,
-        Collection<ClusterNode> nodes, Collection<GridGgfsBlockLocation> res) {
+        Collection<ClusterNode> nodes, Collection<IgniteFsBlockLocation> res) {
         if (maxLen > 0) {
             long end = start + len;
 

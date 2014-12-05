@@ -31,7 +31,7 @@ public class GridGgfsPaths implements Externalizable {
     private GridGgfsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<GridGgfsPath, GridGgfsMode>> pathModes;
+    private List<T2<IgniteFsPath, GridGgfsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -47,7 +47,7 @@ public class GridGgfsPaths implements Externalizable {
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsPaths(Map<String, String> props, GridGgfsMode dfltMode, @Nullable List<T2<GridGgfsPath,
+    public GridGgfsPaths(Map<String, String> props, GridGgfsMode dfltMode, @Nullable List<T2<IgniteFsPath,
         GridGgfsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;
@@ -71,7 +71,7 @@ public class GridGgfsPaths implements Externalizable {
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<GridGgfsPath, GridGgfsMode>> pathModes() {
+    @Nullable public List<T2<IgniteFsPath, GridGgfsMode>> pathModes() {
         return pathModes;
     }
 
@@ -84,7 +84,7 @@ public class GridGgfsPaths implements Externalizable {
             out.writeBoolean(true);
             out.writeInt(pathModes.size());
 
-            for (T2<GridGgfsPath, GridGgfsMode> pathMode : pathModes) {
+            for (T2<IgniteFsPath, GridGgfsMode> pathMode : pathModes) {
                 pathMode.getKey().writeExternal(out);
                 U.writeEnum0(out, pathMode.getValue());
             }
@@ -104,10 +104,10 @@ public class GridGgfsPaths implements Externalizable {
             pathModes = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                GridGgfsPath path = new GridGgfsPath();
+                IgniteFsPath path = new IgniteFsPath();
                 path.readExternal(in);
 
-                T2<GridGgfsPath, GridGgfsMode> entry = new T2<>(path, GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in)));
+                T2<IgniteFsPath, GridGgfsMode> entry = new T2<>(path, GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in)));
 
                 pathModes.add(entry);
             }

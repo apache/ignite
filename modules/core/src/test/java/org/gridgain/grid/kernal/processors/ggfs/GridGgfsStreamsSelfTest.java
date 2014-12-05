@@ -163,13 +163,13 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     public void testCreateFile() throws Exception {
-        GridGgfsPath root = new GridGgfsPath("/");
-        GridGgfsPath path = new GridGgfsPath("/asdf");
+        IgniteFsPath root = new IgniteFsPath("/");
+        IgniteFsPath path = new IgniteFsPath("/asdf");
 
         long max = 100L * CFG_BLOCK_SIZE / WRITING_THREADS_CNT;
 
         for (long size = 0; size <= max; size = size * 15 / 10 + 1) {
-            assertEquals(Collections.<GridGgfsPath>emptyList(), fs.listPaths(root));
+            assertEquals(Collections.<IgniteFsPath>emptyList(), fs.listPaths(root));
 
             testCreateFile(path, size, new Random().nextInt());
         }
@@ -177,7 +177,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreateFileColocated() throws Exception {
-        GridGgfsPath path = new GridGgfsPath("/colocated");
+        IgniteFsPath path = new IgniteFsPath("/colocated");
 
         UUID uuid = UUID.randomUUID();
 
@@ -202,7 +202,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         GridGgfsFile info = fs.info(path);
 
-        Collection<GridGgfsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
+        Collection<IgniteFsBlockLocation> affNodes = fs.affinity(path, 0, info.length());
 
         assertEquals(1, affNodes.size());
         Collection<UUID> nodeIds = F.first(affNodes).nodeIds();
@@ -219,7 +219,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         GridTestUtils.setFieldValue(fragmentizer, "fragmentizerEnabled", false);
 
-        GridGgfsPath path = new GridGgfsPath("/file");
+        IgniteFsPath path = new IgniteFsPath("/file");
 
         try {
             IgniteFs fs0 = grid(0).fileSystem("ggfs");
@@ -306,17 +306,17 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
      * @param salt Salt for file content generation.
      * @throws Exception In case of any exception.
      */
-    private void testCreateFile(final GridGgfsPath path, final long size, final int salt) throws Exception {
+    private void testCreateFile(final IgniteFsPath path, final long size, final int salt) throws Exception {
         info("Create file [path=" + path + ", size=" + size + ", salt=" + salt + ']');
 
         final AtomicInteger cnt = new AtomicInteger(0);
-        final Collection<GridGgfsPath> cleanUp = new ConcurrentLinkedQueue<>();
+        final Collection<IgniteFsPath> cleanUp = new ConcurrentLinkedQueue<>();
 
         long time = runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int id = cnt.incrementAndGet();
 
-                GridGgfsPath f = new GridGgfsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
+                IgniteFsPath f = new IgniteFsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
 
                 try (GridGgfsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
                     assertNotNull(out);
@@ -373,7 +373,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         if (log.isDebugEnabled())
             log.debug("File descriptor: " + desc);
 
-        Collection<GridGgfsBlockLocation> aff = fs.affinity(path, 0, desc.length());
+        Collection<IgniteFsBlockLocation> aff = fs.affinity(path, 0, desc.length());
 
         assertFalse("Affinity: " + aff, desc.length() != 0 && aff.isEmpty());
 
@@ -388,7 +388,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         info("Cleanup files: " + cleanUp);
 
-        for (GridGgfsPath f : cleanUp) {
+        for (IgniteFsPath f : cleanUp) {
             fs.delete(f, true);
             assertNull(fs.info(f));
         }

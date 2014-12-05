@@ -26,7 +26,7 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link GridGgfsTask#createJob(GridGgfsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
+ * {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, GridGgfsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link GridGgfsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
@@ -88,7 +88,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
 
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
-        for (GridGgfsPath path : args.paths()) {
+        for (IgniteFsPath path : args.paths()) {
             GridGgfsFile file = ggfs.info(path);
 
             if (file == null) {
@@ -98,11 +98,11 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
                     throw new GridException("Failed to process GGFS file because it doesn't exist: " + path);
             }
 
-            Collection<GridGgfsBlockLocation> aff = ggfs.affinity(path, 0, file.length(), args.maxRangeLength());
+            Collection<IgniteFsBlockLocation> aff = ggfs.affinity(path, 0, file.length(), args.maxRangeLength());
 
             long totalLen = 0;
 
-            for (GridGgfsBlockLocation loc : aff) {
+            for (IgniteFsBlockLocation loc : aff) {
                 ClusterNode node = null;
 
                 for (UUID nodeId : loc.nodeIds()) {
@@ -145,7 +145,7 @@ public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTask
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
      * @throws GridException If job creation failed.
      */
-    @Nullable public abstract GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range,
+    @Nullable public abstract GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
         GridGgfsTaskArgs<T> args) throws GridException;
 
     /**

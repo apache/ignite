@@ -54,15 +54,15 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
-        Collection<GridGgfsPath>> PATH_COL_RES = createClosure();
+        Collection<IgniteFsPath>> PATH_COL_RES = createClosure();
 
     /** Expected result is {@code GridGgfsPathSummary}. */
-    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, GridGgfsPathSummary> SUMMARY_RES =
+    private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>, IgniteFsPathSummary> SUMMARY_RES =
         createClosure();
 
     /** Expected result is {@code GridGgfsFile}. */
     private static final GridPlainClosure<GridPlainFuture<GridGgfsMessage>,
-        Collection<GridGgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
+        Collection<IgniteFsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
     /** Grid name. */
     private final String grid;
@@ -157,7 +157,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
+    @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(INFO);
@@ -167,7 +167,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
+    @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(UPDATE);
@@ -178,7 +178,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException {
+    @Override public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(SET_TIMES);
@@ -190,7 +190,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
+    @Override public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(RENAME);
@@ -201,7 +201,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
+    @Override public Boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(DELETE);
@@ -212,7 +212,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len)
+    @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
         throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
@@ -225,7 +225,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsPathSummary contentSummary(GridGgfsPath path) throws GridException {
+    @Override public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(PATH_SUMMARY);
@@ -235,7 +235,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean mkdirs(GridGgfsPath path, Map<String, String> props) throws GridException {
+    @Override public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(MAKE_DIRECTORIES);
@@ -246,7 +246,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
+    @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(LIST_FILES);
@@ -256,7 +256,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(LIST_PATHS);
@@ -271,7 +271,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException {
+    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
         msg.command(OPEN_READ);
@@ -284,7 +284,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(GridGgfsPath path,
+    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path,
         int seqReadsBeforePrefetch) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
@@ -299,7 +299,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
+    @Override public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 
@@ -317,7 +317,7 @@ public class GridGgfsHadoopOutProc implements GridGgfsHadoopEx, GridGgfsHadoopIp
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
+    @Override public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         final GridGgfsPathControlRequest msg = new GridGgfsPathControlRequest();
 

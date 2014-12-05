@@ -160,7 +160,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUpdateProperties() throws Exception {
-        GridGgfsPath p = path("/tmp/my");
+        IgniteFsPath p = path("/tmp/my");
 
         ggfs.mkdirs(p);
 
@@ -193,7 +193,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testCreate() throws Exception {
-        GridGgfsPath path = path("/file");
+        IgniteFsPath path = path("/file");
 
         try (GridGgfsOutputStream os = ggfs.create(path, false)) {
             assert os != null;
@@ -350,7 +350,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         assert ggfs.exists(path("/A/B1/C1"));
 
         // List items.
-        Collection<GridGgfsPath> paths = ggfs.listPaths(path("/"));
+        Collection<IgniteFsPath> paths = ggfs.listPaths(path("/"));
 
         assert paths.size() == 3 : "Unexpected paths: " + paths;
 
@@ -380,12 +380,12 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.delete(path("/A1/B1/C3"), false);
         assertNull(ggfs.info(path("/A1/B1/C3")));
 
-        assertEquals(Collections.<GridGgfsPath>emptyList(), ggfs.listPaths(path("/A1/B1")));
+        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/A1/B1")));
 
         ggfs.delete(path("/A2/B2"), true);
         assertNull(ggfs.info(path("/A2/B2")));
 
-        assertEquals(Collections.<GridGgfsPath>emptyList(), ggfs.listPaths(path("/A2")));
+        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/A2")));
 
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
 
@@ -399,10 +399,10 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
 
         ggfs.delete(path("/"), true);
-        assertEquals(Collections.<GridGgfsPath>emptyList(), ggfs.listPaths(path("/")));
+        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
 
         ggfs.delete(path("/"), false);
-        assertEquals(Collections.<GridGgfsPath>emptyList(), ggfs.listPaths(path("/")));
+        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
 
         for (GridCacheEntry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
@@ -414,13 +414,13 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSize() throws Exception {
-        GridGgfsPath dir1 = path("/dir1");
-        GridGgfsPath subDir1 = path("/dir1/subdir1");
-        GridGgfsPath dir2 = path("/dir2");
+        IgniteFsPath dir1 = path("/dir1");
+        IgniteFsPath subDir1 = path("/dir1/subdir1");
+        IgniteFsPath dir2 = path("/dir2");
 
-        GridGgfsPath fileDir1 = path("/dir1/file");
-        GridGgfsPath fileSubdir1 = path("/dir1/subdir1/file");
-        GridGgfsPath fileDir2 = path("/dir2/file");
+        IgniteFsPath fileDir1 = path("/dir1/file");
+        IgniteFsPath fileSubdir1 = path("/dir1/subdir1/file");
+        IgniteFsPath fileDir2 = path("/dir2/file");
 
         GridGgfsOutputStream os = ggfs.create(fileDir1, false);
         os.write(new byte[1000]);
@@ -512,11 +512,11 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
             F.t("/C1", "/A/B1")
         );
 
-        final GridGgfsPath root = path("/");
+        final IgniteFsPath root = path("/");
 
         for (IgniteBiTuple<String, String> e : chain) {
-            final GridGgfsPath p1 = path(e.get1());
-            final GridGgfsPath p2 = path(e.get2());
+            final IgniteFsPath p1 = path(e.get1());
+            final IgniteFsPath p2 = path(e.get2());
 
             assertTrue("Entry: " + e, ggfs.exists(p1));
             ggfs.rename(p1, p2);
@@ -583,24 +583,24 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         // Cleanup.
         ggfs.delete(root, true);
 
-        assertEquals(Collections.<GridGgfsPath>emptyList(), ggfs.listPaths(root));
+        assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(root));
     }
 
     /**
      * @param path Path.
      * @return GGFS path.
      */
-    private GridGgfsPath path(String path) {
+    private IgniteFsPath path(String path) {
         assert path != null;
 
-        return new GridGgfsPath(path);
+        return new IgniteFsPath(path);
     }
 
     /**
      * @param i Path index.
      * @return GGFS path.
      */
-    private GridGgfsPath path(long i) {
+    private IgniteFsPath path(long i) {
         //return path(String.format("/%d", i));
         return path(String.format("/%d/q/%d/%d", i % 10, (i / 10) % 10, i));
     }
@@ -667,7 +667,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     public void testDeleteCacheConsistency() throws Exception {
-        GridGgfsPath path = new GridGgfsPath("/someFile");
+        IgniteFsPath path = new IgniteFsPath("/someFile");
 
         try (GridGgfsOutputStream out = ggfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
@@ -779,7 +779,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkCreateAppendLongData(int chunkSize, int bufSize, int cnt) throws Exception {
-        GridGgfsPath path = new GridGgfsPath("/someFile");
+        IgniteFsPath path = new IgniteFsPath("/someFile");
 
         byte[] buf = new byte[chunkSize];
 
@@ -887,7 +887,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @param props File properties to set.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void assertUpdatePropertiesFails(@Nullable final GridGgfsPath path,
+    private void assertUpdatePropertiesFails(@Nullable final IgniteFsPath path,
         @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
@@ -955,7 +955,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @throws GridException If failed.
      */
     private void assertListDir(String path, String... item) throws GridException {
-        Collection<GridGgfsFile> files = ggfs.listFiles(new GridGgfsPath(path));
+        Collection<GridGgfsFile> files = ggfs.listFiles(new IgniteFsPath(path));
 
         List<String> names = new ArrayList<>(item.length);
 

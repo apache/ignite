@@ -33,7 +33,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  */
 public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     /** File path. */
-    protected static final GridGgfsPath FILE = new GridGgfsPath("/file");
+    protected static final IgniteFsPath FILE = new IgniteFsPath("/file");
 
     /** Shared IP finder. */
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);

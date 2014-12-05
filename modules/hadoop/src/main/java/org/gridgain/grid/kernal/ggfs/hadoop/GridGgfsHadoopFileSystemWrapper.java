@@ -76,7 +76,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
      * @param path GGFS path.
      * @return Hadoop path.
      */
-    private Path convert(GridGgfsPath path) {
+    private Path convert(IgniteFsPath path) {
         URI uri = fileSys.getUri();
 
         return new Path(uri.getScheme(), uri.getAuthority(), path.toString());
@@ -116,7 +116,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
         else if (e instanceof PathIsNotEmptyDirectoryException)
             return new GridGgfsDirectoryNotEmptyException(e);
         else if (e instanceof PathExistsException)
-            return new GridGgfsPathAlreadyExistsException(msg, e);
+            return new IgniteFsPathAlreadyExistsException(msg, e);
         else
             return new GridGgfsException(msg, e);
     }
@@ -138,7 +138,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(GridGgfsPath path) throws GridException {
+    @Override public boolean exists(IgniteFsPath path) throws GridException {
         try {
             return fileSys.exists(convert(path));
         }
@@ -148,7 +148,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException {
+    @Nullable @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
         GridGgfsHadoopFSProperties props0 = new GridGgfsHadoopFSProperties(props);
 
         try {
@@ -167,7 +167,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
+    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
@@ -180,7 +180,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
+    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
         try {
             return fileSys.delete(convert(path), recursive);
         }
@@ -190,7 +190,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(GridGgfsPath path) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path) throws GridException {
         try {
             if (!fileSys.mkdirs(convert(path)))
                 throw new GridException("Failed to make directories [path=" + path + "]");
@@ -201,7 +201,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
         try {
             if (!fileSys.mkdirs(convert(path), new GridGgfsHadoopFSProperties(props).permission()))
                 throw new GridException("Failed to make directories [path=" + path + ", props=" + props + "]");
@@ -212,17 +212,17 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
             if (statuses == null)
                 throw new GridGgfsFileNotFoundException("Failed to list files (path not found): " + path);
 
-            Collection<GridGgfsPath> res = new ArrayList<>(statuses.length);
+            Collection<IgniteFsPath> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses)
-                res.add(new GridGgfsPath(path, status.getPath().getName()));
+                res.add(new IgniteFsPath(path, status.getPath().getName()));
 
             return res;
         }
@@ -235,7 +235,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
+    @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
@@ -249,7 +249,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
                     new GridGgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
                     properties(status));
 
-                res.add(new GridGgfsFileImpl(new GridGgfsPath(path, status.getPath().getName()), fsInfo, 1));
+                res.add(new GridGgfsFileImpl(new IgniteFsPath(path, status.getPath().getName()), fsInfo, 1));
             }
 
             return res;
@@ -263,12 +263,12 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsReader open(GridGgfsPath path, int bufSize) {
+    @Override public IgniteFsReader open(IgniteFsPath path, int bufSize) {
         return new GridGgfsHadoopReader(fileSys, convert(path), bufSize);
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
+    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
         try {
             return fileSys.create(convert(path), overwrite);
         }
@@ -278,7 +278,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws GridException {
         GridGgfsHadoopFSProperties props0 =
             new GridGgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
@@ -295,7 +295,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream append(GridGgfsPath path, int bufSize, boolean create,
+    @Override public OutputStream append(IgniteFsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         try {
             return fileSys.append(convert(path), bufSize);
@@ -306,7 +306,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFile info(final GridGgfsPath path) throws GridException {
+    @Override public GridGgfsFile info(final IgniteFsPath path) throws GridException {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -316,7 +316,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
             final Map<String, String> props = properties(status);
 
             return new GridGgfsFile() {
-                @Override public GridGgfsPath path() {
+                @Override public IgniteFsPath path() {
                     return path;
                 }
 

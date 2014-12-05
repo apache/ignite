@@ -418,7 +418,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         startUp();
 
-        final GridGgfsPath path = new GridGgfsPath("/file");
+        final IgniteFsPath path = new IgniteFsPath("/file");
 
         // This write is expected to be successful.
         GridGgfsOutputStream os = ggfs(0).create(path, false);
@@ -472,8 +472,8 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         GridGgfsImpl ggfs = ggfs(0);
 
-        final GridGgfsPath path = new GridGgfsPath("/file");
-        final GridGgfsPath otherPath = new GridGgfsPath("/fileOther");
+        final IgniteFsPath path = new IgniteFsPath("/file");
+        final IgniteFsPath otherPath = new IgniteFsPath("/fileOther");
 
         // Fill cache with data up to it's limit.
         GridGgfsOutputStream os = ggfs.create(path, false);
@@ -664,7 +664,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Block key.
      * @throws Exception If failed.
      */
-    private GridGgfsBlockKey blockKey(GridGgfsPath path, long blockId) throws Exception {
+    private GridGgfsBlockKey blockKey(IgniteFsPath path, long blockId) throws Exception {
         GridGgfsEx ggfs0 = (GridGgfsEx)grid(0).fileSystem(GGFS_NAME);
 
         IgniteUuid fileId = ggfs0.context().meta().fileId(path);
@@ -754,7 +754,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         for (int i = 0; i < FILES_CNT; i++) {
             // Create empty file locally.
-            GridGgfsPath path = new GridGgfsPath("/file-" + i);
+            IgniteFsPath path = new IgniteFsPath("/file-" + i);
 
             ggfs(0).create(path, false).close();
 
@@ -797,7 +797,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     /** A file written to the file system. */
     private static class GgfsFile {
         /** Path to the file, */
-        private final GridGgfsPath path;
+        private final IgniteFsPath path;
 
         /** File length. */
         private final int len;
@@ -812,14 +812,14 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
          * @param len Length.
          * @param blocks Blocks.
          */
-        private GgfsFile(GridGgfsPath path, int len, Collection<GgfsBlock> blocks) {
+        private GgfsFile(IgniteFsPath path, int len, Collection<GgfsBlock> blocks) {
             this.path = path;
             this.len = len;
             this.blocks = blocks;
         }
 
         /** @return Path. */
-        GridGgfsPath path() {
+        IgniteFsPath path() {
             return path;
         }
 

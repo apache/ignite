@@ -57,10 +57,10 @@ public class GgfsMapReduceExample {
                 IgniteFs fs = g.fileSystem("ggfs");
 
                 // Working directory path.
-                GridGgfsPath workDir = new GridGgfsPath("/examples/ggfs");
+                IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");
 
                 // Write file to GGFS.
-                GridGgfsPath fsPath = new GridGgfsPath(workDir, file.getName());
+                IgniteFsPath fsPath = new IgniteFsPath(workDir, file.getName());
 
                 writeFile(fs, fsPath, file);
 
@@ -87,7 +87,7 @@ public class GgfsMapReduceExample {
      * @param file File to write.
      * @throws Exception In case of exception.
      */
-    private static void writeFile(IgniteFs fs, GridGgfsPath fsPath, File file) throws Exception {
+    private static void writeFile(IgniteFs fs, IgniteFsPath fsPath, File file) throws Exception {
         System.out.println();
         System.out.println("Copying file to GGFS: " + file);
 
@@ -121,7 +121,7 @@ public class GgfsMapReduceExample {
      */
     private static class GrepTask extends GridGgfsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
-        @Override public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range,
+        @Override public GridGgfsJob createJob(IgniteFsPath path, GridGgfsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
             return new GrepJob(args.userArgument());
         }

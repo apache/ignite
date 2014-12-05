@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 public class GridGgfsFileRange {
     /** File path. */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /** Start position. */
     private long start;
@@ -32,7 +32,7 @@ public class GridGgfsFileRange {
      * @param start Start position.
      * @param len Length.
      */
-    public GridGgfsFileRange(GridGgfsPath path, long start, long len) {
+    public GridGgfsFileRange(IgniteFsPath path, long start, long len) {
         this.path = path;
         this.start = start;
         this.len = len;
@@ -43,7 +43,7 @@ public class GridGgfsFileRange {
      *
      * @return File path.
      */
-    public GridGgfsPath path() {
+    public IgniteFsPath path() {
         return path;
     }
 

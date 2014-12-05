@@ -1532,15 +1532,15 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
             IgniteFs igniteFs = grid(0).fileSystem("ggfs");
 
-            GridGgfsPath filePath = new GridGgfsPath("/someFile");
+            IgniteFsPath filePath = new IgniteFsPath("/someFile");
 
             GridGgfsFile fileInfo = igniteFs.info(filePath);
 
-            Collection<GridGgfsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
+            Collection<IgniteFsBlockLocation> locations = igniteFs.affinity(filePath, 0, fileInfo.length());
 
             assertEquals(1, locations.size());
 
-            GridGgfsBlockLocation location = F.first(locations);
+            IgniteFsBlockLocation location = F.first(locations);
 
             assertEquals(1, location.nodeIds().size());
         }

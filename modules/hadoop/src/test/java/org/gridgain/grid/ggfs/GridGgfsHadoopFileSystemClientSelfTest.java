@@ -120,7 +120,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
 
             client.handshake(null);
 
-            GridGgfsPath path = new GridGgfsPath("/test1.file");
+            IgniteFsPath path = new IgniteFsPath("/test1.file");
 
             GridGgfsHadoopStreamDelegate delegate = client.create(path, true, false, 1, 1024, null);
 

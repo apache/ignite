@@ -27,7 +27,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
     private String ggfsName;
 
     /** Paths. */
-    private Collection<GridGgfsPath> paths;
+    private Collection<IgniteFsPath> paths;
 
     /** Record resolver. */
     private GridGgfsRecordResolver recRslvr;
@@ -58,7 +58,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public GridGgfsTaskArgsImpl(String ggfsName, Collection<GridGgfsPath> paths, GridGgfsRecordResolver recRslvr,
+    public GridGgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, GridGgfsRecordResolver recRslvr,
         boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
@@ -74,7 +74,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridGgfsPath> paths() {
+    @Override public Collection<IgniteFsPath> paths() {
         return paths;
     }
 

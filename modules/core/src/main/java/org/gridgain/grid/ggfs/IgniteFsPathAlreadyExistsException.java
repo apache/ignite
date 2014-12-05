@@ -14,21 +14,21 @@ import org.jetbrains.annotations.*;
 /**
  * Exception thrown when target path supposed to be created already exists.
  */
-public class GridGgfsPathAlreadyExistsException extends GridGgfsInvalidPathException {
+public class IgniteFsPathAlreadyExistsException extends GridGgfsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public GridGgfsPathAlreadyExistsException(String msg) {
+    public IgniteFsPathAlreadyExistsException(String msg) {
         super(msg);
     }
 
     /**
      * @param cause Exception cause.
      */
-    public GridGgfsPathAlreadyExistsException(Throwable cause) {
+    public IgniteFsPathAlreadyExistsException(Throwable cause) {
         super(cause);
     }
 
@@ -36,7 +36,7 @@ public class GridGgfsPathAlreadyExistsException extends GridGgfsInvalidPathExcep
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public GridGgfsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
+    public IgniteFsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

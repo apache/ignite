@@ -308,7 +308,7 @@ public class GridGgfsMarshaller {
      * @param path Path to write.
      * @throws IOException If write failed.
      */
-    private void writePath(ObjectOutput out, @Nullable GridGgfsPath path) throws IOException {
+    private void writePath(ObjectOutput out, @Nullable IgniteFsPath path) throws IOException {
         out.writeBoolean(path != null);
 
         if (path != null)
@@ -316,15 +316,15 @@ public class GridGgfsMarshaller {
     }
 
     /**
-     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, GridGgfsPath)}
+     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.gridgain.grid.ggfs.IgniteFsPath)}
      * method.
      *
      * @param in Data input.
      * @return Written path or {@code null}.
      */
-    @Nullable private GridGgfsPath readPath(ObjectInput in) throws IOException {
+    @Nullable private IgniteFsPath readPath(ObjectInput in) throws IOException {
         if(in.readBoolean()) {
-            GridGgfsPath path = new GridGgfsPath();
+            IgniteFsPath path = new IgniteFsPath();
 
             path.readExternal(in);
 

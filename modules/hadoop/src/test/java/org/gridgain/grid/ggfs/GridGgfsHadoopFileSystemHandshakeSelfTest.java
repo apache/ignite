@@ -49,7 +49,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
     private static final String GGFS_NAME = "ggfs";
 
     /** GGFS path. */
-    private static final GridGgfsPath PATH = new GridGgfsPath("/path");
+    private static final IgniteFsPath PATH = new IgniteFsPath("/path");
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -49,11 +49,11 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
-        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
+        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);
 
-        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "key1", 10000, "key2", 20000, "key3", 15000, "key4", 7000, "key5", 12000,
             "key6", 18000 );
@@ -61,7 +61,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
         for (int i = 0; i < 2; i++) {
             boolean useNewAPI = i == 1;
 
-            ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
+            ggfs.delete(new IgniteFsPath(PATH_OUTPUT), true);
 
             flags.put("serializationWasConfigured", false);
             flags.put("partitionerWasConfigured", false);

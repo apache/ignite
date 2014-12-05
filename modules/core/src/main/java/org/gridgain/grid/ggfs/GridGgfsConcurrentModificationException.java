@@ -22,7 +22,7 @@ public class GridGgfsConcurrentModificationException extends GridGgfsException {
      *
      * @param path Affected path.
      */
-    public GridGgfsConcurrentModificationException(GridGgfsPath path) {
+    public GridGgfsConcurrentModificationException(IgniteFsPath path) {
         super("File system entry has been modified concurrently: " + path, null);
     }
 }

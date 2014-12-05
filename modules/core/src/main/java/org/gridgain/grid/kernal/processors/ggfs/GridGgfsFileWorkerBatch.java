@@ -35,7 +35,7 @@ public class GridGgfsFileWorkerBatch {
     private final BlockingDeque<GridGgfsFileWorkerTask> queue = new LinkedBlockingDeque<>();
 
     /** Path to the file in the primary file system. */
-    private final GridGgfsPath path;
+    private final IgniteFsPath path;
 
     /** Output stream to the file. */
     private final OutputStream out;
@@ -52,7 +52,7 @@ public class GridGgfsFileWorkerBatch {
      * @param path Path to the file in the primary file system.
      * @param out Output stream opened to that file.
      */
-    GridGgfsFileWorkerBatch(GridGgfsPath path, OutputStream out) {
+    GridGgfsFileWorkerBatch(IgniteFsPath path, OutputStream out) {
         assert path != null;
         assert out != null;
 
@@ -182,7 +182,7 @@ public class GridGgfsFileWorkerBatch {
      *
      * @return Primary file system path.
      */
-    GridGgfsPath path() {
+    IgniteFsPath path() {
         return path;
     }
 

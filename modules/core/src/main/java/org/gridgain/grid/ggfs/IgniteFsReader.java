@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * The simplest data input interface to read from secondary file system in dual modes.
  */
-public interface GridGgfsReader extends Closeable {
+public interface IgniteFsReader extends Closeable {
     /**
      * Read up to the specified number of bytes, from a given position within a file, and return the number of bytes
      * read.

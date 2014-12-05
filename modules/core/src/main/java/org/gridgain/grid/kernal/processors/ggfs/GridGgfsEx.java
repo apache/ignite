@@ -39,14 +39,14 @@ public interface GridGgfsEx extends IgniteFs {
     public GridGgfsPaths proxyPaths();
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws GridException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path) throws GridException;
+    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize) throws GridException;
+    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException;
 
     /**
      * Gets global space counters.
@@ -116,7 +116,7 @@ public interface GridGgfsEx extends IgniteFs {
      * @param primary Whether the mode is PRIMARY.
      * @return {@code True} if path is excluded from evictions.
      */
-    public boolean evictExclude(GridGgfsPath path, boolean primary);
+    public boolean evictExclude(IgniteFsPath path, boolean primary);
 
     /**
      * Get next affinity key.

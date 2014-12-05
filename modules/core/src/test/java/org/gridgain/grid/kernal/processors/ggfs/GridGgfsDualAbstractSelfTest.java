@@ -42,13 +42,13 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testDefaultDirectories() throws Exception {
-        GridGgfsPath gg = new GridGgfsPath("/gridgain");
-        GridGgfsPath[] paths = paths(
-            gg, new GridGgfsPath(gg, "sync"), new GridGgfsPath(gg, "async"), new GridGgfsPath(gg, "primary"));
+        IgniteFsPath gg = new IgniteFsPath("/gridgain");
+        IgniteFsPath[] paths = paths(
+            gg, new IgniteFsPath(gg, "sync"), new IgniteFsPath(gg, "async"), new IgniteFsPath(gg, "primary"));
 
         create(ggfs, paths, null);
 
-        for (GridGgfsPath p : paths)
+        for (IgniteFsPath p : paths)
             assert ggfs.exists(p);
 
         assert ggfs.listFiles(gg).size() == 3;
@@ -142,8 +142,8 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testRenameFileParentRootSourceMissing() throws Exception {
-        GridGgfsPath file1 = new GridGgfsPath("/file1");
-        GridGgfsPath file2 = new GridGgfsPath("/file2");
+        IgniteFsPath file1 = new IgniteFsPath("/file1");
+        IgniteFsPath file2 = new IgniteFsPath("/file2");
 
         create(ggfsSecondary, null, paths(file1));
         create(ggfs, null, null);
@@ -191,8 +191,8 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testRenameDirectoryParentRootSourceMissing() throws Exception {
-        GridGgfsPath dir1 = new GridGgfsPath("/dir1");
-        GridGgfsPath dir2 = new GridGgfsPath("/dir2");
+        IgniteFsPath dir1 = new IgniteFsPath("/dir1");
+        IgniteFsPath dir2 = new IgniteFsPath("/dir2");
 
         create(ggfsSecondary, paths(dir1), null);
         create(ggfs, null, null);
@@ -215,7 +215,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -231,7 +231,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, DIR, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -247,7 +247,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -263,7 +263,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -279,7 +279,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -295,7 +295,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(FILE, SUBDIR_NEW);
 
         checkExist(ggfs, DIR, SUBDIR, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -308,10 +308,10 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(ggfs, paths(DIR), null);
 
-        ggfs.rename(FILE, new GridGgfsPath());
+        ggfs.rename(FILE, new IgniteFsPath());
 
         checkExist(ggfs, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -324,10 +324,10 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(ggfs, null, null);
 
-        ggfs.rename(FILE, new GridGgfsPath());
+        ggfs.rename(FILE, new IgniteFsPath());
 
         checkExist(ggfs, DIR, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -337,14 +337,14 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveFileSourceParentRootSourceMissing() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), null);
 
         ggfs.rename(file, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, file);
     }
 
@@ -354,7 +354,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveFileSourceParentRootDestinationMissingPartially() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, paths(DIR_NEW), null);
@@ -362,7 +362,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(file, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, file);
     }
 
@@ -372,7 +372,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveFileSourceParentRootDestinationMissing() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, null, null);
@@ -380,7 +380,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(file, SUBDIR_NEW);
 
         checkExist(ggfs, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, file);
     }
 
@@ -486,7 +486,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameFileDestinationRootSourceMissingPartially() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(ggfs, paths(DIR), null);
@@ -504,7 +504,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameFileDestinationRootSourceMissing() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(ggfs, null, null);
@@ -522,7 +522,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameFileSourceParentRootSourceMissing() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE_NEW.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), null);
@@ -539,7 +539,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameFileSourceParentRootDestinationMissingPartially() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE_NEW.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, paths(DIR_NEW), null);
@@ -557,7 +557,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameFileSourceParentRootDestinationMissing() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE_NEW.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW), paths(file));
         create(ggfs, null, null);
@@ -581,7 +581,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -598,7 +598,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
         checkExist(ggfs, DIR);
         checkExist(ggfs, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -614,7 +614,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -630,7 +630,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
         checkExist(ggfs, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -646,7 +646,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -662,7 +662,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
         checkExist(ggfs, DIR, SUBDIR, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -675,10 +675,10 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(ggfs, paths(DIR), null);
 
-        ggfs.rename(SUBSUBDIR, new GridGgfsPath());
+        ggfs.rename(SUBSUBDIR, new IgniteFsPath());
 
         checkExist(ggfs, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -691,10 +691,10 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(ggfs, null, null);
 
-        ggfs.rename(SUBSUBDIR, new GridGgfsPath());
+        ggfs.rename(SUBSUBDIR, new IgniteFsPath());
 
         checkExist(ggfs, DIR, SUBDIR);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -704,14 +704,14 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveDirectorySourceParentRootSourceMissing() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), null);
 
         ggfs.rename(dir, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, dir);
     }
 
@@ -721,7 +721,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveDirectorySourceParentRootDestinationMissingPartially() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, paths(DIR_NEW), null);
@@ -729,7 +729,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(dir, SUBDIR_NEW);
 
         checkExist(ggfs, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, dir);
     }
 
@@ -739,7 +739,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveDirectorySourceParentRootDestinationMissing() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, null, null);
@@ -747,7 +747,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         ggfs.rename(dir, SUBDIR_NEW);
 
         checkExist(ggfs, DIR_NEW, SUBDIR_NEW);
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, dir);
     }
 
@@ -854,7 +854,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectoryDestinationRootSourceMissingPartially() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(ggfs, paths(DIR), null);
@@ -872,7 +872,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectoryDestinationRootSourceMissing() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(ggfs, null, null);
@@ -890,7 +890,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectorySourceParentRootSourceMissing() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR_NEW.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), null);
@@ -907,7 +907,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectorySourceParentRootDestinationMissingPartially() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR_NEW.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, paths(DIR_NEW), null);
@@ -925,7 +925,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectorySourceParentRootDestinationMissing() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR_NEW.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR_NEW.name());
 
         create(ggfsSecondary, paths(DIR_NEW, SUBDIR_NEW, dir), null);
         create(ggfs, null, null);

@@ -20,10 +20,10 @@ import java.util.*;
  */
 public class GridGgfsPathControlRequest extends GridGgfsMessage {
     /** Main path. */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /** Second path, rename command. */
-    private GridGgfsPath destPath;
+    private IgniteFsPath destPath;
 
     /** Boolean flag, meaning depends on command. */
     private boolean flag;
@@ -58,14 +58,14 @@ public class GridGgfsPathControlRequest extends GridGgfsMessage {
     /**
      * @param path Path.
      */
-    public void path(GridGgfsPath path) {
+    public void path(IgniteFsPath path) {
         this.path = path;
     }
 
     /**
      * @param destPath Destination path (rename only).
      */
-    public void destinationPath(GridGgfsPath destPath) {
+    public void destinationPath(IgniteFsPath destPath) {
         this.destPath = destPath;
     }
 
@@ -142,14 +142,14 @@ public class GridGgfsPathControlRequest extends GridGgfsMessage {
     /**
      * @return Path.
      */
-    public GridGgfsPath path() {
+    public IgniteFsPath path() {
         return path;
     }
 
     /**
      * @return Destination path (rename only).
      */
-    public GridGgfsPath destinationPath() {
+    public IgniteFsPath destinationPath() {
         return destPath;
     }
 

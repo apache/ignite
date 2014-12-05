@@ -33,7 +33,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
     private String ggfsName;
 
     /** GGFS path. */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /** Start. */
     private long start;
@@ -60,7 +60,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
      * @param len Split length.
      * @param rslvr GGFS split resolver.
      */
-    public GridGgfsJobImpl(GridGgfsJob job, String ggfsName, GridGgfsPath path, long start, long len,
+    public GridGgfsJobImpl(GridGgfsJob job, String ggfsName, IgniteFsPath path, long start, long len,
         GridGgfsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;

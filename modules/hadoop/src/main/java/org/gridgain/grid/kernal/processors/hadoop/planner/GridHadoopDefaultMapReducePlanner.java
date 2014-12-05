@@ -154,7 +154,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                     ggfs = (GridGgfsEx) ((GridEx) ignite).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
-                    Collection<GridGgfsBlockLocation> blocks = ggfs.affinity(new GridGgfsPath(split0.file()),
+                    Collection<IgniteFsBlockLocation> blocks = ggfs.affinity(new IgniteFsPath(split0.file()),
                         split0.start(), split0.length());
 
                     assert blocks != null;
@@ -169,7 +169,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                         List<UUID> bestNodeIds = null;
                         long bestLen = -1L;
 
-                        for (GridGgfsBlockLocation block : blocks) {
+                        for (IgniteFsBlockLocation block : blocks) {
                             for (UUID blockNodeId : block.nodeIds()) {
                                 if (topIds.contains(blockNodeId)) {
                                     Long oldLen = nodeMap.get(blockNodeId);

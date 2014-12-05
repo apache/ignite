@@ -60,10 +60,10 @@ public class IgniteFsEvent extends IgniteEventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** File path. */
-    private final GridGgfsPath path;
+    private final IgniteFsPath path;
 
     /** New file path (for RENAME event). */
-    private GridGgfsPath newPath;
+    private IgniteFsPath newPath;
 
     /** Data size (for data transfer events). */
     private long dataSize;
@@ -79,7 +79,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type) {
+    public IgniteFsEvent(IgniteFsPath path, ClusterNode node, int type) {
         super(node, "GGFS event.", type);
 
         this.path = path;
@@ -95,7 +95,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      * @param node Node.
      * @param type Event type.
      */
-    public IgniteFsEvent(GridGgfsPath path, GridGgfsPath newPath, ClusterNode node, int type) {
+    public IgniteFsEvent(IgniteFsPath path, IgniteFsPath newPath, ClusterNode node, int type) {
         this(path, node, type);
 
         this.newPath = newPath;
@@ -111,7 +111,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      * @param type Event type.
      * @param dataSize Transferred data size in bytes.
      */
-    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type, long dataSize) {
+    public IgniteFsEvent(IgniteFsPath path, ClusterNode node, int type, long dataSize) {
         this(path, node, type);
 
         this.dataSize = dataSize;
@@ -126,7 +126,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      * @param type Event type.
      * @param meta Modified properties.
      */
-    public IgniteFsEvent(GridGgfsPath path, ClusterNode node, int type, Map<String, String> meta) {
+    public IgniteFsEvent(IgniteFsPath path, ClusterNode node, int type, Map<String, String> meta) {
         this(path, node, type);
 
         this.meta = meta;
@@ -137,7 +137,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      *
      * @return File path.
      */
-    public GridGgfsPath path() {
+    public IgniteFsPath path() {
         return path;
     }
 
@@ -148,7 +148,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.
      */
-    @Nullable public GridGgfsPath newPath() {
+    @Nullable public IgniteFsPath newPath() {
         return newPath;
     }
 

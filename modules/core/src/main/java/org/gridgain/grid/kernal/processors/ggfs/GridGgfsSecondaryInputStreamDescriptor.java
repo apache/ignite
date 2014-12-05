@@ -19,7 +19,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     private final GridGgfsFileInfo info;
 
     /** Secondary file system input stream wrapper. */
-    private final GridGgfsReader secReader;
+    private final IgniteFsReader secReader;
 
     /**
      * Constructor.
@@ -27,7 +27,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
      * @param info File info in the primary file system.
      * @param secReader Secondary file system reader.
      */
-    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, GridGgfsReader secReader) {
+    GridGgfsSecondaryInputStreamDescriptor(GridGgfsFileInfo info, IgniteFsReader secReader) {
         assert info != null;
         assert secReader != null;
 
@@ -45,7 +45,7 @@ public class GridGgfsSecondaryInputStreamDescriptor {
     /**
      * @return Secondary file system reader.
      */
-    GridGgfsReader reader() {
+    IgniteFsReader reader() {
         return secReader;
     }
 }

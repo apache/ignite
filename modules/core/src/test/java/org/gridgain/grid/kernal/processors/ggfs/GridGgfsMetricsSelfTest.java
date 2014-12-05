@@ -211,7 +211,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.mkdirs(new GridGgfsPath("/dir1"));
+        fs.mkdirs(new IgniteFsPath("/dir1"));
 
         m = fs.metrics();
 
@@ -221,8 +221,8 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.mkdirs(new GridGgfsPath("/dir1/dir2/dir3"));
-        fs.mkdirs(new GridGgfsPath("/dir4"));
+        fs.mkdirs(new IgniteFsPath("/dir1/dir2/dir3"));
+        fs.mkdirs(new IgniteFsPath("/dir4"));
 
         m = fs.metrics();
 
@@ -232,9 +232,9 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        GridGgfsOutputStream out1 = fs.create(new GridGgfsPath("/dir1/file1"), false);
-        GridGgfsOutputStream out2 = fs.create(new GridGgfsPath("/dir1/file2"), false);
-        GridGgfsOutputStream out3 = fs.create(new GridGgfsPath("/dir1/dir2/file"), false);
+        GridGgfsOutputStream out1 = fs.create(new IgniteFsPath("/dir1/file1"), false);
+        GridGgfsOutputStream out2 = fs.create(new IgniteFsPath("/dir1/file2"), false);
+        GridGgfsOutputStream out3 = fs.create(new IgniteFsPath("/dir1/dir2/file"), false);
 
         m = fs.metrics();
 
@@ -269,7 +269,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        GridGgfsOutputStream out = fs.append(new GridGgfsPath("/dir1/file1"), false);
+        GridGgfsOutputStream out = fs.append(new IgniteFsPath("/dir1/file1"), false);
 
         out.write(new byte[20]);
 
@@ -293,8 +293,8 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        GridGgfsInputStream in1 = fs.open(new GridGgfsPath("/dir1/file1"));
-        GridGgfsInputStream in2 = fs.open(new GridGgfsPath("/dir1/file2"));
+        GridGgfsInputStream in1 = fs.open(new IgniteFsPath("/dir1/file1"));
+        GridGgfsInputStream in2 = fs.open(new IgniteFsPath("/dir1/file2"));
 
         m = fs.metrics();
 
@@ -315,8 +315,8 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.delete(new GridGgfsPath("/dir1/file1"), false);
-        fs.delete(new GridGgfsPath("/dir1/dir2"), true);
+        fs.delete(new IgniteFsPath("/dir1/file1"), false);
+        fs.delete(new IgniteFsPath("/dir1/dir2"), true);
 
         m = fs.metrics();
 
@@ -326,7 +326,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.delete(new GridGgfsPath("/"), true);
+        fs.delete(new IgniteFsPath("/"), true);
 
         m = fs.metrics();
 
@@ -341,12 +341,12 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     public void testMultipleClose() throws Exception {
         IgniteFs fs = ggfsPrimary[0];
 
-        GridGgfsOutputStream out = fs.create(new GridGgfsPath("/file"), false);
+        GridGgfsOutputStream out = fs.create(new IgniteFsPath("/file"), false);
 
         out.close();
         out.close();
 
-        GridGgfsInputStream in = fs.open(new GridGgfsPath("/file"));
+        GridGgfsInputStream in = fs.open(new IgniteFsPath("/file"));
 
         in.close();
         in.close();
@@ -365,9 +365,9 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     public void testBlockMetrics() throws Exception {
         GridGgfsEx ggfs = (GridGgfsEx)ggfsPrimary[0];
 
-        GridGgfsPath fileRemote = new GridGgfsPath("/fileRemote");
-        GridGgfsPath file1 = new GridGgfsPath("/file1");
-        GridGgfsPath file2 = new GridGgfsPath("/file2");
+        IgniteFsPath fileRemote = new IgniteFsPath("/fileRemote");
+        IgniteFsPath file1 = new IgniteFsPath("/file1");
+        IgniteFsPath file2 = new IgniteFsPath("/file2");
 
         // Create remote file and write some data to it.
         GridGgfsOutputStream out = ggfsSecondary.create(fileRemote, 256, true, null, 1, 256, null);

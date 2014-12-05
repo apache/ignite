@@ -29,7 +29,7 @@ public interface GridGgfsFile {
      *
      * @return Path to file.
      */
-    public GridGgfsPath path();
+    public IgniteFsPath path();
 
     /**
      * Check this file is a data file.
@@ -69,7 +69,7 @@ public interface GridGgfsFile {
     /**
      * Gets file last access time. File last access time is not updated automatically due to
      * performance considerations and can be updated on demand with
-     * {@link org.apache.ignite.IgniteFs#setTimes(GridGgfsPath, long, long)} method.
+     * {@link org.apache.ignite.IgniteFs#setTimes(IgniteFsPath, long, long)} method.
      * <p>
      * By default last access time equals file creation time.
      *

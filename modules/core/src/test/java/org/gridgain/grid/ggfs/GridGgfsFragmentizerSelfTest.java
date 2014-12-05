@@ -30,7 +30,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
     public void testReadFragmentizing() throws Exception {
         IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
-        GridGgfsPath path = new GridGgfsPath("/someFile");
+        IgniteFsPath path = new IgniteFsPath("/someFile");
 
         try (GridGgfsOutputStream out = ggfs.create(path, true)) {
             // Write 10 groups.
@@ -90,7 +90,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
     * @throws Exception If failed.
     */
     private void checkAppendFragmentizing(int chunkSize, boolean rotate) throws Exception {
-        GridGgfsPath path = new GridGgfsPath("/someFile");
+        IgniteFsPath path = new IgniteFsPath("/someFile");
 
         long written = 0;
 
@@ -165,7 +165,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
      * @throws Exception If failed.
      */
     private void checkFlushFragmentizing(int chunkSize) throws Exception {
-        GridGgfsPath path = new GridGgfsPath("/someFile");
+        IgniteFsPath path = new IgniteFsPath("/someFile");
 
         long written = 0;
         int cnt = 0;
@@ -218,7 +218,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
         GridGgfsImpl ggfs = (GridGgfsImpl)grid(0).fileSystem("ggfs");
 
         for (int i = 0; i < 30; i++) {
-            GridGgfsPath path = new GridGgfsPath("/someFile" + i);
+            IgniteFsPath path = new IgniteFsPath("/someFile" + i);
 
             try (GridGgfsOutputStream out = ggfs.create(path, true)) {
                 for (int j = 0; j < 5 * GGFS_GROUP_SIZE; j++)
@@ -228,7 +228,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
             U.sleep(200);
         }
 
-        ggfs.delete(new GridGgfsPath("/"), true);
+        ggfs.delete(new IgniteFsPath("/"), true);
 
         ggfs.awaitDeletesAsync().get();
 

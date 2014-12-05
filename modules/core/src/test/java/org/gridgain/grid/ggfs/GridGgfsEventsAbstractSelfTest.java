@@ -196,15 +196,15 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1/dir2/dir3");
+        IgniteFsPath dir = new IgniteFsPath("/dir1/dir2/dir3");
 
-        GridGgfsPath file = new GridGgfsPath(dir, "file1");
+        IgniteFsPath file = new IgniteFsPath(dir, "file1");
 
         // Will generate 3 EVT_GGFS_DIR_CREATED + EVT_GGFS_FILE_CREATED + EVT_GGFS_FILE_OPENED_WRITE +
         // EVT_GGFS_FILE_CLOSED and a number of EVT_GGFS_META_UPDATED.
         ggfs.create(file, true).close();
 
-        GridGgfsPath mvFile = new GridGgfsPath(dir, "mvFile1");
+        IgniteFsPath mvFile = new IgniteFsPath(dir, "mvFile1");
 
         ggfs.rename(file, mvFile); // Will generate EVT_GGFS_FILE_RENAMED.
 
@@ -217,39 +217,39 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(3);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3/file1"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(4);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(5);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         evt = (IgniteFsEvent)evtList.get(6);
         assertEquals(EVT_GGFS_FILE_RENAMED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3/file1"), evt.path());
-        assertEquals(new GridGgfsPath("/dir1/dir2/dir3/mvFile1"), evt.newPath());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/dir3/mvFile1"), evt.newPath());
 
         evt = (IgniteFsEvent)evtList.get(7);
         assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt.path());
     }
 
     /**
@@ -277,10 +277,10 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1");
+        IgniteFsPath dir = new IgniteFsPath("/dir1");
 
-        GridGgfsPath file1 = new GridGgfsPath(dir, "file1");
-        GridGgfsPath file2 = new GridGgfsPath(dir, "file2");
+        IgniteFsPath file1 = new IgniteFsPath(dir, "file1");
+        IgniteFsPath file2 = new IgniteFsPath(dir, "file2");
 
         // Will generate EVT_GGFS_DIR_CREATED + EVT_GGFS_FILE_CREATED + EVT_GGFS_FILE_OPENED_WRITE +
         // EVT_GGFS_FILE_CLOSED_WRITE.
@@ -299,38 +299,38 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(3);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(4);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
         assertFalse(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(5);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(6);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(7);
         assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
     }
 
     /**
@@ -358,11 +358,11 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1");
+        IgniteFsPath dir = new IgniteFsPath("/dir1");
 
         ggfs.mkdirs(dir); // Will generate EVT_GGFS_DIR_CREATED.
 
-        GridGgfsPath mvDir = new GridGgfsPath("/mvDir1");
+        IgniteFsPath mvDir = new IgniteFsPath("/mvDir1");
 
         ggfs.rename(dir, mvDir); // Will generate EVT_GGFS_DIR_RENAMED.
 
@@ -376,18 +376,18 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_DIR_RENAMED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
-        assertEquals(new GridGgfsPath("/mvDir1"), evt.newPath());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/mvDir1"), evt.newPath());
         assertTrue(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
-        assertEquals(new GridGgfsPath("/mvDir1"), evt.path());
+        assertEquals(new IgniteFsPath("/mvDir1"), evt.path());
         assertTrue(evt.isDirectory());
     }
 
@@ -415,14 +415,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1");
+        IgniteFsPath dir = new IgniteFsPath("/dir1");
 
-        GridGgfsPath file1 = new GridGgfsPath(dir, "file1");
+        IgniteFsPath file1 = new IgniteFsPath(dir, "file1");
 
         // Will generate EVT_GGFS_FILE_CREATED event + EVT_GGFS_DIR_CREATED event + OPEN + CLOSE.
         ggfs.create(file1, true).close();
 
-        GridGgfsPath file2 = new GridGgfsPath(dir, "file2");
+        IgniteFsPath file2 = new IgniteFsPath(dir, "file2");
 
         ggfs.create(file2, true).close(); // Will generate 1 EVT_GGFS_FILE_CREATED event + OPEN + CLOSE.
 
@@ -439,41 +439,41 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
         assertTrue(evt.isDirectory());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(3);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         evt = (IgniteFsEvent)evtList.get(4);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(5);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(6);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/file2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/file2"), evt.path());
         assertEquals(0, evt.dataSize());
 
         assertOneToOne(
             evtList.subList(7, 11),
-            new EventPredicate(EVT_GGFS_FILE_DELETED, new GridGgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_GGFS_FILE_PURGED, new GridGgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_GGFS_FILE_DELETED, new GridGgfsPath("/dir1/file2")),
-            new EventPredicate(EVT_GGFS_FILE_PURGED, new GridGgfsPath("/dir1/file2"))
+            new EventPredicate(EVT_GGFS_FILE_DELETED, new IgniteFsPath("/dir1/file1")),
+            new EventPredicate(EVT_GGFS_FILE_PURGED, new IgniteFsPath("/dir1/file1")),
+            new EventPredicate(EVT_GGFS_FILE_DELETED, new IgniteFsPath("/dir1/file2")),
+            new EventPredicate(EVT_GGFS_FILE_PURGED, new IgniteFsPath("/dir1/file2"))
         );
     }
 
@@ -502,7 +502,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1/dir2");
+        IgniteFsPath dir = new IgniteFsPath("/dir1/dir2");
 
         ggfs.mkdirs(dir); // Will generate 2 EVT_GGFS_DIR_CREATED events.
 
@@ -521,15 +521,15 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt.path());
 
         IgniteFsEvent evt3 = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_DIR_DELETED, evt3.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt3.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt3.path());
     }
 
     /**
@@ -556,16 +556,16 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1/dir2");
+        IgniteFsPath dir = new IgniteFsPath("/dir1/dir2");
 
-        GridGgfsPath file = new GridGgfsPath(dir, "file1");
+        IgniteFsPath file = new IgniteFsPath(dir, "file1");
 
         // Will generate 2 EVT_GGFS_DIR_CREATED events + EVT_GGFS_FILE_CREATED_EVENT + OPEN + CLOSE.
         ggfs.create(file, true).close();
 
         ggfs.rename(file, dir.parent()); // Will generate 1 EVT_GGFS_FILE_RENAMED.
 
-        assertTrue(ggfs.exists(new GridGgfsPath(dir.parent(), file.name())));
+        assertTrue(ggfs.exists(new IgniteFsPath(dir.parent(), file.name())));
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -573,29 +573,29 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(3);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(4);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2/file1"), evt.path());
         assertEquals(0, evt.dataSize());
 
         IgniteFsEvent evt4 = (IgniteFsEvent)evtList.get(5);
         assertEquals(EVT_GGFS_FILE_RENAMED, evt4.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2/file1"), evt4.path());
-        assertEquals(new GridGgfsPath("/dir1/file1"), evt4.newPath());
+        assertEquals(new IgniteFsPath("/dir1/dir2/file1"), evt4.path());
+        assertEquals(new IgniteFsPath("/dir1/file1"), evt4.newPath());
     }
 
     /**
@@ -623,7 +623,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        GridGgfsPath dir = new GridGgfsPath("/dir1/dir2");
+        IgniteFsPath dir = new IgniteFsPath("/dir1/dir2");
 
         assertFalse(ggfs.exists(dir.parent()));
 
@@ -637,15 +637,15 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_DIR_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1/dir2"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1/dir2"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_DIR_DELETED, evt.type());
-        assertEquals(new GridGgfsPath("/dir1"), evt.path());
+        assertEquals(new IgniteFsPath("/dir1"), evt.path());
     }
 
     /**
@@ -673,7 +673,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        final GridGgfsPath file = new GridGgfsPath("/file1");
+        final IgniteFsPath file = new IgniteFsPath("/file1");
 
         ggfs.create(file, false).close(); // Will generate create, open and close events.
 
@@ -690,7 +690,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         assertEquals(evtsCnt, evtList.size());
 
-        final GridGgfsPath file1 = new GridGgfsPath("/file1");
+        final IgniteFsPath file1 = new IgniteFsPath("/file1");
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
@@ -769,7 +769,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
             }
         }, EVTS_GGFS);
 
-        final GridGgfsPath file = new GridGgfsPath("/file1");
+        final IgniteFsPath file = new IgniteFsPath("/file1");
 
         final int dataSize = 1024;
 
@@ -791,24 +791,24 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFsEvent evt = (IgniteFsEvent)evtList.get(0);
         assertEquals(EVT_GGFS_FILE_CREATED, evt.type());
-        assertEquals(new GridGgfsPath("/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(1);
         assertEquals(EVT_GGFS_FILE_OPENED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(2);
         assertEquals(EVT_GGFS_FILE_CLOSED_WRITE, evt.type());
-        assertEquals(new GridGgfsPath("/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/file1"), evt.path());
         assertEquals((long)dataSize, evt.dataSize());
 
         evt = (IgniteFsEvent)evtList.get(3);
         assertEquals(EVT_GGFS_FILE_OPENED_READ, evt.type());
-        assertEquals(new GridGgfsPath("/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/file1"), evt.path());
 
         evt = (IgniteFsEvent)evtList.get(4);
         assertEquals(EVT_GGFS_FILE_CLOSED_READ, evt.type());
-        assertEquals(new GridGgfsPath("/file1"), evt.path());
+        assertEquals(new IgniteFsPath("/file1"), evt.path());
         assertEquals((long)dataSize, evt.dataSize());
     }
 
@@ -820,13 +820,13 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         private final int evt;
 
         /** */
-        private final GridGgfsPath path;
+        private final IgniteFsPath path;
 
         /**
          * @param evt Event type.
          * @param path GGFS path.
          */
-        EventPredicate(int evt, GridGgfsPath path) {
+        EventPredicate(int evt, IgniteFsPath path) {
 
             this.evt = evt;
             this.path = path;

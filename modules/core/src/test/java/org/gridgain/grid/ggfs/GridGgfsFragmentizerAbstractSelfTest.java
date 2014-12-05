@@ -117,7 +117,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      * @param path Path to await.
      * @throws Exception If failed.
      */
-    protected void awaitFileFragmenting(int gridIdx, GridGgfsPath path) throws Exception {
+    protected void awaitFileFragmenting(int gridIdx, IgniteFsPath path) throws Exception {
         GridGgfsEx ggfs = (GridGgfsEx)grid(gridIdx).fileSystem("ggfs");
 
         GridGgfsMetaManager meta = ggfs.context().meta();

@@ -37,13 +37,13 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
 
     /** Secondary file system reader. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private final GridGgfsReader secReader;
+    private final IgniteFsReader secReader;
 
     /** Logger. */
     private IgniteLogger log;
 
     /** Path to file. */
-    protected final GridGgfsPath path;
+    protected final IgniteFsPath path;
 
     /** File descriptor. */
     private volatile GridGgfsFileInfo fileInfo;
@@ -101,8 +101,8 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param secReader Optional secondary file system reader.
      * @param metrics Local GGFS metrics.
      */
-    GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, GridGgfsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
-        int seqReadsBeforePrefetch, @Nullable GridGgfsReader secReader, GridGgfsLocalMetrics metrics) {
+    GridGgfsInputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, int prefetchBlocks,
+        int seqReadsBeforePrefetch, @Nullable IgniteFsReader secReader, GridGgfsLocalMetrics metrics) {
         assert ggfsCtx != null;
         assert path != null;
         assert fileInfo != null;

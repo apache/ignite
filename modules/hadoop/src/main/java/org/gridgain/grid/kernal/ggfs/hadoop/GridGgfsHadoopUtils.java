@@ -108,7 +108,7 @@ public class GridGgfsHadoopUtils {
             return new ParentNotDirectoryException(path);
         else if (path != null && e instanceof GridGgfsDirectoryNotEmptyException)
             return new PathIsNotEmptyDirectoryException(path);
-        else if (path != null && e instanceof GridGgfsPathAlreadyExistsException)
+        else if (path != null && e instanceof IgniteFsPathAlreadyExistsException)
             return new PathExistsException(path);
         else
             return new IOException(e);

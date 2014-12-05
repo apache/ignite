@@ -44,7 +44,7 @@ public interface GridGgfsHadoop {
      * @return Future for info operation.
      * @throws GridException If failed.
      */
-    public GridGgfsFile info(GridGgfsPath path) throws GridException, IOException;
+    public GridGgfsFile info(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to update file properties.
@@ -54,7 +54,7 @@ public interface GridGgfsHadoop {
      * @return Future for update operation.
      * @throws GridException If failed.
      */
-    public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException, IOException;
+    public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
 
     /**
      * Sets last access time and last modification time for a file.
@@ -64,7 +64,7 @@ public interface GridGgfsHadoop {
      * @param modificationTime Last modification time to set.
      * @throws GridException If failed.
      */
-    public Boolean setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException,
+    public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException,
         IOException;
 
     /**
@@ -75,7 +75,7 @@ public interface GridGgfsHadoop {
      * @return Future for rename operation.
      * @throws GridException If failed.
      */
-    public Boolean rename(GridGgfsPath src, GridGgfsPath dest) throws GridException, IOException;
+    public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws GridException, IOException;
 
     /**
      * Command to delete given path.
@@ -85,7 +85,7 @@ public interface GridGgfsHadoop {
      * @return Future for delete operation.
      * @throws GridException If failed.
      */
-    public Boolean delete(GridGgfsPath path, boolean recursive) throws GridException, IOException;
+    public Boolean delete(IgniteFsPath path, boolean recursive) throws GridException, IOException;
 
     /**
      * Command to get affinity for given path, offset and length.
@@ -96,7 +96,7 @@ public interface GridGgfsHadoop {
      * @return Future for affinity command.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len) throws GridException,
+    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws GridException,
         IOException;
 
     /**
@@ -106,7 +106,7 @@ public interface GridGgfsHadoop {
      * @return Future that will be completed when summary is received.
      * @throws GridException If failed.
      */
-    public GridGgfsPathSummary contentSummary(GridGgfsPath path) throws GridException, IOException;
+    public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to create directories.
@@ -115,7 +115,7 @@ public interface GridGgfsHadoop {
      * @return Future for mkdirs operation.
      * @throws GridException If failed.
      */
-    public Boolean mkdirs(GridGgfsPath path, Map<String, String> props) throws GridException, IOException;
+    public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
 
     /**
      * Command to get list of files in directory.
@@ -124,7 +124,7 @@ public interface GridGgfsHadoop {
      * @return Future for listFiles operation.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException, IOException;
+    public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to get directory listing.
@@ -133,7 +133,7 @@ public interface GridGgfsHadoop {
      * @return Future for listPaths operation.
      * @throws GridException If failed.
      */
-    public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException, IOException;
+    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Performs status request.
@@ -150,7 +150,7 @@ public interface GridGgfsHadoop {
      * @return Future for open operation.
      * @throws GridException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(GridGgfsPath path) throws GridException, IOException;
+    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws GridException, IOException;
 
     /**
      * Command to open file for reading.
@@ -159,7 +159,7 @@ public interface GridGgfsHadoop {
      * @return Future for open operation.
      * @throws GridException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(GridGgfsPath path, int seqReadsBeforePrefetch) throws GridException,
+    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws GridException,
         IOException;
 
     /**
@@ -173,7 +173,7 @@ public interface GridGgfsHadoop {
      * @return Stream descriptor.
      * @throws GridException If failed.
      */
-    public GridGgfsHadoopStreamDelegate create(GridGgfsPath path, boolean overwrite, boolean colocate,
+    public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws GridException, IOException;
 
     /**
@@ -185,6 +185,6 @@ public interface GridGgfsHadoop {
      * @return Stream descriptor.
      * @throws GridException If failed.
      */
-    public GridGgfsHadoopStreamDelegate append(GridGgfsPath path, boolean create,
+    public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws GridException, IOException;
 }

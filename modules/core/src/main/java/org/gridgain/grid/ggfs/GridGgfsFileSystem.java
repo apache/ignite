@@ -42,7 +42,7 @@ public interface GridGgfsFileSystem {
      * @return {@code True} if such file exists, otherwise - {@code false}.
      * @throws GridException In case of error.
      */
-    public boolean exists(GridGgfsPath path) throws GridException;
+    public boolean exists(IgniteFsPath path) throws GridException;
 
     /**
      * Updates file information for the specified path. Existent properties, not listed in the passed collection,
@@ -62,7 +62,7 @@ public interface GridGgfsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws GridException In case of error.
      */
-    @Nullable public GridGgfsFile update(GridGgfsPath path, Map<String, String> props) throws GridException;
+    @Nullable public GridGgfsFile update(IgniteFsPath path, Map<String, String> props) throws GridException;
 
     /**
      * Renames/moves a file.
@@ -83,7 +83,7 @@ public interface GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If source file doesn't exist.
      */
-    public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException;
+    public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException;
 
     /**
      * Deletes file.
@@ -93,7 +93,7 @@ public interface GridGgfsFileSystem {
      * @return {@code True} in case of success, {@code false} otherwise.
      * @throws GridException In case of error.
      */
-    boolean delete(GridGgfsPath path, boolean recursive) throws GridException;
+    boolean delete(IgniteFsPath path, boolean recursive) throws GridException;
 
     /**
      * Creates directories under specified path.
@@ -101,7 +101,7 @@ public interface GridGgfsFileSystem {
      * @param path Path of directories chain to create.
      * @throws GridException In case of error.
      */
-    public void mkdirs(GridGgfsPath path) throws GridException;
+    public void mkdirs(IgniteFsPath path) throws GridException;
 
     /**
      * Creates directories under specified path with the specified properties.
@@ -110,7 +110,7 @@ public interface GridGgfsFileSystem {
      * @param props Metadata properties to set on created directories.
      * @throws GridException In case of error.
      */
-    public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException;
+    public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException;
 
     /**
      * Lists file paths under the specified path.
@@ -120,7 +120,7 @@ public interface GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException;
+    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException;
 
     /**
      * Lists files under the specified path.
@@ -130,7 +130,7 @@ public interface GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException;
+    public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -141,7 +141,7 @@ public interface GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsReader open(GridGgfsPath path, int bufSize) throws GridException;
+    public IgniteFsReader open(IgniteFsPath path, int bufSize) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -151,7 +151,7 @@ public interface GridGgfsFileSystem {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public OutputStream create(GridGgfsPath path, boolean overwrite) throws GridException;
+    public OutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -165,7 +165,7 @@ public interface GridGgfsFileSystem {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public OutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
+    public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
        @Nullable Map<String, String> props) throws GridException;
 
     /**
@@ -179,7 +179,7 @@ public interface GridGgfsFileSystem {
      * @throws GridException In case of error.
      * @throws GridGgfsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public OutputStream append(GridGgfsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
+    public OutputStream append(IgniteFsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
         throws GridException;
 
     /**
@@ -189,7 +189,7 @@ public interface GridGgfsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws GridException In case of error.
      */
-    @Nullable public GridGgfsFile info(GridGgfsPath path) throws GridException;
+    @Nullable public GridGgfsFile info(IgniteFsPath path) throws GridException;
 
     /**
      * Gets used space in bytes.

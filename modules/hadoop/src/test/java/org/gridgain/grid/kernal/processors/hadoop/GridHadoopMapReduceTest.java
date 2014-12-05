@@ -44,16 +44,16 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
-        GridGgfsPath inDir = new GridGgfsPath(PATH_INPUT);
+        IgniteFsPath inDir = new IgniteFsPath(PATH_INPUT);
 
         ggfs.mkdirs(inDir);
 
-        GridGgfsPath inFile = new GridGgfsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
+        IgniteFsPath inFile = new IgniteFsPath(inDir, GridHadoopWordCount2.class.getSimpleName() + "-input");
 
         generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
 
         for (int i = 0; i < 8; i++) {
-            ggfs.delete(new GridGgfsPath(PATH_OUTPUT), true);
+            ggfs.delete(new IgniteFsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
@@ -171,7 +171,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             }
         }
 
-        final GridGgfsPath statPath = new GridGgfsPath("/users/anonymous/" + jobId + "/performance");
+        final IgniteFsPath statPath = new IgniteFsPath("/users/anonymous/" + jobId + "/performance");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

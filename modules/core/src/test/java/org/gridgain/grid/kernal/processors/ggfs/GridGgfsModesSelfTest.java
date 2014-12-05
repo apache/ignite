@@ -480,7 +480,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     private void checkMode(String pathStr, GridGgfsMode expMode) throws Exception {
         assert ggfs != null;
 
-        GridGgfsPath path = new GridGgfsPath(pathStr);
+        IgniteFsPath path = new IgniteFsPath(pathStr);
 
         GridGgfsModeResolver rslvr = ggfs.modeResolver();
 
@@ -508,8 +508,8 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         boolean primaryNotUsed = mode == PROXY;
         boolean secondaryUsed = mode != PRIMARY;
 
-        GridGgfsPath dir = new GridGgfsPath("/dir");
-        GridGgfsPath file = new GridGgfsPath("/dir/file");
+        IgniteFsPath dir = new IgniteFsPath("/dir");
+        IgniteFsPath file = new IgniteFsPath("/dir/file");
 
         // Create new directory.
         ggfs.mkdirs(dir);

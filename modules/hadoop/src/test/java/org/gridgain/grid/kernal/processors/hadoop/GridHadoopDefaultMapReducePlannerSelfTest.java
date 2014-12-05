@@ -72,7 +72,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final GridHadoopMapReducePlanner PLANNER = new GridHadoopDefaultMapReducePlanner();
 
     /** Block locations. */
-    private static final Map<Block, Collection<GridGgfsBlockLocation>> BLOCK_MAP = new HashMap<>();
+    private static final Map<Block, Collection<IgniteFsBlockLocation>> BLOCK_MAP = new HashMap<>();
 
     /** Proxy map. */
     private static final Map<URI, Boolean> PROXY_MAP = new HashMap<>();
@@ -488,7 +488,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param nodeIds Node IDs.
      * @return Block location.
      */
-    private static GridGgfsBlockLocation location(long start, long len, UUID... nodeIds) {
+    private static IgniteFsBlockLocation location(long start, long len, UUID... nodeIds) {
         assert nodeIds != null && nodeIds.length > 0;
 
         Collection<ClusterNode> nodes = new ArrayList<>(nodeIds.length);
@@ -507,14 +507,14 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param len Length.
      * @param locations Locations.
      */
-    private static void mapGgfsBlock(URI file, long start, long len, GridGgfsBlockLocation... locations) {
+    private static void mapGgfsBlock(URI file, long start, long len, IgniteFsBlockLocation... locations) {
         assert locations != null && locations.length > 0;
 
-        GridGgfsPath path = new GridGgfsPath(file);
+        IgniteFsPath path = new IgniteFsPath(file);
 
         Block block = new Block(path, start, len);
 
-        Collection<GridGgfsBlockLocation> locationsList = new ArrayList<>();
+        Collection<IgniteFsBlockLocation> locationsList = new ArrayList<>();
 
         Collections.addAll(locationsList, locations);
 
@@ -526,7 +526,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      */
     private static class Block {
         /** */
-        private final GridGgfsPath path;
+        private final IgniteFsPath path;
 
         /** */
         private final long start;
@@ -541,7 +541,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
          * @param start Start.
          * @param len Length.
          */
-        private Block(GridGgfsPath path, long start, long len) {
+        private Block(IgniteFsPath path, long start, long len) {
             this.path = path;
             this.start = start;
             this.len = len;
@@ -659,13 +659,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len)
+        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
             throws GridException {
             return BLOCK_MAP.get(new Block(path, start, len));
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridGgfsBlockLocation> affinity(GridGgfsPath path, long start, long len,
+        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len,
             long maxLen) throws GridException {
             return null;
         }
@@ -686,18 +686,18 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize, int seqReadsBeforePrefetch)
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path) throws GridException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(GridGgfsPath path, int bufSize) throws GridException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException {
             return null;
         }
 
@@ -742,7 +742,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evictExclude(GridGgfsPath path, boolean primary) {
+        @Override public boolean evictExclude(IgniteFsPath path, boolean primary) {
             return false;
         }
 
@@ -757,53 +757,53 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean exists(GridGgfsPath path) throws GridException {
+        @Override public boolean exists(IgniteFsPath path) throws GridException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridGgfsFile info(GridGgfsPath path) throws GridException {
+        @Nullable @Override public GridGgfsFile info(IgniteFsPath path) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsPathSummary summary(GridGgfsPath path) throws GridException {
+        @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridGgfsFile update(GridGgfsPath path, Map<String, String> props)
+        @Nullable @Override public GridGgfsFile update(IgniteFsPath path, Map<String, String> props)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void rename(GridGgfsPath src, GridGgfsPath dest) throws GridException {
+        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public boolean delete(GridGgfsPath path, boolean recursive) throws GridException {
+        @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(GridGgfsPath path) throws GridException {
+        @Override public void mkdirs(IgniteFsPath path) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(GridGgfsPath path, @Nullable Map<String, String> props) throws GridException {
+        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridGgfsPath> listPaths(GridGgfsPath path) throws GridException {
+        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridGgfsFile> listFiles(GridGgfsPath path) throws GridException {
+        @Override public Collection<GridGgfsFile> listFiles(IgniteFsPath path) throws GridException {
             return null;
         }
 
@@ -818,36 +818,36 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(GridGgfsPath path, boolean overwrite) throws GridException {
+        @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite, int replication,
+        @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
             long blockSize, @Nullable Map<String, String> props) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(GridGgfsPath path, int bufSize, boolean overwrite,
+        @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
             @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream append(GridGgfsPath path, boolean create) throws GridException {
+        @Override public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream append(GridGgfsPath path, int bufSize, boolean create,
+        @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
             @Nullable Map<String, String> props) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void setTimes(GridGgfsPath path, long accessTime, long modificationTime) throws GridException {
+        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException {
             // No-op.
         }
 
@@ -862,7 +862,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public long size(GridGgfsPath path) throws GridException {
+        @Override public long size(IgniteFsPath path) throws GridException {
             return 0;
         }
 
@@ -873,27 +873,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-            Collection<GridGgfsPath> paths, @Nullable T arg) throws GridException {
+            Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
-            Collection<GridGgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
+            Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-            @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, @Nullable T arg)
+            @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-            @Nullable GridGgfsRecordResolver rslvr, Collection<GridGgfsPath> paths, boolean skipNonExistentFiles,
+            @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
             long maxRangeLen, @Nullable T arg) throws GridException {
             return null;
         }

@@ -65,34 +65,34 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     protected static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
 
     /** Directory. */
-    protected static final GridGgfsPath DIR = new GridGgfsPath("/dir");
+    protected static final IgniteFsPath DIR = new IgniteFsPath("/dir");
 
     /** Sub-directory. */
-    protected static final GridGgfsPath SUBDIR = new GridGgfsPath(DIR, "subdir");
+    protected static final IgniteFsPath SUBDIR = new IgniteFsPath(DIR, "subdir");
 
     /** Another sub-directory in the same directory. */
-    protected static final GridGgfsPath SUBDIR2 = new GridGgfsPath(DIR, "subdir2");
+    protected static final IgniteFsPath SUBDIR2 = new IgniteFsPath(DIR, "subdir2");
 
     /** Sub-directory of the sub-directory. */
-    protected static final GridGgfsPath SUBSUBDIR = new GridGgfsPath(SUBDIR, "subsubdir");
+    protected static final IgniteFsPath SUBSUBDIR = new IgniteFsPath(SUBDIR, "subsubdir");
 
     /** File. */
-    protected static final GridGgfsPath FILE = new GridGgfsPath(SUBDIR, "file");
+    protected static final IgniteFsPath FILE = new IgniteFsPath(SUBDIR, "file");
 
     /** Another file in the same directory. */
-    protected static final GridGgfsPath FILE2 = new GridGgfsPath(SUBDIR, "file2");
+    protected static final IgniteFsPath FILE2 = new IgniteFsPath(SUBDIR, "file2");
 
     /** Other directory. */
-    protected static final GridGgfsPath DIR_NEW = new GridGgfsPath("/dirNew");
+    protected static final IgniteFsPath DIR_NEW = new IgniteFsPath("/dirNew");
 
     /** Other subdirectory. */
-    protected static final GridGgfsPath SUBDIR_NEW = new GridGgfsPath(DIR_NEW, "subdirNew");
+    protected static final IgniteFsPath SUBDIR_NEW = new IgniteFsPath(DIR_NEW, "subdirNew");
 
     /** Other sub-directory of the sub-directory. */
-    protected static final GridGgfsPath SUBSUBDIR_NEW = new GridGgfsPath(SUBDIR_NEW, "subsubdirNew");
+    protected static final IgniteFsPath SUBSUBDIR_NEW = new IgniteFsPath(SUBDIR_NEW, "subsubdirNew");
 
     /** Other file. */
-    protected static final GridGgfsPath FILE_NEW = new GridGgfsPath(SUBDIR_NEW, "fileNew");
+    protected static final IgniteFsPath FILE_NEW = new IgniteFsPath(SUBDIR_NEW, "fileNew");
 
     /** Default data chunk (128 bytes). */
     protected static byte[] chunk;
@@ -357,8 +357,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testRenameFileParentRoot() throws Exception {
-        GridGgfsPath file1 = new GridGgfsPath("/file1");
-        GridGgfsPath file2 = new GridGgfsPath("/file2");
+        IgniteFsPath file1 = new IgniteFsPath("/file1");
+        IgniteFsPath file2 = new IgniteFsPath("/file2");
 
         create(ggfs, null, paths(file1));
 
@@ -389,8 +389,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testRenameDirectoryParentRoot() throws Exception {
-        GridGgfsPath dir1 = new GridGgfsPath("/dir1");
-        GridGgfsPath dir2 = new GridGgfsPath("/dir2");
+        IgniteFsPath dir1 = new IgniteFsPath("/dir1");
+        IgniteFsPath dir2 = new IgniteFsPath("/dir2");
 
         create(ggfs, paths(dir1), null);
 
@@ -411,7 +411,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         ggfs.rename(FILE, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -423,9 +423,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testMoveFileDestinationRoot() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
-        ggfs.rename(FILE, new GridGgfsPath());
+        ggfs.rename(FILE, new IgniteFsPath());
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, FILE);
     }
 
@@ -435,13 +435,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveFileSourceParentRoot() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
         ggfs.rename(file, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, FILE.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, FILE.name()));
         checkNotExist(ggfs, ggfsSecondary, file);
     }
 
@@ -466,7 +466,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveRenameFileDestinationRoot() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
@@ -482,7 +482,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveRenameFileSourceParentRoot() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE_NEW.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE_NEW.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW), paths(file));
 
@@ -503,7 +503,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         ggfs.rename(SUBSUBDIR, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -515,9 +515,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testMoveDirectoryDestinationRoot() throws Exception {
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
-        ggfs.rename(SUBSUBDIR, new GridGgfsPath());
+        ggfs.rename(SUBSUBDIR, new IgniteFsPath());
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath("/" + SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath("/" + SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, SUBSUBDIR);
     }
 
@@ -527,13 +527,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveDirectorySourceParentRoot() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
         ggfs.rename(dir, SUBDIR_NEW);
 
-        checkExist(ggfs, ggfsSecondary, new GridGgfsPath(SUBDIR_NEW, SUBSUBDIR.name()));
+        checkExist(ggfs, ggfsSecondary, new IgniteFsPath(SUBDIR_NEW, SUBSUBDIR.name()));
         checkNotExist(ggfs, ggfsSecondary, dir);
     }
 
@@ -558,7 +558,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectoryDestinationRoot() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR.name());
 
         create(ggfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
@@ -574,7 +574,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMoveRenameDirectorySourceParentRoot() throws Exception {
-        GridGgfsPath dir = new GridGgfsPath("/" + SUBSUBDIR_NEW.name());
+        IgniteFsPath dir = new IgniteFsPath("/" + SUBSUBDIR_NEW.name());
 
         create(ggfs, paths(DIR_NEW, SUBDIR_NEW, dir), null);
 
@@ -886,7 +886,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCreateParentRoot() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         createFile(ggfs, file, true, chunk);
 
@@ -1066,7 +1066,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
             @Override public void run() {
                 int idx = ctr.incrementAndGet();
 
-                GridGgfsPath path = new GridGgfsPath("/file" + idx);
+                IgniteFsPath path = new IgniteFsPath("/file" + idx);
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
@@ -1182,7 +1182,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAppendParentRoot() throws Exception {
-        GridGgfsPath file = new GridGgfsPath("/" + FILE.name());
+        IgniteFsPath file = new IgniteFsPath("/" + FILE.name());
 
         createFile(ggfs, file, true, BLOCK_SIZE, chunk);
 
@@ -1375,13 +1375,13 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         int threadCnt = 10;
 
         for (int i = 0; i < threadCnt; i++)
-            createFile(ggfs, new GridGgfsPath("/file" + i), false);
+            createFile(ggfs, new IgniteFsPath("/file" + i), false);
 
         multithreaded(new Runnable() {
             @Override public void run() {
                 int idx = ctr.getAndIncrement();
 
-                GridGgfsPath path = new GridGgfsPath("/file" + idx);
+                IgniteFsPath path = new IgniteFsPath("/file" + idx);
 
                 try {
                     byte[][] chunks = new byte[REPEAT_CNT][];
@@ -1903,15 +1903,15 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         assert childrenDirPerLvl > 0;
 
         // First define file system structure.
-        final Map<Integer, List<GridGgfsPath>> dirPaths = new HashMap<>();
-        final Map<Integer, List<GridGgfsPath>> filePaths = new HashMap<>();
+        final Map<Integer, List<IgniteFsPath>> dirPaths = new HashMap<>();
+        final Map<Integer, List<IgniteFsPath>> filePaths = new HashMap<>();
 
-        Queue<IgniteBiTuple<Integer, GridGgfsPath>> queue = new ArrayDeque<>();
+        Queue<IgniteBiTuple<Integer, IgniteFsPath>> queue = new ArrayDeque<>();
 
-        queue.add(F.t(0, new GridGgfsPath())); // Add root directory.
+        queue.add(F.t(0, new IgniteFsPath())); // Add root directory.
 
         while (!queue.isEmpty()) {
-            IgniteBiTuple<Integer, GridGgfsPath> entry = queue.poll();
+            IgniteBiTuple<Integer, IgniteFsPath> entry = queue.poll();
 
             int lvl = entry.getKey();
 
@@ -1919,21 +1919,21 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                 int newLvl = lvl + 1;
 
                 for (int i = 0; i < childrenDirPerLvl; i++) {
-                    GridGgfsPath path = new GridGgfsPath(entry.getValue(), "dir-" + newLvl + "-" + i);
+                    IgniteFsPath path = new IgniteFsPath(entry.getValue(), "dir-" + newLvl + "-" + i);
 
                     queue.add(F.t(newLvl, path));
 
                     if (!dirPaths.containsKey(newLvl))
-                        dirPaths.put(newLvl, new ArrayList<GridGgfsPath>());
+                        dirPaths.put(newLvl, new ArrayList<IgniteFsPath>());
 
                     dirPaths.get(newLvl).add(path);
                 }
 
                 for (int i = 0; i < childrenFilePerLvl; i++) {
-                    GridGgfsPath path = new GridGgfsPath(entry.getValue(), "file-" + newLvl + "-" + i);
+                    IgniteFsPath path = new IgniteFsPath(entry.getValue(), "file-" + newLvl + "-" + i);
 
                     if (!filePaths.containsKey(newLvl))
-                        filePaths.put(newLvl, new ArrayList<GridGgfsPath>());
+                        filePaths.put(newLvl, new ArrayList<IgniteFsPath>());
 
                     filePaths.get(newLvl).add(path);
                 }
@@ -1957,8 +1957,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         int fromLvl = rand.nextInt(lvlCnt) + 1;
                         int toLvl = rand.nextInt(lvlCnt) + 1;
 
-                        List<GridGgfsPath> fromPaths;
-                        List<GridGgfsPath> toPaths;
+                        List<IgniteFsPath> fromPaths;
+                        List<IgniteFsPath> toPaths;
 
                         if (rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl) {
                             // Rename directories.
@@ -1971,8 +1971,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                             toPaths = filePaths.get(toLvl);
                         }
 
-                        GridGgfsPath fromPath = fromPaths.get(rand.nextInt(fromPaths.size()));
-                        GridGgfsPath toPath = toPaths.get(rand.nextInt(toPaths.size()));
+                        IgniteFsPath fromPath = fromPaths.get(rand.nextInt(fromPaths.size()));
+                        IgniteFsPath toPath = toPaths.get(rand.nextInt(toPaths.size()));
 
                         U.awaitQuiet(barrier);
 
@@ -1994,7 +1994,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        GridGgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                        IgniteFsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
                             dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
                             filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
 
@@ -2018,7 +2018,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        GridGgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                        IgniteFsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
                             dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
                             filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
 
@@ -2044,9 +2044,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        GridGgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+                        IgniteFsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
 
-                        GridGgfsPath path = new GridGgfsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
+                        IgniteFsPath path = new IgniteFsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
 
                         U.awaitQuiet(barrier);
 
@@ -2071,9 +2071,9 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         int lvl = rand.nextInt(lvlCnt) + 1;
 
-                        GridGgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+                        IgniteFsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
 
-                        GridGgfsPath path = new GridGgfsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
+                        IgniteFsPath path = new IgniteFsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
 
                         U.awaitQuiet(barrier);
 
@@ -2103,8 +2103,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
             GridGgfsImpl targetGgfs = dual ? lvl <= primaryLvlCnt ? ggfs : ggfsSecondary : ggfs;
 
-            GridGgfsPath[] dirs = dirPaths.get(lvl).toArray(new GridGgfsPath[dirPaths.get(lvl).size()]);
-            GridGgfsPath[] files = filePaths.get(lvl).toArray(new GridGgfsPath[filePaths.get(lvl).size()]);
+            IgniteFsPath[] dirs = dirPaths.get(lvl).toArray(new IgniteFsPath[dirPaths.get(lvl).size()]);
+            IgniteFsPath[] files = filePaths.get(lvl).toArray(new IgniteFsPath[filePaths.get(lvl).size()]);
 
             create(targetGgfs, dirs, files);
         }
@@ -2124,15 +2124,15 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param files Files.
      * @throws Exception If failed.
      */
-    public static void create(GridGgfsFileSystem ggfs, @Nullable GridGgfsPath[] dirs, @Nullable GridGgfsPath[] files)
+    public static void create(GridGgfsFileSystem ggfs, @Nullable IgniteFsPath[] dirs, @Nullable IgniteFsPath[] files)
         throws Exception {
         if (dirs != null) {
-            for (GridGgfsPath dir : dirs)
+            for (IgniteFsPath dir : dirs)
                 ggfs.mkdirs(dir);
         }
 
         if (files != null) {
-            for (GridGgfsPath file : files) {
+            for (IgniteFsPath file : files) {
                 OutputStream os = ggfs.create(file, true);
 
                 os.close();
@@ -2150,7 +2150,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws IOException In case of IO exception.
      * @throws GridException In case of Grid exception.
      */
-    protected static void createFile(GridGgfsFileSystem ggfs, GridGgfsPath file, boolean overwrite,
+    protected static void createFile(GridGgfsFileSystem ggfs, IgniteFsPath file, boolean overwrite,
         @Nullable byte[]... chunks) throws IOException, GridException {
         OutputStream os = null;
 
@@ -2176,7 +2176,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(IgniteFs ggfs, GridGgfsPath file, boolean overwrite, long blockSize,
+    protected void createFile(IgniteFs ggfs, IgniteFsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2200,7 +2200,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(IgniteFs ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
+    protected void appendFile(IgniteFs ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
         throws Exception {
         GridGgfsOutputStream os = null;
 
@@ -2236,7 +2236,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param ggfs GGFS.
      * @param file File.
      */
-    public static void awaitFileClose(GridGgfsFileSystem ggfs, GridGgfsPath file) {
+    public static void awaitFileClose(GridGgfsFileSystem ggfs, IgniteFsPath file) {
         try {
             ggfs.update(file, Collections.singletonMap("prop", "val"));
         }
@@ -2253,7 +2253,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, GridGgfsPath... paths) throws Exception {
+    protected void checkExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath... paths) throws Exception {
         checkExist(ggfs, paths);
 
         if (dual)
@@ -2267,8 +2267,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param paths Paths.
      * @throws GridException If failed.
      */
-    protected void checkExist(GridGgfsImpl ggfs, GridGgfsPath... paths) throws GridException {
-        for (GridGgfsPath path : paths) {
+    protected void checkExist(GridGgfsImpl ggfs, IgniteFsPath... paths) throws GridException {
+        for (IgniteFsPath path : paths) {
             assert ggfs.context().meta().fileId(path) != null : "Path doesn't exist [ggfs=" + ggfs.name() +
                 ", path=" + path + ']';
             assert ggfs.exists(path) : "Path doesn't exist [ggfs=" + ggfs.name() + ", path=" + path + ']';
@@ -2283,7 +2283,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, GridGgfsPath... paths)
+    protected void checkNotExist(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath... paths)
         throws Exception {
         checkNotExist(ggfs, paths);
 
@@ -2298,8 +2298,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param paths Paths.
      * @throws Exception If failed.
      */
-    protected void checkNotExist(GridGgfsImpl ggfs, GridGgfsPath... paths) throws Exception {
-        for (GridGgfsPath path : paths) {
+    protected void checkNotExist(GridGgfsImpl ggfs, IgniteFsPath... paths) throws Exception {
+        for (IgniteFsPath path : paths) {
             assert ggfs.context().meta().fileId(path) == null : "Path exists [ggfs=" + ggfs.name() + ", path=" +
                 path + ']';
             assert !ggfs.exists(path) : "Path exists [ggfs=" + ggfs.name() + ", path=" + path + ']';
@@ -2316,7 +2316,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param chunks Expected data.
      * @throws Exception If failed.
      */
-    protected void checkFile(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, GridGgfsPath file,
+    protected void checkFile(GridGgfsImpl ggfs, GridGgfsImpl ggfsSecondary, IgniteFsPath file,
         @Nullable byte[]... chunks) throws Exception {
         checkExist(ggfs, file);
         checkFileContent(ggfs, file, chunks);
@@ -2336,7 +2336,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws IOException In case of IO exception.
      * @throws GridException In case of Grid exception.
      */
-    protected void checkFileContent(GridGgfsImpl ggfs, GridGgfsPath file, @Nullable byte[]... chunks)
+    protected void checkFileContent(GridGgfsImpl ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
         throws IOException, GridException {
         if (chunks != null && chunks.length > 0) {
             GridGgfsInputStream is = null;
@@ -2395,7 +2395,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @param paths Paths to group.
      * @return Paths as array.
      */
-    protected GridGgfsPath[] paths(GridGgfsPath... paths) {
+    protected IgniteFsPath[] paths(IgniteFsPath... paths) {
         return paths;
     }
 
@@ -2425,10 +2425,10 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<GridGgfsPath, GridGgfsFileWorker> workerMap =
-            (Map<GridGgfsPath, GridGgfsFileWorker>)workerMapFld.get(ggfs);
+        Map<IgniteFsPath, GridGgfsFileWorker> workerMap =
+            (Map<IgniteFsPath, GridGgfsFileWorker>)workerMapFld.get(ggfs);
 
-        for (Map.Entry<GridGgfsPath, GridGgfsFileWorker> entry : workerMap.entrySet()) {
+        for (Map.Entry<IgniteFsPath, GridGgfsFileWorker> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
 
             U.join(entry.getValue());

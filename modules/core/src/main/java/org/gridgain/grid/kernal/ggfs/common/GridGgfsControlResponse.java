@@ -169,7 +169,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void response(GridGgfsPath res) {
+    public void response(IgniteFsPath res) {
         resType = RES_TYPE_GGFS_PATH;
 
         this.res = res;
@@ -178,7 +178,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Path summary response.
      */
-    public void response(GridGgfsPathSummary res) {
+    public void response(IgniteFsPathSummary res) {
         resType = RES_TYPE_GGFS_PATH_SUMMARY;
 
         this.res = res;
@@ -196,7 +196,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void paths(Collection<GridGgfsPath> res) {
+    public void paths(Collection<IgniteFsPath> res) {
         resType = RES_TYPE_COL_GGFS_PATH;
 
         this.res = res;
@@ -205,7 +205,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param res Response.
      */
-    public void locations(Collection<GridGgfsBlockLocation> res) {
+    public void locations(Collection<IgniteFsBlockLocation> res) {
         resType = RES_TYPE_COL_GGFS_BLOCK_LOCATION;
 
         this.res = res;
@@ -255,7 +255,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         if (errCode == ERR_FILE_NOT_FOUND)
             throw new GridGgfsFileNotFoundException(err);
         else if (errCode == ERR_PATH_ALREADY_EXISTS)
-            throw new GridGgfsPathAlreadyExistsException(err);
+            throw new IgniteFsPathAlreadyExistsException(err);
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
             throw new GridGgfsDirectoryNotEmptyException(err);
         else if (errCode == ERR_PARENT_NOT_DIRECTORY)
@@ -326,7 +326,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     private int errorCode(GridException e, boolean checkIo) {
         if (X.hasCause(e, GridGgfsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
-        else if (GridGgfsPathAlreadyExistsException.class.isInstance(e))
+        else if (IgniteFsPathAlreadyExistsException.class.isInstance(e))
             return ERR_PATH_ALREADY_EXISTS;
         else if (GridGgfsDirectoryNotEmptyException.class.isInstance(e))
             return ERR_DIRECTORY_NOT_EMPTY;
@@ -467,7 +467,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsPath path = new GridGgfsPath();
+                    IgniteFsPath path = new IgniteFsPath();
 
                     path.readExternal(in);
 
@@ -481,7 +481,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                 boolean hasVal = in.readBoolean();
 
                 if (hasVal) {
-                    GridGgfsPathSummary sum = new GridGgfsPathSummary();
+                    IgniteFsPathSummary sum = new IgniteFsPathSummary();
 
                     sum.readExternal(in);
 
@@ -570,7 +570,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_PATH: {
-                Collection<GridGgfsPath> paths = null;
+                Collection<IgniteFsPath> paths = null;
 
                 int size = in.readInt();
 
@@ -578,7 +578,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
                     paths = new ArrayList<>(size);
 
                     for (int i = 0; i < size; i++) {
-                        GridGgfsPath path = new GridGgfsPath();
+                        IgniteFsPath path = new IgniteFsPath();
 
                         path.readExternal(in);
 
@@ -592,7 +592,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             }
 
             case RES_TYPE_COL_GGFS_BLOCK_LOCATION: {
-                Collection<GridGgfsBlockLocation> locations = null;
+                Collection<IgniteFsBlockLocation> locations = null;
 
                 int size = in.readInt();
 

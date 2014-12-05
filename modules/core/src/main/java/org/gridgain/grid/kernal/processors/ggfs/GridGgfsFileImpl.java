@@ -25,7 +25,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Path to this file. */
-    private GridGgfsPath path;
+    private IgniteFsPath path;
 
     /** File id. */
     private IgniteUuid fileId;
@@ -60,7 +60,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
      *
      * @param path Path.
      */
-    public GridGgfsFileImpl(GridGgfsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
+    public GridGgfsFileImpl(IgniteFsPath path, GridGgfsFileInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -90,7 +90,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
      * @param path Path.
      * @param entry Listing entry.
      */
-    public GridGgfsFileImpl(GridGgfsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
+    public GridGgfsFileImpl(IgniteFsPath path, GridGgfsListingEntry entry, long globalGrpSize) {
         A.notNull(path, "path");
         A.notNull(entry, "entry");
 
@@ -110,7 +110,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsPath path() {
+    @Override public IgniteFsPath path() {
         return path;
     }
 
@@ -200,7 +200,7 @@ public final class GridGgfsFileImpl implements GridGgfsFile, Externalizable {
      * @param in Data input.
      */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        path = new GridGgfsPath();
+        path = new IgniteFsPath();
 
         path.readExternal(in);
 

@@ -144,10 +144,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     public void testJobCounters() throws Exception {
         IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
 
-        ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
+        ggfs.mkdirs(new IgniteFsPath(PATH_INPUT));
 
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
-            new GridGgfsPath(PATH_INPUT + "/test.file"), true)))) {
+            new IgniteFsPath(PATH_INPUT + "/test.file"), true)))) {
 
             bw.write(
                 "alpha\n" +
@@ -262,10 +262,10 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
     public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
         IgniteFs ggfs = grid(0).fileSystem(GridHadoopAbstractSelfTest.ggfsName);
 
-        ggfs.mkdirs(new GridGgfsPath(PATH_INPUT));
+        ggfs.mkdirs(new IgniteFsPath(PATH_INPUT));
 
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(ggfs.create(
-            new GridGgfsPath(PATH_INPUT + "/test.file"), true)))) {
+            new IgniteFsPath(PATH_INPUT + "/test.file"), true)))) {
 
             bw.write("word");
         }
@@ -381,7 +381,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         assert jobStatus.getMapProgress() == 1.0f;
         assert jobStatus.getReduceProgress() == 1.0f;
 
-        dumpGgfs(ggfs, new GridGgfsPath(PATH_OUTPUT));
+        dumpGgfs(ggfs, new IgniteFsPath(PATH_OUTPUT));
     }
 
     /**
@@ -392,7 +392,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static void dumpGgfs(IgniteFs ggfs, GridGgfsPath path) throws Exception {
+    private static void dumpGgfs(IgniteFs ggfs, IgniteFsPath path) throws Exception {
         GridGgfsFile file = ggfs.info(path);
 
         assert file != null;
@@ -400,7 +400,7 @@ public class GridHadoopClientProtocolSelfTest extends GridHadoopAbstractSelfTest
         System.out.println(file.path());
 
         if (file.isDirectory()) {
-            for (GridGgfsPath child : ggfs.listPaths(path))
+            for (IgniteFsPath child : ggfs.listPaths(path))
                 dumpGgfs(ggfs, child);
         }
         else {
