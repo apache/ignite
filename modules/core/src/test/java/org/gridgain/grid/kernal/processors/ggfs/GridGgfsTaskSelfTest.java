@@ -90,7 +90,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
      * @return Grid configuration
      */
     private IgniteConfiguration config(int idx) {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

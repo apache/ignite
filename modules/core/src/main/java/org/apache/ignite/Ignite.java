@@ -16,7 +16,6 @@ import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dr.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.util.typedef.*;
@@ -215,9 +214,9 @@ public interface Ignite extends AutoCloseable {
      * @param <V> Value type.
      * @param name Cache name.
      * @return Cache instance for given name.
-     * @see GridGgfsConfiguration
-     * @see GridGgfsConfiguration#getDataCacheName()
-     * @see GridGgfsConfiguration#getMetaCacheName()
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration#getDataCacheName()
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration#getMetaCacheName()
      */
     public <K, V> GridCache<K, V> cache(@Nullable String name);
 
@@ -225,9 +224,9 @@ public interface Ignite extends AutoCloseable {
      * Gets all configured caches.
      * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
      *
-     * @see GridGgfsConfiguration
-     * @see GridGgfsConfiguration#getDataCacheName()
-     * @see GridGgfsConfiguration#getMetaCacheName()
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration#getDataCacheName()
+     * @see org.gridgain.grid.ggfs.IgniteFsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
     public Collection<GridCache<?, ?>> caches();

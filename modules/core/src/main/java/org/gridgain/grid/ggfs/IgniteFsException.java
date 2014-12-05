@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * {@code GGFS} exception thrown by file system components.
  */
-public class GridGgfsException extends GridException {
+public class IgniteFsException extends GridException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class GridGgfsException extends GridException {
      *
      * @param msg Error message.
      */
-    public GridGgfsException(String msg) {
+    public IgniteFsException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridGgfsException extends GridException {
      *
      * @param cause Exception cause.
      */
-    public GridGgfsException(Throwable cause) {
+    public IgniteFsException(Throwable cause) {
         super(cause);
     }
 
@@ -43,7 +43,7 @@ public class GridGgfsException extends GridException {
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public GridGgfsException(String msg, @Nullable Throwable cause) {
+    public IgniteFsException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

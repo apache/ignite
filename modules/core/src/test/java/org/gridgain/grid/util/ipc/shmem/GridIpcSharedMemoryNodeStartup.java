@@ -35,7 +35,7 @@ public class GridIpcSharedMemoryNodeStartup {
     public static void main(String[] args) throws Exception{
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 

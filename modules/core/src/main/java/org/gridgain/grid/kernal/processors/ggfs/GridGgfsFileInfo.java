@@ -90,13 +90,13 @@ public final class GridGgfsFileInfo implements Externalizable {
     }
 
     /**
-     * Constructs directory or file info with {@link GridGgfsConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
      */
     public GridGgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
-        this(isDir, null, isDir ? 0 : GridGgfsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
+        this(isDir, null, isDir ? 0 : IgniteFsConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
             System.currentTimeMillis(), false);
     }
 

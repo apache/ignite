@@ -58,12 +58,12 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
         ggfsCfg.setName("ggfs");
-        ggfsCfg.setManagementPort(GridGgfsConfiguration.DFLT_MGMT_PORT + cnt);
+        ggfsCfg.setManagementPort(IgniteFsConfiguration.DFLT_MGMT_PORT + cnt);
 
         ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(
             "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));

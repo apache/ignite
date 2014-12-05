@@ -74,7 +74,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @throws Exception If failed.
      */
     private void startPrimary() throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
@@ -144,7 +144,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @throws Exception If failed.
      */
     private void startSecondary() throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

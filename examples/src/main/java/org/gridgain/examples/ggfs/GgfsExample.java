@@ -113,7 +113,7 @@ public final class GgfsExample {
                 System.out.println();
                 System.out.println(">>> Deleted " + (isFile ? "file" : "directory") + ": " + path);
             }
-            catch (GridGgfsException e) {
+            catch (IgniteFsException e) {
                 System.out.println();
                 System.out.println(">>> Failed to delete " + (isFile ? "file" : "directory") + " [path=" + path +
                     ", msg=" + e.getMessage() + ']');
@@ -142,7 +142,7 @@ public final class GgfsExample {
             System.out.println();
             System.out.println(">>> Created directory: " + path);
         }
-        catch (GridGgfsException e) {
+        catch (IgniteFsException e) {
             System.out.println();
             System.out.println(">>> Failed to create a directory [path=" + path + ", msg=" + e.getMessage() + ']');
         }

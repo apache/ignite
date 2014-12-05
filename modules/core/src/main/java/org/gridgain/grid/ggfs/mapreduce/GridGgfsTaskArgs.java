@@ -25,7 +25,7 @@ import java.util.*;
  *     <li>{@link GridGgfsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>
- *     <li>Maximum file range length for that task (see {@link GridGgfsConfiguration#getMaximumTaskRangeLength()})</li>
+ *     <li>Maximum file range length for that task (see {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
  */
 public interface GridGgfsTaskArgs<T> {

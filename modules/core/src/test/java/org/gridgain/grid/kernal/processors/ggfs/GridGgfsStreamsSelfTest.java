@@ -103,7 +103,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);

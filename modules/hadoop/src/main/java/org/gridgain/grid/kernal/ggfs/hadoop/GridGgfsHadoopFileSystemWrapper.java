@@ -89,11 +89,11 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
      * @param detailMsg Detailed error message.
      * @return Appropriate exception.
      */
-    private GridGgfsException handleSecondaryFsError(IOException e, String detailMsg) {
+    private IgniteFsException handleSecondaryFsError(IOException e, String detailMsg) {
         boolean wrongVer = X.hasCause(e, RemoteException.class) ||
             (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
-        GridGgfsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
+        IgniteFsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
             new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                 "version.", e);
 
@@ -108,7 +108,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
      * @param e IO exception.
      * @return GGFS exception.
      */
-    public static GridGgfsException cast(String msg, IOException e) {
+    public static IgniteFsException cast(String msg, IOException e) {
         if (e instanceof FileNotFoundException)
             return new GridGgfsFileNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
@@ -118,7 +118,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
         else if (e instanceof PathExistsException)
             return new IgniteFsPathAlreadyExistsException(msg, e);
         else
-            return new GridGgfsException(msg, e);
+            return new IgniteFsException(msg, e);
     }
 
     /**
@@ -171,7 +171,7 @@ public class GridGgfsHadoopFileSystemWrapper implements GridGgfsFileSystem, Auto
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
-                throw new GridGgfsException("Failed to rename (secondary file system returned false) " +
+                throw new IgniteFsException("Failed to rename (secondary file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
         catch (IOException e) {

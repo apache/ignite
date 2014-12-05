@@ -64,8 +64,8 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
 
     /** {@inheritDoc} */
-    @Override public GridGgfsConfiguration ggfsConfiguration() {
-        GridGgfsConfiguration cfg = super.ggfsConfiguration();
+    @Override public IgniteFsConfiguration ggfsConfiguration() {
+        IgniteFsConfiguration cfg = super.ggfsConfiguration();
 
         cfg.setFragmentizerEnabled(false);
 

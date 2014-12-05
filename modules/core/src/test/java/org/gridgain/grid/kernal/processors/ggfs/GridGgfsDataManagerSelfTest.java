@@ -85,7 +85,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -550,7 +550,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**
@@ -566,7 +566,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**
@@ -585,6 +585,6 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 }

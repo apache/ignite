@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Exception thrown when target file's block is not found in data cache.
  */
-public class GridGgfsCorruptedFileException extends GridGgfsException {
+public class GridGgfsCorruptedFileException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 

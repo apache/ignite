@@ -102,7 +102,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);

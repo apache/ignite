@@ -295,7 +295,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         IgniteDataLoader<GridGgfsBlockKey, byte[]> ldr =
             ggfsCtx.kernalContext().<GridGgfsBlockKey, byte[]>dataLoad().dataLoader(dataCachePrj.name());
 
-        GridGgfsConfiguration cfg = ggfsCtx.configuration();
+        IgniteFsConfiguration cfg = ggfsCtx.configuration();
 
         if (cfg.getPerNodeBatchSize() > 0)
             ldr.perNodeBufferSize(cfg.getPerNodeBatchSize());
@@ -860,7 +860,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 
         if (limitGrpIdx - firstGrpIdx > Integer.MAX_VALUE)
-            throw new GridGgfsException("Failed to get affinity (range is too wide)" +
+            throw new IgniteFsException("Failed to get affinity (range is too wide)" +
                 " [info=" + info + ", start=" + start + ", len=" + len + ']');
 
         if (log.isDebugEnabled())
@@ -1408,7 +1408,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             int len = remainderLen + srcLen;
 
             if (len > reservedLen)
-                throw new GridGgfsException("Not enough space reserved to store data [id=" + id +
+                throw new IgniteFsException("Not enough space reserved to store data [id=" + id +
                     ", reservedLen=" + reservedLen + ", remainderLen=" + remainderLen +
                     ", data.length=" + srcLen + ']');
 

@@ -43,7 +43,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

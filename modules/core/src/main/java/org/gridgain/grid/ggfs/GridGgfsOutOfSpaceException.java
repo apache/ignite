@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
  * its maximum value (that is configured per-node).
  */
-public class GridGgfsOutOfSpaceException extends GridGgfsException {
+public class GridGgfsOutOfSpaceException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 

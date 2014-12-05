@@ -40,7 +40,7 @@ import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 @SuppressWarnings("all")
 public class GridGgfsMetaManager extends GridGgfsManager {
     /** GGFS configuration. */
-    private GridGgfsConfiguration cfg;
+    private IgniteFsConfiguration cfg;
 
     /** Metadata cache. */
     private GridCache<Object, Object> metaCache;
@@ -746,7 +746,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         IgniteUuid fileId = newFileInfo.id();
 
         if (!id2InfoPrj.putxIfAbsent(fileId, newFileInfo))
-            throw new GridGgfsException("Failed to add file details into cache: " + newFileInfo);
+            throw new IgniteFsException("Failed to add file details into cache: " + newFileInfo);
 
         assert metaCache.get(parentId) != null;
 
@@ -963,7 +963,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert parentInfo.isDirectory();
 
         if (!rmvLocked && fileInfo.lockId() != null)
-            throw new GridGgfsException("Failed to remove file (file is opened for writing) [fileName=" +
+            throw new IgniteFsException("Failed to remove file (file is opened for writing) [fileName=" +
                 fileName + ", fileId=" + fileId + ", lockId=" + fileInfo.lockId() + ']');
 
         // Validate own directory listing.
@@ -1467,15 +1467,15 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo newInfo = c.apply(oldInfo);
 
                     if (newInfo == null)
-                        throw new GridGgfsException("Failed to update file info with null value" +
+                        throw new IgniteFsException("Failed to update file info with null value" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (!oldInfo.id().equals(newInfo.id()))
-                        throw new GridGgfsException("Failed to update file info (file IDs differ)" +
+                        throw new IgniteFsException("Failed to update file info (file IDs differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (oldInfo.isDirectory() != newInfo.isDirectory())
-                        throw new GridGgfsException("Failed to update file info (file types differ)" +
+                        throw new IgniteFsException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     boolean b = metaCache.replace(fileId, oldInfo, newInfo);
@@ -1640,10 +1640,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFile status = fs.info(path);
 
                             if (status == null)
-                                throw new GridGgfsException("Failed to open output stream to the file created in " +
+                                throw new IgniteFsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because it no longer exists: " + path);
                             else if (status.isDirectory())
-                                throw new GridGgfsException("Failed to open output stream to the file created in " +
+                                throw new IgniteFsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because the path points to a directory: " + path);
 
                             GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.blockSize(), status.length(), affKey,
@@ -1704,10 +1704,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
                                 bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
 
-                            if (err instanceof GridGgfsException)
-                                throw (GridGgfsException)err;
+                            if (err instanceof IgniteFsException)
+                                throw (IgniteFsException)err;
                             else
-                                throw new GridGgfsException("Failed to create the file due to secondary file system " +
+                                throw new IgniteFsException("Failed to create the file due to secondary file system " +
                                     "exception: " + path, err);
                         }
                     };
@@ -1754,7 +1754,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo info = infos.get(path);
 
                             if (info.isDirectory())
-                                throw new GridGgfsException("Failed to open output stream to the file in the " +
+                                throw new IgniteFsException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
                             out = fs.append(path, bufSize, false, null);
@@ -1793,8 +1793,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
-                            if (err instanceof GridGgfsException)
-                                throw (GridGgfsException)err;
+                            if (err instanceof IgniteFsException)
+                                throw (IgniteFsException)err;
                             else
                                 throw new GridException("Failed to append to the file due to secondary file system " +
                                     "exception: " + path, err);
@@ -1858,7 +1858,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
-                            if (err instanceof GridGgfsException)
+                            if (err instanceof IgniteFsException)
                                 throw (GridException)err;
                             else
                                 throw new GridException("Failed to open the path due to secondary file system " +
@@ -1906,7 +1906,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
-                            if (err instanceof GridGgfsException)
+                            if (err instanceof IgniteFsException)
                                 throw (GridException)err;
                             else
                                 throw new GridException("Failed to synchronize path due to secondary file system " +
@@ -2061,7 +2061,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         else {
                             // Move.
                             if (destInfo.isFile())
-                                throw new GridGgfsException("Failed to rename the path in the local file system " +
+                                throw new IgniteFsException("Failed to rename the path in the local file system " +
                                     "because destination path already exists and it is a file: " + dest);
                             else
                                 moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());
@@ -2086,7 +2086,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         U.error(log, "Path rename in DUAL mode failed [source=" + src + ", destination=" + dest + ']',
                             err);
 
-                        if (err instanceof GridGgfsException)
+                        if (err instanceof IgniteFsException)
                             throw (GridException)err;
                         else
                             throw new GridException("Failed to rename the path due to secondary file system " +
@@ -2427,7 +2427,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 if (changed != null) {
                     finished = true;
 
-                    throw new GridGgfsConcurrentModificationException(changed);
+                    throw new IgniteFsConcurrentModificationException(changed);
                 }
                 else {
                     boolean newParents = false;

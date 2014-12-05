@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
+import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * Secondary Hadoop file system is provided for pass-through, write-through, and
  * read-through purposes.
  * <p>
- * This mode is configured via {@link GridGgfsConfiguration#getDefaultMode()}
+ * This mode is configured via {@link IgniteFsConfiguration#getDefaultMode()}
  * configuration property.
  */
 public enum GridGgfsMode {
@@ -31,7 +31,7 @@ public enum GridGgfsMode {
      * through to secondary Hadoop file system. If this mode is enabled, then
      * secondary Hadoop file system must be configured.
      *
-     * @see GridGgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     PROXY,
 
@@ -42,7 +42,7 @@ public enum GridGgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see GridGgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     DUAL_SYNC,
 
@@ -53,7 +53,7 @@ public enum GridGgfsMode {
      * If secondary Hadoop file system is not configured, then this mode behaves like
      * {@link #PRIMARY} mode.
      *
-     * @see GridGgfsConfiguration#getSecondaryHadoopFileSystemUri()
+     * @see IgniteFsConfiguration#getSecondaryHadoopFileSystemUri()
      */
     DUAL_ASYNC;
 

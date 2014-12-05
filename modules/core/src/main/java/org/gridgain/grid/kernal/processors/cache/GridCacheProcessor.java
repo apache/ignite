@@ -510,10 +510,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         maxPreloadOrder = validatePreloadOrder(ctx.config().getCacheConfiguration());
 
         // Internal caches which should not be returned to user.
-        GridGgfsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
+        IgniteFsConfiguration[] ggfsCfgs = ctx.grid().configuration().getGgfsConfiguration();
 
         if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
                 sysCaches.add(ggfsCfg.getMetaCacheName());
                 sysCaches.add(ggfsCfg.getDataCacheName());
             }

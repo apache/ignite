@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
+import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
 
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
@@ -146,8 +146,8 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @param endpointCfg Optional REST endpoint configuration.
      * @return test-purposed GridGgfsConfiguration.
      */
-    protected GridGgfsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
-        GridGgfsConfiguration ggfsConfiguration = new GridGgfsConfiguration();
+    protected IgniteFsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
+        IgniteFsConfiguration ggfsConfiguration = new IgniteFsConfiguration();
 
         ggfsConfiguration.setDataCacheName("partitioned");
         ggfsConfiguration.setMetaCacheName("replicated");

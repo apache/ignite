@@ -75,7 +75,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     private void startUp() throws Exception {
         startUpSecondary();
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
@@ -137,7 +137,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUpSecondary() throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");

@@ -68,7 +68,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -412,7 +412,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
             @Override public Object call() throws Exception {
                 return mgr.putIfAbsent(parentId, fileName, fileInfo);
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**
@@ -433,7 +433,7 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**

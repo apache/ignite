@@ -65,7 +65,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfs = grid.fileSystem(ggfsName());
 
-        GridGgfsConfiguration[] cfgs = grid.configuration().getGgfsConfiguration();
+        IgniteFsConfiguration[] cfgs = grid.configuration().getGgfsConfiguration();
 
         assert cfgs.length == 1;
 
@@ -103,7 +103,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);
         ggfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -369,7 +369,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
 
         ggfs.delete(path("/A1/B1/C1"), false);
         assertNull(ggfs.info(path("/A1/B1/C1")));
@@ -395,7 +395,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
         assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(ggfs.listPaths(path("/"))));
 
         ggfs.delete(path("/"), true);
@@ -473,7 +473,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
 
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
@@ -482,7 +482,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
 
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
@@ -492,7 +492,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
 
         ///
         // F6 > Enter > Tab x N times
@@ -530,7 +530,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                     return null;
                 }
-            }, GridGgfsException.class, null);
+            }, IgniteFsException.class, null);
 
             // Test root rename.
             GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
@@ -539,7 +539,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                     return null;
                 }
-            }, GridGgfsException.class, null);
+            }, IgniteFsException.class, null);
 
             // Test root rename.
             if (!root.equals(p2)) {
@@ -549,7 +549,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                         return null;
                     }
-                }, GridGgfsException.class, null);
+                }, IgniteFsException.class, null);
             }
 
             // Test same rename.
@@ -911,7 +911,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return false;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**
@@ -928,7 +928,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return false;
             }
-        }, GridGgfsException.class, msg);
+        }, IgniteFsException.class, msg);
     }
 
     /**

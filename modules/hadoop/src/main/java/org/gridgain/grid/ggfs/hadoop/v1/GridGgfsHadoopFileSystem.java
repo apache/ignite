@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
+import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
 import static org.gridgain.grid.ggfs.GridGgfsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
@@ -716,7 +716,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         catch (IOException e) {
             // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
-                !GridGgfsException.class.isAssignableFrom(e.getCause().getClass())))
+                !IgniteFsException.class.isAssignableFrom(e.getCause().getClass())))
                 throw e;
             else
                 return false;
@@ -767,7 +767,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         catch (IOException e) {
             // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
-                !GridGgfsException.class.isAssignableFrom(e.getCause().getClass())))
+                !IgniteFsException.class.isAssignableFrom(e.getCause().getClass())))
                 throw e;
             else
                 return false;
@@ -925,7 +925,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         catch (IOException e) {
             // Intentionally ignore GGFS exceptions here to follow Hadoop contract.
             if (F.eq(IOException.class, e.getClass()) && (e.getCause() == null ||
-                !GridGgfsException.class.isAssignableFrom(e.getCause().getClass())))
+                !IgniteFsException.class.isAssignableFrom(e.getCause().getClass())))
                 throw e;
             else
                 return false;

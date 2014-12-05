@@ -14,7 +14,7 @@ import org.gridgain.grid.ggfs.*;
 /**
  * Exception indicating that directory can not be deleted because it is not empty.
  */
-public class GridGgfsDirectoryNotEmptyException extends GridGgfsException {
+public class GridGgfsDirectoryNotEmptyException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 

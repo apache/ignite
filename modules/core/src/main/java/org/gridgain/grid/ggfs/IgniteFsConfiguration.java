@@ -26,7 +26,7 @@ import static org.gridgain.grid.ggfs.GridGgfsMode.*;
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}
  * configuration files under GridGain installation to see sample {@code GGFS} configuration.
  */
-public class GridGgfsConfiguration {
+public class IgniteFsConfiguration {
     /** Default file system user name. */
     public static final String DFLT_USER_NAME = System.getProperty("user.name", "anonymous");
 
@@ -159,7 +159,7 @@ public class GridGgfsConfiguration {
     /**
      * Constructs default configuration.
      */
-    public GridGgfsConfiguration() {
+    public IgniteFsConfiguration() {
         // No-op.
     }
 
@@ -168,7 +168,7 @@ public class GridGgfsConfiguration {
      *
      * @param cfg Configuration to copy.
      */
-    public GridGgfsConfiguration(GridGgfsConfiguration cfg) {
+    public IgniteFsConfiguration(IgniteFsConfiguration cfg) {
         assert cfg != null;
 
         /*
@@ -796,6 +796,6 @@ public class GridGgfsConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsConfiguration.class, this);
+        return S.toString(IgniteFsConfiguration.class, this);
     }
 }

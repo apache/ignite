@@ -108,7 +108,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
         @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");

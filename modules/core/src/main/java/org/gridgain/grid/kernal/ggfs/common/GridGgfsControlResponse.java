@@ -265,7 +265,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (errCode == ERR_CORRUPTED_FILE)
             throw new GridGgfsCorruptedFileException(err);
         else if (errCode == ERR_GGFS_GENERIC)
-            throw new GridGgfsException(err);
+            throw new IgniteFsException(err);
 
         throw new GridException(err);
     }
@@ -337,7 +337,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (X.hasCause(e, GridGgfsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
-        else if (GridGgfsException.class.isInstance(e))
+        else if (IgniteFsException.class.isInstance(e))
             return ERR_GGFS_GENERIC;
 
         return ERR_GENERIC;

@@ -29,7 +29,7 @@ public class GridGgfsContext {
     private final GridKernalContext ctx;
 
     /** Configuration. */
-    private final GridGgfsConfiguration cfg;
+    private final IgniteFsConfiguration cfg;
 
     /** Managers. */
     private List<GridGgfsManager> mgrs = new LinkedList<>();
@@ -60,7 +60,7 @@ public class GridGgfsContext {
      */
     public GridGgfsContext(
         GridKernalContext ctx,
-        GridGgfsConfiguration cfg,
+        IgniteFsConfiguration cfg,
         GridGgfsMetaManager metaMgr,
         GridGgfsDataManager dataMgr,
         GridGgfsServerManager srvMgr,
@@ -94,7 +94,7 @@ public class GridGgfsContext {
     /**
      * @return GGFS configuration.
      */
-    public GridGgfsConfiguration configuration() {
+    public IgniteFsConfiguration configuration() {
         return cfg;
     }
 

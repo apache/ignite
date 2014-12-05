@@ -67,7 +67,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
      *
      * @return GGFS configuration.
      */
-    public GridGgfsConfiguration configuration();
+    public IgniteFsConfiguration configuration();
 
     /**
      * Gets summary (total number of files, total number of directories and total length)
@@ -274,7 +274,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -310,7 +310,7 @@ public interface IgniteFs extends GridGgfsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

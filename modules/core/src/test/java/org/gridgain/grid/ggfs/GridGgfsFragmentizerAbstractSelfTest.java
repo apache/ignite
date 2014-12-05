@@ -55,7 +55,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
 
         cfg.setCacheConfiguration(metaConfiguration(), dataConfiguration());
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setName("ggfs");
         ggfsCfg.setMetaCacheName(META_CACHE_NAME);

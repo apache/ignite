@@ -216,10 +216,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         metrics = new GridCacheMetricsAdapter();
 
-        GridGgfsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
+        IgniteFsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
         if (ggfsCfgs != null) {
-            for (GridGgfsConfiguration ggfsCfg : ggfsCfgs) {
+            for (IgniteFsConfiguration ggfsCfg : ggfsCfgs) {
                 if (F.eq(ctx.name(), ggfsCfg.getDataCacheName())) {
                     if (!ctx.isNear()) {
                         ggfsDataCache = true;

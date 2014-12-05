@@ -63,7 +63,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private GridGgfsDataManager data;
 
     /** FS configuration. */
-    private GridGgfsConfiguration cfg;
+    private IgniteFsConfiguration cfg;
 
     /** Ggfs context. */
     private GridGgfsContext ggfsCtx;
@@ -368,7 +368,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsConfiguration configuration() {
+    @Override public IgniteFsConfiguration configuration() {
         return cfg;
     }
 
@@ -883,7 +883,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                             GridGgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
 
                             if (stored == null)
-                                throw new GridGgfsException(e);
+                                throw new IgniteFsException(e);
 
                             if (!stored.isDirectory())
                                 throw new GridGgfsParentNotDirectoryException("Failed to create directory (parent " +
@@ -1708,7 +1708,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1742,7 +1742,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
-     * {@link GridGgfsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.

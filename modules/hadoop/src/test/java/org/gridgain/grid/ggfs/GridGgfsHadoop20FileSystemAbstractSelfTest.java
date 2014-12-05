@@ -136,7 +136,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
     private void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary GGFS.
-            GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+            IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
@@ -244,8 +244,8 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected GridGgfsConfiguration ggfsConfiguration(String gridName) throws GridException {
-        GridGgfsConfiguration cfg = new GridGgfsConfiguration();
+    protected IgniteFsConfiguration ggfsConfiguration(String gridName) throws GridException {
+        IgniteFsConfiguration cfg = new IgniteFsConfiguration();
 
         cfg.setDataCacheName("partitioned");
         cfg.setMetaCacheName("replicated");
@@ -459,7 +459,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         FSDataOutputStream os = fs.create(file, EnumSet.noneOf(CreateFlag.class),
             Options.CreateOpts.perms(FsPermission.getDefault()));
 
-        final int cnt = 5 * GridGgfsConfiguration.DFLT_BLOCK_SIZE; // Write 5 blocks.
+        final int cnt = 5 * IgniteFsConfiguration.DFLT_BLOCK_SIZE; // Write 5 blocks.
 
         for (int i = 0; i < cnt; i++)
             os.writeInt(i);

@@ -13,7 +13,7 @@ package org.gridgain.grid.ggfs;
  * {@code GGFS} exception indicating that file system structure was modified concurrently. This error
  * indicates that an operation performed in DUAL mode cannot proceed due to these changes.
  */
-public class GridGgfsConcurrentModificationException extends GridGgfsException {
+public class IgniteFsConcurrentModificationException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -22,7 +22,7 @@ public class GridGgfsConcurrentModificationException extends GridGgfsException {
      *
      * @param path Affected path.
      */
-    public GridGgfsConcurrentModificationException(IgniteFsPath path) {
+    public IgniteFsConcurrentModificationException(IgniteFsPath path) {
         super("File system entry has been modified concurrently: " + path, null);
     }
 }

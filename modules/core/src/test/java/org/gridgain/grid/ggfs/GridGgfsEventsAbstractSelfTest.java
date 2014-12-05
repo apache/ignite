@@ -78,8 +78,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected GridGgfsConfiguration getGgfsConfiguration() throws GridException {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+    protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
@@ -103,7 +103,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(String gridName, GridGgfsConfiguration ggfsCfg) throws Exception {
+    protected IgniteConfiguration getConfiguration(String gridName, IgniteFsConfiguration ggfsCfg) throws Exception {
         IgniteConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;

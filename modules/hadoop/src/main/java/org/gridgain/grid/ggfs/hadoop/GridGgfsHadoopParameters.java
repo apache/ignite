@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.ggfs.hadoop;
 
-import org.gridgain.grid.ggfs.*;
-
 /**
  * This class lists parameters that can be specified in Hadoop configuration.
  * Hadoop configuration can be specified in {@code core-site.xml} file
@@ -18,7 +16,7 @@ import org.gridgain.grid.ggfs.*;
  * <ul>
  *     <li>
  *         {@code fs.ggfs.[name].open.sequential_reads_before_prefetch} - this parameter overrides
- *         the one specified in {@link GridGgfsConfiguration#getSequentialReadsBeforePrefetch()}
+ *         the one specified in {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getSequentialReadsBeforePrefetch()}
  *         GGFS data node configuration property.
  *     </li>
  *     <li>

@@ -103,7 +103,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
 
         // File hasn't been locked.
         if (fileInfo.lockId() == null)
-            throw new GridGgfsException("Failed to acquire file lock (concurrently modified?): " + path);
+            throw new IgniteFsException("Failed to acquire file lock (concurrently modified?): " + path);
 
         this.ggfsCtx = ggfsCtx;
         meta = ggfsCtx.meta();

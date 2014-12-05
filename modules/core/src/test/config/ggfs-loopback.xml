@@ -74,7 +74,7 @@
 
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.gridgain.grid.ggfs.GridGgfsConfiguration">
+                <bean class="org.gridgain.grid.ggfs.IgniteFsConfiguration">
                     <property name="name" value="ggfs"/>
                     <property name="metaCacheName" value="ggfs-meta"/>
                     <property name="dataCacheName" value="ggfs-data"/>

@@ -169,7 +169,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
         @Nullable GridGgfsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
         ggfsCfg.setMetaCacheName("metaCache");
@@ -598,7 +598,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
 
         checkNotExist(ggfs, ggfsSecondary, SUBDIR, SUBDIR_NEW);
     }
@@ -917,7 +917,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 return null;
             }
-        }, GridGgfsException.class, null);
+        }, IgniteFsException.class, null);
     }
 
     /**

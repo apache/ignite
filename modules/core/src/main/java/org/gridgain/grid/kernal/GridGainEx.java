@@ -1634,13 +1634,13 @@ public class GridGainEx {
             myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
             myCfg.setNodeId(nodeId);
 
-            GridGgfsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
+            IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
 
             if (ggfsCfgs != null) {
-                GridGgfsConfiguration[] clone = ggfsCfgs.clone();
+                IgniteFsConfiguration[] clone = ggfsCfgs.clone();
 
                 for (int i = 0; i < ggfsCfgs.length; i++)
-                    clone[i] = new GridGgfsConfiguration(ggfsCfgs[i]);
+                    clone[i] = new IgniteFsConfiguration(ggfsCfgs[i]);
 
                 myCfg.setGgfsConfiguration(clone);
             }

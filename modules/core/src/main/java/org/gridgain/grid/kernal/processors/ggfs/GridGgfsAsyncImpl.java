@@ -163,7 +163,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsConfiguration configuration() {
+    @Override public IgniteFsConfiguration configuration() {
         return ggfs.configuration();
     }
 

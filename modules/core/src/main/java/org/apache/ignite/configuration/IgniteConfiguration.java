@@ -505,7 +505,7 @@ public class IgniteConfiguration {
     private String[] restAccessibleFolders;
 
     /** GGFS configuration. */
-    private GridGgfsConfiguration[] ggfsCfg;
+    private IgniteFsConfiguration[] ggfsCfg;
 
     /** Client message interceptor. */
     private GridClientMessageInterceptor clientMsgInterceptor;
@@ -2983,7 +2983,7 @@ public class IgniteConfiguration {
      *
      * @return GGFS configurations.
      */
-    public GridGgfsConfiguration[] getGgfsConfiguration() {
+    public IgniteFsConfiguration[] getGgfsConfiguration() {
         return ggfsCfg;
     }
 
@@ -2992,7 +2992,7 @@ public class IgniteConfiguration {
      *
      * @param ggfsCfg GGFS configurations.
      */
-    public void setGgfsConfiguration(GridGgfsConfiguration... ggfsCfg) {
+    public void setGgfsConfiguration(IgniteFsConfiguration... ggfsCfg) {
         this.ggfsCfg = ggfsCfg;
     }
 

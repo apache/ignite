@@ -69,7 +69,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        GridGgfsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
+        IgniteFsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
@@ -116,10 +116,10 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         validateLocalGgfsConfigurations(cfgs);
 
         // Start GGFS instances.
-        for (GridGgfsConfiguration cfg : cfgs) {
+        for (IgniteFsConfiguration cfg : cfgs) {
             GridGgfsContext ggfsCtx = new GridGgfsContext(
                 ctx,
-                new GridGgfsConfiguration(cfg),
+                new IgniteFsConfiguration(cfg),
                 new GridGgfsMetaManager(),
                 new GridGgfsDataManager(),
                 new GridGgfsServerManager(),
@@ -254,7 +254,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
         assert gridCfg.getGgfsConfiguration() != null;
 
-        for (GridGgfsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
+        for (IgniteFsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
             GridCacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
@@ -294,10 +294,10 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
      * @param cfgs GGFS configurations
      * @throws GridException If any of GGFS configurations is invalid.
      */
-    private void validateLocalGgfsConfigurations(GridGgfsConfiguration[] cfgs) throws GridException {
+    private void validateLocalGgfsConfigurations(IgniteFsConfiguration[] cfgs) throws GridException {
         Collection<String> cfgNames = new HashSet<>();
 
-        for (GridGgfsConfiguration cfg : cfgs) {
+        for (IgniteFsConfiguration cfg : cfgs) {
             String name = cfg.getName();
 
             if (cfgNames.contains(name))

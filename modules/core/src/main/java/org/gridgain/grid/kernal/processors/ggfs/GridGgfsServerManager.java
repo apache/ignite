@@ -21,7 +21,7 @@ import org.gridgain.grid.util.worker.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsConfiguration.*;
+import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
 
 /**
  * GGFS server manager.
@@ -41,7 +41,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws GridException {
-        GridGgfsConfiguration ggfsCfg = ggfsCtx.configuration();
+        IgniteFsConfiguration ggfsCfg = ggfsCtx.configuration();
         Map<String,String> cfg = ggfsCfg.getIpcEndpointConfiguration();
 
         if (F.isEmpty(cfg)) {

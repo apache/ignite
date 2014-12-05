@@ -218,7 +218,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
 
         cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
 
-        GridGgfsConfiguration ggfsCfg = new GridGgfsConfiguration();
+        IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("partitioned");
         ggfsCfg.setMetaCacheName("replicated");
