@@ -20,7 +20,6 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.streamer.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.hadoop.*;
@@ -114,7 +113,7 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link org.gridgain.grid.GridDeploymentMode#SHARED}). */
+    /** Default deployment mode (value is {@link GridDeploymentMode#SHARED}). */
     public static final GridDeploymentMode DFLT_DEPLOYMENT_MODE = GridDeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */

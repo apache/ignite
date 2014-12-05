@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.Map.*;
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;

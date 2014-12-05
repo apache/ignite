@@ -17,7 +17,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 
 /**
  * Tests for node attributes consistency checks.

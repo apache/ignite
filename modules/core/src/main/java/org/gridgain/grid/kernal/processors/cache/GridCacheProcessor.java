@@ -45,7 +45,7 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;

@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 
 /**
  * Basic streamer test.

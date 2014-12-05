@@ -12,7 +12,6 @@ package org.gridgain.grid.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

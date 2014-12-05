@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -27,12 +28,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Deployment storage for {@link GridDeploymentMode#SHARED} and
- * {@link GridDeploymentMode#CONTINUOUS} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.GridDeploymentMode#SHARED} and
+ * {@link org.apache.ignite.configuration.GridDeploymentMode#CONTINUOUS} modes.
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */

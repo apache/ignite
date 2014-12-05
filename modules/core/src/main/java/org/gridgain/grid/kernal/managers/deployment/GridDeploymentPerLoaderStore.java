@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.managers.deployment;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -27,8 +28,8 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Deployment storage for {@link GridDeploymentMode#PRIVATE} and
- * {@link GridDeploymentMode#ISOLATED} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.GridDeploymentMode#PRIVATE} and
+ * {@link org.apache.ignite.configuration.GridDeploymentMode#ISOLATED} modes.
  */
 public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** Cache keyed by class loader ID. */

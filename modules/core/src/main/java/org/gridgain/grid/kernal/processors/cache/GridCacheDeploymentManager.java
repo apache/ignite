@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -30,7 +31,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.GridDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -133,7 +134,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, GridDeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, org.apache.ignite.configuration.GridDeploymentMode, Map, boolean)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *
