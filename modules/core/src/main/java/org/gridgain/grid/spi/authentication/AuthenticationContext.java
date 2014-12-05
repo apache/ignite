@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Authentication context.
  */
-public interface GridAuthenticationContext {
+public interface AuthenticationContext {
     /**
      * Gets subject type.
      *

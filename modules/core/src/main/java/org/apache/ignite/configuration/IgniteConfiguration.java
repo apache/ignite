@@ -27,7 +27,6 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.authentication.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.checkpoint.noop.*;
 import org.gridgain.grid.spi.collision.*;
@@ -360,7 +359,7 @@ public class IgniteConfiguration {
     private GridCollisionSpi colSpi;
 
     /** Authentication SPI. */
-    private GridAuthenticationSpi authSpi;
+    private AuthenticationSpi authSpi;
 
     /** Secure session SPI. */
     private GridSecureSessionSpi sesSpi;
@@ -1979,22 +1978,22 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link GridNoopAuthenticationSpi} will be used.
+     * {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi} will be used.
      *
      * @return Grid authentication SPI implementation or {@code null} to use default implementation.
      */
-    public GridAuthenticationSpi getAuthenticationSpi() {
+    public AuthenticationSpi getAuthenticationSpi() {
         return authSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridAuthenticationSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}.
      *
-     * @param authSpi Fully configured instance of {@link GridAuthenticationSpi} or
+     * @param authSpi Fully configured instance of {@link org.gridgain.grid.spi.authentication.AuthenticationSpi} or
      * {@code null} if no SPI provided.
      * @see IgniteConfiguration#getAuthenticationSpi()
      */
-    public void setAuthenticationSpi(GridAuthenticationSpi authSpi) {
+    public void setAuthenticationSpi(AuthenticationSpi authSpi) {
         this.authSpi = authSpi;
     }
 

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Authentication context.
  */
-public class GridAuthenticationContextAdapter implements GridAuthenticationContext {
+public class AuthenticationContextAdapter implements AuthenticationContext {
     /** Subject type. */
     private GridSecuritySubjectType subjType;
 

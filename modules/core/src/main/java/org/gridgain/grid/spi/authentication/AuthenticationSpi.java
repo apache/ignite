@@ -11,20 +11,19 @@ package org.gridgain.grid.spi.authentication;
 
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.authentication.noop.*;
 
 /**
  * Authentication SPI used for authenticating grid nodes and remote clients. This SPI
  * supports only {@code authentication} and does not provide any {@code authorization}
  * functionality.
  * <p>
- * The default authentication SPI is {@link GridNoopAuthenticationSpi}
+ * The default authentication SPI is {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi}
  * which permits any request.
  * <p>
  * Gridgain provides the following {@code GridAuthenticationSpi} implementations:
  * <ul>
  * <li>
- *     {@link GridNoopAuthenticationSpi} - permits any request.
+ *     {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi} - permits any request.
  * </li>
  * <li>
  *     {@code GridPasscodeAuthenticationSpi} -
@@ -49,7 +48,7 @@ import org.gridgain.grid.spi.authentication.noop.*;
  * to undefined behavior and explicitly not supported.
  */
 @IgniteSpiConsistencyChecked(optional = false, checkDaemon = true)
-public interface GridAuthenticationSpi extends IgniteSpi {
+public interface AuthenticationSpi extends IgniteSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next authentication SPI
      * in the list will be checked.
@@ -68,7 +67,7 @@ public interface GridAuthenticationSpi extends IgniteSpi {
      * @throws org.apache.ignite.spi.IgniteSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
-    public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws IgniteSpiException;
+    public GridSecuritySubject authenticate(AuthenticationContext authCtx) throws IgniteSpiException;
 
     /**
      * Flag indicating whether node authentication should be run on coordinator only or on all nodes

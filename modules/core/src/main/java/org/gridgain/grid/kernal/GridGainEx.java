@@ -1467,7 +1467,7 @@ public class GridGainEx {
             GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
             GridEventStorageSpi evtSpi = cfg.getEventStorageSpi();
             GridCollisionSpi colSpi = cfg.getCollisionSpi();
-            GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
+            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             GridDeploymentSpi deploySpi = cfg.getDeploymentSpi();
             GridCheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
@@ -1686,7 +1686,7 @@ public class GridGainEx {
                 colSpi = new GridNoopCollisionSpi();
 
             if (authSpi == null)
-                authSpi = new GridNoopAuthenticationSpi();
+                authSpi = new NoopAuthenticationSpi();
 
             if (sesSpi == null)
                 sesSpi = new GridNoopSecureSessionSpi();

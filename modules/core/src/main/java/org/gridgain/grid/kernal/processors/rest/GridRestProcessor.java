@@ -468,7 +468,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         // Authenticate client if invalid session.
-        GridAuthenticationContextAdapter authCtx = new GridAuthenticationContextAdapter();
+        AuthenticationContextAdapter authCtx = new AuthenticationContextAdapter();
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());

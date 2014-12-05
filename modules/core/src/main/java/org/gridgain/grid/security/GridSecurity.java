@@ -10,7 +10,6 @@
 package org.gridgain.grid.security;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.authentication.*;
 
 import java.util.*;
 
@@ -39,7 +38,7 @@ import java.util.*;
  * For remote C++ and .NET clients, security credentials are provided in configuration
  * as well in the form of {@code "username:password"} string.
  * <h1 class="header">Authentication And Authorization</h1>
- * Node or client authentication happens in {@link GridAuthenticationSpi}. Upon successful
+ * Node or client authentication happens in {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}. Upon successful
  * authentication, the SPI will return list of permissions for authenticated subject.
  * <p>
  * GridGain ships with following authentication SPIs out of the box:

@@ -23,7 +23,7 @@ import java.util.*;
  */
 public interface GridSecurityManager extends GridManager {
     /**
-     * Authenticates grid node with it's attributes via underlying {@link GridAuthenticationSpi}s.
+     * Authenticates grid node with it's attributes via underlying {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}s.
      *
      * @param node Node id to authenticate.
      * @param cred Security credentials.
@@ -40,13 +40,13 @@ public interface GridSecurityManager extends GridManager {
     public boolean isGlobalNodeAuthentication();
 
     /**
-     * Authenticates subject via underlying {@link GridAuthenticationSpi}s.
+     * Authenticates subject via underlying {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}s.
      *
      * @param ctx Authentication context.
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws GridException If error occurred.
      */
-    public GridSecurityContext authenticate(GridAuthenticationContext ctx) throws GridException;
+    public GridSecurityContext authenticate(AuthenticationContext ctx) throws GridException;
 
     /**
      * Gets collection of authenticated nodes.

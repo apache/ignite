@@ -57,8 +57,8 @@ import org.gridgain.grid.util.typedef.internal.*;
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
-    implements GridAuthenticationSpi, GridNoopAuthenticationSpiMBean {
+public class NoopAuthenticationSpi extends IgniteSpiAdapter
+    implements AuthenticationSpi, NoopAuthenticationSpiMBean {
     /** Injected grid logger. */
     @IgniteLoggerResource
     @GridToStringExclude
@@ -74,7 +74,7 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws IgniteSpiException {
+    @Override public GridSecuritySubject authenticate(AuthenticationContext authCtx) throws IgniteSpiException {
         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         subj.address(authCtx.address());
@@ -96,7 +96,7 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, GridNoopAuthenticationSpiMBean.class);
+        registerMBean(gridName, this, NoopAuthenticationSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -114,6 +114,6 @@ public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNoopAuthenticationSpi.class, this);
+        return S.toString(NoopAuthenticationSpi.class, this);
     }
 }

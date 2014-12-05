@@ -22,7 +22,7 @@ import java.util.*;
  * to implement custom stores for per-user access control specifications,
  * e.g. encrypting them or storing in a separate file.
  */
-public interface GridAuthenticationAclProvider {
+public interface AuthenticationAclProvider {
     /**
      * Gets per-user access control map.
      *

@@ -138,7 +138,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         this.spiCtx = spiCtx;
 
         // Always run consistency check for security SPIs.
-        final boolean secSpi = GridAuthenticationSpi.class.isAssignableFrom(getClass()) ||
+        final boolean secSpi = AuthenticationSpi.class.isAssignableFrom(getClass()) ||
             GridSecureSessionSpi.class.isAssignableFrom(getClass());
 
         final boolean check = secSpi || !Boolean.getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK);

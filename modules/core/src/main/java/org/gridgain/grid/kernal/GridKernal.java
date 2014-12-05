@@ -1197,7 +1197,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
             msgs.add("Secure session SPI.");
 
-        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof GridNoopAuthenticationSpi))
+        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof NoopAuthenticationSpi))
             msgs.add("Authentication SPI.");
 
         if (!F.isEmpty(msgs)) {
@@ -1346,7 +1346,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
 
         try {
-            GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
+            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
 
             boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), IgniteSpiNoop.class);
 
