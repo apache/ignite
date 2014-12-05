@@ -852,7 +852,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsMetrics metrics() throws GridException {
+        @Override public IgniteFsMetrics metrics() throws GridException {
             return null;
         }
 

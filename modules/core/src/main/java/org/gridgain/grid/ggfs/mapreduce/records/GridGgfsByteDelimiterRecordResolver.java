@@ -70,7 +70,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, GridGgfsInputStream stream,
+    @Override public GridGgfsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
         GridGgfsFileRange suggestedRecord) throws GridException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
@@ -138,7 +138,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
      * @return The first found delimiter.
      * @throws IOException In case of IO exception.
      */
-    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(GridGgfsInputStream stream, long startPos)
+    @Nullable private IgniteBiTuple<State, Delimiter> findFirstDelimiter(IgniteFsInputStream stream, long startPos)
         throws IOException {
         State state;
         Delimiter delim;
@@ -169,7 +169,7 @@ public class GridGgfsByteDelimiterRecordResolver implements GridGgfsRecordResolv
      * @return Next delimiter and updated map.
      * @throws IOException In case of exception.
      */
-    private Delimiter nextDelimiter(GridGgfsInputStream is, State state) throws IOException {
+    private Delimiter nextDelimiter(IgniteFsInputStream is, State state) throws IOException {
         assert is != null;
         assert state != null;
 

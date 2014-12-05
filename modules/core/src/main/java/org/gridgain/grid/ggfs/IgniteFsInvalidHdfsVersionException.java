@@ -13,14 +13,14 @@ package org.gridgain.grid.ggfs;
  * Exception thrown when GridGain detects that remote HDFS version differs from version of HDFS libraries
  * in GridGain classpath.
  */
-public class GridGgfsInvalidHdfsVersionException extends IgniteFsException {
+public class IgniteFsInvalidHdfsVersionException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public GridGgfsInvalidHdfsVersionException(String msg) {
+    public IgniteFsInvalidHdfsVersionException(String msg) {
         super(msg);
     }
 
@@ -28,7 +28,7 @@ public class GridGgfsInvalidHdfsVersionException extends IgniteFsException {
      * @param msg Error message.
      * @param cause Error cause.
      */
-    public GridGgfsInvalidHdfsVersionException(String msg, Throwable cause) {
+    public IgniteFsInvalidHdfsVersionException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

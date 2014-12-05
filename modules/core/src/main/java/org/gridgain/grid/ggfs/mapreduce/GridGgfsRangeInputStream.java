@@ -16,14 +16,14 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Decorator for regular {@link GridGgfsInputStream} which streams only data within the given range.
+ * Decorator for regular {@link org.gridgain.grid.ggfs.IgniteFsInputStream} which streams only data within the given range.
  * This stream is used for {@link GridGgfsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
  * working with {@link GridGgfsJob} directly.
  */
-public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
+public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
     /** Base input stream. */
-    private final GridGgfsInputStream is;
+    private final IgniteFsInputStream is;
 
     /** Start position. */
     private final long start;
@@ -42,7 +42,7 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
      * @param maxLen Maximum stream length.
      * @throws IOException In case of exception.
      */
-    public GridGgfsRangeInputStream(GridGgfsInputStream is, long start, long maxLen) throws IOException {
+    public GridGgfsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
         if (is == null)
             throw new IllegalArgumentException("Input stream cannot be null.");
 
@@ -77,7 +77,7 @@ public final class GridGgfsRangeInputStream extends GridGgfsInputStream {
      * @param range File range.
      * @throws IOException In case of exception.
      */
-    public GridGgfsRangeInputStream(GridGgfsInputStream is, GridGgfsFileRange range) throws IOException {
+    public GridGgfsRangeInputStream(IgniteFsInputStream is, GridGgfsFileRange range) throws IOException {
         this(is, range.start(), range.length());
     }
 

@@ -269,7 +269,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         // Try reading the third block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsInputStream in0 = ggfs.open(FILE);
+                IgniteFsInputStream in0 = ggfs.open(FILE);
 
                 in0.seek(blockSize * 2);
 

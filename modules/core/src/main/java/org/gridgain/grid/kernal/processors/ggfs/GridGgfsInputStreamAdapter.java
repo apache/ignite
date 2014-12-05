@@ -16,7 +16,7 @@ import java.io.*;
 /**
  * Implementation adapter providing necessary methods.
  */
-public abstract class GridGgfsInputStreamAdapter extends GridGgfsInputStream {
+public abstract class GridGgfsInputStreamAdapter extends IgniteFsInputStream {
     /** {@inheritDoc} */
     @Override public long length() {
         return fileInfo().length();

@@ -220,7 +220,7 @@ public final class GgfsExample {
 
         byte[] data = new byte[(int)fs.info(path).length()];
 
-        try (GridGgfsInputStream in = fs.open(path)) {
+        try (IgniteFsInputStream in = fs.open(path)) {
             in.read(data);
         }
 

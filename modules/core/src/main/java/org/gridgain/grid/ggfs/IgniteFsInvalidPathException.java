@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
  * {@code GGFS} exception indicating that operation target is invalid
  * (e.g. not a file while expecting to be a file).
  */
-public class GridGgfsInvalidPathException extends IgniteFsException {
+public class IgniteFsInvalidPathException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -24,7 +24,7 @@ public class GridGgfsInvalidPathException extends IgniteFsException {
      *
      * @param msg Error message.
      */
-    public GridGgfsInvalidPathException(String msg) {
+    public IgniteFsInvalidPathException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridGgfsInvalidPathException extends IgniteFsException {
      *
      * @param cause Exception cause.
      */
-    public GridGgfsInvalidPathException(Throwable cause) {
+    public IgniteFsInvalidPathException(Throwable cause) {
         super(cause);
     }
 
@@ -43,7 +43,7 @@ public class GridGgfsInvalidPathException extends IgniteFsException {
      * @param msg Error message.
      * @param cause Error cause.
      */
-    public GridGgfsInvalidPathException(String msg, @Nullable Throwable cause) {
+    public IgniteFsInvalidPathException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

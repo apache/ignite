@@ -94,7 +94,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
             (e.getMessage() != null && e.getMessage().contains("Failed on local"));
 
         IgniteFsException ggfsErr = !wrongVer ? cast(detailMsg, e) :
-            new GridGgfsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
+            new IgniteFsInvalidHdfsVersionException("HDFS version you are connecting to differs from local " +
                 "version.", e);
 
 

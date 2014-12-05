@@ -730,7 +730,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             throw new IgniteFsFileNotFoundException("Failed to lock parent directory (not found): " + parentId);
 
         if (!parentInfo.isDirectory())
-            throw new GridGgfsInvalidPathException("Parent file is not a directory: " + parentInfo);
+            throw new IgniteFsInvalidPathException("Parent file is not a directory: " + parentInfo);
 
         Map<String, GridGgfsListingEntry> parentListing = parentInfo.listing();
 
@@ -831,7 +831,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 " [srcParentId=" + srcParentId + ']');
 
         if (!srcInfo.isDirectory())
-            throw new GridGgfsInvalidPathException("Source is not a directory: " + srcInfo);
+            throw new IgniteFsInvalidPathException("Source is not a directory: " + srcInfo);
 
         GridGgfsFileInfo destInfo = infoMap.get(destParentId);
 
@@ -840,7 +840,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 " [destParentId=" + destParentId + ']');
 
         if (!destInfo.isDirectory())
-            throw new GridGgfsInvalidPathException("Destination is not a directory: " + destInfo);
+            throw new IgniteFsInvalidPathException("Destination is not a directory: " + destInfo);
 
         GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
@@ -859,7 +859,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         // If stored file already exist.
         if (destEntry != null)
-            throw new GridGgfsInvalidPathException("Failed to add file name into the destination directory " +
+            throw new IgniteFsInvalidPathException("Failed to add file name into the destination directory " +
                 "(file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
                 ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']');
 
@@ -1833,7 +1833,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 if (info != null) {
                     if (!info.isFile())
-                        throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+                        throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
 
                     return new GridGgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
                 }
@@ -1848,7 +1848,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (info == null)
                                 throw new IgniteFsFileNotFoundException("File not found: " + path);
                             if (!info.isFile())
-                                throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+                                throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
 
                             return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
                         }
@@ -2587,14 +2587,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo parentInfo = infoMap.get(parentId);
 
                     if (parentInfo == null)
-                        throw new GridGgfsInvalidPathException("Failed to update times (parent was not found): " +
+                        throw new IgniteFsInvalidPathException("Failed to update times (parent was not found): " +
                             fileName);
 
                     GridGgfsListingEntry entry = parentInfo.listing().get(fileName);
 
                     // Validate listing.
                     if (entry == null || !entry.fileId().equals(fileId))
-                        throw new GridGgfsInvalidPathException("Failed to update times (file concurrently modified): " +
+                        throw new IgniteFsInvalidPathException("Failed to update times (file concurrently modified): " +
                             fileName);
 
                     assert parentInfo.isDirectory();

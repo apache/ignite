@@ -630,15 +630,15 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 // Cannot rename root directory.
                 if (src.parent() == null)
-                    throw new GridGgfsInvalidPathException("Failed to rename root directory.");
+                    throw new IgniteFsInvalidPathException("Failed to rename root directory.");
 
                 // Cannot move directory of upper level to self sub-dir.
                 if (dest.isSubDirectoryOf(src))
-                    throw new GridGgfsInvalidPathException("Failed to rename directory (cannot move directory of " +
+                    throw new IgniteFsInvalidPathException("Failed to rename directory (cannot move directory of " +
                         "upper level to self sub-dir) [src=" + src + ", dest=" + dest + ']');
 
                 if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
-                    throw new GridGgfsInvalidPathException("Cannot move file to a path with different eviction " +
+                    throw new IgniteFsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
                 if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
@@ -1087,7 +1087,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
 
                 if (!info.isFile())
-                    throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
                 GgfsEventAwareInputStream os = new GgfsEventAwareInputStream(ggfsCtx, path, info,
@@ -1193,7 +1193,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
 
                 if (parentId == null)
-                    throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
+                    throw new IgniteFsInvalidPathException("Failed to resolve parent directory: " + path);
 
                 String fileName = path.name();
 
@@ -1298,7 +1298,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     }
 
                     if (parentId == null)
-                        throw new GridGgfsInvalidPathException("Failed to resolve parent directory: " + path);
+                        throw new IgniteFsInvalidPathException("Failed to resolve parent directory: " + path);
 
                     info = new GridGgfsFileInfo(cfg.getBlockSize(), /**affinity key*/null, evictExclude(path,
                         mode == PRIMARY), props);
@@ -1313,7 +1313,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 }
 
                 if (!info.isFile())
-                    throw new GridGgfsInvalidPathException("Failed to open file (not a file): " + path);
+                    throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
 
                 info = meta.lock(info.id());
 
@@ -1417,7 +1417,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     throw new IgniteFsFileNotFoundException("File not found: " + path);
 
                 if (!info.isFile())
-                    throw new GridGgfsInvalidPathException("Failed to get affinity info for file (not a file): " +
+                    throw new IgniteFsInvalidPathException("Failed to get affinity info for file (not a file): " +
                         path);
 
                 return data.affinity(info, start, len, maxLen);
@@ -1431,7 +1431,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsMetrics metrics() throws GridException {
+    @Override public IgniteFsMetrics metrics() throws GridException {
         if (enterBusy()) {
             try {
                 IgniteFsPathSummary sum = new IgniteFsPathSummary();
@@ -1451,7 +1451,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     }
                 }
 
-                return new GridGgfsMetricsAdapter(
+                return new IgniteFsMetricsAdapter(
                     ggfsCtx.data().spaceSize(),
                     ggfsCtx.data().maxSpaceSize(),
                     secondarySpaceSize,
@@ -2011,7 +2011,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         if (ggfs == null)
                             return F.t(0L, 0L);
 
-                        GridGgfsMetrics metrics = ggfs.metrics();
+                        IgniteFsMetrics metrics = ggfs.metrics();
 
                         long loc = metrics.localSpaceSize();
 

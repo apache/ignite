@@ -1145,7 +1145,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         // Read the first block.
         int totalRead = 0;
 
-        GridGgfsInputStream in = ggfs.open(FILE, blockSize);
+        IgniteFsInputStream in = ggfs.open(FILE, blockSize);
 
         final byte[] readBuf = new byte[1024];
 
@@ -1176,7 +1176,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         // Let's wait for file will be deleted.
         U.sleep(300);
 
-        final GridGgfsInputStream in0 = in;
+        final IgniteFsInputStream in0 = in;
 
         // Try reading the second block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -1224,7 +1224,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         // Read the first two blocks.
         int totalRead = 0;
 
-        GridGgfsInputStream in = ggfs.open(FILE, blockSize);
+        IgniteFsInputStream in = ggfs.open(FILE, blockSize);
 
         final byte[] readBuf = new byte[1024];
 

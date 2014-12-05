@@ -46,7 +46,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
         long start = System.currentTimeMillis();
 
         do {
-            try (GridGgfsInputStream in = ggfs.open(path)) {
+            try (IgniteFsInputStream in = ggfs.open(path)) {
                 for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++) {
                     for (int j = 0; j < GGFS_BLOCK_SIZE; j++)
                         assertEquals(i & 0xFF, in.read());
@@ -125,7 +125,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
 
         IgniteFs ggfs = grid(0).fileSystem("ggfs");
 
-        try (GridGgfsInputStream in = ggfs.open(path)) {
+        try (IgniteFsInputStream in = ggfs.open(path)) {
             i = 0;
 
             int read = 0;
@@ -192,7 +192,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
             }
         }
 
-        try (GridGgfsInputStream in = ggfs.open(path)) {
+        try (IgniteFsInputStream in = ggfs.open(path)) {
             cnt = 0;
 
             int read = 0;

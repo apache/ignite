@@ -84,7 +84,7 @@ public class GridGgfsStringDelimiterRecordResolverSelfTest extends GridGgfsAbstr
 
         GridGgfsFileRange split;
 
-        try (GridGgfsInputStream is = read()) {
+        try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 
@@ -110,7 +110,7 @@ public class GridGgfsStringDelimiterRecordResolverSelfTest extends GridGgfsAbstr
 
         GridGgfsFileRange split;
 
-        try (GridGgfsInputStream is = read()) {
+        try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 

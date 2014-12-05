@@ -781,7 +781,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         }
 
         // Will generate EVT_GGFS_FILE_OPENED_READ, GGFS_FILE_CLOSED_READ.
-        try (GridGgfsInputStream is = ggfs.open(file, 256)) {
+        try (IgniteFsInputStream is = ggfs.open(file, 256)) {
             is.readFully(0, buf); // Will generate no events.
         }
 

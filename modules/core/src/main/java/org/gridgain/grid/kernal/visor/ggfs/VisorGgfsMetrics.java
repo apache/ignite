@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link GridGgfsMetrics}.
+ * Data transfer object for {@link org.gridgain.grid.ggfs.IgniteFsMetrics}.
  */
 public class VisorGgfsMetrics implements Serializable {
     /** */
@@ -67,7 +67,7 @@ public class VisorGgfsMetrics implements Serializable {
      * @param m GGFS metrics.
      * @return Data transfer object for given GGFS metrics.
      */
-    public static VisorGgfsMetrics from(GridGgfsMetrics m) {
+    public static VisorGgfsMetrics from(IgniteFsMetrics m) {
         assert m != null;
 
         VisorGgfsMetrics metrics = new VisorGgfsMetrics();

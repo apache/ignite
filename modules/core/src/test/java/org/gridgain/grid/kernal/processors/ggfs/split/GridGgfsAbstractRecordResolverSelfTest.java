@@ -145,7 +145,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
      * @return Input stream.
      * @throws Exception In case of exception.
      */
-    protected GridGgfsInputStream read() throws Exception {
+    protected IgniteFsInputStream read() throws Exception {
         return ggfs.open(FILE);
     }
 

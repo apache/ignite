@@ -853,7 +853,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsInputStream is = null;
+                IgniteFsInputStream is = null;
 
                 try {
                     is = ggfs.open(FILE);
@@ -2339,7 +2339,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     protected void checkFileContent(GridGgfsImpl ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
         throws IOException, GridException {
         if (chunks != null && chunks.length > 0) {
-            GridGgfsInputStream is = null;
+            IgniteFsInputStream is = null;
 
             try {
                 is = ggfs.open(file);

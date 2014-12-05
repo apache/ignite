@@ -341,7 +341,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
             for (int i = 0; i < GRID_CNT; i++) {
                 int total = 0;
 
-                GridGgfsInputStream is = ggfs(i).open(file.path());
+                IgniteFsInputStream is = ggfs(i).open(file.path());
 
                 while (true) {
                     int read = is.read(buf);

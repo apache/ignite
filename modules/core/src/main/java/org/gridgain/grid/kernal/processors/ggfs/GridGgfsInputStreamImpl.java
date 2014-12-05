@@ -118,7 +118,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
         meta = ggfsCtx.meta();
         data = ggfsCtx.data();
 
-        log = ggfsCtx.kernalContext().log(GridGgfsInputStream.class);
+        log = ggfsCtx.kernalContext().log(IgniteFsInputStream.class);
 
         maxLocCacheSize = (prefetchBlocks > 0 ? prefetchBlocks : 1) * 3 / 2;
 

@@ -318,7 +318,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
                 return null;
             }
-        }, GridGgfsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
+        }, IgniteFsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
             "(need to copy and remove)");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -327,7 +327,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
                 return null;
             }
-        }, GridGgfsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
+        }, IgniteFsInvalidPathException.class, "Cannot move file to a path with different eviction exclude setting " +
             "(need to copy and remove)");
     }
 
@@ -422,7 +422,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @throws Exception If failed.
      */
     private void read(IgniteFsPath path, int off, int len) throws Exception {
-        GridGgfsInputStream is = ggfsPrimary.open(path);
+        IgniteFsInputStream is = ggfsPrimary.open(path);
 
         is.readFully(off, new byte[len]);
 
@@ -455,7 +455,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    GridGgfsMetrics metrics = ggfsPrimary.metrics();
+                    IgniteFsMetrics metrics = ggfsPrimary.metrics();
 
                     return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
                 }

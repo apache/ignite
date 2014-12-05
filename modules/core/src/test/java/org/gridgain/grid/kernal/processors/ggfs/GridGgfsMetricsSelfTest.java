@@ -203,7 +203,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         assertNotNull(fs);
 
-        GridGgfsMetrics m = fs.metrics();
+        IgniteFsMetrics m = fs.metrics();
 
         assertNotNull(m);
         assertEquals(0, m.directoriesCount());
@@ -293,8 +293,8 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        GridGgfsInputStream in1 = fs.open(new IgniteFsPath("/dir1/file1"));
-        GridGgfsInputStream in2 = fs.open(new IgniteFsPath("/dir1/file2"));
+        IgniteFsInputStream in1 = fs.open(new IgniteFsPath("/dir1/file1"));
+        IgniteFsInputStream in2 = fs.open(new IgniteFsPath("/dir1/file2"));
 
         m = fs.metrics();
 
@@ -346,12 +346,12 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         out.close();
         out.close();
 
-        GridGgfsInputStream in = fs.open(new IgniteFsPath("/file"));
+        IgniteFsInputStream in = fs.open(new IgniteFsPath("/file"));
 
         in.close();
         in.close();
 
-        GridGgfsMetrics m = fs.metrics();
+        IgniteFsMetrics m = fs.metrics();
 
         assertEquals(0, m.filesOpenedForWrite());
         assertEquals(0, m.filesOpenedForRead());
@@ -378,7 +378,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         out.close();
 
         // Start metrics measuring.
-        GridGgfsMetrics initMetrics = ggfs.metrics();
+        IgniteFsMetrics initMetrics = ggfs.metrics();
 
         // Create empty file.
         ggfs.create(file1, 256, true, null, 1, 256, null).close();
@@ -442,7 +442,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         checkBlockMetrics(initMetrics, ggfs.metrics(), 5, 1, blockSize * 3 + rmtBlockSize * 2, 3, 0, blockSize * 3);
 
-        GridGgfsMetrics metrics = ggfs.metrics();
+        IgniteFsMetrics metrics = ggfs.metrics();
 
         assert metrics.secondarySpaceSize() == rmtBlockSize;
 
@@ -510,7 +510,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
      * @param bytesWrite Bytes write.
      * @throws Exception If failed.
      */
-    private void checkBlockMetrics(GridGgfsMetrics initMetrics, GridGgfsMetrics metrics, long blocksRead,
+    private void checkBlockMetrics(IgniteFsMetrics initMetrics, IgniteFsMetrics metrics, long blocksRead,
         long blocksReadRemote, long bytesRead, long blocksWrite, long blocksWriteRemote, long bytesWrite)
         throws Exception {
         assert metrics != null;

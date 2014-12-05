@@ -94,7 +94,7 @@ public class GridGgfsFixedLengthRecordResolverSelfTest extends GridGgfsAbstractR
 
         GridGgfsFileRange split;
 
-        try (GridGgfsInputStream is = read()) {
+        try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 
@@ -120,7 +120,7 @@ public class GridGgfsFixedLengthRecordResolverSelfTest extends GridGgfsAbstractR
 
         GridGgfsFileRange split;
 
-        try (GridGgfsInputStream is = read()) {
+        try (IgniteFsInputStream is = read()) {
             split = rslvr.resolveRecords(ggfs, is, split(suggestedStart, suggestedLen));
         }
 

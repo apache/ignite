@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Exception thrown when parent supposed to be a directory is a file.
  */
-public class GridGgfsParentNotDirectoryException extends GridGgfsInvalidPathException {
+public class GridGgfsParentNotDirectoryException extends IgniteFsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 

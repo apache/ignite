@@ -569,7 +569,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         // Validate renamed during reading.
 
-        try (GridGgfsInputStream in0 = ggfs.open(path("/A/a"))) {
+        try (IgniteFsInputStream in0 = ggfs.open(path("/A/a"))) {
             // Rename file.
             ggfs.rename(path("/A/a"), path("/b"));
 
@@ -812,7 +812,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         byte[] readBuf = new byte[chunkSize];
 
-        try (GridGgfsInputStream in = ggfs.open(path)) {
+        try (IgniteFsInputStream in = ggfs.open(path)) {
             long pos = 0;
 
             for (int k = 0; k < 2 * cnt; k++) {
@@ -875,7 +875,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      */
     private String read(String path) throws Exception {
 
-        try (GridGgfsInputStream in = ggfs.open(path(path))) {
+        try (IgniteFsInputStream in = ggfs.open(path(path))) {
             return IOUtils.toString(in, UTF_8);
         }
     }

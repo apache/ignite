@@ -322,7 +322,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         for (int i = 0; i < 4; i++) {
             IgniteFs ggfs = grid(i).fileSystem("ggfs");
 
-            GridGgfsMetrics metrics = ggfs.metrics();
+            IgniteFsMetrics metrics = ggfs.metrics();
 
             used += metrics.localSpaceSize();
             max += metrics.maxSpaceSize();

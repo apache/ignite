@@ -265,7 +265,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             assertTrue(ranges.get(1).endOffset() == 3 * CFG_BLOCK_SIZE - 1);
 
             // Validate data read after colocated writes.
-            try (GridGgfsInputStream in = fs2.open(path)) {
+            try (IgniteFsInputStream in = fs2.open(path)) {
                 // Validate first part of file.
                 for (int i = 0; i < CFG_BLOCK_SIZE * 3 / 2; i++)
                     assertEquals((byte)1, in.read());
@@ -340,7 +340,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
         info("Read and validate saved file: " + path);
 
         final InputStream expIn = new GridGgfsTestInputStream(size, salt);
-        final GridGgfsInputStream actIn = fs.open(path, CFG_BLOCK_SIZE * READING_THREADS_CNT * 11 / 10);
+        final IgniteFsInputStream actIn = fs.open(path, CFG_BLOCK_SIZE * READING_THREADS_CNT * 11 / 10);
 
         // Validate continuous reading of whole file.
         assertEqualStreams(expIn, actIn, size, null);
@@ -403,7 +403,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
      * @param seek Seek to use async position-based reading or {@code null} to use simple continuous reading.
      * @throws IOException In case of any IO exception.
      */
-    private void assertEqualStreams(InputStream expIn, GridGgfsInputStream actIn,
+    private void assertEqualStreams(InputStream expIn, IgniteFsInputStream actIn,
         @Nullable Long expSize, @Nullable Long seek) throws IOException {
         if (seek != null)
             expIn.skip(seek);

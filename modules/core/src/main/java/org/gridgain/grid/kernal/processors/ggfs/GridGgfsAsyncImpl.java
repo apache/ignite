@@ -219,7 +219,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsMetrics metrics() throws GridException {
+    @Override public IgniteFsMetrics metrics() throws GridException {
         return ggfs.metrics();
     }
 

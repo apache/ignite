@@ -12,7 +12,7 @@ package org.gridgain.grid.ggfs;
 /**
  * {@code GGFS} exception indicating that target resource is not found.
  */
-public class IgniteFsFileNotFoundException extends GridGgfsInvalidPathException {
+public class IgniteFsFileNotFoundException extends IgniteFsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 

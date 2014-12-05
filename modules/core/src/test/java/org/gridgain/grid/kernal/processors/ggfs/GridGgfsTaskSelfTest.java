@@ -267,7 +267,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, GridGgfsFileRange range, GridGgfsInputStream in)
+        @Override public Object execute(IgniteFs ggfs, GridGgfsFileRange range, IgniteFsInputStream in)
             throws GridException, IOException {
             assert ignite != null;
             assert ses != null;

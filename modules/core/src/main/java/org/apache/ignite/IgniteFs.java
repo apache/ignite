@@ -88,7 +88,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(IgniteFsPath path) throws GridException;
+    public IgniteFsInputStream open(IgniteFsPath path) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -99,7 +99,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    @Override public GridGgfsInputStream open(IgniteFsPath path, int bufSize) throws GridException;
+    @Override public IgniteFsInputStream open(IgniteFsPath path, int bufSize) throws GridException;
 
     /**
      * Opens a file for reading.
@@ -111,7 +111,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public GridGgfsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
+    public IgniteFsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -229,7 +229,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Metrics.
      * @throws GridException In case of error.
      */
-    public GridGgfsMetrics metrics() throws GridException;
+    public IgniteFsMetrics metrics() throws GridException;
 
     /**
      * Resets metrics for this file system.

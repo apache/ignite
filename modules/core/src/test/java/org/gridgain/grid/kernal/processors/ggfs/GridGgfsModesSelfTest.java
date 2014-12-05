@@ -529,7 +529,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         os.close();
 
         // Check file content.
-        GridGgfsInputStream is = ggfs.open(file);
+        IgniteFsInputStream is = ggfs.open(file);
 
         assertEquals(testData.length, is.length());
 
@@ -547,7 +547,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
             // In ASYNC mode we wait at most 2 seconds for background writer to finish.
             for (int i = 0; i < 20; i++) {
-                GridGgfsInputStream isSecondary = null;
+                IgniteFsInputStream isSecondary = null;
 
                 try {
                     isSecondary = ggfsSecondary.open(file);
@@ -562,7 +562,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
                 }
             }
 
-            GridGgfsInputStream isSecondary = ggfsSecondary.open(file);
+            IgniteFsInputStream isSecondary = ggfsSecondary.open(file);
 
             assertEquals(testData.length, isSecondary.length());
 

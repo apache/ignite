@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * GGFS metrics adapter.
  */
-public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
+public class IgniteFsMetricsAdapter implements IgniteFsMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,7 +69,7 @@ public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
     /**
      * {@link Externalizable} support.
      */
-    public GridGgfsMetricsAdapter() {
+    public IgniteFsMetricsAdapter() {
         // No-op.
     }
 
@@ -90,10 +90,10 @@ public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
      * @param bytesWritten Total bytes written.
      * @param bytesWriteTime Total bytes write time.
      */
-    public GridGgfsMetricsAdapter(long locSpaceSize, long maxSpaceSize, long secondarySpaceSize, int dirsCnt,
-        int filesCnt, int filesOpenedForRead, int filesOpenedForWrite, long blocksReadTotal, long blocksReadRmt,
-        long blocksWrittenTotal, long blocksWrittenRmt, long bytesRead, long bytesReadTime, long bytesWritten,
-        long bytesWriteTime) {
+    public IgniteFsMetricsAdapter(long locSpaceSize, long maxSpaceSize, long secondarySpaceSize, int dirsCnt,
+                                  int filesCnt, int filesOpenedForRead, int filesOpenedForWrite, long blocksReadTotal, long blocksReadRmt,
+                                  long blocksWrittenTotal, long blocksWrittenRmt, long bytesRead, long bytesReadTime, long bytesWritten,
+                                  long bytesWriteTime) {
         this.locSpaceSize = locSpaceSize;
         this.maxSpaceSize = maxSpaceSize;
         this.secondarySpaceSize = secondarySpaceSize;
@@ -226,6 +226,6 @@ public class GridGgfsMetricsAdapter implements GridGgfsMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsMetricsAdapter.class, this);
+        return S.toString(IgniteFsMetricsAdapter.class, this);
     }
 }

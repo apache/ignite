@@ -15,7 +15,7 @@ import java.io.*;
  * {@code GGFS} input stream to read data from the file system.
  * It provides several additional methods for asynchronous access.
  */
-public abstract class GridGgfsInputStream extends InputStream implements IgniteFsReader {
+public abstract class IgniteFsInputStream extends InputStream implements IgniteFsReader {
     /**
      * Gets file length during file open.
      *

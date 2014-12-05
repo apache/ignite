@@ -74,7 +74,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<GridGgfs
     @Override public Object execute() throws GridException {
         IgniteFs ggfs = ignite.fileSystem(ggfsName);
 
-        try (GridGgfsInputStream in = ggfs.open(path)) {
+        try (IgniteFsInputStream in = ggfs.open(path)) {
             GridGgfsFileRange split = new GridGgfsFileRange(path, start, len);
 
             if (rslvr != null) {
