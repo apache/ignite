@@ -88,15 +88,15 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeByteArray(sesTok);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader raw = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader raw = reader.rawReader();
 
         sesTok = raw.readByteArray();
     }

@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Defines configuration for GridGain portable functionality. All configuration
  * properties defined here can be overridden on per-type level in
- * {@link GridPortableTypeConfiguration}. Type configurations are provided via
+ * {@link PortableTypeConfiguration}. Type configurations are provided via
  * {@link #getTypeConfigurations()} method.
  */
 public class PortableConfiguration {
@@ -28,10 +28,10 @@ public class PortableConfiguration {
     private PortableIdMapper idMapper;
 
     /** Serializer. */
-    private GridPortableSerializer serializer;
+    private PortableSerializer serializer;
 
     /** Types. */
-    private Collection<GridPortableTypeConfiguration> typeCfgs;
+    private Collection<PortableTypeConfiguration> typeCfgs;
 
     /** Use timestamp flag. */
     private boolean useTs = true;
@@ -83,7 +83,7 @@ public class PortableConfiguration {
      *
      * @return Serializer.
      */
-    public GridPortableSerializer getSerializer() {
+    public PortableSerializer getSerializer() {
         return serializer;
     }
 
@@ -92,7 +92,7 @@ public class PortableConfiguration {
      *
      * @param serializer Serializer.
      */
-    public void setSerializer(GridPortableSerializer serializer) {
+    public void setSerializer(PortableSerializer serializer) {
         this.serializer = serializer;
     }
 
@@ -101,7 +101,7 @@ public class PortableConfiguration {
      *
      * @return Types configuration.
      */
-    public Collection<GridPortableTypeConfiguration> getTypeConfigurations() {
+    public Collection<PortableTypeConfiguration> getTypeConfigurations() {
         return typeCfgs;
     }
 
@@ -110,7 +110,7 @@ public class PortableConfiguration {
      *
      * @param typeCfgs Type configurations.
      */
-    public void setTypeConfigurations(Collection<GridPortableTypeConfiguration> typeCfgs) {
+    public void setTypeConfigurations(Collection<PortableTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
     }
 
@@ -134,7 +134,7 @@ public class PortableConfiguration {
 
     /**
      * If {@code true}, meta data will be collected or all types. If you need to override this behaviour for
-     * some specific type, use {@link GridPortableTypeConfiguration#setMetaDataEnabled(Boolean)} method.
+     * some specific type, use {@link PortableTypeConfiguration#setMetaDataEnabled(Boolean)} method.
      * <p>
      * Default value if {@code true}.
      *
@@ -152,11 +152,11 @@ public class PortableConfiguration {
     }
 
     /**
-     * If {@code true}, {@link GridPortableObject} will cache deserialized instance after
-     * {@link GridPortableObject#deserialize()} is called. All consequent calls of this
-     * method on the same instance of {@link GridPortableObject} will return that cached
+     * If {@code true}, {@link PortableObject} will cache deserialized instance after
+     * {@link PortableObject#deserialize()} is called. All consequent calls of this
+     * method on the same instance of {@link PortableObject} will return that cached
      * value without actually deserializing portable object. If you need to override this
-     * behaviour for some specific type, use {@link GridPortableTypeConfiguration#setKeepDeserialized(Boolean)}
+     * behaviour for some specific type, use {@link PortableTypeConfiguration#setKeepDeserialized(Boolean)}
      * method.
      * <p>
      * Default value if {@code true}.

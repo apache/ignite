@@ -1788,7 +1788,7 @@ public class GridCacheConfiguration {
 
     /**
      * Flag indicating whether GridGain should store portable keys and values
-     * as instances of {@link org.apache.ignite.portables.GridPortableObject}.
+     * as instances of {@link org.apache.ignite.portables.PortableObject}.
      *
      * @return Portable enabled flag.
      */

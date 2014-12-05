@@ -8617,7 +8617,7 @@ public abstract class GridUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return GridPortableObject.class.isAssignableFrom(cls) ||
+        return PortableObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());

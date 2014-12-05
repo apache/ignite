@@ -20,7 +20,7 @@ import java.util.Date;
  * making the format even more compact. However, if the raw writer is used,
  * dynamic structure changes to the portable objects are not supported.
  */
-public interface GridPortableRawWriter {
+public interface PortableRawWriter {
     /**
      * @param val Value to write.
      * @throws PortableException In case of error.

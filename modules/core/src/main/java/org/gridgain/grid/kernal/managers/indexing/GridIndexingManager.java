@@ -326,8 +326,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             }
 
             if (id == null) {
-                if (val instanceof GridPortableObject) {
-                    GridPortableObject portable = (GridPortableObject)val;
+                if (val instanceof PortableObject) {
+                    PortableObject portable = (PortableObject)val;
 
                     int typeId = portable.typeId();
 
@@ -361,8 +361,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                         d.keyClass(keyCls);
                         d.valueClass(valCls);
 
-                        if (key instanceof GridPortableObject) {
-                            GridPortableObject portableKey = (GridPortableObject)key;
+                        if (key instanceof PortableObject) {
+                            PortableObject portableKey = (PortableObject)key;
 
                             String typeName = portableName(portableKey.typeId());
 
@@ -382,8 +382,8 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                                 processClassMeta(true, d.keyCls, keyMeta, d);
                         }
 
-                        if (val instanceof GridPortableObject) {
-                            GridPortableObject portableVal = (GridPortableObject)val;
+                        if (val instanceof PortableObject) {
+                            PortableObject portableVal = (PortableObject)val;
 
                             String typeName = portableName(portableVal.typeId());
 
@@ -1341,12 +1341,12 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
             if (obj == null)
                 return null;
 
-            if (!(obj instanceof GridPortableObject))
+            if (!(obj instanceof PortableObject))
                 throw new GridSpiException("Non-portable object received as a result of property extraction " +
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
             try {
-                return ((GridPortableObject)obj).field(propName);
+                return ((PortableObject)obj).field(propName);
             }
             catch (PortableException e) {
                 throw new GridSpiException(e);

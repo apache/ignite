@@ -56,7 +56,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
 
                 GridRestResponse res = new GridRestResponse();
 
-                Map<Integer, GridPortableMetadata> meta = ctx.portable().metadata(metaReq.typeIds());
+                Map<Integer, PortableMetadata> meta = ctx.portable().metadata(metaReq.typeIds());
 
                 GridClientMetaDataResponse metaRes = new GridClientMetaDataResponse();
 

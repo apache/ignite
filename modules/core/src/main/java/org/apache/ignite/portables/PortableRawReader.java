@@ -20,7 +20,7 @@ import java.util.Date;
  * making the format even more compact. However, if the raw reader is used,
  * dynamic structure changes to the portable objects are not supported.
  */
-public interface GridPortableRawReader {
+public interface PortableRawReader {
     /**
      * @return Byte value.
      * @throws PortableException In case of error.

@@ -28,7 +28,7 @@ public interface PortableMarshalAware {
      * @param writer Portable object writer.
      * @throws PortableException In case of error.
      */
-    public void writePortable(GridPortableWriter writer) throws PortableException;
+    public void writePortable(PortableWriter writer) throws PortableException;
 
     /**
      * Reads fields from provided reader.
@@ -36,5 +36,5 @@ public interface PortableMarshalAware {
      * @param reader Portable object reader.
      * @throws PortableException In case of error.
      */
-    public void readPortable(GridPortableReader reader) throws PortableException;
+    public void readPortable(PortableReader reader) throws PortableException;
 }

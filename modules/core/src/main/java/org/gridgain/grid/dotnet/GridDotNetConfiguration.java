@@ -73,16 +73,16 @@ public class GridDotNetConfiguration implements PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter rawWriter = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeObject(portableCfg);
         rawWriter.writeCollection(assemblies);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader rawReader = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader rawReader = reader.rawReader();
 
         portableCfg = (GridDotNetPortableConfiguration)rawReader.readObject();
         assemblies = (List<String>)rawReader.<String>readCollection();

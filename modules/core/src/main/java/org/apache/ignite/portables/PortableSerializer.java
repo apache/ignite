@@ -16,9 +16,9 @@ package org.apache.ignite.portables;
  * <p>
  * Portable serializer can be configured for all portable objects via
  * {@link PortableConfiguration#getSerializer()} method, or for a specific
- * portable type via {@link GridPortableTypeConfiguration#getSerializer()} method.
+ * portable type via {@link PortableTypeConfiguration#getSerializer()} method.
  */
-public interface GridPortableSerializer {
+public interface PortableSerializer {
     /**
      * Writes fields to provided writer.
      *
@@ -26,7 +26,7 @@ public interface GridPortableSerializer {
      * @param writer Portable object writer.
      * @throws PortableException In case of error.
      */
-    public void writePortable(Object obj, GridPortableWriter writer) throws PortableException;
+    public void writePortable(Object obj, PortableWriter writer) throws PortableException;
 
     /**
      * Reads fields from provided reader.
@@ -35,5 +35,5 @@ public interface GridPortableSerializer {
      * @param reader Portable object reader.
      * @throws PortableException In case of error.
      */
-    public void readPortable(Object obj, GridPortableReader reader) throws PortableException;
+    public void readPortable(Object obj, PortableReader reader) throws PortableException;
 }

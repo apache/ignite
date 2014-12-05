@@ -94,10 +94,10 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
+        PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(taskName);
         raw.writeBoolean(keepPortables);
@@ -109,10 +109,10 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
+        PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
 
         taskName = raw.readString();
         keepPortables = raw.readBoolean();

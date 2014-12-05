@@ -416,8 +416,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
-                                if (cctx.portableEnabled() && deserializePortable && v instanceof GridPortableObject)
-                                    v = ((GridPortableObject)v).deserialize();
+                                if (cctx.portableEnabled() && deserializePortable && v instanceof PortableObject)
+                                    v = ((PortableObject)v).deserialize();
 
                                 locVals.put(key, v);
 
@@ -499,8 +499,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                     V val = info.value();
 
-                    if (cctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                        val = ((GridPortableObject)val).deserialize();
+                    if (cctx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+                        val = ((PortableObject)val).deserialize();
 
                     map.put(info.key(), val);
                 }

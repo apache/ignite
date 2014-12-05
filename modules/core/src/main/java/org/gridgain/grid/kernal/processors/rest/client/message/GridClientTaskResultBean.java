@@ -92,8 +92,8 @@ public class GridClientTaskResultBean implements Externalizable, PortableMarshal
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
 
         raw.writeString(id);
         raw.writeBoolean(finished);
@@ -104,8 +104,8 @@ public class GridClientTaskResultBean implements Externalizable, PortableMarshal
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
 
         id = raw.readString();
         finished = raw.readBoolean();

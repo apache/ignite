@@ -58,7 +58,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
             PortableConfiguration portableCfg = new PortableConfiguration();
 
             portableCfg.setTypeConfigurations(Arrays.asList(
-                new GridPortableTypeConfiguration(TestObject.class.getName())));
+                new PortableTypeConfiguration(TestObject.class.getName())));
 
             cfg.setPortableConfiguration(portableCfg);
         }
@@ -283,12 +283,12 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+        @Override public void writePortable(PortableWriter writer) throws PortableException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(GridPortableReader reader) throws PortableException {
+        @Override public void readPortable(PortableReader reader) throws PortableException {
             val = reader.readInt("val");
         }
     }

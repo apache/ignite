@@ -19,25 +19,25 @@ import java.util.*;
  */
 public class GridClientMetaDataResponse implements PortableMarshalAware {
     /** */
-    private Map<Integer, GridPortableMetadata> meta;
+    private Map<Integer, PortableMetadata> meta;
 
     /**
      * @param meta Portable objects metadata.
      */
-    public void metaData(Map<Integer, GridPortableMetadata> meta) {
+    public void metaData(Map<Integer, PortableMetadata> meta) {
         this.meta = meta;
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeMap(meta);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader raw = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader raw = reader.rawReader();
 
         meta = raw.readMap();
     }

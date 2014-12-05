@@ -1051,8 +1051,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         if (val != null) {
                             V val0 = val;
 
-                            if (cacheCtx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                val0 = ((GridPortableObject)val).deserialize();
+                            if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+                                val0 = ((PortableObject)val).deserialize();
 
                             map.put(key, val0);
                         }
@@ -1090,8 +1090,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     V val0 = val;
 
-                                    if (cacheCtx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                        val0 = ((GridPortableObject)val).deserialize();
+                                    if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+                                        val0 = ((PortableObject)val).deserialize();
 
                                     map.put(key, val0);
                                 }
@@ -1156,8 +1156,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             if (val != null) {
                                 V val0 = val;
 
-                                if (cacheCtx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val0 = ((GridPortableObject)val).deserialize();
+                                if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+                                    val0 = ((PortableObject)val).deserialize();
 
                                 map.put(key, val0);
                             }
@@ -1511,8 +1511,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         }
 
                                         if (cacheCtx.portableEnabled() && deserializePortable &&
-                                            val instanceof GridPortableObject)
-                                            val = ((GridPortableObject)val).deserialize();
+                                            val instanceof PortableObject)
+                                            val = ((PortableObject)val).deserialize();
 
                                         retMap.put(key, val);
                                     }

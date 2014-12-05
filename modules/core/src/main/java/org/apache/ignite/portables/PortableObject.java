@@ -109,7 +109,7 @@ import java.util.*;
  * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
-public interface GridPortableObject extends Serializable, Cloneable {
+public interface PortableObject extends Serializable, Cloneable {
     /**
      * Gets portable object type ID.
      *
@@ -123,7 +123,7 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @return Meta data.
      * @throws PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metaData() throws PortableException;
+    @Nullable public PortableMetadata metaData() throws PortableException;
 
     /**
      * Gets field value.
@@ -155,12 +155,12 @@ public interface GridPortableObject extends Serializable, Cloneable {
      * @see PortableBuilder
      */
     @Deprecated
-    public GridPortableObject copy(@Nullable Map<String, Object> fields) throws PortableException;
+    public PortableObject copy(@Nullable Map<String, Object> fields) throws PortableException;
 
     /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.
      */
-    public GridPortableObject clone() throws CloneNotSupportedException;
+    public PortableObject clone() throws CloneNotSupportedException;
 }

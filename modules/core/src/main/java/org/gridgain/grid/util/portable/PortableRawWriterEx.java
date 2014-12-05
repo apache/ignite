@@ -10,15 +10,26 @@
 package org.gridgain.grid.util.portable;
 
 import org.apache.ignite.portables.*;
+import org.gridgain.grid.kernal.processors.portable.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Extended reader interface.
+ * Extended writer interface.
  */
-public interface GridPortableRawReaderEx extends GridPortableRawReader {
+public interface PortableRawWriterEx extends PortableRawWriter, AutoCloseable {
     /**
-     * @return Object.
+     * @param obj Object to write.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public Object readObjectDetached() throws PortableException;
+    public void writeObjectDetached(@Nullable Object obj) throws PortableException;
+
+    /**
+     * @return Output stream.
+     */
+    public GridPortableOutputStream out();
+
+    /**
+     * Cleans resources.
+     */
+    @Override public void close();
 }

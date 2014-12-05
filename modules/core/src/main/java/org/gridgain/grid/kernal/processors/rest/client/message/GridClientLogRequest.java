@@ -73,10 +73,10 @@ public class GridClientLogRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeString(path);
         raw.writeInt(from);
@@ -84,10 +84,10 @@ public class GridClientLogRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        PortableRawReader raw = reader.rawReader();
 
         path = raw.readString();
         from = raw.readInt();

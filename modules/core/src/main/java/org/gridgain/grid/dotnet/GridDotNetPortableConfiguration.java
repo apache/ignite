@@ -167,8 +167,8 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter rawWriter = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeCollection(typesCfg);
 
@@ -186,8 +186,8 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader rawReader = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader rawReader = reader.rawReader();
 
         typesCfg = rawReader.readCollection();
 

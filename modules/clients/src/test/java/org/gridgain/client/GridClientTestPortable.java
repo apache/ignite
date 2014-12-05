@@ -303,7 +303,7 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         writer.writeByte("_b", b);
         writer.writeShort("_s", s);
         writer.writeInt("_i", i);
@@ -334,7 +334,7 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
         writer.writeObject("_portable1", portable1);
         writer.writeObject("_portable2", portable2);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeByte(bRaw);
         raw.writeShort(sRaw);
@@ -368,7 +368,7 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         b = reader.readByte("_b");
         s = reader.readShort("_s");
         i = reader.readInt("_i");
@@ -399,7 +399,7 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
         portable1 = (GridClientTestPortable)reader.readObject("_portable1");
         portable2 = (GridClientTestPortable)reader.readObject("_portable2");
 
-        GridPortableRawReader raw = reader.rawReader();
+        PortableRawReader raw = reader.rawReader();
 
         bRaw = raw.readByte();
         sRaw = raw.readShort();

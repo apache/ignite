@@ -19,7 +19,7 @@ import java.util.*;
  * Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
-public interface GridPortableMetadata {
+public interface PortableMetadata {
     /**
      * Gets portable type name.
      *

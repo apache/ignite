@@ -86,12 +86,12 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public PortableBuilder builder(GridPortableObject portableObj) {
+    @Override public PortableBuilder builder(PortableObject portableObj) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, GridPortableMetadata newMeta) throws PortableException {
+    @Override public void addMeta(int typeId, PortableMetadata newMeta) throws PortableException {
         // No-op.
     }
 
@@ -102,17 +102,17 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(int typeId) {
+    @Nullable @Override public PortableMetadata metadata(int typeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) {
+    @Override public Map<Integer, PortableMetadata> metadata(Collection<Integer> typeIds) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridPortableMetadata> metadata() throws PortableException {
+    @Override public Collection<PortableMetadata> metadata() throws PortableException {
         return Collections.emptyList();
     }
 }

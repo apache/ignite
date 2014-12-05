@@ -296,7 +296,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
         /** {@inheritDoc} */
         @Override void checkValue(Object val) {
-            GridPortableObject obj = (GridPortableObject)val;
+            PortableObject obj = (PortableObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }
@@ -377,7 +377,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
         /** {@inheritDoc} */
         @Override void checkValue(Object val) {
-            GridPortableObject obj = (GridPortableObject)val;
+            PortableObject obj = (PortableObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }

@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.Date;
 
 /**
- * Reader for portable objects used in {@link PortableMarshalAware} implementations.
+ * Writer for portable object used in {@link PortableMarshalAware} implementations.
  * Useful for the cases when user wants a fine-grained control over serialization.
  * <p>
  * Note that GridGain never writes full strings for field or type names. Instead,
@@ -27,237 +27,216 @@ import java.util.Date;
  * actually do collide, GridGain provides {@link PortableIdMapper} which
  * allows to override the automatically generated hash code IDs for the type and field names.
  */
-public interface GridPortableReader {
+public interface PortableWriter {
     /**
      * @param fieldName Field name.
-     * @return Byte value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public byte readByte(String fieldName) throws PortableException;
+    public void writeByte(String fieldName, byte val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Short value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public short readShort(String fieldName) throws PortableException;
+    public void writeShort(String fieldName, short val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Integer value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public int readInt(String fieldName) throws PortableException;
+    public void writeInt(String fieldName, int val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Long value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public long readLong(String fieldName) throws PortableException;
+    public void writeLong(String fieldName, long val) throws PortableException;
 
     /**
      * @param fieldName Field name.
+     * @param val Value to write.
      * @throws PortableException In case of error.
-     * @return Float value.
      */
-    public float readFloat(String fieldName) throws PortableException;
+    public void writeFloat(String fieldName, float val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Double value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public double readDouble(String fieldName) throws PortableException;
+    public void writeDouble(String fieldName, double val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Char value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public char readChar(String fieldName) throws PortableException;
+    public void writeChar(String fieldName, char val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Boolean value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    public boolean readBoolean(String fieldName) throws PortableException;
+    public void writeBoolean(String fieldName, boolean val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return String value.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public String readString(String fieldName) throws PortableException;
+    public void writeString(String fieldName, @Nullable String val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return UUID.
+     * @param val UUID to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public UUID readUuid(String fieldName) throws PortableException;
+    public void writeUuid(String fieldName, @Nullable UUID val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Date.
+     * @param val Date to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public Date readDate(String fieldName) throws PortableException;
+    public void writeDate(String fieldName, @Nullable Date val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Timestamp.
+     * @param val Timestamp to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public Timestamp readTimestamp(String fieldName) throws PortableException;
+    public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Object.
+     * @param obj Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws PortableException;
+    public void writeObject(String fieldName, @Nullable Object obj) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Byte array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public byte[] readByteArray(String fieldName) throws PortableException;
+    public void writeByteArray(String fieldName, @Nullable byte[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Short array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public short[] readShortArray(String fieldName) throws PortableException;
+    public void writeShortArray(String fieldName, @Nullable short[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Integer array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public int[] readIntArray(String fieldName) throws PortableException;
+    public void writeIntArray(String fieldName, @Nullable int[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Long array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public long[] readLongArray(String fieldName) throws PortableException;
+    public void writeLongArray(String fieldName, @Nullable long[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Float array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public float[] readFloatArray(String fieldName) throws PortableException;
+    public void writeFloatArray(String fieldName, @Nullable float[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Byte array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public double[] readDoubleArray(String fieldName) throws PortableException;
+    public void writeDoubleArray(String fieldName, @Nullable double[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Char array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public char[] readCharArray(String fieldName) throws PortableException;
+    public void writeCharArray(String fieldName, @Nullable char[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Boolean array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public boolean[] readBooleanArray(String fieldName) throws PortableException;
+    public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return String array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public String[] readStringArray(String fieldName) throws PortableException;
+    public void writeStringArray(String fieldName, @Nullable String[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return UUID array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public UUID[] readUuidArray(String fieldName) throws PortableException;
+    public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Date array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public Date[] readDateArray(String fieldName) throws PortableException;
+    public void writeDateArray(String fieldName, @Nullable Date[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Object array.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public Object[] readObjectArray(String fieldName) throws PortableException;
+    public void writeObjectArray(String fieldName, @Nullable Object[] val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Collection.
+     * @param col Collection to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(String fieldName) throws PortableException;
+    public <T> void writeCollection(String fieldName, @Nullable Collection<T> col) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @param colCls Collection class.
-     * @return Collection.
+     * @param map Map to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(String fieldName, Class<? extends Collection<T>> colCls)
-        throws PortableException;
+    public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @return Map.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(String fieldName) throws PortableException;
+    public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws PortableException;
 
     /**
      * @param fieldName Field name.
-     * @param mapCls Map class.
-     * @return Map.
+     * @param val Value to write.
      * @throws PortableException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
-        throws PortableException;
+    public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws PortableException;
 
     /**
-     * @param fieldName Field name.
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Nullable public <T extends Enum<?>> T readEnum(String fieldName, Class<T> enumCls) throws PortableException;
-
-    /**
-     * @param fieldName Field name.
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName, Class<T> enumCls)
-        throws PortableException;
-
-    /**
-     * Gets raw reader. Raw reader does not use field name hash codes, therefore,
-     * making the format even more compact. However, if the raw reader is used,
+     * Gets raw writer. Raw writer does not write field name hash codes, therefore,
+     * making the format even more compact. However, if the raw writer is used,
      * dynamic structure changes to the portable objects are not supported.
      *
-     * @return Raw reader.
+     * @return Raw writer.
      */
-    public GridPortableRawReader rawReader();
+    public PortableRawWriter rawWriter();
 }

@@ -239,7 +239,7 @@
             <bean class="org.apache.ignite.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.GridPortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
                     </list>

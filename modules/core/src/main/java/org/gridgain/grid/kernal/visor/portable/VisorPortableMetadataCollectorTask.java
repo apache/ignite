@@ -48,7 +48,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, I
 
             final Collection<VisorPortableMetadata> data = new ArrayList<>(p.metadata().size());
 
-            for(GridPortableMetadata metadata: p.metadata()) {
+            for(PortableMetadata metadata: p.metadata()) {
                 final VisorPortableMetadata type = new VisorPortableMetadata();
 
                 type.typeName(metadata.typeName());

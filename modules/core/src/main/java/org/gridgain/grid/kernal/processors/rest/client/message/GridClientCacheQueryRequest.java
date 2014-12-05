@@ -316,10 +316,10 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader rawReader = reader.rawReader();
+        PortableRawReader rawReader = reader.rawReader();
 
         qryId = rawReader.readLong();
         op = GridQueryOperation.fromOrdinal(rawReader.readInt());
@@ -338,10 +338,10 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter rawWriter = writer.rawWriter();
+        PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeLong(qryId);
         rawWriter.writeInt(op.ordinal());

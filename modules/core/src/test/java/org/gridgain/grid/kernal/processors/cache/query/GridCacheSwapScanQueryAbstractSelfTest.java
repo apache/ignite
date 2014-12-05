@@ -187,8 +187,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         GridCacheProjection prj;
 
         if (portableEnabled()) {
-            prj = cache.projection(new IgnitePredicate<GridCacheEntry<GridPortableObject, GridPortableObject>>() {
-                @Override public boolean apply(GridCacheEntry<GridPortableObject, GridPortableObject> e) {
+            prj = cache.projection(new IgnitePredicate<GridCacheEntry<PortableObject, PortableObject>>() {
+                @Override public boolean apply(GridCacheEntry<PortableObject, PortableObject> e) {
                     Key key = e.getKey().deserialize();
                     Person val = e.peek().deserialize();
 

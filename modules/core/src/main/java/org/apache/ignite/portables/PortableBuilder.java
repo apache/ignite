@@ -55,7 +55,7 @@ import org.jetbrains.annotations.*;
  *
  * @see org.apache.ignite.IgnitePortables#builder(int)
  * @see org.apache.ignite.IgnitePortables#builder(String)
- * @see org.apache.ignite.IgnitePortables#builder(GridPortableObject)
+ * @see org.apache.ignite.IgnitePortables#builder(PortableObject)
  */
 public interface PortableBuilder {
     /**
@@ -75,7 +75,7 @@ public interface PortableBuilder {
      *
      * @param name Field name.
      * @param val Field value (cannot be {@code null}).
-     * @see GridPortableObject#metaData()
+     * @see PortableObject#metaData()
      */
     public PortableBuilder setField(String name, Object val);
 
@@ -87,7 +87,7 @@ public interface PortableBuilder {
      * @param name Field name.
      * @param val Field value.
      * @param type Field type.
-     * @see GridPortableObject#metaData()
+     * @see PortableObject#metaData()
      */
     public <T> PortableBuilder setField(String name, @Nullable T val, Class<? super T> type);
 
@@ -125,5 +125,5 @@ public interface PortableBuilder {
      * @return Portable object.
      * @throws PortableException In case of error.
      */
-    public GridPortableObject build() throws PortableException;
+    public PortableObject build() throws PortableException;
 }

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Exception indicating that class needed for deserialization of portable object does not exist.
  * <p>
- * Thrown from {@link GridPortableObject#deserialize()} method.
+ * Thrown from {@link PortableObject#deserialize()} method.
  */
 public class PortableInvalidClassException extends PortableException {
     /** */

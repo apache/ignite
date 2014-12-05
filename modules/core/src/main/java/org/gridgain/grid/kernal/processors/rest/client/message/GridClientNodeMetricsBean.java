@@ -1341,8 +1341,8 @@ public class GridClientNodeMetricsBean implements Externalizable, PortableMarsha
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeLong(lastUpdateTime);
         raw.writeInt(maxActiveJobs);
@@ -1399,8 +1399,8 @@ public class GridClientNodeMetricsBean implements Externalizable, PortableMarsha
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader raw = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader raw = reader.rawReader();
 
         lastUpdateTime = raw.readLong();
         maxActiveJobs = raw.readInt();

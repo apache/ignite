@@ -247,8 +247,8 @@ public class GridClientNodeBean implements Externalizable, PortableMarshalAware 
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
-        GridPortableRawWriter raw = writer.rawWriter();
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeInt(tcpPort);
         raw.writeInt(replicaCnt);
@@ -263,8 +263,8 @@ public class GridClientNodeBean implements Externalizable, PortableMarshalAware 
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
-        GridPortableRawReader raw = reader.rawReader();
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        PortableRawReader raw = reader.rawReader();
 
         tcpPort = raw.readInt();
         replicaCnt = raw.readInt();

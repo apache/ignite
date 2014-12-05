@@ -390,8 +390,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
-        if (!keepPortable && (GridPortableObject.class.isAssignableFrom(keyType) ||
-            GridPortableObject.class.isAssignableFrom(valType)))
+        if (!keepPortable && (PortableObject.class.isAssignableFrom(keyType) ||
+            PortableObject.class.isAssignableFrom(valType)))
             throw new IllegalStateException("Failed to create cache projection for portable objects. " +
                 "Use keepPortable() method instead.");
 

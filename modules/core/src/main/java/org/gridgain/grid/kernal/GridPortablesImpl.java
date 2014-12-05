@@ -84,7 +84,7 @@ public class GridPortablesImpl implements IgnitePortables {
     }
 
     /** {@inheritDoc} */
-    @Override public PortableBuilder builder(GridPortableObject portableObj) {
+    @Override public PortableBuilder builder(PortableObject portableObj) {
         guard();
 
         try {
@@ -96,7 +96,7 @@ public class GridPortablesImpl implements IgnitePortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(Class<?> cls) throws PortableException {
+    @Nullable @Override public PortableMetadata metadata(Class<?> cls) throws PortableException {
         guard();
 
         try {
@@ -108,7 +108,7 @@ public class GridPortablesImpl implements IgnitePortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(String typeName) throws PortableException {
+    @Nullable @Override public PortableMetadata metadata(String typeName) throws PortableException {
         guard();
 
         try {
@@ -120,7 +120,7 @@ public class GridPortablesImpl implements IgnitePortables {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridPortableMetadata metadata(int typeId) throws PortableException {
+    @Nullable @Override public PortableMetadata metadata(int typeId) throws PortableException {
         guard();
 
         try {
@@ -132,7 +132,7 @@ public class GridPortablesImpl implements IgnitePortables {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridPortableMetadata> metadata() throws PortableException {
+    @Override public Collection<PortableMetadata> metadata() throws PortableException {
         guard();
 
         try {

@@ -32,19 +32,19 @@ public class GridClientGetMetaDataRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeCollection(typeIds);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        PortableRawReader raw = reader.rawReader();
 
         typeIds = raw.readCollection();
     }

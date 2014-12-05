@@ -53,19 +53,19 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeObject(cred);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        PortableRawReader raw = reader.rawReader();
 
         cred = raw.readObject();
     }

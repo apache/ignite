@@ -59,7 +59,7 @@ public class GridClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Ob
 
         assert args.size() == 3 : args.size();
 
-        GridPortableObject obj = (GridPortableObject)it.next();
+        PortableObject obj = (PortableObject)it.next();
 
         String cacheName = (String)it.next();
 

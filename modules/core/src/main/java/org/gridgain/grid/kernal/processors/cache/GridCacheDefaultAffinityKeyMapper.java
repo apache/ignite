@@ -78,11 +78,11 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        if (key instanceof GridPortableObject) {
-            GridPortableObject po = (GridPortableObject)key;
+        if (key instanceof PortableObject) {
+            PortableObject po = (PortableObject)key;
 
             try {
-                GridPortableMetadata meta = po.metaData();
+                PortableMetadata meta = po.metaData();
 
                 if (meta != null) {
                     String affKeyFieldName = meta.affinityKeyFieldName();

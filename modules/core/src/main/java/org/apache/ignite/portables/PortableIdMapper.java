@@ -21,7 +21,7 @@ package org.apache.ignite.portables;
  * <p>
  * Portable ID mapper can be configured for all portable objects via
  * {@link PortableConfiguration#getIdMapper()} method, or for a specific
- * portable type via {@link GridPortableTypeConfiguration#getIdMapper()} method.
+ * portable type via {@link PortableTypeConfiguration#getIdMapper()} method.
  */
 public interface PortableIdMapper {
     /**

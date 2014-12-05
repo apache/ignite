@@ -176,14 +176,14 @@ public class GridSecurityCredentials implements Externalizable, PortableMarshalA
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         writer.rawWriter().writeObject(login);
         writer.rawWriter().writeObject(password);
         writer.rawWriter().writeObject(userObj);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         login = reader.rawReader().readObject();
         password = reader.rawReader().readObject();
         userObj = reader.rawReader().readObject();

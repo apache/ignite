@@ -1578,7 +1578,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj == null)
             return null;
 
-        if (obj instanceof GridPortableObject || obj instanceof GridCacheInternal)
+        if (obj instanceof PortableObject || obj instanceof GridCacheInternal)
             return obj;
 
         GridPortableProcessor proc = kernalContext().portable();
@@ -1680,16 +1680,16 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             boolean unwrapped = false;
 
-            if (key instanceof GridPortableObject) {
-                key = ((GridPortableObject)key).deserialize();
+            if (key instanceof PortableObject) {
+                key = ((PortableObject)key).deserialize();
 
                 unwrapped = true;
             }
 
             Object val = entry.getValue();
 
-            if (val instanceof GridPortableObject) {
-                val = ((GridPortableObject)val).deserialize();
+            if (val instanceof PortableObject) {
+                val = ((PortableObject)val).deserialize();
 
                 unwrapped = true;
             }
@@ -1699,8 +1699,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         else {
             if (o instanceof Collection)
                 return unwrapPortablesIfNeeded((Collection<Object>)o, false);
-            else if (o instanceof GridPortableObject)
-                return ((GridPortableObject)o).deserialize();
+            else if (o instanceof PortableObject)
+                return ((PortableObject)o).deserialize();
         }
 
         return o;

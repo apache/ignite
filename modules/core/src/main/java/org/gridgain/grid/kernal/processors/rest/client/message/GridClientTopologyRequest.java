@@ -111,10 +111,10 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(GridPortableWriter writer) throws PortableException {
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
         super.writePortable(writer);
 
-        GridPortableRawWriter raw = writer.rawWriter();
+        PortableRawWriter raw = writer.rawWriter();
 
         raw.writeUuid(nodeId);
         raw.writeString(nodeIp);
@@ -123,10 +123,10 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(GridPortableReader reader) throws PortableException {
+    @Override public void readPortable(PortableReader reader) throws PortableException {
         super.readPortable(reader);
 
-        GridPortableRawReader raw = reader.rawReader();
+        PortableRawReader raw = reader.rawReader();
 
         nodeId = raw.readUuid();
         nodeIp = raw.readString();

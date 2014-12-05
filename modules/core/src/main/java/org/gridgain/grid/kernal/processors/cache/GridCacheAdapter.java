@@ -408,7 +408,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         Class<? super K1> keyType,
         Class<? super V1> valType
     ) {
-        if (GridPortableObject.class.isAssignableFrom(keyType) || GridPortableObject.class.isAssignableFrom(valType))
+        if (PortableObject.class.isAssignableFrom(keyType) || PortableObject.class.isAssignableFrom(valType))
             throw new IllegalStateException("Failed to create cache projection for portable objects. " +
                 "Use keepPortable() method instead.");
 
@@ -645,8 +645,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
-                        v = ((GridPortableObject)v).deserialize();
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof PortableObject)
+                        v = ((PortableObject)v).deserialize();
 
                     return F.t(ctx.cloneOnFlag(v));
                 }
@@ -660,8 +660,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof GridPortableObject)
-                        v = ((GridPortableObject)v).deserialize();
+                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof PortableObject)
+                        v = ((PortableObject)v).deserialize();
 
                     return F.t(ctx.cloneOnFlag(v));
                 }
@@ -1809,8 +1809,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             else {
                                 val = ctx.cloneOnFlag(val);
 
-                                if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-                                    val = ((GridPortableObject)val).deserialize();
+                                if (ctx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+                                    val = ((PortableObject)val).deserialize();
 
                                 map.put(key, val);
 
@@ -3480,8 +3480,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         V val = unswapped.value();
 
-        if (ctx.portableEnabled() && deserializePortable && val instanceof GridPortableObject)
-            return (V)((GridPortableObject)val).deserialize();
+        if (ctx.portableEnabled() && deserializePortable && val instanceof PortableObject)
+            return (V)((PortableObject)val).deserialize();
         else
             return ctx.cloneOnFlag(val);
     }

@@ -101,14 +101,14 @@ public interface GridPortableProcessor extends GridProcessor {
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public PortableBuilder builder(GridPortableObject portableObj);
+    public PortableBuilder builder(PortableObject portableObj);
 
     /**
      * @param typeId Type ID.
      * @param newMeta New meta data.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public void addMeta(int typeId, final GridPortableMetadata newMeta) throws PortableException;
+    public void addMeta(int typeId, final PortableMetadata newMeta) throws PortableException;
 
     /**
      * @param typeId Type ID.
@@ -125,18 +125,18 @@ public interface GridPortableProcessor extends GridProcessor {
      * @return Meta data.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    @Nullable public GridPortableMetadata metadata(int typeId) throws PortableException;
+    @Nullable public PortableMetadata metadata(int typeId) throws PortableException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Map<Integer, GridPortableMetadata> metadata(Collection<Integer> typeIds) throws PortableException;
+    public Map<Integer, PortableMetadata> metadata(Collection<Integer> typeIds) throws PortableException;
 
     /**
      * @return Metadata for all types.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public Collection<GridPortableMetadata> metadata() throws PortableException;
+    public Collection<PortableMetadata> metadata() throws PortableException;
 }

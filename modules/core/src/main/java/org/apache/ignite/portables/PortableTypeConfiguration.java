@@ -23,7 +23,7 @@ import java.sql.*;
  * Per-type portable configuration can be specified in
  * {@link PortableConfiguration#getTypeConfigurations()} method.
  */
-public class GridPortableTypeConfiguration {
+public class PortableTypeConfiguration {
     /** Class name. */
     private String clsName;
 
@@ -31,7 +31,7 @@ public class GridPortableTypeConfiguration {
     private PortableIdMapper idMapper;
 
     /** Serializer. */
-    private GridPortableSerializer serializer;
+    private PortableSerializer serializer;
 
     /** Use timestamp flag. */
     private Boolean useTs;
@@ -47,14 +47,14 @@ public class GridPortableTypeConfiguration {
 
     /**
      */
-    public GridPortableTypeConfiguration() {
+    public PortableTypeConfiguration() {
         // No-op.
     }
 
     /**
      * @param clsName Class name.
      */
-    public GridPortableTypeConfiguration(String clsName) {
+    public PortableTypeConfiguration(String clsName) {
         this.clsName = clsName;
     }
 
@@ -99,7 +99,7 @@ public class GridPortableTypeConfiguration {
      *
      * @return Serializer.
      */
-    public GridPortableSerializer getSerializer() {
+    public PortableSerializer getSerializer() {
         return serializer;
     }
 
@@ -108,7 +108,7 @@ public class GridPortableTypeConfiguration {
      *
      * @param serializer Serializer.
      */
-    public void setSerializer(GridPortableSerializer serializer) {
+    public void setSerializer(PortableSerializer serializer) {
         this.serializer = serializer;
     }
 
@@ -146,7 +146,7 @@ public class GridPortableTypeConfiguration {
     }
 
     /**
-     * Defines whether {@link GridPortableObject} should cache deserialized instance. If provided,
+     * Defines whether {@link PortableObject} should cache deserialized instance. If provided,
      * this value will override {@link PortableConfiguration#isKeepDeserialized()} property.
      *
      * @return Whether deserialized value is kept.
@@ -182,6 +182,6 @@ public class GridPortableTypeConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPortableTypeConfiguration.class, this, super.toString());
+        return S.toString(PortableTypeConfiguration.class, this, super.toString());
     }
 }

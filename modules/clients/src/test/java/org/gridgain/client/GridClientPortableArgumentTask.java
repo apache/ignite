@@ -31,7 +31,7 @@ public class GridClientPortableArgumentTask extends GridTaskSingleJobSplitAdapte
         GridClientTestPortable p;
 
         if (expPortable) {
-            GridPortableObject obj = (GridPortableObject)it.next();
+            PortableObject obj = (PortableObject)it.next();
 
             p = obj.deserialize();
         }
