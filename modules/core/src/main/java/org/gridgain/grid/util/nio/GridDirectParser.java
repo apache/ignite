@@ -29,7 +29,7 @@ public class GridDirectParser implements GridNioParser {
     private final GridNioMessageReader msgReader;
 
     /** */
-    private GridSpiAdapter spi;
+    private IgniteSpiAdapter spi;
 
     /** */
     private GridTcpMessageFactory msgFactory;
@@ -38,7 +38,7 @@ public class GridDirectParser implements GridNioParser {
      * @param msgReader Message reader.
      * @param spi Spi.
      */
-    public GridDirectParser(GridNioMessageReader msgReader, GridSpiAdapter spi) {
+    public GridDirectParser(GridNioMessageReader msgReader, IgniteSpiAdapter spi) {
         this.msgReader = msgReader;
         this.spi = spi;
     }

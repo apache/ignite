@@ -59,7 +59,7 @@ import java.util.*;
  */
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
-public class GridNoopSecureSessionSpi extends GridSpiAdapter
+public class GridNoopSecureSessionSpi extends IgniteSpiAdapter
     implements GridSecureSessionSpi, GridNoopSecureSessionSpiMBean {
     /** Empty bytes array. */
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];

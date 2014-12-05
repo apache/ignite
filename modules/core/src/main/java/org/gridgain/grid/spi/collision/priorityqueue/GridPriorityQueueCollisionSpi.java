@@ -151,7 +151,7 @@ import java.util.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = true)
-public class GridPriorityQueueCollisionSpi extends GridSpiAdapter implements GridCollisionSpi,
+public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridPriorityQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is

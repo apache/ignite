@@ -93,7 +93,7 @@ import java.util.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
-public class GridSharedFsCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi,
+public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi,
     GridSharedFsCheckpointSpiMBean {
     /**
      * Default checkpoint directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder

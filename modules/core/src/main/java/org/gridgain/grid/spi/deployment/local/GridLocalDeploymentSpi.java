@@ -46,7 +46,7 @@ import java.util.concurrent.*;
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
 @GridIgnoreIfPeerClassLoadingDisabled
-public class GridLocalDeploymentSpi extends GridSpiAdapter implements GridDeploymentSpi, GridLocalDeploymentSpiMBean {
+public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridLocalDeploymentSpiMBean {
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource

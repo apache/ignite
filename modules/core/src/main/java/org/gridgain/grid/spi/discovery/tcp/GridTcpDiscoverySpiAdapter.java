@@ -39,7 +39,7 @@ import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiSt
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class GridTcpDiscoverySpiAdapter extends GridSpiAdapter implements GridDiscoverySpi {
+abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements GridDiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 

@@ -135,7 +135,7 @@ import static org.h2.result.SortOrder.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
-public class GridH2IndexingSpi extends GridSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
+public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
     /** Default query execution time interpreted as long query (3 seconds). */
     public static final long DFLT_LONG_QRY_EXEC_TIMEOUT = 3000;
 

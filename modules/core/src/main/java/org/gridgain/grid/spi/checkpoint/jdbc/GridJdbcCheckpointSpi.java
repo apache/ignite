@@ -94,7 +94,7 @@ import java.text.*;
  */
 @SuppressWarnings({"JDBCResourceOpenedButNotSafelyClosed", "JDBCExecuteWithNonConstantString"})
 @GridSpiMultipleInstancesSupport(true)
-public class GridJdbcCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi, GridJdbcCheckpointSpiMBean {
+public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridJdbcCheckpointSpiMBean {
     /** Default number of retries in case of errors (value is {@code 2}). */
     public static final int DFLT_NUMBER_OF_RETRIES = 2;
 

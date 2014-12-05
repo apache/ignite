@@ -153,7 +153,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridRoundRobinLoadBalancingSpi extends GridSpiAdapter implements GridLoadBalancingSpi,
+public class GridRoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
     GridRoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
     @IgniteLoggerResource

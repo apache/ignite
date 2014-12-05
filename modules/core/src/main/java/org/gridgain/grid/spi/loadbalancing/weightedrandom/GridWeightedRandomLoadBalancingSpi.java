@@ -151,7 +151,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = true)
-public class GridWeightedRandomLoadBalancingSpi extends GridSpiAdapter implements GridLoadBalancingSpi,
+public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
     GridWeightedRandomLoadBalancingSpiMBean {
     /** Random number generator. */
     private static final Random RAND = new Random();

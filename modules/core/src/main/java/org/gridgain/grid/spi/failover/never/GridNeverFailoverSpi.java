@@ -52,7 +52,7 @@ import java.util.*;
  * @see GridFailoverSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridNeverFailoverSpi extends GridSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
+public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */
     @IgniteLoggerResource
     private IgniteLogger log;

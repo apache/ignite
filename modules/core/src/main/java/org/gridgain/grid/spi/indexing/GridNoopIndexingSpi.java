@@ -20,7 +20,7 @@ import java.util.*;
  * No-op implementation of {@link GridIndexingSpi}, throws exception on query attempt.
  */
 @GridSpiNoop
-public class GridNoopIndexingSpi extends GridSpiAdapter implements GridIndexingSpi {
+public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
     /** */
     @IgniteLoggerResource
     private IgniteLogger log;

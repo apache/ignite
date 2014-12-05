@@ -25,7 +25,7 @@ import java.util.*;
  */
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
-public class GridNoopSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {
+public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi {
     /** Logger. */
     @IgniteLoggerResource
     private IgniteLogger log;

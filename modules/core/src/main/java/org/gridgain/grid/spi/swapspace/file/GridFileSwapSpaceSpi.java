@@ -94,7 +94,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
-public class GridFileSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
+public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
     /**
      * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
      * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to

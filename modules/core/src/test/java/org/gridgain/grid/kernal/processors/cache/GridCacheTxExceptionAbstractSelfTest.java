@@ -571,7 +571,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends  GridSpiAdapter implements GridIndexingSpi {
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 

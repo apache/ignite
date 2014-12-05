@@ -76,7 +76,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see GridCheckpointSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridCacheCheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi, GridCacheCheckpointSpiMBean {
+public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridCacheCheckpointSpiMBean {
     /** Default cache name (value is <tt>checkpoints</tt>). */
     public static final String DFLT_CACHE_NAME = "checkpoints";
 

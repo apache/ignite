@@ -83,7 +83,7 @@ public interface IgniteSpi {
      * invoking SPI context after this callback is complete is considered
      * illegal and may produce unknown results.
      * <p>
-     * If {@link GridSpiAdapter} is used for SPI implementation, then it will
+     * If {@link IgniteSpiAdapter} is used for SPI implementation, then it will
      * replace actual context with dummy no-op context which is usually good-enough
      * since grid is about to shut down.
      */

@@ -156,7 +156,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = true)
-public class GridJobStealingCollisionSpi extends GridSpiAdapter implements GridCollisionSpi,
+public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridJobStealingCollisionSpiMBean {
     /** Maximum number of attempts to steal job by another node (default is {@code 5}). */
     public static final int DFLT_MAX_STEALING_ATTEMPTS = 5;

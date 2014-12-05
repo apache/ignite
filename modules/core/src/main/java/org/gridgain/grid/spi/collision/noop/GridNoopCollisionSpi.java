@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  */
 @GridSpiNoop
 @GridSpiMultipleInstancesSupport(true)
-public class GridNoopCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
+public class GridNoopCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
         // No-op.

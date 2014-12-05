@@ -301,7 +301,7 @@ import java.util.Map.*;
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-public class GridUriDeploymentSpi extends GridSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
+public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
     /**
      * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
      * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,

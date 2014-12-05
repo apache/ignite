@@ -150,7 +150,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      *
      */
     @GridSpiMultipleInstancesSupport(true)
-    private static class GridCancelCollisionSpi extends GridSpiAdapter
+    private static class GridCancelCollisionSpi extends IgniteSpiAdapter
         implements GridCollisionSpi {
         /** */
         @IgniteLoggerResource

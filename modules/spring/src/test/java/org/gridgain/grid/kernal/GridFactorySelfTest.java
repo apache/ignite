@@ -536,7 +536,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
     /** */
     @GridSpiMultipleInstancesSupport(true)
-    private static class TestMultipleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
+    private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
@@ -574,7 +574,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * This test might be working on distributed environment.
      */
     @GridSpiMultipleInstancesSupport(true)
-    private static class TestSingleInstancesCollisionSpi extends GridSpiAdapter implements GridCollisionSpi {
+    private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
         private IgniteLogger log;

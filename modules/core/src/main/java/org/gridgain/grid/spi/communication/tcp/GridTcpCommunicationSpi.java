@@ -135,7 +135,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 @GridSpiMultipleInstancesSupport(true)
 @GridSpiConsistencyChecked(optional = false)
-public class GridTcpCommunicationSpi extends GridSpiAdapter
+public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     implements GridCommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +

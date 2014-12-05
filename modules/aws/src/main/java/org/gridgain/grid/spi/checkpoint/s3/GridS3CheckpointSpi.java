@@ -93,7 +93,7 @@ import java.util.*;
  * @see GridCheckpointSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridS3CheckpointSpi extends GridSpiAdapter implements GridCheckpointSpi, GridS3CheckpointSpiMBean {
+public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridS3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource

@@ -222,7 +222,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      * Test collision SPI.
      */
     @GridSpiMultipleInstancesSupport(true)
-    public static class GridTestCollision extends GridSpiAdapter implements GridCollisionSpi {
+    public static class GridTestCollision extends IgniteSpiAdapter implements GridCollisionSpi {
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;

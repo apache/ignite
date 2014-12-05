@@ -159,8 +159,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
      * @throws GridException If injection failed.
      */
     private void inject(IgniteSpi spi) throws GridException {
-        if (spi instanceof GridSpiAdapter) {
-            Collection<Object> injectables = ((GridSpiAdapter)spi).injectables();
+        if (spi instanceof IgniteSpiAdapter) {
+            Collection<Object> injectables = ((IgniteSpiAdapter)spi).injectables();
 
             if (!F.isEmpty(injectables))
                 for (Object o : injectables)
@@ -173,8 +173,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
      * @throws GridException If injection failed.
      */
     private void cleanup(IgniteSpi spi) throws GridException {
-        if (spi instanceof GridSpiAdapter) {
-            Collection<Object> injectables = ((GridSpiAdapter)spi).injectables();
+        if (spi instanceof IgniteSpiAdapter) {
+            Collection<Object> injectables = ((IgniteSpiAdapter)spi).injectables();
 
             if (!F.isEmpty(injectables))
                 for (Object o : injectables)

@@ -82,7 +82,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see GridEventStorageSpi
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridMemoryEventStorageSpi extends GridSpiAdapter implements GridEventStorageSpi,
+public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridEventStorageSpi,
     GridMemoryEventStorageSpiMBean {
     /** Default event time to live value in milliseconds (value is {@link Long#MAX_VALUE}). */
     public static final long DFLT_EXPIRE_AGE_MS = Long.MAX_VALUE;

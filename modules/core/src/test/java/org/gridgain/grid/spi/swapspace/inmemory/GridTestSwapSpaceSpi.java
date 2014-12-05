@@ -25,7 +25,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Test swap space SPI that stores values in map.
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridTestSwapSpaceSpi extends GridSpiAdapter implements GridSwapSpaceSpi {
+public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi {
     /** Listener. */
     private GridSwapSpaceSpiListener lsnr;
 

@@ -63,7 +63,7 @@ import java.util.*;
  * </pre>
  */
 @GridSpiMultipleInstancesSupport(true)
-public class GridFifoQueueCollisionSpi extends GridSpiAdapter implements GridCollisionSpi,
+public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridFifoQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is
