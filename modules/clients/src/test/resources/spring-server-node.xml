@@ -92,7 +92,7 @@
 
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
-            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+            <bean class="org.apache.ignite.configuration.GridClientConnectionConfiguration">
                 <!-- Configure TCP rest protocol. -->
                 <property name="restTcpPort" value="10080"/>
             </bean>

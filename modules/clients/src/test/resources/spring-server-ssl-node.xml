@@ -62,7 +62,7 @@
 
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
-            <bean class="org.gridgain.grid.GridClientConnectionConfiguration">
+            <bean class="org.apache.ignite.configuration.GridClientConnectionConfiguration">
                 <!-- Configure TCP+SSL rest protocol. -->
                 <property name="restTcpSslEnabled" value="true"/>
 

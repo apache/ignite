@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -321,7 +322,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link GridClientMessageInterceptor}
-     * from {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}
+     * from {@link org.apache.ignite.configuration.GridClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
@@ -368,7 +369,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link GridClientMessageInterceptor} from
-     * {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}
+     * {@link org.apache.ignite.configuration.GridClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
