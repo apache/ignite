@@ -64,7 +64,7 @@
 
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
-            <bean class="org.apache.ignite.configuration.GridClientConnectionConfiguration"/>
+            <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration"/>
         </property>
 
         <property name="cacheConfiguration">
