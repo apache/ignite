@@ -421,7 +421,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         final IgniteFsPath path = new IgniteFsPath("/file");
 
         // This write is expected to be successful.
-        GridGgfsOutputStream os = ggfs(0).create(path, false);
+        IgniteFsOutputStream os = ggfs(0).create(path, false);
         os.write(chunk(BLOCK_SIZE - 1));
         os.close();
 
@@ -433,7 +433,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         // This write must fail w/ exception.
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream osErr = ggfs(0).append(path, false);
+                IgniteFsOutputStream osErr = ggfs(0).append(path, false);
 
                 try {
                     osErr.write(chunk(BLOCK_SIZE));
@@ -453,7 +453,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
                     U.closeQuiet(osErr);
                 }
             }
-        }, GridGgfsOutOfSpaceException.class, "Failed to write data block (GGFS maximum data size exceeded) [used=" +
+        }, IgniteFsOutOfSpaceException.class, "Failed to write data block (GGFS maximum data size exceeded) [used=" +
             ggfsMaxData + ", allowed=" + ggfsMaxData + ']');
     }
 
@@ -476,7 +476,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         final IgniteFsPath otherPath = new IgniteFsPath("/fileOther");
 
         // Fill cache with data up to it's limit.
-        GridGgfsOutputStream os = ggfs.create(path, false);
+        IgniteFsOutputStream os = ggfs.create(path, false);
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
@@ -780,7 +780,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
             // Actual write.
             for (GgfsBlock block : blocks) {
-                GridGgfsOutputStream os = ggfs(0).append(path, false);
+                IgniteFsOutputStream os = ggfs(0).append(path, false);
 
                 os.write(chunk(block.length()));
 

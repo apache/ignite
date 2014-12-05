@@ -22,7 +22,7 @@ public abstract class GridGgfsHadoopFileSystemLoopbackAbstractSelfTest extends
      * @param mode GGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
-    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed) {
+    protected GridGgfsHadoopFileSystemLoopbackAbstractSelfTest(IgniteFsMode mode, boolean skipEmbed) {
         super(mode, skipEmbed, true);
     }
 

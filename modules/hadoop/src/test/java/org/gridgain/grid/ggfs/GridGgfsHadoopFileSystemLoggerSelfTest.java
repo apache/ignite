@@ -16,7 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
 
 /**

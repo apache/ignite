@@ -24,33 +24,33 @@ public class GridGgfsModeResolver {
     private static final int MAX_PATH_CACHE = 1000;
 
     /** Default mode. */
-    private final GridGgfsMode dfltMode;
+    private final IgniteFsMode dfltMode;
 
     /** Modes for particular paths. Ordered from longest to shortest. */
-    private ArrayList<T2<IgniteFsPath, GridGgfsMode>> modes;
+    private ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes;
 
     /** Cached modes per path. */
-    private Map<IgniteFsPath, GridGgfsMode> modesCache;
+    private Map<IgniteFsPath, IgniteFsMode> modesCache;
 
     /** Cached children modes per path. */
-    private Map<IgniteFsPath, Set<GridGgfsMode>> childrenModesCache;
+    private Map<IgniteFsPath, Set<IgniteFsMode>> childrenModesCache;
 
     /**
      * @param dfltMode Default GGFS mode.
      * @param modes List of configured modes.
      */
-    public GridGgfsModeResolver(GridGgfsMode dfltMode, @Nullable List<T2<IgniteFsPath, GridGgfsMode>> modes) {
+    public GridGgfsModeResolver(IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath, IgniteFsMode>> modes) {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
 
         if (modes != null) {
-            ArrayList<T2<IgniteFsPath, GridGgfsMode>> modes0 = new ArrayList<>(modes);
+            ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes0 = new ArrayList<>(modes);
 
             // Sort paths, longest first.
-            Collections.sort(modes0, new Comparator<Map.Entry<IgniteFsPath, GridGgfsMode>>() {
-                @Override public int compare(Map.Entry<IgniteFsPath, GridGgfsMode> o1,
-                    Map.Entry<IgniteFsPath, GridGgfsMode> o2) {
+            Collections.sort(modes0, new Comparator<Map.Entry<IgniteFsPath, IgniteFsMode>>() {
+                @Override public int compare(Map.Entry<IgniteFsPath, IgniteFsMode> o1,
+                    Map.Entry<IgniteFsPath, IgniteFsMode> o2) {
                     return o2.getKey().components().size() - o1.getKey().components().size();
                 }
             });
@@ -68,16 +68,16 @@ public class GridGgfsModeResolver {
      * @param path GGFS path.
      * @return GGFS mode.
      */
-    public GridGgfsMode resolveMode(IgniteFsPath path) {
+    public IgniteFsMode resolveMode(IgniteFsPath path) {
         assert path != null;
 
         if (modes == null)
             return dfltMode;
         else {
-            GridGgfsMode mode = modesCache.get(path);
+            IgniteFsMode mode = modesCache.get(path);
 
             if (mode == null) {
-                for (T2<IgniteFsPath, GridGgfsMode> entry : modes) {
+                for (T2<IgniteFsPath, IgniteFsMode> entry : modes) {
                     if (startsWith(path, entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
@@ -100,20 +100,20 @@ public class GridGgfsModeResolver {
      * @param path Path.
      * @return Set of all modes that children paths could have.
      */
-    public Set<GridGgfsMode> resolveChildrenModes(IgniteFsPath path) {
+    public Set<IgniteFsMode> resolveChildrenModes(IgniteFsPath path) {
         assert path != null;
 
         if (modes == null)
             return Collections.singleton(dfltMode);
         else {
-            Set<GridGgfsMode> children = childrenModesCache.get(path);
+            Set<IgniteFsMode> children = childrenModesCache.get(path);
 
             if (children == null) {
-                children = new HashSet<>(GridGgfsMode.values().length, 1.0f);
+                children = new HashSet<>(IgniteFsMode.values().length, 1.0f);
 
-                GridGgfsMode pathDefault = dfltMode;
+                IgniteFsMode pathDefault = dfltMode;
 
-                for (T2<IgniteFsPath, GridGgfsMode> child : modes) {
+                for (T2<IgniteFsPath, IgniteFsMode> child : modes) {
                     if (startsWith(path, child.getKey())) {
                         pathDefault = child.getValue();
 
@@ -136,7 +136,7 @@ public class GridGgfsModeResolver {
      * @return Unmodifiable copy of properly ordered modes prefixes
      *  or {@code null} if no modes set.
      */
-    @Nullable public List<T2<IgniteFsPath, GridGgfsMode>> modesOrdered() {
+    @Nullable public List<T2<IgniteFsPath, IgniteFsMode>> modesOrdered() {
         return modes != null ? Collections.unmodifiableList(modes) : null;
     }
 

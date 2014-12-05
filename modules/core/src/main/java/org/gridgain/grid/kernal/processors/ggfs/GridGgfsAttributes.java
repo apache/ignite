@@ -40,13 +40,13 @@ public class GridGgfsAttributes implements Externalizable {
     private String dataCacheName;
 
     /** Default mode. */
-    private GridGgfsMode dfltMode;
+    private IgniteFsMode dfltMode;
 
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled;
 
     /** Path modes. */
-    private Map<String, GridGgfsMode> pathModes;
+    private Map<String, IgniteFsMode> pathModes;
 
     /**
      * @param ggfsName GGFS name.
@@ -58,7 +58,7 @@ public class GridGgfsAttributes implements Externalizable {
      * @param pathModes Path modes.
      */
     public GridGgfsAttributes(String ggfsName, int blockSize, int grpSize, String metaCacheName, String dataCacheName,
-        GridGgfsMode dfltMode, Map<String, GridGgfsMode> pathModes, boolean fragmentizerEnabled) {
+        IgniteFsMode dfltMode, Map<String, IgniteFsMode> pathModes, boolean fragmentizerEnabled) {
         this.blockSize = blockSize;
         this.ggfsName = ggfsName;
         this.grpSize = grpSize;
@@ -114,14 +114,14 @@ public class GridGgfsAttributes implements Externalizable {
     /**
      * @return Default mode.
      */
-    public GridGgfsMode defaultMode() {
+    public IgniteFsMode defaultMode() {
         return dfltMode;
     }
 
     /**
      * @return Path modes.
      */
-    public Map<String, GridGgfsMode> pathModes() {
+    public Map<String, IgniteFsMode> pathModes() {
         return pathModes != null ? Collections.unmodifiableMap(pathModes) : null;
     }
 
@@ -147,7 +147,7 @@ public class GridGgfsAttributes implements Externalizable {
 
             out.writeInt(pathModes.size());
 
-            for (Map.Entry<String, GridGgfsMode> pathMode : pathModes.entrySet()) {
+            for (Map.Entry<String, IgniteFsMode> pathMode : pathModes.entrySet()) {
                 U.writeString(out, pathMode.getKey());
                 U.writeEnum0(out, pathMode.getValue());
             }
@@ -163,7 +163,7 @@ public class GridGgfsAttributes implements Externalizable {
         grpSize = in.readInt();
         metaCacheName = U.readString(in);
         dataCacheName = U.readString(in);
-        dfltMode = GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltMode = IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in));
         fragmentizerEnabled = in.readBoolean();
 
         if (in.readBoolean()) {
@@ -172,7 +172,7 @@ public class GridGgfsAttributes implements Externalizable {
             pathModes = new HashMap<>(size, 1.0f);
 
             for (int i = 0; i < size; i++)
-                pathModes.put(U.readString(in), GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in)));
+                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in)));
         }
     }
 }

@@ -488,7 +488,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 assert ex != null;
             }
             else {
-                if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, GridGgfsOutOfSpaceException.class)) {
+                if (X.hasCause(e, GridInternalException.class) || X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
                     // Print exception for internal errors only if debug is enabled.
                     if (log.isDebugEnabled())
                         U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);

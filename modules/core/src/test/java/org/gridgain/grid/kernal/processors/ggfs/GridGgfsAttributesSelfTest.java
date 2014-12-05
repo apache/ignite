@@ -15,7 +15,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * {@link GridGgfsAttributes} test case.
@@ -25,7 +25,7 @@ public class GridGgfsAttributesSelfTest extends GridGgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSerialization() throws Exception {
-        Map<String, GridGgfsMode> pathModes = new HashMap<>();
+        Map<String, IgniteFsMode> pathModes = new HashMap<>();
 
         pathModes.put("path1", PRIMARY);
         pathModes.put("path2", PROXY);

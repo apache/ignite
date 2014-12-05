@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
 import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
 
@@ -263,8 +263,8 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null && !paths.pathModes().isEmpty()) {
-                for (T2<IgniteFsPath, GridGgfsMode> pathMode : paths.pathModes()) {
-                    GridGgfsMode mode = pathMode.getValue();
+                for (T2<IgniteFsPath, IgniteFsMode> pathMode : paths.pathModes()) {
+                    IgniteFsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
                 }
@@ -477,7 +477,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
                 if (secondaryFs == null) {
@@ -545,7 +545,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in create [thread=" + Thread.currentThread().getName() + "path=" +
@@ -623,7 +623,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in append [thread=" + Thread.currentThread().getName() +
@@ -689,7 +689,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
         try {
             IgniteFsPath srcPath = convert(src);
             IgniteFsPath dstPath = convert(dst);
-            GridGgfsMode mode = mode(srcPath);
+            IgniteFsMode mode = mode(srcPath);
 
             if (mode == PROXY) {
                 if (secondaryFs == null) {
@@ -740,7 +740,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
                 if (secondaryFs == null) {
@@ -785,7 +785,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
                 if (secondaryFs == null) {
@@ -899,7 +899,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = mode(path);
+            IgniteFsMode mode = mode(path);
 
             if (mode == PROXY) {
                 if (secondaryFs == null) {
@@ -1051,7 +1051,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param path HDFS path.
      * @return Path mode.
      */
-    public GridGgfsMode mode(Path path) {
+    public IgniteFsMode mode(Path path) {
         return mode(convert(path));
     }
 
@@ -1061,7 +1061,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
      * @param path GGFS path.
      * @return Path mode.
      */
-    public GridGgfsMode mode(IgniteFsPath path) {
+    public IgniteFsMode mode(IgniteFsPath path) {
         return modeRslvr.resolveMode(path);
     }
 

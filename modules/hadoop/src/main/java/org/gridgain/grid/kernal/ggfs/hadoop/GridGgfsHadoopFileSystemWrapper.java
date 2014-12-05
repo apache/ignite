@@ -112,7 +112,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
         if (e instanceof FileNotFoundException)
             return new IgniteFsFileNotFoundException(e);
         else if (e instanceof ParentNotDirectoryException)
-            return new GridGgfsParentNotDirectoryException(msg, e);
+            return new IgniteFsParentNotDirectoryException(msg, e);
         else if (e instanceof PathIsNotEmptyDirectoryException)
             return new GridGgfsDirectoryNotEmptyException(e);
         else if (e instanceof PathExistsException)

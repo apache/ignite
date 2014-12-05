@@ -37,7 +37,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     private final long timestamp;
 
     /** GGFS mode. */
-    private final GridGgfsMode mode;
+    private final IgniteFsMode mode;
 
     /** File size. */
     private final long size;
@@ -76,7 +76,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     public VisorGgfsProfilerEntry(
         String path,
         long timestamp,
-        GridGgfsMode mode,
+        IgniteFsMode mode,
         long size,
         long bytesRead,
         long readTime,
@@ -139,7 +139,7 @@ public class VisorGgfsProfilerEntry implements Serializable {
     /**
      * @return GGFS mode.
      */
-    public GridGgfsMode mode() {
+    public IgniteFsMode mode() {
         return mode;
     }
 

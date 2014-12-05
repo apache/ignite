@@ -27,7 +27,7 @@ public class GridGgfsFragmentizerTopologySelfTest extends GridGgfsFragmentizerAb
 
             IgniteFs ggfs = grid(1).fileSystem("ggfs");
 
-            try (GridGgfsOutputStream out = ggfs.create(path, true)) {
+            try (IgniteFsOutputStream out = ggfs.create(path, true)) {
                 for (int i = 0; i < 10 * GGFS_GROUP_SIZE; i++)
                     out.write(new byte[GGFS_BLOCK_SIZE]);
             }

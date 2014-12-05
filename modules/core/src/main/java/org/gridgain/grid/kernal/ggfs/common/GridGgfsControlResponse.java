@@ -259,7 +259,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (errCode == ERR_DIRECTORY_NOT_EMPTY)
             throw new GridGgfsDirectoryNotEmptyException(err);
         else if (errCode == ERR_PARENT_NOT_DIRECTORY)
-            throw new GridGgfsParentNotDirectoryException(err);
+            throw new IgniteFsParentNotDirectoryException(err);
         else if (errCode == ERR_INVALID_HDFS_VERSION)
             throw new IgniteFsInvalidHdfsVersionException(err);
         else if (errCode == ERR_CORRUPTED_FILE)
@@ -330,7 +330,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
             return ERR_PATH_ALREADY_EXISTS;
         else if (GridGgfsDirectoryNotEmptyException.class.isInstance(e))
             return ERR_DIRECTORY_NOT_EMPTY;
-        else if (GridGgfsParentNotDirectoryException.class.isInstance(e))
+        else if (IgniteFsParentNotDirectoryException.class.isInstance(e))
             return ERR_PARENT_NOT_DIRECTORY;
         else if (IgniteFsInvalidHdfsVersionException.class.isInstance(e))
             return ERR_INVALID_HDFS_VERSION;

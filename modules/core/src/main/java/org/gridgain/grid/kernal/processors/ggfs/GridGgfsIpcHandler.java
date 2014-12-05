@@ -415,7 +415,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 }
                 catch (IOException e) {
                     // Unwrap OutOfSpaceException, if has one.
-                    GridGgfsOutOfSpaceException space = X.cause(e, GridGgfsOutOfSpaceException.class);
+                    IgniteFsOutOfSpaceException space = X.cause(e, IgniteFsOutOfSpaceException.class);
 
                     if (space != null)
                         throw space;
@@ -471,7 +471,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
             case WRITE_BLOCK: {
                 assert rsrcId != null : "Missing stream ID";
 
-                GridGgfsOutputStream out = (GridGgfsOutputStream)resource(ses, rsrcId);
+                IgniteFsOutputStream out = (IgniteFsOutputStream)resource(ses, rsrcId);
 
                 if (out == null)
                     throw new GridException("Output stream not found (already closed?): " + rsrcId);

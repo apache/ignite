@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.GridSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 
@@ -360,7 +360,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
             boolean secondary = cfg.getDefaultMode() == PROXY;
 
             if (cfg.getPathModes() != null) {
-                for (Map.Entry<String, GridGgfsMode> mode : cfg.getPathModes().entrySet()) {
+                for (Map.Entry<String, IgniteFsMode> mode : cfg.getPathModes().entrySet()) {
                     if (mode.getValue() == PROXY)
                         secondary = true;
                 }

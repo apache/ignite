@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS per-block LR eviction policy.
@@ -85,7 +85,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         ggfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
         ggfsCfg.setSecondaryFileSystem(secondaryFs);
 
-        Map<String, GridGgfsMode> pathModes = new HashMap<>();
+        Map<String, IgniteFsMode> pathModes = new HashMap<>();
 
         pathModes.put(FILE_RMT.toString(), DUAL_SYNC);
 
@@ -437,7 +437,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @throws Exception If failed.
      */
     private void append(IgniteFsPath path, int len) throws Exception {
-        GridGgfsOutputStream os = ggfsPrimary.append(path, false);
+        IgniteFsOutputStream os = ggfsPrimary.append(path, false);
 
         os.write(new byte[len]);
 

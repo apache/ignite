@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Test hadoop file system implementation.
@@ -88,7 +88,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     private static FileSystem fs;
 
     /** Default GGFS mode. */
-    protected final GridGgfsMode mode;
+    protected final IgniteFsMode mode;
 
     /** Skip embedded mode flag. */
     private final boolean skipEmbed;
@@ -124,7 +124,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
      * @param skipLocShmem Whether to skip local shmem mode.
      * @param skipLocTcp Whether to skip local TCP mode.
      */
-    protected GridGgfsHadoopFileSystemAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed, boolean skipLocShmem) {
+    protected GridGgfsHadoopFileSystemAbstractSelfTest(IgniteFsMode mode, boolean skipEmbed, boolean skipLocShmem) {
         this.mode = mode;
         this.skipEmbed = skipEmbed;
         this.skipLocShmem = skipLocShmem;

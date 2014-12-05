@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsAbstractSelfTest.*;
 
@@ -83,14 +83,14 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
     protected static GridGgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
-    protected final GridGgfsMode mode;
+    protected final IgniteFsMode mode;
 
     /**
      * Constructor.
      *
      * @param mode GGFS mode.
      */
-    protected GridGgfsHadoopDualAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsHadoopDualAbstractSelfTest(IgniteFsMode mode) {
         this.mode = mode;
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
@@ -106,7 +106,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
+    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
         @Nullable IgniteFsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
@@ -207,7 +207,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         // Write enough data to the secondary file system.
         final int blockSize = GGFS_BLOCK_SIZE;
 
-        GridGgfsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 

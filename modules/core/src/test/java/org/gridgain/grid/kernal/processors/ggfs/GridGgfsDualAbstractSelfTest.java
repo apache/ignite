@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -32,7 +32,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      *
      * @param mode GGFS mode.
      */
-    protected GridGgfsDualAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsDualAbstractSelfTest(IgniteFsMode mode) {
         super(mode);
 
         assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
@@ -1128,7 +1128,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         // Write enough data to the secondary file system.
         final int blockSize = GGFS_BLOCK_SIZE;
 
-        GridGgfsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 
@@ -1207,7 +1207,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
         // Write enough data to the secondary file system.
         final int blockSize = ggfs.info(FILE).blockSize();
 
-        GridGgfsOutputStream out = ggfsSecondary.append(FILE, false);
+        IgniteFsOutputStream out = ggfsSecondary.append(FILE, false);
 
         int totalWritten = 0;
 

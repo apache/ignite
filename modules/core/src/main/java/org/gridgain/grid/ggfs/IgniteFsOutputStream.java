@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * {@code GGFS} output stream to write data into the file system.
  */
-public abstract class GridGgfsOutputStream extends OutputStream {
+public abstract class IgniteFsOutputStream extends OutputStream {
     /**
      * Transfers specified amount of bytes from data input to this output stream.
      * This method is optimized to avoid unnecessary temporal buffer creation and byte array copy.

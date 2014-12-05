@@ -28,7 +28,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Ensures correct modes resolution for SECONDARY paths.
@@ -44,10 +44,10 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
     private static final String PATTERN_NOT_MATCHES = "/files";
 
     /** Default GGFS mode. */
-    private GridGgfsMode mode;
+    private IgniteFsMode mode;
 
     /** Path modes. */
-    private Map<String, GridGgfsMode> pathModes;
+    private Map<String, IgniteFsMode> pathModes;
 
     /** File system. */
     private GridGgfsHadoopFileSystem fs;
@@ -283,12 +283,12 @@ public class GridGgfsHadoopFileSystemSecondaryModeSelfTest extends GridGgfsCommo
      * @param modes Modes.
      */
     @SafeVarargs
-    final void pathModes(IgniteBiTuple<String, GridGgfsMode>... modes) {
+    final void pathModes(IgniteBiTuple<String, IgniteFsMode>... modes) {
         assert modes != null;
 
         pathModes = new LinkedHashMap<>(modes.length, 1.0f);
 
-        for (IgniteBiTuple<String, GridGgfsMode> mode : modes)
+        for (IgniteBiTuple<String, IgniteFsMode> mode : modes)
             pathModes.put(mode.getKey(), mode.getValue());
     }
 

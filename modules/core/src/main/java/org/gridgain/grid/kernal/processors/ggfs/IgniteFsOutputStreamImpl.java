@@ -22,12 +22,12 @@ import java.io.*;
 import java.nio.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
  */
-class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
+class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
     /** Maximum number of blocks in buffer. */
     private static final int MAX_BLOCKS_CNT = 16;
 
@@ -64,7 +64,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
     private final IgniteFuture<Boolean> writeCompletionFut;
 
     /** GGFS mode. */
-    private final GridGgfsMode mode;
+    private final IgniteFsMode mode;
 
     /** File worker batch. */
     private final GridGgfsFileWorkerBatch batch;
@@ -90,8 +90,8 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
      * @param metrics Local GGFs metrics.
      * @throws GridException If stream creation failed.
      */
-    GridGgfsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, GridGgfsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
+    IgniteFsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
+                             int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
         throws GridException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
@@ -424,7 +424,7 @@ class GridGgfsOutputStreamImpl extends GridGgfsOutputStreamAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsOutputStreamImpl.class, this);
+        return S.toString(IgniteFsOutputStreamImpl.class, this);
     }
 
     /**

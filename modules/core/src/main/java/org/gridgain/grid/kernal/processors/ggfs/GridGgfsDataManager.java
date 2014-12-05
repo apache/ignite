@@ -1090,7 +1090,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     return;
                 }
 
-                completionFut.onLocalError(new GridGgfsOutOfSpaceException("Failed to write data block " +
+                completionFut.onLocalError(new IgniteFsOutOfSpaceException("Failed to write data block " +
                     "(GGFS maximum data size exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
                         ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
@@ -1253,7 +1253,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 // Additional size check.
                 if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax())
                     return new GridFinishedFuture<Object>(ggfsCtx.kernalContext(),
-                        new GridGgfsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
+                        new IgniteFsOutOfSpaceException("Failed to write data block (GGFS maximum data size " +
                             "exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
                             ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
@@ -1833,7 +1833,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
-                if (e instanceof GridGgfsOutOfSpaceException)
+                if (e instanceof IgniteFsOutOfSpaceException)
                     onDone(new GridException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new GridException(
@@ -1845,7 +1845,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param e Error.
          */
         private void onLocalError(GridException e) {
-            if (e instanceof GridGgfsOutOfSpaceException)
+            if (e instanceof IgniteFsOutOfSpaceException)
                 onDone(new GridException("Failed to write data (not enough space on node): " +
                     ggfsCtx.kernalContext().localNodeId(), e));
             else

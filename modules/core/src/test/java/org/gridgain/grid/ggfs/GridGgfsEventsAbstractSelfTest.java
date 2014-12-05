@@ -776,7 +776,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         byte[] buf = new byte[dataSize];
 
         // Will generate GGFS_FILE_CREATED, GGFS_FILE_OPENED_WRITE, GGFS_FILE_CLOSED_WRITE.
-        try (GridGgfsOutputStream os = ggfs.create(file, false)) {
+        try (IgniteFsOutputStream os = ggfs.create(file, false)) {
             os.write(buf); // Will generate no events.
         }
 

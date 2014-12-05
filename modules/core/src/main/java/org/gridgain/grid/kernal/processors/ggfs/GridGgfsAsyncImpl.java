@@ -173,30 +173,30 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
         return ggfs.create(path, overwrite);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws GridException {
         return ggfs.create(path, bufSize, overwrite, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException {
         return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
         return ggfs.append(path, create);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         return ggfs.append(path, bufSize, create, props);
     }

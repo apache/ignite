@@ -121,7 +121,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
 
     /**
      * Creates a file and opens it for writing.
@@ -135,7 +135,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws GridException;
 
     /**
@@ -152,7 +152,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return File output stream to write data to.
      * @throws GridException In case of error.
      */
-    public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+    public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException;
 
@@ -165,7 +165,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException;
+    public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -178,7 +178,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @throws GridException In case of error.
      * @throws org.gridgain.grid.ggfs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException;
 
     /**

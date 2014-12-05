@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Hadoop 2.x compliant file system.
@@ -63,7 +63,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
     private static AbstractFileSystem fs;
 
     /** Default GGFS mode. */
-    protected GridGgfsMode mode;
+    protected IgniteFsMode mode;
 
     /** Primary file system URI. */
     protected URI primaryFsUri;
@@ -76,7 +76,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
      *
      * @param mode Default GGFS mode.
      */
-    protected GridGgfsHadoop20FileSystemAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsHadoop20FileSystemAbstractSelfTest(IgniteFsMode mode) {
         this.mode = mode;
     }
 

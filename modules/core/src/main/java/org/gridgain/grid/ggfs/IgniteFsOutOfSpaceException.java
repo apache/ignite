@@ -12,31 +12,39 @@ package org.gridgain.grid.ggfs;
 import org.jetbrains.annotations.*;
 
 /**
- * Exception thrown when parent supposed to be a directory is a file.
+ * {@code GGFS} exception that is thrown when it detected out-of-space condition.
+ * It is thrown when number of writes written to a {@code GGFS} data nodes exceeds
+ * its maximum value (that is configured per-node).
  */
-public class GridGgfsParentNotDirectoryException extends IgniteFsInvalidPathException {
+public class IgniteFsOutOfSpaceException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
+     * Creates exception with given error message.
+     *
      * @param msg Error message.
      */
-    public GridGgfsParentNotDirectoryException(String msg) {
+    public IgniteFsOutOfSpaceException(String msg) {
         super(msg);
     }
 
     /**
+     * Creates an instance of exception with given exception cause.
+     *
      * @param cause Exception cause.
      */
-    public GridGgfsParentNotDirectoryException(Throwable cause) {
+    public IgniteFsOutOfSpaceException(Throwable cause) {
         super(cause);
     }
 
     /**
+     * Creates an instance of GGFS exception with given error message and given exception cause.
+     *
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public GridGgfsParentNotDirectoryException(String msg, @Nullable Throwable cause) {
+    public IgniteFsOutOfSpaceException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

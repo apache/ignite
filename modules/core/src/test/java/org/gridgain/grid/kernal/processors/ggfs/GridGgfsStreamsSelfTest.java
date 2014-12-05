@@ -194,7 +194,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             idx++;
         }
 
-        try (GridGgfsOutputStream out = fs.create(path, 1024, true, affKey, 0, 1024, null)) {
+        try (IgniteFsOutputStream out = fs.create(path, 1024, true, affKey, 0, 1024, null)) {
             // Write 5M, should be enough to test distribution.
             for (int i = 0; i < 15; i++)
                 out.write(new byte[1024 * 1024]);
@@ -226,7 +226,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             IgniteFs fs1 = grid(1).fileSystem("ggfs");
             IgniteFs fs2 = grid(2).fileSystem("ggfs");
 
-            try (GridGgfsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
+            try (IgniteFsOutputStream out = fs0.create(path, 128, false, 1, CFG_GRP_SIZE,
                 F.asMap(IgniteFs.PROP_PREFER_LOCAL_WRITES, "true"))) {
                 // 1.5 blocks
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
@@ -236,7 +236,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
                 out.write(data);
             }
 
-            try (GridGgfsOutputStream out = fs1.append(path, false)) {
+            try (IgniteFsOutputStream out = fs1.append(path, false)) {
                 // 1.5 blocks.
                 byte[] data = new byte[CFG_BLOCK_SIZE * 3 / 2];
 
@@ -318,7 +318,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
 
                 IgniteFsPath f = new IgniteFsPath(path.parent(), "asdf" + (id > 1 ? "-" + id : ""));
 
-                try (GridGgfsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
+                try (IgniteFsOutputStream out = fs.create(f, 0, true, null, 0, 1024, null)) {
                     assertNotNull(out);
 
                     cleanUp.add(f); // Add all created into cleanup list.

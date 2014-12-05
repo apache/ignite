@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
  * This mode is configured via {@link IgniteFsConfiguration#getDefaultMode()}
  * configuration property.
  */
-public enum GridGgfsMode {
+public enum IgniteFsMode {
     /**
      * In this mode GGFS will not delegate to secondary Hadoop file system and will
      * cache all the files in memory only.
@@ -58,7 +58,7 @@ public enum GridGgfsMode {
     DUAL_ASYNC;
 
     /** Enumerated values. */
-    private static final GridGgfsMode[] VALS = values();
+    private static final IgniteFsMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -66,7 +66,7 @@ public enum GridGgfsMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridGgfsMode fromOrdinal(int ord) {
+    @Nullable public static IgniteFsMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

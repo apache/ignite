@@ -221,7 +221,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
         int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
         try {
-            GridGgfsOutputStream stream = ggfs.create(path, bufSize, overwrite,
+            IgniteFsOutputStream stream = ggfs.create(path, bufSize, overwrite,
                 colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
 
             return new GridGgfsHadoopStreamDelegate(this, stream);
@@ -235,7 +235,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         try {
-            GridGgfsOutputStream stream = ggfs.append(path, bufSize, create, props);
+            IgniteFsOutputStream stream = ggfs.append(path, bufSize, create, props);
 
             return new GridGgfsHadoopStreamDelegate(this, stream);
         }
@@ -288,7 +288,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public void writeData(GridGgfsHadoopStreamDelegate delegate, byte[] data, int off, int len)
         throws IOException {
         try {
-            GridGgfsOutputStream stream = delegate.target();
+            IgniteFsOutputStream stream = delegate.target();
 
             stream.write(data, off, len);
         }
@@ -308,7 +308,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     /** {@inheritDoc} */
     @Override public void flush(GridGgfsHadoopStreamDelegate delegate) throws IOException {
         try {
-            GridGgfsOutputStream stream = delegate.target();
+            IgniteFsOutputStream stream = delegate.target();
 
             stream.flush();
         }

@@ -7,7 +7,7 @@
 
 package org.gridgain.grid.ggfs;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * GGFS Hadoop file system IPC shmem self test in SECONDARY mode.

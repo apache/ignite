@@ -29,7 +29,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
      * @param mode GGFS mode.
      * @param skipEmbed Skip embedded mode flag.
      */
-    protected GridGgfsHadoopFileSystemShmemAbstractSelfTest(GridGgfsMode mode, boolean skipEmbed) {
+    protected GridGgfsHadoopFileSystemShmemAbstractSelfTest(IgniteFsMode mode, boolean skipEmbed) {
         super(mode, skipEmbed, false);
     }
 

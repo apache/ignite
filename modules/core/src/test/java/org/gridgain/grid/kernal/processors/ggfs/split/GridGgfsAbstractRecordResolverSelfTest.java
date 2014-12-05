@@ -26,7 +26,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Base class for all split resolvers
@@ -156,7 +156,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
      * @throws Exception In case of exception.
      */
     protected void write(byte[]... chunks) throws Exception {
-        GridGgfsOutputStream os =  ggfs.create(FILE, true);
+        IgniteFsOutputStream os =  ggfs.create(FILE, true);
 
         if (chunks != null) {
             for (byte[] chunk : chunks)

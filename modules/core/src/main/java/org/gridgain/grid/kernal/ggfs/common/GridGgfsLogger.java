@@ -248,7 +248,7 @@ public final class GridGgfsLogger {
      * @param bufSize Buffer size.
      * @param dataLen Data length.
      */
-    public void logOpen(long streamId, IgniteFsPath path, GridGgfsMode mode, int bufSize, long dataLen) {
+    public void logOpen(long streamId, IgniteFsPath path, IgniteFsMode mode, int bufSize, long dataLen) {
         addEntry(new Entry(TYPE_OPEN_IN, path.toString(), mode, streamId, bufSize, dataLen, null, null, null, null,
             null, null, null, null, null, null, null, null, null, null));
     }
@@ -264,7 +264,7 @@ public final class GridGgfsLogger {
      * @param replication Replication factor.
      * @param blockSize Block size.
      */
-    public void logCreate(long streamId, IgniteFsPath path, GridGgfsMode mode, boolean overwrite, int bufSize,
+    public void logCreate(long streamId, IgniteFsPath path, IgniteFsMode mode, boolean overwrite, int bufSize,
         int replication, long blockSize) {
         addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, false, overwrite, replication,
             blockSize, null, null, null, null, null, null, null, null, null, null));
@@ -278,7 +278,7 @@ public final class GridGgfsLogger {
      * @param mode Mode.
      * @param bufSize Buffer size.
      */
-    public void logAppend(long streamId, IgniteFsPath path, GridGgfsMode mode, int bufSize) {
+    public void logAppend(long streamId, IgniteFsPath path, IgniteFsMode mode, int bufSize) {
         addEntry(new Entry(TYPE_OPEN_OUT, path.toString(), mode, streamId, bufSize, null, true, null, null, null, null,
             null, null, null, null, null, null, null, null, null));
     }
@@ -370,7 +370,7 @@ public final class GridGgfsLogger {
      * @param path Path.
      * @param mode Mode.
      */
-    public void logMakeDirectory(IgniteFsPath path, GridGgfsMode mode) {
+    public void logMakeDirectory(IgniteFsPath path, IgniteFsMode mode) {
         addEntry(new Entry(TYPE_DIR_MAKE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null));
     }
@@ -382,7 +382,7 @@ public final class GridGgfsLogger {
      * @param mode Mode.
      * @param files Files.
      */
-    public void logListDirectory(IgniteFsPath path, GridGgfsMode mode, String[] files) {
+    public void logListDirectory(IgniteFsPath path, IgniteFsMode mode, String[] files) {
         addEntry(new Entry(TYPE_DIR_LIST, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, null, files));
     }
@@ -394,7 +394,7 @@ public final class GridGgfsLogger {
      * @param mode Mode.
      * @param destPath Destination path.
      */
-    public void logRename(IgniteFsPath path, GridGgfsMode mode, IgniteFsPath destPath) {
+    public void logRename(IgniteFsPath path, IgniteFsMode mode, IgniteFsPath destPath) {
         addEntry(new Entry(TYPE_RENAME, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, destPath.toString(), null, null));
     }
@@ -406,7 +406,7 @@ public final class GridGgfsLogger {
      * @param mode Mode.
      * @param recursive Recursive flag.
      */
-    public void logDelete(IgniteFsPath path, GridGgfsMode mode, boolean recursive) {
+    public void logDelete(IgniteFsPath path, IgniteFsMode mode, boolean recursive) {
         addEntry(new Entry(TYPE_DELETE, path.toString(), mode, null, null, null, null, null, null, null, null, null,
             null, null, null, null, null, null, recursive, null));
     }
@@ -491,7 +491,7 @@ public final class GridGgfsLogger {
         private final String path;
 
         /** Path mode. */
-        private GridGgfsMode mode;
+        private IgniteFsMode mode;
 
         /** Stream ID. */
         private final long streamId;
@@ -568,7 +568,7 @@ public final class GridGgfsLogger {
          * @param recursive Recursive flag.
          * @param list Listed directories.
          */
-        Entry(int type, String path, GridGgfsMode mode, Long streamId, Integer bufSize, Long dataLen, Boolean append,
+        Entry(int type, String path, IgniteFsMode mode, Long streamId, Integer bufSize, Long dataLen, Boolean append,
             Boolean overwrite, Integer replication, Long blockSize, Long pos, Integer readLen, Long skipCnt,
             Long readLimit, Long userTime, Long sysTime, Long total, String destPath, Boolean recursive,
             String[] list) {

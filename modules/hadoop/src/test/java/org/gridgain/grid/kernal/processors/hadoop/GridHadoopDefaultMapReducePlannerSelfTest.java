@@ -818,30 +818,30 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+        @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
             long blockSize, @Nullable Map<String, String> props) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+        @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
             @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
             throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
+        @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
             @Nullable Map<String, String> props) throws GridException {
             return null;
         }

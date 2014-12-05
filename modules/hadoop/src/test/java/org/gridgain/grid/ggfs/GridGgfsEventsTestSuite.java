@@ -20,7 +20,7 @@ import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Test suite for GGFS event tests.

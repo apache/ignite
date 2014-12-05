@@ -34,7 +34,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * Test fo regular GGFs operations.
@@ -104,7 +104,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     protected static GridGgfsImpl ggfsSecondary;
 
     /** GGFS mode. */
-    protected final GridGgfsMode mode;
+    protected final IgniteFsMode mode;
 
     /** Dual mode flag. */
     protected final boolean dual;
@@ -117,11 +117,11 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      *
      * @param mode GGFS mode.
      */
-    protected GridGgfsAbstractSelfTest(GridGgfsMode mode) {
+    protected GridGgfsAbstractSelfTest(IgniteFsMode mode) {
         this(mode, ONHEAP_TIERED);
     }
 
-    protected GridGgfsAbstractSelfTest(GridGgfsMode mode, GridCacheMemoryMode memoryMode) {
+    protected GridGgfsAbstractSelfTest(IgniteFsMode mode, GridCacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
 
         this.mode = mode;
@@ -167,7 +167,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithGgfs(String gridName, String ggfsName, GridGgfsMode mode,
+    protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
         @Nullable IgniteFsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
@@ -766,7 +766,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         create(ggfs, paths(DIR, SUBDIR), paths(FILE));
 
-        try (GridGgfsOutputStream os = ggfs.append(FILE, false)) {
+        try (IgniteFsOutputStream os = ggfs.append(FILE, false)) {
             os.write(new byte[10 * 1024 * 1024]);
         }
 
@@ -903,8 +903,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os1 = null;
-                GridGgfsOutputStream os2 = null;
+                IgniteFsOutputStream os1 = null;
+                IgniteFsOutputStream os2 = null;
 
                 try {
                     os1 = ggfs.create(FILE, true);
@@ -928,7 +928,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testCreateRenameNoClose() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -950,7 +950,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testCreateRenameParentNoClose() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -974,7 +974,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os = null;
+                IgniteFsOutputStream os = null;
 
                 try {
                     os = ggfs.create(FILE, true);
@@ -1004,7 +1004,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os = null;
+                IgniteFsOutputStream os = null;
 
                 try {
                     os = ggfs.create(FILE, true);
@@ -1037,7 +1037,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.create(FILE, true);
@@ -1070,7 +1070,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
-                        GridGgfsOutputStream os = ggfs.create(path, 128, true, null, 0, 256, null);
+                        IgniteFsOutputStream os = ggfs.create(path, 128, true, null, 0, 256, null);
 
                         os.write(chunk);
 
@@ -1111,7 +1111,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    GridGgfsOutputStream os = null;
+                    IgniteFsOutputStream os = null;
 
                     try {
                         os = ggfs.create(FILE, true);
@@ -1203,8 +1203,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os1 = null;
-                GridGgfsOutputStream os2 = null;
+                IgniteFsOutputStream os1 = null;
+                IgniteFsOutputStream os2 = null;
 
                 try {
                     os1 = ggfs.append(FILE, false);
@@ -1230,7 +1230,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         createFile(ggfs, FILE, false);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1254,7 +1254,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         createFile(ggfs, FILE, false);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1280,7 +1280,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os = null;
+                IgniteFsOutputStream os = null;
 
                 try {
                     os = ggfs.append(FILE, false);
@@ -1312,7 +1312,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridGgfsOutputStream os = null;
+                IgniteFsOutputStream os = null;
 
                 try {
                     IgniteUuid id = ggfs.context().meta().fileId(FILE);
@@ -1349,7 +1349,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         createFile(ggfs, FILE, false);
 
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.append(FILE, false);
@@ -1389,7 +1389,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     for (int i = 0; i < REPEAT_CNT; i++) {
                         chunks[i] = chunk;
 
-                        GridGgfsOutputStream os = ggfs.append(path, false);
+                        IgniteFsOutputStream os = ggfs.append(path, false);
 
                         os.write(chunk);
 
@@ -1430,7 +1430,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    GridGgfsOutputStream os = null;
+                    IgniteFsOutputStream os = null;
 
                     try {
                         os = ggfs.append(FILE, false);
@@ -1490,7 +1490,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     public void testStop() throws Exception {
         create(ggfs, paths(DIR, SUBDIR), null);
 
-        GridGgfsOutputStream os = ggfs.create(FILE, true);
+        IgniteFsOutputStream os = ggfs.create(FILE, true);
 
         os.write(chunk);
 
@@ -2077,7 +2077,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         U.awaitQuiet(barrier);
 
-                        GridGgfsOutputStream os = null;
+                        IgniteFsOutputStream os = null;
 
                         try {
                             os = ggfs.create(path, true);
@@ -2178,7 +2178,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      */
     protected void createFile(IgniteFs ggfs, IgniteFsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.create(file, 256, overwrite, null, 0, blockSize, null);
@@ -2202,7 +2202,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      */
     protected void appendFile(IgniteFs ggfs, IgniteFsPath file, @Nullable byte[]... chunks)
         throws Exception {
-        GridGgfsOutputStream os = null;
+        IgniteFsOutputStream os = null;
 
         try {
             os = ggfs.append(file, false);

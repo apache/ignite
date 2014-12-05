@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * {@code GGFS} configuration. More than one file system can be configured within grid.
@@ -61,7 +61,7 @@ public class IgniteFsConfiguration {
     public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
 
     /** Default GGFS mode. */
-    public static final GridGgfsMode DFLT_MODE = DUAL_ASYNC;
+    public static final IgniteFsMode DFLT_MODE = DUAL_ASYNC;
 
     /** Default file's data block size (bytes). */
     public static final int DFLT_BLOCK_SIZE = 1 << 16;
@@ -118,7 +118,7 @@ public class IgniteFsConfiguration {
     private IgniteFsFileSystem secondaryFs;
 
     /** GGFS mode. */
-    private GridGgfsMode dfltMode = DFLT_MODE;
+    private IgniteFsMode dfltMode = DFLT_MODE;
 
     /** Fragmentizer throttling block length. */
     private long fragmentizerThrottlingBlockLen = DFLT_FRAGMENTIZER_THROTTLING_BLOCK_LENGTH;
@@ -136,7 +136,7 @@ public class IgniteFsConfiguration {
     private boolean fragmentizerEnabled = DFLT_FRAGMENTIZER_ENABLED;
 
     /** Path modes. */
-    private Map<String, GridGgfsMode> pathModes;
+    private Map<String, IgniteFsMode> pathModes;
 
     /** Maximum space. */
     private long maxSpace;
@@ -485,12 +485,12 @@ public class IgniteFsConfiguration {
      * Secondary Hadoop file system is provided for pass-through, write-through, and read-through
      * purposes.
      * <p>
-     * Default mode is {@link GridGgfsMode#DUAL_ASYNC}. If secondary Hadoop file system is
-     * not configured, this mode will work just like {@link GridGgfsMode#PRIMARY} mode.
+     * Default mode is {@link IgniteFsMode#DUAL_ASYNC}. If secondary Hadoop file system is
+     * not configured, this mode will work just like {@link IgniteFsMode#PRIMARY} mode.
      *
      * @return Mode to specify how GGFS interacts with secondary HDFS file system.
      */
-    public GridGgfsMode getDefaultMode() {
+    public IgniteFsMode getDefaultMode() {
         return dfltMode;
     }
 
@@ -501,7 +501,7 @@ public class IgniteFsConfiguration {
      *
      * @param dfltMode {@code GGFS} mode.
      */
-    public void setDefaultMode(GridGgfsMode dfltMode) {
+    public void setDefaultMode(IgniteFsMode dfltMode) {
         this.dfltMode = dfltMode;
     }
 
@@ -541,7 +541,7 @@ public class IgniteFsConfiguration {
      *
      * @return Map of paths to {@code GGFS} modes.
      */
-    @Nullable public Map<String, GridGgfsMode> getPathModes() {
+    @Nullable public Map<String, IgniteFsMode> getPathModes() {
         return pathModes;
     }
 
@@ -553,7 +553,7 @@ public class IgniteFsConfiguration {
      *
      * @param pathModes Map of paths to {@code GGFS} modes.
      */
-    public void setPathModes(Map<String, GridGgfsMode> pathModes) {
+    public void setPathModes(Map<String, IgniteFsMode> pathModes) {
         this.pathModes = pathModes;
     }
 

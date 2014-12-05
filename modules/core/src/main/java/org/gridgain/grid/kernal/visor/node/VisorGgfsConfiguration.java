@@ -62,10 +62,10 @@ public class VisorGgfsConfiguration implements Serializable {
     private String secondaryHadoopFileSystemConfigPath;
 
     /** GGFS instance mode. */
-    private GridGgfsMode defaultMode;
+    private IgniteFsMode defaultMode;
 
     /** Map of paths to GGFS modes. */
-    private Map<String, GridGgfsMode> pathModes;
+    private Map<String, IgniteFsMode> pathModes;
 
     /** Dual mode PUT operations executor service. */
     private String dualModePutExecutorService;
@@ -322,28 +322,28 @@ public class VisorGgfsConfiguration implements Serializable {
     /**
      * @return GGFS instance mode.
      */
-    public GridGgfsMode defaultMode() {
+    public IgniteFsMode defaultMode() {
         return defaultMode;
     }
 
     /**
      * @param dfltMode New gGFS instance mode.
      */
-    public void defaultMode(GridGgfsMode dfltMode) {
+    public void defaultMode(IgniteFsMode dfltMode) {
         defaultMode = dfltMode;
     }
 
     /**
      * @return Map of paths to GGFS modes.
      */
-    @Nullable public Map<String, GridGgfsMode> pathModes() {
+    @Nullable public Map<String, IgniteFsMode> pathModes() {
         return pathModes;
     }
 
     /**
      * @param pathModes New map of paths to GGFS modes.
      */
-    public void pathModes(@Nullable Map<String, GridGgfsMode> pathModes) {
+    public void pathModes(@Nullable Map<String, IgniteFsMode> pathModes) {
         this.pathModes = pathModes;
     }
 

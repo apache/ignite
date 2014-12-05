@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  *
@@ -49,21 +49,21 @@ public class GridGgfsModeResolverSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testResolveChildren() throws Exception {
-        assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC); add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(DUAL_SYNC);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(DUAL_SYNC);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/1")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/b")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY); add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY); add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(PRIMARY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(PRIMARY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/2")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d")));
-        assertEquals(new HashSet<GridGgfsMode>(){{add(PROXY);}},
+        assertEquals(new HashSet<IgniteFsMode>(){{add(PROXY);}},
             resolver.resolveChildrenModes(new IgniteFsPath("/a/b/c/d/e")));
     }
 }

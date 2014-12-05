@@ -28,10 +28,10 @@ public class GridGgfsPaths implements Externalizable {
     private Map<String, String> props;
 
     /** Default GGFS mode. */
-    private GridGgfsMode dfltMode;
+    private IgniteFsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<IgniteFsPath, GridGgfsMode>> pathModes;
+    private List<T2<IgniteFsPath, IgniteFsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -47,8 +47,8 @@ public class GridGgfsPaths implements Externalizable {
      * @param dfltMode Default GGFS mode.
      * @param pathModes Path modes.
      */
-    public GridGgfsPaths(Map<String, String> props, GridGgfsMode dfltMode, @Nullable List<T2<IgniteFsPath,
-        GridGgfsMode>> pathModes) {
+    public GridGgfsPaths(Map<String, String> props, IgniteFsMode dfltMode, @Nullable List<T2<IgniteFsPath,
+        IgniteFsMode>> pathModes) {
         this.props = props;
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -64,14 +64,14 @@ public class GridGgfsPaths implements Externalizable {
     /**
      * @return Default GGFS mode.
      */
-    public GridGgfsMode defaultMode() {
+    public IgniteFsMode defaultMode() {
         return dfltMode;
     }
 
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<IgniteFsPath, GridGgfsMode>> pathModes() {
+    @Nullable public List<T2<IgniteFsPath, IgniteFsMode>> pathModes() {
         return pathModes;
     }
 
@@ -84,7 +84,7 @@ public class GridGgfsPaths implements Externalizable {
             out.writeBoolean(true);
             out.writeInt(pathModes.size());
 
-            for (T2<IgniteFsPath, GridGgfsMode> pathMode : pathModes) {
+            for (T2<IgniteFsPath, IgniteFsMode> pathMode : pathModes) {
                 pathMode.getKey().writeExternal(out);
                 U.writeEnum0(out, pathMode.getValue());
             }
@@ -96,7 +96,7 @@ public class GridGgfsPaths implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         props = U.readStringMap(in);
-        dfltMode = GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltMode = IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in));
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -107,7 +107,7 @@ public class GridGgfsPaths implements Externalizable {
                 IgniteFsPath path = new IgniteFsPath();
                 path.readExternal(in);
 
-                T2<IgniteFsPath, GridGgfsMode> entry = new T2<>(path, GridGgfsMode.fromOrdinal(U.readEnumOrdinal0(in)));
+                T2<IgniteFsPath, IgniteFsMode> entry = new T2<>(path, IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in)));
 
                 pathModes.add(entry);
             }

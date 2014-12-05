@@ -195,7 +195,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     public void testCreate() throws Exception {
         IgniteFsPath path = path("/file");
 
-        try (GridGgfsOutputStream os = ggfs.create(path, false)) {
+        try (IgniteFsOutputStream os = ggfs.create(path, false)) {
             assert os != null;
 
             IgniteFsFileImpl info = (IgniteFsFileImpl)ggfs.info(path);
@@ -422,7 +422,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         IgniteFsPath fileSubdir1 = path("/dir1/subdir1/file");
         IgniteFsPath fileDir2 = path("/dir2/file");
 
-        GridGgfsOutputStream os = ggfs.create(fileDir1, false);
+        IgniteFsOutputStream os = ggfs.create(fileDir1, false);
         os.write(new byte[1000]);
         os.close();
 
@@ -669,7 +669,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     public void testDeleteCacheConsistency() throws Exception {
         IgniteFsPath path = new IgniteFsPath("/someFile");
 
-        try (GridGgfsOutputStream out = ggfs.create(path, true)) {
+        try (IgniteFsOutputStream out = ggfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
         }
 
@@ -786,7 +786,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         for (int i = 0; i < buf.length; i++)
             buf[i] = (byte)(i * i);
 
-        GridGgfsOutputStream os = ggfs.create(path, bufSize, true, null, 0, 1024, null);
+        IgniteFsOutputStream os = ggfs.create(path, bufSize, true, null, 0, 1024, null);
 
         try {
             for (int i = 0; i < cnt; i++)
@@ -837,7 +837,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      */
     private String create(String path, boolean overwrite, String text) throws Exception {
 
-        try (GridGgfsOutputStream out = ggfs.create(path(path), overwrite)) {
+        try (IgniteFsOutputStream out = ggfs.create(path(path), overwrite)) {
             IOUtils.write(text, out, UTF_8);
         }
 
@@ -857,7 +857,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      */
     private String append(String path, boolean create, String text) throws Exception {
 
-        try (GridGgfsOutputStream out = ggfs.append(path(path), create)) {
+        try (IgniteFsOutputStream out = ggfs.append(path(path), create)) {
             IOUtils.write(text, out, UTF_8);
         }
 

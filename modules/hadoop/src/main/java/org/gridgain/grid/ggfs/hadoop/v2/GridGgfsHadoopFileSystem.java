@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
 import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
 
@@ -258,8 +258,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             boolean initSecondary = paths.defaultMode() == PROXY;
 
             if (paths.pathModes() != null) {
-                for (T2<IgniteFsPath, GridGgfsMode> pathMode : paths.pathModes()) {
-                    GridGgfsMode mode = pathMode.getValue();
+                for (T2<IgniteFsPath, IgniteFsMode> pathMode : paths.pathModes()) {
+                    IgniteFsMode mode = pathMode.getValue();
 
                     initSecondary |= mode == PROXY;
                 }
@@ -422,7 +422,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
+            IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 FSDataInputStream is = secondaryFs.open(toSecondary(f), bufSize);
@@ -497,7 +497,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
+            IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Opening output stream in create [thread=" + Thread.currentThread().getName() + "path=" +
@@ -596,7 +596,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
         try {
             IgniteFsPath srcPath = convert(src);
             IgniteFsPath dstPath = convert(dst);
-            Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
+            Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
             if (childrenModes.contains(PROXY)) {
                 if (clientLog.isLogEnabled())
@@ -623,8 +623,8 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
-            Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+            IgniteFsMode mode = modeRslvr.resolveMode(path);
+            Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
             if (childrenModes.contains(PROXY)) {
                 if (clientLog.isLogEnabled())
@@ -668,7 +668,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
+            IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 FileStatus[] arr = secondaryFs.listStatus(toSecondary(f));
@@ -728,7 +728,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
 
         try {
             IgniteFsPath path = convert(f);
-            GridGgfsMode mode = modeRslvr.resolveMode(path);
+            IgniteFsMode mode = modeRslvr.resolveMode(path);
 
             if (mode == PROXY) {
                 if (clientLog.isLogEnabled())
@@ -811,7 +811,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
      * @param path HDFS path.
      * @return Path mode.
      */
-    public GridGgfsMode mode(Path path) {
+    public IgniteFsMode mode(Path path) {
         return modeRslvr.resolveMode(convert(path));
     }
 

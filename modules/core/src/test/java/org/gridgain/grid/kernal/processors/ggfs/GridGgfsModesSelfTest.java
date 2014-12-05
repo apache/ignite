@@ -25,7 +25,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * GGFS modes self test.
@@ -41,10 +41,10 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     private GridGgfsImpl ggfsSecondary;
 
     /** Default GGFS mode. */
-    private GridGgfsMode mode;
+    private IgniteFsMode mode;
 
     /** Modes map. */
-    private Map<String, GridGgfsMode> pathModes;
+    private Map<String, IgniteFsMode> pathModes;
 
     /** Whether to set "null" mode. */
     private boolean setNullMode;
@@ -189,12 +189,12 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @param modes Modes.
      */
     @SafeVarargs
-    final void pathModes(IgniteBiTuple<String, GridGgfsMode>... modes) {
+    final void pathModes(IgniteBiTuple<String, IgniteFsMode>... modes) {
         assert modes != null;
 
         pathModes = new LinkedHashMap<>(modes.length, 1.0f);
 
-        for (IgniteBiTuple<String, GridGgfsMode> mode : modes)
+        for (IgniteBiTuple<String, IgniteFsMode> mode : modes)
             pathModes.put(mode.getKey(), mode.getValue());
     }
 
@@ -477,14 +477,14 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
      * @param expMode Expected mode.
      * @throws Exception If failed.
      */
-    private void checkMode(String pathStr, GridGgfsMode expMode) throws Exception {
+    private void checkMode(String pathStr, IgniteFsMode expMode) throws Exception {
         assert ggfs != null;
 
         IgniteFsPath path = new IgniteFsPath(pathStr);
 
         GridGgfsModeResolver rslvr = ggfs.modeResolver();
 
-        GridGgfsMode mode = rslvr.resolveMode(path);
+        IgniteFsMode mode = rslvr.resolveMode(path);
 
         assertEquals(expMode, mode);
     }
@@ -515,7 +515,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.mkdirs(dir);
 
         // Create new file.
-        GridGgfsOutputStream os = ggfs.create(file, 1024, true, null, 0, 2048, null);
+        IgniteFsOutputStream os = ggfs.create(file, 1024, true, null, 0, 2048, null);
 
         os.write(testData1);
 

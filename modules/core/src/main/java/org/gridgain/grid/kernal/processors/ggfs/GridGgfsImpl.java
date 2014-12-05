@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.GridGgfsMode.*;
+import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
@@ -129,7 +129,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         secondaryFs = cfg.getSecondaryFileSystem();
 
         /* Default GGFS mode. */
-        GridGgfsMode dfltMode;
+        IgniteFsMode dfltMode;
 
         if (secondaryFs == null) {
             if (cfg.getDefaultMode() == PROXY)
@@ -140,8 +140,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
         else
             dfltMode = cfg.getDefaultMode();
 
-        Map<String, GridGgfsMode> cfgModes = new LinkedHashMap<>();
-        Map<String, GridGgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
+        Map<String, IgniteFsMode> cfgModes = new LinkedHashMap<>();
+        Map<String, IgniteFsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
         dfltModes.put("/gridgain/primary", PRIMARY);
 
@@ -154,7 +154,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         cfgModes.putAll(dfltModes);
 
         if (ggfsCtx.configuration().getPathModes() != null) {
-            for (Map.Entry<String, GridGgfsMode> e : ggfsCtx.configuration().getPathModes().entrySet()) {
+            for (Map.Entry<String, IgniteFsMode> e : ggfsCtx.configuration().getPathModes().entrySet()) {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
@@ -163,13 +163,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
             }
         }
 
-        ArrayList<T2<IgniteFsPath, GridGgfsMode>> modes = null;
+        ArrayList<T2<IgniteFsPath, IgniteFsMode>> modes = null;
 
         if (!cfgModes.isEmpty()) {
             modes = new ArrayList<>(cfgModes.size());
 
-            for (Map.Entry<String, GridGgfsMode> mode : cfgModes.entrySet()) {
-                GridGgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
+            for (Map.Entry<String, IgniteFsMode> mode : cfgModes.entrySet()) {
+                IgniteFsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
                     modes.add(new T2<>(new IgniteFsPath(mode.getKey()), mode0));
@@ -467,7 +467,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         if (log.isDebugEnabled())
             log.debug("Check file exists: " + path);
 
-        GridGgfsMode mode = modeRslvr.resolveMode(path);
+        IgniteFsMode mode = modeRslvr.resolveMode(path);
 
         if (mode == PROXY)
             throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -505,7 +505,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Get file info: " + path);
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -564,7 +564,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Set file properties [path=" + path + ", props=" + props + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -619,8 +619,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(src);
-                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
+                IgniteFsMode mode = modeRslvr.resolveMode(src);
+                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + src);
@@ -692,7 +692,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
                 // Can move only into directory, but not into file.
                 if (destDesc.isFile)
-                    throw new GridGgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
+                    throw new IgniteFsParentNotDirectoryException("Failed to rename (destination is not a directory): "
                         + dest);
 
                 meta.move(srcDesc.fileId, srcFileName, srcDesc.parentId, destFileName, destDesc.fileId);
@@ -727,8 +727,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
-                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
+                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -831,7 +831,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (props == null)
                     props = DFLT_DIR_META;
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -886,7 +886,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                                 throw new IgniteFsException(e);
 
                             if (!stored.isDirectory())
-                                throw new GridGgfsParentNotDirectoryException("Failed to create directory (parent " +
+                                throw new IgniteFsParentNotDirectoryException("Failed to create directory (parent " +
                                     "element is not a directory)");
 
                             fileId = stored.id(); // Update node ID.
@@ -915,12 +915,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory: " + path);
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 Collection<String> files = new HashSet<>();
 
@@ -967,12 +967,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
 
-                Set<GridGgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 Collection<IgniteFsFile> files = new HashSet<>();
 
@@ -1060,7 +1060,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (bufSize == 0)
                     bufSize = cfg.getStreamBufferSize();
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1107,18 +1107,18 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
         return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
         long blockSize, @Nullable Map<String, String> props) throws GridException {
         return create0(path, bufSize, overwrite, null, replication, props, false);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
         throws GridException {
         return create0(path, bufSize, overwrite, affKey, replication, props, false);
@@ -1137,7 +1137,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @return Output stream.
      * @throws GridException If file creation failed.
      */
-    private GridGgfsOutputStream create0(
+    private IgniteFsOutputStream create0(
         final IgniteFsPath path,
         final int bufSize,
         final boolean overwrite,
@@ -1155,7 +1155,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 GridGgfsFileWorkerBatch batch = null;
 
@@ -1248,12 +1248,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
         return append(path, cfg.getStreamBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsOutputStream append(final IgniteFsPath path, final int bufSize, boolean create,
+    @Override public IgniteFsOutputStream append(final IgniteFsPath path, final int bufSize, boolean create,
         @Nullable Map<String, String> props) throws GridException {
         if (enterBusy()) {
             try {
@@ -1264,7 +1264,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
                         ", props=" + props + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 GridGgfsFileWorkerBatch batch = null;
 
@@ -1396,7 +1396,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
-                GridGgfsMode mode = modeRslvr.resolveMode(path);
+                IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
                     throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
@@ -1783,7 +1783,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws GridException If failed.
      */
-    private GridGgfsFileInfo resolveFileInfo(IgniteFsPath path, GridGgfsMode mode) throws GridException {
+    private GridGgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws GridException {
         assert path != null;
         assert mode != null;
 
@@ -1899,7 +1899,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     /**
      * GGFS output stream extension that fires events.
      */
-    private class GgfsEventAwareOutputStream extends GridGgfsOutputStreamImpl {
+    private class GgfsEventAwareOutputStream extends IgniteFsOutputStreamImpl {
         /** Close guard. */
         private final AtomicBoolean closeGuard = new AtomicBoolean(false);
 
@@ -1915,7 +1915,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @throws GridException In case of error.
          */
         GgfsEventAwareOutputStream(IgniteFsPath path, GridGgfsFileInfo fileInfo,
-            IgniteUuid parentId, int bufSize, GridGgfsMode mode, @Nullable GridGgfsFileWorkerBatch batch)
+            IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch)
             throws GridException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
@@ -2137,7 +2137,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public boolean isProxy(URI path) {
-        GridGgfsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
+        IgniteFsMode mode = F.isEmpty(cfg.getPathModes()) ? cfg.getDefaultMode() :
             modeRslvr.resolveMode(new IgniteFsPath(path));
 
         return mode == PROXY;
