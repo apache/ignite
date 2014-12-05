@@ -63,7 +63,7 @@ import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.securesession.noop.*;
+import org.apache.ignite.spi.securesession.noop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -1194,7 +1194,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             msgs.add("Network segmentation detection.");
 
-        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof GridNoopSecureSessionSpi))
+        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof NoopSecureSessionSpi))
             msgs.add("Secure session SPI.");
 
         if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof NoopAuthenticationSpi))

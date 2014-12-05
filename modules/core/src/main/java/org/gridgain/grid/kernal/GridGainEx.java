@@ -50,8 +50,8 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.gridgain.grid.spi.securesession.*;
-import org.gridgain.grid.spi.securesession.noop.*;
+import org.apache.ignite.spi.securesession.*;
+import org.apache.ignite.spi.securesession.noop.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.spi.swapspace.noop.*;
@@ -1468,7 +1468,7 @@ public class GridGainEx {
             EventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
-            GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
+            SecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             DeploymentSpi deploySpi = cfg.getDeploymentSpi();
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
@@ -1689,7 +1689,7 @@ public class GridGainEx {
                 authSpi = new NoopAuthenticationSpi();
 
             if (sesSpi == null)
-                sesSpi = new GridNoopSecureSessionSpi();
+                sesSpi = new NoopSecureSessionSpi();
 
             if (deploySpi == null)
                 deploySpi = new LocalDeploymentSpi();

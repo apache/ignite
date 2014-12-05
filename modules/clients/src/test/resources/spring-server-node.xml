@@ -272,7 +272,7 @@
             Use remember me secure session SPI.
         -->
         <property name="secureSessionSpi">
-            <bean class="org.gridgain.grid.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
+            <bean class="org.apache.ignite.spi.securesession.rememberme.GridRememberMeSecureSessionSpi">
                 <!-- Session TTL = 1 hour -->
                 <property name="ttl" value="3600000"/>
             </bean>

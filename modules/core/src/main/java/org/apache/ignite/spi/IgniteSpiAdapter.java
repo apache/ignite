@@ -19,7 +19,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.securesession.*;
+import org.apache.ignite.spi.securesession.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
@@ -139,7 +139,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         // Always run consistency check for security SPIs.
         final boolean secSpi = AuthenticationSpi.class.isAssignableFrom(getClass()) ||
-            GridSecureSessionSpi.class.isAssignableFrom(getClass());
+            SecureSessionSpi.class.isAssignableFrom(getClass());
 
         final boolean check = secSpi || !Boolean.getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
