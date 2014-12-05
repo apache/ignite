@@ -1348,7 +1348,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         try {
             GridAuthenticationSpi authSpi = cfg.getAuthenticationSpi();
 
-            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), GridSpiNoop.class);
+            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), IgniteSpiNoop.class);
 
             GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
 

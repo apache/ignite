@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management MBean for {@link GridWeightedRandomLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to weighted random load balancing SPI configuration.")
-public interface GridWeightedRandomLoadBalancingSpiMBean extends GridSpiManagementMBean {
+public interface GridWeightedRandomLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Checks whether node weights are considered when doing
      * random load balancing.

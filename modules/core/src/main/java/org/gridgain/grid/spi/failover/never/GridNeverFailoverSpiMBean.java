@@ -16,6 +16,6 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridNeverFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to never failover SPI configuration.")
-public interface GridNeverFailoverSpiMBean extends GridSpiManagementMBean {
+public interface GridNeverFailoverSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

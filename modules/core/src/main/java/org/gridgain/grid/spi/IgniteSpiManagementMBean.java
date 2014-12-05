@@ -18,7 +18,7 @@ import java.util.*;
  * should provide implementation for this MBean interface. Note that SPI implementation can extend this
  * interface as necessary.
  */
-public interface GridSpiManagementMBean {
+public interface IgniteSpiManagementMBean {
     /**
      * Gets string presentation of the start timestamp.
      *

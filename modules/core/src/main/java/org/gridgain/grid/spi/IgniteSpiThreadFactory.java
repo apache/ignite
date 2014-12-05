@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  * This class provides implementation of {@link ThreadFactory}  factory
  * for creating grid SPI threads.
  */
-public class GridSpiThreadFactory implements ThreadFactory {
+public class IgniteSpiThreadFactory implements ThreadFactory {
     /** */
     private final IgniteLogger log;
 
@@ -32,7 +32,7 @@ public class GridSpiThreadFactory implements ThreadFactory {
      * @param threadName Name for threads created by this factory.
      * @param log Grid logger.
      */
-    public GridSpiThreadFactory(String gridName, String threadName, IgniteLogger log) {
+    public IgniteSpiThreadFactory(String gridName, String threadName, IgniteLogger log) {
         assert log != null;
         assert threadName != null;
 
@@ -43,7 +43,7 @@ public class GridSpiThreadFactory implements ThreadFactory {
 
     /** {@inheritDoc} */
     @Override public Thread newThread(final Runnable r) {
-        return new GridSpiThread(gridName, threadName, log) {
+        return new IgniteSpiThread(gridName, threadName, log) {
             /** {@inheritDoc} */
             @Override protected void body() throws InterruptedException {
                 r.run();

@@ -1246,8 +1246,8 @@ public class GridGainEx {
          * @throws GridException Thrown in case if multi-instance is not supported.
          */
         private void ensureMultiInstanceSupport(IgniteSpi spi) throws GridException {
-            GridSpiMultipleInstancesSupport ann = U.getAnnotation(spi.getClass(),
-                GridSpiMultipleInstancesSupport.class);
+            IgniteSpiMultipleInstancesSupport ann = U.getAnnotation(spi.getClass(),
+                IgniteSpiMultipleInstancesSupport.class);
 
             if (ann == null || !ann.value())
                 throw new GridException("SPI implementation doesn't support multiple grid instances in " +

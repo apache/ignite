@@ -732,7 +732,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     /**
      * Handles sockets timeouts.
      */
-    protected class SocketTimeoutWorker extends GridSpiThread {
+    protected class SocketTimeoutWorker extends IgniteSpiThread {
         /** Time-based sorted set for timeout objects. */
         private final GridConcurrentSkipListSet<SocketTimeoutObject> timeoutObjs =
             new GridConcurrentSkipListSet<>(new Comparator<SocketTimeoutObject>() {
@@ -909,7 +909,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     /**
      * Base class for message workers.
      */
-    protected abstract class MessageWorkerAdapter extends GridSpiThread {
+    protected abstract class MessageWorkerAdapter extends IgniteSpiThread {
         /** Pre-allocated output stream (100K). */
         private final GridByteArrayOutputStream bout = new GridByteArrayOutputStream(100 * 1024);
 

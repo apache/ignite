@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridS3CheckpointSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to S3 checkpoint SPI configuration.")
-public interface GridS3CheckpointSpiMBean extends GridSpiManagementMBean {
+public interface GridS3CheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets S3 bucket name to use.
      *

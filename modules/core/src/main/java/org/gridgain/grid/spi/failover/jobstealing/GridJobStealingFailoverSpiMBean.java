@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridJobStealingFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
-public interface GridJobStealingFailoverSpiMBean extends GridSpiManagementMBean {
+public interface GridJobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
      * If job gets stolen and thief node exists then it is not considered as

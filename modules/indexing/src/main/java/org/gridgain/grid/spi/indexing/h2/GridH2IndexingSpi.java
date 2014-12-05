@@ -133,7 +133,7 @@ import static org.h2.result.SortOrder.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridIndexingSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class GridH2IndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi, GridH2IndexingSpiMBean {
     /** Default query execution time interpreted as long query (3 seconds). */

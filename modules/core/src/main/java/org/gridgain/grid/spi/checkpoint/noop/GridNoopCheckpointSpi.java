@@ -20,8 +20,8 @@ import org.jetbrains.annotations.*;
  * No-op implementation of {@link GridCheckpointSpi}. This is default implementation
  * since {@code 4.5.0} version.
  */
-@GridSpiNoop
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiNoop
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNoopCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi {
     /** Logger. */
     @IgniteLoggerResource

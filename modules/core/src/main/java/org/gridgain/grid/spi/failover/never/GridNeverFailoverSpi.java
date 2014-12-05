@@ -51,7 +51,7 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridFailoverSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
     /** Injected grid logger. */
     @IgniteLoggerResource

@@ -70,14 +70,14 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
         try {
             plugin.validateNewNode(node);
 
             return null;
         }
         catch (PluginValidationException e) {
-            return new ClusterNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
+            return new IgniteSpiNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
         }
     }
 

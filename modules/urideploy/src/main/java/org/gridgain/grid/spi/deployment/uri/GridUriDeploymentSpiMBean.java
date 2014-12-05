@@ -18,7 +18,7 @@ import java.util.*;
  * Management bean for {@link GridUriDeploymentSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to URI deployment SPI configuration.")
-public interface GridUriDeploymentSpiMBean extends GridSpiManagementMBean {
+public interface GridUriDeploymentSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets temporary directory path.
      *

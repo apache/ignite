@@ -7,7 +7,7 @@ import org.gridgain.grid.spi.*;
  * MBean provide access to TCP-based communication SPI.
  */
 @IgniteMBeanDescription("MBean provide access to TCP-based communication SPI.")
-public interface GridTcpCommunicationSpiMBean extends GridSpiManagementMBean {
+public interface GridTcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets local host address for socket binding.
      * Beside loopback address physical node could have

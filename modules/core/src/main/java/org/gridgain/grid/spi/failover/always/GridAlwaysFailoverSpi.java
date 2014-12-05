@@ -72,7 +72,7 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridFailoverSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
 public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridAlwaysFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */

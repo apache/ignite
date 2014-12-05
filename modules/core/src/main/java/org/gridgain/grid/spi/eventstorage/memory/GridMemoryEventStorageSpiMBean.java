@@ -22,7 +22,7 @@ import org.gridgain.grid.spi.*;
  * </ul>
  */
 @IgniteMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
-public interface GridMemoryEventStorageSpiMBean extends GridSpiManagementMBean {
+public interface GridMemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets event time-to-live value. Implementation must guarantee
      * that event would not be accessible if its lifetime exceeds this value.

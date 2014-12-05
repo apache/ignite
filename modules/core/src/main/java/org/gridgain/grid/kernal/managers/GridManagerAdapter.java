@@ -73,7 +73,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         boolean enabled = false;
 
         for (int i = 0; i < spis.length; i++) {
-            if (!U.hasAnnotation(this.spis[i].getClass(), GridSpiNoop.class))
+            if (!U.hasAnnotation(this.spis[i].getClass(), IgniteSpiNoop.class))
                 enabled = true;
         }
 
@@ -451,9 +451,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.swap().remove(spaceName, key, null, ldr);
                     }
 
-                    @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
+                    @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
                         for (GridComponent comp : ctx) {
-                            ClusterNodeValidationResult err = comp.validateNode(node);
+                            IgniteSpiNodeValidationResult err = comp.validateNode(node);
 
                             if (err != null)
                                 return err;
@@ -588,7 +588,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

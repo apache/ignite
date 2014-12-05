@@ -149,7 +149,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
 public class GridWeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
     GridWeightedRandomLoadBalancingSpiMBean {

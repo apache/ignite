@@ -92,7 +92,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridSwapSpaceSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
     /**
@@ -1422,7 +1422,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
                         final Object mux = new Object();
 
-                        writer = new GridSpiThread(gridName,  "Swap writer: " + name, log) {
+                        writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 while (!isInterrupted()) {
                                     SwapValues vals = que.take();
@@ -1441,7 +1441,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                             }
                         };
 
-                        compactor = new GridSpiThread(gridName, "Swap compactor: " + name, log) {
+                        compactor = new IgniteSpiThread(gridName, "Swap compactor: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 SwapFile w = null;
                                 SwapFile c = null;

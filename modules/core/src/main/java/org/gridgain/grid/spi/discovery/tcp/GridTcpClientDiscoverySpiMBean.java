@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Management bean for {@link GridTcpClientDiscoverySpi}.
  */
-public interface GridTcpClientDiscoverySpiMBean extends GridSpiManagementMBean {
+public interface GridTcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets disconnect check interval.
      *

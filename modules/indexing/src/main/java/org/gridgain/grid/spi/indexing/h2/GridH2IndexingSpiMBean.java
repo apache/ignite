@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * Management bean for {@link GridH2IndexingSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to H2 indexing SPI configuration.")
-public interface GridH2IndexingSpiMBean extends GridSpiManagementMBean {
+public interface GridH2IndexingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets if SPI will index primitive key-value pairs by key.
      *

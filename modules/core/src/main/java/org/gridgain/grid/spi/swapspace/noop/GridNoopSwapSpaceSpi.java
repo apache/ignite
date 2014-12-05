@@ -23,8 +23,8 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridSwapSpaceSpi}. Exists for testing and benchmarking purposes.
  */
-@GridSpiNoop
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiNoop
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi {
     /** Logger. */
     @IgniteLoggerResource

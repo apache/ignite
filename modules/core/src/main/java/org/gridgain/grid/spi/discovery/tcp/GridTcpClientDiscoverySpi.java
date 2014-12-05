@@ -44,7 +44,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
  * the same IP finder.
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpClientDiscoverySpiMBean {
@@ -572,7 +572,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /**
      * Disconnect handler.
      */
-    private class DisconnectHandler extends GridSpiThread {
+    private class DisconnectHandler extends IgniteSpiThread {
         /**
          */
         protected DisconnectHandler() {
@@ -625,7 +625,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /**
      * Heartbeat sender.
      */
-    private class HeartbeatSender extends GridSpiThread {
+    private class HeartbeatSender extends IgniteSpiThread {
         /**
          */
         protected HeartbeatSender() {
@@ -664,7 +664,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /**
      * Socket reader.
      */
-    private class SocketReader extends GridSpiThread {
+    private class SocketReader extends IgniteSpiThread {
         /** Remote node ID. */
         private final UUID nodeId;
 

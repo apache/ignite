@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * No-op implementation of {@link GridIndexingSpi}, throws exception on query attempt.
  */
-@GridSpiNoop
+@IgniteSpiNoop
 public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
     /** */
     @IgniteLoggerResource

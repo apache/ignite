@@ -38,7 +38,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * This class provides convenient adapter for SPI implementations.
  */
-public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMBean {
+public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagementMBean {
     /** */
     private ObjectName spiMBean;
 
@@ -314,7 +314,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends GridSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
         throws IgniteSpiException {
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
@@ -694,7 +694,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, GridSpiManagementMB
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNodeValidationResult validateNode(ClusterNode node) {
+        @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 

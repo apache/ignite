@@ -57,8 +57,8 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridSecureSessionSpi
  */
-@GridSpiNoop
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiNoop
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNoopSecureSessionSpi extends IgniteSpiAdapter
     implements GridSecureSessionSpi, GridNoopSecureSessionSpiMBean {
     /** Empty bytes array. */

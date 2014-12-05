@@ -22,8 +22,8 @@ import org.jetbrains.annotations.*;
  * control the number of concurrent jobs by setting maximum thread pool size defined
  * by {@link org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()} configuration property.
  */
-@GridSpiNoop
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiNoop
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNoopCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {

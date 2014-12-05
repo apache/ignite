@@ -10,7 +10,7 @@ import org.gridgain.grid.spi.*;
  *
  */
 @IgniteMBeanDescription("MBean provides information about cache checkpoint SPI.")
-public interface GridCacheCheckpointSpiMBean extends GridSpiManagementMBean {
+public interface GridCacheCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets cache name to be used by this SPI..
      *

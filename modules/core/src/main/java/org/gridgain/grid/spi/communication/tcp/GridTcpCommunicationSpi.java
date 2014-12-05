@@ -133,7 +133,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridCommunicationSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     implements GridCommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
@@ -2020,7 +2020,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
-    private class IdleClientWorker extends GridSpiThread {
+    private class IdleClientWorker extends IgniteSpiThread {
         /**
          *
          */
@@ -2067,7 +2067,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
-    private class ClientFlushWorker extends GridSpiThread {
+    private class ClientFlushWorker extends IgniteSpiThread {
         /**
          *
          */
@@ -2115,7 +2115,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * Handles sockets timeouts.
      */
-    private class SocketTimeoutWorker extends GridSpiThread {
+    private class SocketTimeoutWorker extends IgniteSpiThread {
         /** Time-based sorted set for timeout objects. */
         private final GridConcurrentSkipListSet<HandshakeTimeoutObject> timeoutObjs =
             new GridConcurrentSkipListSet<>(new Comparator<HandshakeTimeoutObject>() {

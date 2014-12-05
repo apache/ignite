@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridRoundRobinLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
-public interface GridRoundRobinLoadBalancingSpiMBean extends GridSpiManagementMBean {
+public interface GridRoundRobinLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Configuration parameter indicating whether a new round robin order should be
      * created for every task. If {@code true} then load balancer is guaranteed

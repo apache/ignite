@@ -91,7 +91,7 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridCheckpointSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi,
     GridSharedFsCheckpointSpiMBean {

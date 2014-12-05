@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management MBean for {@link GridAdaptiveLoadBalancingSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
-public interface GridAdaptiveLoadBalancingSpiMBean extends GridSpiManagementMBean {
+public interface GridAdaptiveLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets text description of current load probing implementation used.
      *

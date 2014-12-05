@@ -61,7 +61,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
     /**
      * Test checkpoint SPI.
      */
-    @GridSpiMultipleInstancesSupport(true)
+    @IgniteSpiMultipleInstancesSupport(true)
     private static class TestCheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi {
         /** Counter. */
         private final AtomicInteger cntr;

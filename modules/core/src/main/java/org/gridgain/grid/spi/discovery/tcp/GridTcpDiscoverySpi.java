@@ -136,7 +136,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * @see GridDiscoverySpi
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @GridDiscoverySpiOrderSupport(true)
 @GridDiscoverySpiHistorySupport(true)
 public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpDiscoverySpiMBean {
@@ -2166,7 +2166,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Thread that sends heartbeats.
      */
-    private class HeartbeatsSender extends GridSpiThread {
+    private class HeartbeatsSender extends IgniteSpiThread {
         /**
          * Constructor.
          */
@@ -2210,7 +2210,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * for {@link GridTcpDiscoverySpi#getMaxMissedHeartbeats()} *
      * {@link GridTcpDiscoverySpi#getHeartbeatFrequency()}.
      */
-    private class CheckStatusSender extends GridSpiThread {
+    private class CheckStatusSender extends IgniteSpiThread {
         /**
          * Constructor.
          */
@@ -2274,7 +2274,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * This thread should run only on coordinator node and will clean IP finder
      * if and only if {@link GridTcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
-    private class IpFinderCleaner extends GridSpiThread {
+    private class IpFinderCleaner extends IgniteSpiThread {
         /**
          * Constructor.
          */
@@ -3148,7 +3148,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                     return;
                 }
 
-                ClusterNodeValidationResult err = getSpiContext().validateNode(node);
+                IgniteSpiNodeValidationResult err = getSpiContext().validateNode(node);
 
                 if (err != null) {
                     boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
@@ -4419,7 +4419,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Tcp server will call provided closure when accepts incoming connection.
      * From that moment server is no more responsible for the socket.
      */
-    private class TcpServer extends GridSpiThread {
+    private class TcpServer extends IgniteSpiThread {
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
@@ -4509,7 +4509,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Thread that reads messages from the socket created for incoming connections.
      */
-    private class SocketReader extends GridSpiThread {
+    private class SocketReader extends IgniteSpiThread {
         /** Socket to read data from. */
         private final Socket sock;
 
@@ -5034,7 +5034,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * SPI Statistics printer.
      */
-    private class StatisticsPrinter extends GridSpiThread {
+    private class StatisticsPrinter extends IgniteSpiThread {
         /**
          * Constructor.
          */

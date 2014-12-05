@@ -62,7 +62,7 @@ import java.util.*;
  * &lt;/bean&gt;
  * </pre>
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridFifoQueueCollisionSpiMBean {
     /**

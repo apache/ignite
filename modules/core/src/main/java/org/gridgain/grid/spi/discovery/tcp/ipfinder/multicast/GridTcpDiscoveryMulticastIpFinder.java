@@ -575,7 +575,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
     /**
      * Thread sends multicast address request message and waits for reply.
      */
-    private class AddressReceiver extends GridSpiThread {
+    private class AddressReceiver extends IgniteSpiThread {
         /** */
         private final InetAddress mcastAddr;
 
@@ -612,7 +612,7 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      * Thread listening for multicast address requests and sending response
      * containing socket address this node's discovery SPI listens to.
      */
-    private class AddressSender extends GridSpiThread {
+    private class AddressSender extends IgniteSpiThread {
         /** */
         @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
         private MulticastSocket sock;

@@ -45,7 +45,7 @@ public abstract class GridUriDeploymentScanner {
     private final IgniteLogger log;
 
     /** Scanner implementation. */
-    private GridSpiThread scanner;
+    private IgniteSpiThread scanner;
 
     /** Whether first scan completed or not. */
     private boolean firstScan = true;
@@ -94,7 +94,7 @@ public abstract class GridUriDeploymentScanner {
      * Starts scanner.
      */
     public void start() {
-        scanner = new GridSpiThread(gridName, "grid-uri-scanner", log) {
+        scanner = new IgniteSpiThread(gridName, "grid-uri-scanner", log) {
             /** {@inheritDoc} */
             @SuppressWarnings({"BusyWait"})
             @Override protected void body() throws InterruptedException  {

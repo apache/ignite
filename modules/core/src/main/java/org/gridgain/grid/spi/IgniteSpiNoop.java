@@ -19,6 +19,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface GridSpiNoop {
+public @interface IgniteSpiNoop {
     // No-op.
 }

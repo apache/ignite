@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridFileSwapSpaceSpi}.
  */
 @IgniteMBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
-public interface GridFileSwapSpaceSpiMBean extends GridSpiManagementMBean {
+public interface GridFileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets base directory.
      *

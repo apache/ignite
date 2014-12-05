@@ -43,7 +43,7 @@ import java.util.concurrent.*;
  * configuration parameters.
  * @see GridDeploymentSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @GridIgnoreIfPeerClassLoadingDisabled
 public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridLocalDeploymentSpiMBean {

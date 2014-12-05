@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean that provides access to the FIFO queue collision SPI configuration.
  */
 @IgniteMBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
-public interface GridFifoQueueCollisionSpiMBean extends GridSpiManagementMBean {
+public interface GridFifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of jobs that can be executed in parallel.
      *

@@ -81,7 +81,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridEventStorageSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridEventStorageSpi,
     GridMemoryEventStorageSpiMBean {
     /** Default event time to live value in milliseconds (value is {@link Long#MAX_VALUE}). */

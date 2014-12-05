@@ -18,7 +18,7 @@ import org.gridgain.grid.spi.*;
  * about jdbc checkpoint SPI.
  */
 @IgniteMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
-public interface GridJdbcCheckpointSpiMBean extends GridSpiManagementMBean {
+public interface GridJdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of retries in case of DB failure.
      *

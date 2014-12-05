@@ -222,7 +222,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridAdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements GridLoadBalancingSpi,
     GridAdaptiveLoadBalancingSpiMBean {
     /** Random number generator. */

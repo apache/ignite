@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean for {@link GridAlwaysFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to always failover SPI configuration.")
-public interface GridAlwaysFailoverSpiMBean extends GridSpiManagementMBean {
+public interface GridAlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
      * If not specified, {@link GridAlwaysFailoverSpi#DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.

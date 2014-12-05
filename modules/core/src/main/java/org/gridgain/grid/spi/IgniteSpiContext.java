@@ -339,7 +339,7 @@ public interface IgniteSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public ClusterNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Writes delta for provided node and message type.

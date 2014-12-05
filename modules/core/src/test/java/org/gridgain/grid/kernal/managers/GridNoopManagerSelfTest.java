@@ -18,7 +18,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Tests manager with {@link GridSpiNoop} SPI's.
+ * Tests manager with {@link org.gridgain.grid.spi.IgniteSpiNoop} SPI's.
  */
 public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
@@ -81,7 +81,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridSpiNoop
+    @IgniteSpiNoop
     private static class NoopSpi extends Spi {
         // No-op.
     }

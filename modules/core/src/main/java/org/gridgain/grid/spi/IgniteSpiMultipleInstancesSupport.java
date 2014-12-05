@@ -24,7 +24,7 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridSpiMultipleInstancesSupport {
+public @interface IgniteSpiMultipleInstancesSupport {
     /**
      * Whether or not target SPI supports multiple grid instances
      * started in the same VM.

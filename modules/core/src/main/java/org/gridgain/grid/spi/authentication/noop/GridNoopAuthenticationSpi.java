@@ -55,8 +55,8 @@ import org.gridgain.grid.util.typedef.internal.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiNoop
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiNoop
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridNoopAuthenticationSpi extends IgniteSpiAdapter
     implements GridAuthenticationSpi, GridNoopAuthenticationSpiMBean {
     /** Injected grid logger. */

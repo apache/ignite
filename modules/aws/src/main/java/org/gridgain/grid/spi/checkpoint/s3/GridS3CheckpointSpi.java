@@ -92,7 +92,7 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridCheckpointSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpointSpi, GridS3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -546,12 +546,12 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     }
 
     /**
-     * Implementation of {@link GridSpiThread} that takes care about outdated S3 data.
+     * Implementation of {@link org.gridgain.grid.spi.IgniteSpiThread} that takes care about outdated S3 data.
      * Every checkpoint has expiration date after which it makes no sense to
      * keep it. This worker periodically cleans S3 bucket according to checkpoints
      * expiration time.
      */
-    private class GridS3TimeoutWorker extends GridSpiThread {
+    private class GridS3TimeoutWorker extends IgniteSpiThread {
         /** List of data with access and expiration date. */
         private Map<String, GridS3TimeData> map = new HashMap<>();
 

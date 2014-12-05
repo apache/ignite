@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Grid SPI exception which may contain more than one failure.
  */
-public class GridSpiMultiException extends IgniteSpiException {
+public class IgniteSpiMultiException extends IgniteSpiException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -29,7 +29,7 @@ public class GridSpiMultiException extends IgniteSpiException {
      *
      * @param msg Error message.
      */
-    public GridSpiMultiException(String msg) {
+    public IgniteSpiMultiException(String msg) {
         super(msg);
     }
 
@@ -39,7 +39,7 @@ public class GridSpiMultiException extends IgniteSpiException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridSpiMultiException(Throwable cause) {
+    public IgniteSpiMultiException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -49,7 +49,7 @@ public class GridSpiMultiException extends IgniteSpiException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridSpiMultiException(String msg, @Nullable Throwable cause) {
+    public IgniteSpiMultiException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 
@@ -60,7 +60,7 @@ public class GridSpiMultiException extends IgniteSpiException {
      * @param cause Optional nested exception (can be {@code null}).
      * @param nestedCauses Optional collection of nested causes.
      */
-    public GridSpiMultiException(String msg, @Nullable Throwable cause, @Nullable Collection<Throwable> nestedCauses) {
+    public IgniteSpiMultiException(String msg, @Nullable Throwable cause, @Nullable Collection<Throwable> nestedCauses) {
         super(msg, cause);
 
         if (nestedCauses != null)

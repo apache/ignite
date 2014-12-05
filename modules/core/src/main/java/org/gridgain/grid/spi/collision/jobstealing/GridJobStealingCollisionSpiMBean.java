@@ -19,7 +19,7 @@ import java.util.*;
  * Management MBean for job stealing based collision SPI.
  */
 @IgniteMBeanDescription("MBean for job stealing based collision SPI.")
-public interface GridJobStealingCollisionSpiMBean extends GridSpiManagementMBean {
+public interface GridJobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current number of jobs to be stolen. This is outstanding
      * requests number.

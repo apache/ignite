@@ -80,7 +80,7 @@ import static org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisi
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see GridFailoverSpi
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
 public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi,
     GridJobStealingFailoverSpiMBean {

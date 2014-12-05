@@ -16,7 +16,7 @@ import org.gridgain.grid.spi.*;
  * Management bean that provides access to the priority queue collision SPI configuration.
  */
 @IgniteMBeanDescription("MBean provides access to the priority queue collision SPI.")
-public interface GridPriorityQueueCollisionSpiMBean extends GridSpiManagementMBean {
+public interface GridPriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current number of jobs that wait for the execution.
      *

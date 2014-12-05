@@ -149,7 +149,7 @@ import java.util.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-@GridSpiMultipleInstancesSupport(true)
+@IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
 public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
     GridPriorityQueueCollisionSpiMBean {

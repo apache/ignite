@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.*;
  * <li>Dedicated parent thread group</li>
  * </ul>
  */
-public abstract class GridSpiThread extends Thread {
+public abstract class IgniteSpiThread extends Thread {
     /** Default thread's group. */
     public static final ThreadGroup DFLT_GRP = new ThreadGroup("gridgain-spi");
 
@@ -38,7 +38,7 @@ public abstract class GridSpiThread extends Thread {
      * @param name Thread's name.
      * @param log Grid logger to use.
      */
-    protected GridSpiThread(String gridName, String name, IgniteLogger log) {
+    protected IgniteSpiThread(String gridName, String name, IgniteLogger log) {
         super(DFLT_GRP, name + "-#" + cntr.incrementAndGet() + '%' + gridName);
 
         assert log != null;
@@ -91,6 +91,6 @@ public abstract class GridSpiThread extends Thread {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSpiThread.class, this, "name", getName());
+        return S.toString(IgniteSpiThread.class, this, "name", getName());
     }
 }

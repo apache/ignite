@@ -19,7 +19,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Implementation of {@link GridSpiThread} that takes care about outdated files.
+ * Implementation of {@link org.gridgain.grid.spi.IgniteSpiThread} that takes care about outdated files.
  * Every checkpoint has expiration date after which it makes no sense to
  * keep it. This class periodically compares files last access time with given
  * expiration time.
@@ -27,7 +27,7 @@ import java.util.*;
  * If this file was not accessed then it is deleted. If file access time is
  * different from modification date new expiration date is set.
  */
-class GridSharedFsTimeoutTask extends GridSpiThread {
+class GridSharedFsTimeoutTask extends IgniteSpiThread {
     /** Map of files to their access and expiration date. */
     private Map<File, GridSharedFsTimeData> files = new HashMap<>();
 
