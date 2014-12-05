@@ -14,7 +14,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Context for swap operations.
  */
-public class GridSwapContext {
+public class SwapContext {
     /** */
     private ClassLoader clsLdr;
 
@@ -34,6 +34,6 @@ public class GridSwapContext {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSwapContext.class, this);
+        return S.toString(SwapContext.class, this);
     }
 }

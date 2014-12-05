@@ -45,7 +45,7 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }
@@ -120,13 +120,13 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
         // Empty data space.
         assertEquals(0, mgr.swapSize(spaceName));
 
-        GridSwapKey key = new GridSwapKey("key1");
+        SwapKey key = new SwapKey("key1");
 
         String val = "value";
 
         mgr.write(spaceName, key, val.getBytes(), null);
 
-        mgr.write(spaceName, new GridSwapKey("key2"), val.getBytes(), null);
+        mgr.write(spaceName, new SwapKey("key2"), val.getBytes(), null);
 
         assert storeCnt.await(10, SECONDS);
 

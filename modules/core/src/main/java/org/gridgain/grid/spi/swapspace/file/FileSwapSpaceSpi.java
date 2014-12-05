@@ -90,11 +90,11 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridSwapSpaceSpi
+ * @see org.gridgain.grid.spi.swapspace.SwapSpaceSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
-public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi, GridFileSwapSpaceSpiMBean {
+public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
     /**
      * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
      * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
@@ -126,7 +126,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     private float maxSparsity = DFLT_MAX_SPARSITY;
 
     /** Eviction listener. */
-    private volatile GridSwapSpaceSpiListener evictLsnr;
+    private volatile SwapSpaceSpiListener evictLsnr;
 
     /** Directory. */
     private File dir;
@@ -208,7 +208,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /**
      * Sets max write queue size in bytes. If there are more values are waiting for being written to disk then specified
-     * size, SPI will block on {@link #store(String, GridSwapKey, byte[], GridSwapContext)} operation. Default is
+     * size, SPI will block on {@link #store(String, org.gridgain.grid.spi.swapspace.SwapKey, byte[], org.gridgain.grid.spi.swapspace.SwapContext)} operation. Default is
      * {@link #DFLT_QUE_SIZE}.
      *
      * @param maxWriteQueSize Max write queue size in bytes.
@@ -260,7 +260,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
         startStopwatch();
 
-        registerMBean(gridName, this, GridFileSwapSpaceSpiMBean.class);
+        registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
 
         String path = baseDir + File.separator + gridName + File.separator + locNodeId;
 
@@ -330,7 +330,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
+    @Nullable @Override public byte[] read(@Nullable String spaceName, SwapKey key, SwapContext ctx)
         throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
@@ -348,8 +348,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<GridSwapKey> keys,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public Map<SwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<SwapKey> keys,
+        SwapContext ctx) throws IgniteSpiException {
         assert keys != null;
         assert ctx != null;
 
@@ -358,9 +358,9 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         if (space == null)
             return Collections.emptyMap();
 
-        Map<GridSwapKey, byte[]> res = new HashMap<>();
+        Map<SwapKey, byte[]> res = new HashMap<>();
 
-        for (GridSwapKey key : keys) {
+        for (SwapKey key : keys) {
             if (key != null) {
                 byte[] val = space.read(key);
 
@@ -375,8 +375,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void remove(@Nullable String spaceName, SwapKey key, @Nullable IgniteInClosure<byte[]> c,
+        SwapContext ctx) throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
 
@@ -394,8 +394,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void removeAll(@Nullable String spaceName, Collection<SwapKey> keys,
+        @Nullable IgniteBiInClosure<SwapKey, byte[]> c, SwapContext ctx) throws IgniteSpiException {
         assert keys != null;
         assert ctx != null;
 
@@ -404,7 +404,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         if (space == null)
             return;
 
-        for (GridSwapKey key : keys) {
+        for (SwapKey key : keys) {
             if (key != null) {
                 byte[] val = space.remove(key, c != null);
 
@@ -417,8 +417,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void store(@Nullable String spaceName, SwapKey key, @Nullable byte[] val,
+        SwapContext ctx) throws IgniteSpiException {
         assert key != null;
         assert ctx != null;
 
@@ -432,8 +432,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void storeAll(@Nullable String spaceName, Map<SwapKey, byte[]> pairs,
+        SwapContext ctx) throws IgniteSpiException {
         assert pairs != null;
         assert ctx != null;
 
@@ -441,8 +441,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
         assert space != null;
 
-        for (Map.Entry<GridSwapKey, byte[]> pair : pairs.entrySet()) {
-            GridSwapKey key = pair.getKey();
+        for (Map.Entry<SwapKey, byte[]> pair : pairs.entrySet()) {
+            SwapKey key = pair.getKey();
 
             if (key != null) {
                 space.store(key, pair.getValue());
@@ -453,7 +453,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(@Nullable GridSwapSpaceSpiListener evictLsnr) {
+    @Override public void setListener(@Nullable SwapSpaceSpiListener evictLsnr) {
         this.evictLsnr = evictLsnr;
     }
 
@@ -470,13 +470,13 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Nullable @Override public <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
-        GridSwapContext ctx) throws IgniteSpiException {
+        SwapContext ctx) throws IgniteSpiException {
         final Space space = space(spaceName, false);
 
         if (space == null)
             return null;
 
-        final Iterator<Map.Entry<GridSwapKey, byte[]>> iter = space.entriesIterator();
+        final Iterator<Map.Entry<SwapKey, byte[]>> iter = space.entriesIterator();
 
         return new GridCloseableIteratorAdapter<K>() {
             @Override protected boolean onHasNext() {
@@ -522,10 +522,10 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @return Raw iterator.
      */
     private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
-        final Iterator<Map.Entry<GridSwapKey, byte[]>> iter) {
+        final Iterator<Map.Entry<SwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
             @Override protected Map.Entry<byte[], byte[]> onNext() throws GridException {
-                Map.Entry<GridSwapKey, byte[]> x = iter.next();
+                Map.Entry<SwapKey, byte[]> x = iter.next();
 
                 return new T2<>(keyBytes(x.getKey()), x.getValue());
             }
@@ -547,7 +547,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @return Key bytes.
      * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
-    private byte[] keyBytes(GridSwapKey key) throws IgniteSpiException {
+    private byte[] keyBytes(SwapKey key) throws IgniteSpiException {
         assert key != null;
 
         byte[] keyBytes = key.keyBytes();
@@ -573,7 +573,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @param spaceName Space name.
      */
     private void notifyListener(int evtType, @Nullable String spaceName) {
-        GridSwapSpaceSpiListener lsnr = evictLsnr;
+        SwapSpaceSpiListener lsnr = evictLsnr;
 
         if (lsnr != null)
             lsnr.onSwapEvent(evtType, spaceName, null);
@@ -629,7 +629,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridFileSwapSpaceSpi.class, this);
+        return S.toString(FileSwapSpaceSpi.class, this);
     }
 
     /**
@@ -963,7 +963,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         private volatile long len;
 
         /** */
-        private final GridFileSwapArray<SwapValue> arr = new GridFileSwapArray<>();
+        private final FileSwapArray<SwapValue> arr = new FileSwapArray<>();
 
         /**
          * @param file File.
@@ -1140,7 +1140,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         public boolean tryRemove(int idx, SwapValue exp) {
             assert idx > 0 : idx;
 
-            GridFileSwapArray.Slot<SwapValue> s = arr.slot(idx);
+            FileSwapArray.Slot<SwapValue> s = arr.slot(idx);
 
             return s != null && s.cas(exp, null);
         }
@@ -1266,7 +1266,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                 int idx = arr.size();
 
                 while (--idx > 0) {
-                    GridFileSwapArray.Slot<SwapValue> s = arr.slot(idx);
+                    FileSwapArray.Slot<SwapValue> s = arr.slot(idx);
 
                     assert s != null;
 
@@ -1374,7 +1374,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         private final SwapValuesQueue que = new SwapValuesQueue(writeBufSize, maxWriteQueSize);
 
         /** Partitions. */
-        private final ConcurrentMap<Integer, ConcurrentMap<GridSwapKey, SwapValue>> parts =
+        private final ConcurrentMap<Integer, ConcurrentMap<SwapKey, SwapValue>> parts =
             new ConcurrentHashMap8<>();
 
         /** Total size. */
@@ -1537,7 +1537,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         public void clear() throws IgniteSpiException {
-            Iterator<Map.Entry<GridSwapKey, byte[]>> iter = entriesIterator();
+            Iterator<Map.Entry<SwapKey, byte[]>> iter = entriesIterator();
 
             while (iter.hasNext())
                 remove(iter.next().getKey(), false);
@@ -1566,10 +1566,10 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param val Value.
          * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
-        public void store(final GridSwapKey key, @Nullable final byte[] val) throws IgniteSpiException {
+        public void store(final SwapKey key, @Nullable final byte[] val) throws IgniteSpiException {
             assert key != null;
 
-            final ConcurrentMap<GridSwapKey, SwapValue> part = partition(key.partition(), true);
+            final ConcurrentMap<SwapKey, SwapValue> part = partition(key.partition(), true);
 
             assert part != null;
 
@@ -1610,10 +1610,10 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @return Value.
          * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
-        @Nullable public byte[] read(GridSwapKey key) throws IgniteSpiException {
+        @Nullable public byte[] read(SwapKey key) throws IgniteSpiException {
             assert key != null;
 
-            final Map<GridSwapKey, SwapValue> part = partition(key.partition(), false);
+            final Map<SwapKey, SwapValue> part = partition(key.partition(), false);
 
             if (part == null)
                 return null;
@@ -1634,10 +1634,10 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @return Value.
          * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
-        @Nullable public byte[] remove(GridSwapKey key, boolean read) throws IgniteSpiException {
+        @Nullable public byte[] remove(SwapKey key, boolean read) throws IgniteSpiException {
             assert key != null;
 
-            final Map<GridSwapKey, SwapValue> part = partition(key.partition(), false);
+            final Map<SwapKey, SwapValue> part = partition(key.partition(), false);
 
             if (part == null)
                 return null;
@@ -1713,11 +1713,11 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param create Whether to create partition if it doesn't exist.
          * @return Partition map.
          */
-        @Nullable private ConcurrentMap<GridSwapKey, SwapValue> partition(int part, boolean create) {
-            ConcurrentMap<GridSwapKey, SwapValue> map = parts.get(part);
+        @Nullable private ConcurrentMap<SwapKey, SwapValue> partition(int part, boolean create) {
+            ConcurrentMap<SwapKey, SwapValue> map = parts.get(part);
 
             if (map == null && create) {
-                ConcurrentMap<GridSwapKey, SwapValue> old = parts.putIfAbsent(part,
+                ConcurrentMap<SwapKey, SwapValue> old = parts.putIfAbsent(part,
                     map = new ConcurrentHashMap<>());
 
                 if (old != null)
@@ -1731,11 +1731,11 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param part Partition.
          * @return Iterator over partition.
          */
-        public Iterator<Map.Entry<GridSwapKey, byte[]>> entriesIterator(int part) {
-            Map<GridSwapKey, SwapValue> partMap = partition(part, false);
+        public Iterator<Map.Entry<SwapKey, byte[]>> entriesIterator(int part) {
+            Map<SwapKey, SwapValue> partMap = partition(part, false);
 
             if (partMap == null)
-                return Collections.<Map.Entry<GridSwapKey, byte[]>>emptySet().iterator();
+                return Collections.<Map.Entry<SwapKey, byte[]>>emptySet().iterator();
 
             return transform(partMap.entrySet().iterator());
         }
@@ -1743,15 +1743,15 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * @return Iterator over all entries.
          */
-        public Iterator<Map.Entry<GridSwapKey, byte[]>> entriesIterator() {
-            final Iterator<ConcurrentMap<GridSwapKey, SwapValue>> iter = parts.values().iterator();
+        public Iterator<Map.Entry<SwapKey, byte[]>> entriesIterator() {
+            final Iterator<ConcurrentMap<SwapKey, SwapValue>> iter = parts.values().iterator();
 
-            return transform(F.concat(new Iterator<Iterator<Map.Entry<GridSwapKey, SwapValue>>>() {
+            return transform(F.concat(new Iterator<Iterator<Map.Entry<SwapKey, SwapValue>>>() {
                 @Override public boolean hasNext() {
                     return iter.hasNext();
                 }
 
-                @Override public Iterator<Map.Entry<GridSwapKey, SwapValue>> next() {
+                @Override public Iterator<Map.Entry<SwapKey, SwapValue>> next() {
                     return iter.next().entrySet().iterator();
                 }
 
@@ -1767,14 +1767,14 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param iter Iterator with {@link SwapValue} to transform.
          * @return Entries iterator.
          */
-        private Iterator<Map.Entry<GridSwapKey, byte[]>> transform(final Iterator<Map.Entry<GridSwapKey,
+        private Iterator<Map.Entry<SwapKey, byte[]>> transform(final Iterator<Map.Entry<SwapKey,
             SwapValue>> iter) {
-            return new Iterator<Map.Entry<GridSwapKey, byte[]>>() {
+            return new Iterator<Map.Entry<SwapKey, byte[]>>() {
                 /** */
-                private Map.Entry<GridSwapKey, byte[]> next;
+                private Map.Entry<SwapKey, byte[]> next;
 
                 /** */
-                private Map.Entry<GridSwapKey, byte[]> last;
+                private Map.Entry<SwapKey, byte[]> last;
 
                 {
                     advance();
@@ -1789,7 +1789,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                  */
                 private void advance() {
                     while (iter.hasNext()) {
-                        Map.Entry<GridSwapKey, SwapValue> entry = iter.next();
+                        Map.Entry<SwapKey, SwapValue> entry = iter.next();
 
                         byte[] bytes;
 
@@ -1808,8 +1808,8 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
                     }
                 }
 
-                @Override public Map.Entry<GridSwapKey, byte[]> next() {
-                    final Map.Entry<GridSwapKey, byte[]> res = next;
+                @Override public Map.Entry<SwapKey, byte[]> next() {
+                    final Map.Entry<SwapKey, byte[]> res = next;
 
                     if (res == null)
                         throw new NoSuchElementException();

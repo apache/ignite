@@ -25,7 +25,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.junit.Assert.*;
 
 /**
- * Test for various {@link GridSwapSpaceSpi} implementations.
+ * Test for various {@link SwapSpaceSpi} implementations.
  */
 public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstractTest {
     /** Default swap space name. */
@@ -38,12 +38,12 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
     protected static final String SPACE2 = "space2";
 
     /** SPI to test. */
-    protected GridSwapSpaceSpi spi;
+    protected SwapSpaceSpi spi;
 
     /**
-     * @return New {@link GridSwapSpaceSpi} instance.
+     * @return New {@link SwapSpaceSpi} instance.
      */
-    protected abstract GridSwapSpaceSpi spi();
+    protected abstract SwapSpaceSpi spi();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -66,7 +66,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
     /**
      * @return Swap context.
      */
-    protected GridSwapContext context() {
+    protected SwapContext context() {
         return context(null);
     }
 
@@ -74,8 +74,8 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
      * @param clsLdr Class loader.
      * @return Swap context.
      */
-    private GridSwapContext context(@Nullable ClassLoader clsLdr) {
-        GridSwapContext ctx = new GridSwapContext();
+    private SwapContext context(@Nullable ClassLoader clsLdr) {
+        SwapContext ctx = new SwapContext();
 
         ctx.classLoader(clsLdr != null ? clsLdr : getClass().getClassLoader());
 
@@ -102,21 +102,21 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         byte[] val1 = Long.toString(key1).getBytes();
 
-        spi.store(DFLT_SPACE_NAME, new GridSwapKey(key1), val1, context());
+        spi.store(DFLT_SPACE_NAME, new SwapKey(key1), val1, context());
 
         assertEquals(1, spi.count(DFLT_SPACE_NAME));
 
-        assertArrayEquals(spi.read(DFLT_SPACE_NAME, new GridSwapKey(key1), context()), val1);
+        assertArrayEquals(spi.read(DFLT_SPACE_NAME, new SwapKey(key1), context()), val1);
 
         final byte[] val2 = "newValue".getBytes();
 
-        spi.store(DFLT_SPACE_NAME, new GridSwapKey(key1), val2, context());
+        spi.store(DFLT_SPACE_NAME, new SwapKey(key1), val2, context());
 
         assertEquals(1, spi.count(DFLT_SPACE_NAME));
 
-        assertArrayEquals(spi.read(DFLT_SPACE_NAME, new GridSwapKey(key1), context()), val2);
+        assertArrayEquals(spi.read(DFLT_SPACE_NAME, new SwapKey(key1), context()), val2);
 
-        spi.remove(DFLT_SPACE_NAME, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
+        spi.remove(DFLT_SPACE_NAME, new SwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val2, old);
             }
@@ -148,49 +148,49 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         final byte[] val1 = Long.toString(key1).getBytes();
 
-        spi.store(space1, new GridSwapKey(key1), val1, context());
+        spi.store(space1, new SwapKey(key1), val1, context());
 
         assertEquals(1, spi.count(space1));
 
         assertEquals(0, spi.count(space2));
 
-        spi.store(space2, new GridSwapKey(key1), val1, context());
+        spi.store(space2, new SwapKey(key1), val1, context());
 
         assertEquals(1, spi.count(space1));
 
         assertEquals(1, spi.count(space2));
 
-        assertArrayEquals(spi.read(space1, new GridSwapKey(key1), context()), val1);
+        assertArrayEquals(spi.read(space1, new SwapKey(key1), context()), val1);
 
-        assertArrayEquals(spi.read(space2, new GridSwapKey(key1), context()), val1);
+        assertArrayEquals(spi.read(space2, new SwapKey(key1), context()), val1);
 
         long key2 = 2;
 
         byte[] val2 = Long.toString(key2).getBytes();
 
-        spi.store(space1, new GridSwapKey(key2), val2, context());
+        spi.store(space1, new SwapKey(key2), val2, context());
 
         assertEquals(2, spi.count(space1));
 
         assertEquals(1, spi.count(space2));
 
-        assertArrayEquals(spi.read(space1, new GridSwapKey(key2), context()), val2);
+        assertArrayEquals(spi.read(space1, new SwapKey(key2), context()), val2);
 
-        assertNull(spi.read(space2, new GridSwapKey(key2), context()));
+        assertNull(spi.read(space2, new SwapKey(key2), context()));
 
         final byte[] val12 = "newValue".getBytes();
 
-        spi.store(space1, new GridSwapKey(key1), val12, context());
+        spi.store(space1, new SwapKey(key1), val12, context());
 
         assertEquals(2, spi.count(space1));
 
         assertEquals(1, spi.count(space2));
 
-        assertArrayEquals(spi.read(space1, new GridSwapKey(key1), context()), val12);
+        assertArrayEquals(spi.read(space1, new SwapKey(key1), context()), val12);
 
-        assertArrayEquals(spi.read(space2, new GridSwapKey(key1), context()), val1);
+        assertArrayEquals(spi.read(space2, new SwapKey(key1), context()), val1);
 
-        spi.remove(space1, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
+        spi.remove(space1, new SwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val12, old);
             }
@@ -200,7 +200,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         assertEquals(1, spi.count(space2));
 
-        spi.remove(space2, new GridSwapKey(key1), new IgniteInClosure<byte[]>() {
+        spi.remove(space2, new SwapKey(key1), new IgniteInClosure<byte[]>() {
             @Override public void apply(byte[] old) {
                 assertArrayEquals(val1, old);
             }
@@ -219,30 +219,30 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
     public void testBatchCrud() throws Exception {
         assertEquals(0, spi.count(DFLT_SPACE_NAME));
 
-        final Map<GridSwapKey, byte[]> batch = new HashMap<>();
+        final Map<SwapKey, byte[]> batch = new HashMap<>();
 
         int batchSize = 10;
 
         // Generate initial values.
         for (int i = 0; i < batchSize; i++)
-            batch.put(new GridSwapKey(i), Integer.toString(i).getBytes());
+            batch.put(new SwapKey(i), Integer.toString(i).getBytes());
 
         spi.storeAll(DFLT_SPACE_NAME, batch, context());
 
         assertEquals(batchSize, spi.count(DFLT_SPACE_NAME));
 
-        Map<GridSwapKey, byte[]> read = spi.readAll(DFLT_SPACE_NAME, batch.keySet(), context());
+        Map<SwapKey, byte[]> read = spi.readAll(DFLT_SPACE_NAME, batch.keySet(), context());
 
         // Check all entries are as expected.
-        assertTrue(F.forAll(read, new P1<Map.Entry<GridSwapKey, byte[]>>() {
-            @Override public boolean apply(Map.Entry<GridSwapKey, byte[]> e) {
+        assertTrue(F.forAll(read, new P1<Map.Entry<SwapKey, byte[]>>() {
+            @Override public boolean apply(Map.Entry<SwapKey, byte[]> e) {
                 return Arrays.equals(batch.get(e.getKey()), e.getValue());
             }
         }));
 
         // Generate new values.
         for (int i = 0; i < batchSize; i++)
-            batch.put(new GridSwapKey(i), Integer.toString(i + 1).getBytes());
+            batch.put(new SwapKey(i), Integer.toString(i + 1).getBytes());
 
         spi.storeAll(DFLT_SPACE_NAME, batch, context());
 
@@ -251,8 +251,8 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         read = spi.readAll(DFLT_SPACE_NAME, batch.keySet(), context());
 
         // Check all entries are as expected.
-        assertTrue(F.forAll(read, new P1<Map.Entry<GridSwapKey, byte[]>>() {
-            @Override public boolean apply(Map.Entry<GridSwapKey, byte[]> e) {
+        assertTrue(F.forAll(read, new P1<Map.Entry<SwapKey, byte[]>>() {
+            @Override public boolean apply(Map.Entry<SwapKey, byte[]> e) {
                 return Arrays.equals(batch.get(e.getKey()), e.getValue());
             }
         }));
@@ -266,9 +266,9 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testDeleteIfNotPersist() throws Exception {
-        spi.store(SPACE1, new GridSwapKey("key1"), "value1".getBytes(), context());
+        spi.store(SPACE1, new SwapKey("key1"), "value1".getBytes(), context());
 
-        assertArrayEquals("value1".getBytes(), spi.read(SPACE1, new GridSwapKey("key1"), context()));
+        assertArrayEquals("value1".getBytes(), spi.read(SPACE1, new SwapKey("key1"), context()));
     }
 
     /**
@@ -281,7 +281,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         final CountDownLatch readLatch = new CountDownLatch(cnt);
         final CountDownLatch rmvLatch = new CountDownLatch(cnt);
 
-        spi.setListener(new GridSwapSpaceSpiListener() {
+        spi.setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
                 info("Received event: " + evtType);
 
@@ -300,22 +300,22 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         });
 
         for (int i = 0; i < cnt; i++)
-            assertNull(spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertNull(spi.read(SPACE1, new SwapKey("key" + i), context()));
 
         for (int i = 0; i < cnt; i++)
-            spi.store(SPACE1, new GridSwapKey("key" + i), str2ByteArray("value" + i), context());
+            spi.store(SPACE1, new SwapKey("key" + i), str2ByteArray("value" + i), context());
 
         assert storeLatch.await(5000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++)
-            assertArrayEquals(str2ByteArray("value" + i), spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertArrayEquals(str2ByteArray("value" + i), spi.read(SPACE1, new SwapKey("key" + i), context()));
 
         assert readLatch.await(5000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++) {
             final int tmp = i;
 
-            spi.remove(SPACE1, new GridSwapKey("key" + i), new CI1<byte[]>() {
+            spi.remove(SPACE1, new SwapKey("key" + i), new CI1<byte[]>() {
                 @Override public void apply(byte[] arr) {
                     assertArrayEquals(str2ByteArray("value" + tmp), arr);
 
@@ -327,7 +327,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         assert rmvLatch.await(10000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertNull(spi.read(SPACE1, new SwapKey("key" + i), context()));
     }
 
 
@@ -341,7 +341,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         final CountDownLatch readLatch = new CountDownLatch(cnt);
         final CountDownLatch rmvLatch = new CountDownLatch(cnt);
 
-        spi.setListener(new GridSwapSpaceSpiListener() {
+        spi.setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
                 info("Received event: " + evtType);
 
@@ -360,22 +360,22 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         });
 
         for (int i = 0; i < cnt; i++)
-            assertNull(spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertNull(spi.read(SPACE1, new SwapKey("key" + i), context()));
 
         for (int i = 0; i < cnt; i++)
-            spi.store(SPACE1, new GridSwapKey("key" + i), null, context());
+            spi.store(SPACE1, new SwapKey("key" + i), null, context());
 
         assert storeLatch.await(5000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertNull(spi.read(SPACE1, new SwapKey("key" + i), context()));
 
         assert readLatch.await(5000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++) {
             final int tmp = i;
 
-            spi.remove(SPACE1, new GridSwapKey("key" + i), new CI1<byte[]>() {
+            spi.remove(SPACE1, new SwapKey("key" + i), new CI1<byte[]>() {
                 @Override public void apply(byte[] arr) {
                     assertNull(arr);
 
@@ -387,7 +387,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         assert rmvLatch.await(10000, MILLISECONDS);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(spi.read(SPACE1, new GridSwapKey("key" + i), context()));
+            assertNull(spi.read(SPACE1, new SwapKey("key" + i), context()));
     }
 
     /**
@@ -400,7 +400,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         final CountDownLatch readLatch = new CountDownLatch(cnt);
         final CountDownLatch rmvLatch = new CountDownLatch(cnt);
 
-        spi.setListener(new GridSwapSpaceSpiListener() {
+        spi.setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
                 info("Received event: " + evtType);
 
@@ -425,7 +425,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         for (int i = 0; i < cnt; i++) {
             String val = "value" + i;
 
-            spi.store(SPACE1, new GridSwapKey(new Key(i)), str2ByteArray(val), context());
+            spi.store(SPACE1, new SwapKey(new Key(i)), str2ByteArray(val), context());
 
             keys.add(i);
 
@@ -436,14 +436,14 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
         for (int i = 0; i < cnt; i++)
             assertArrayEquals(entries.get(i).getBytes(),
-                spi.read(SPACE1, new GridSwapKey(new Key(i)), context()));
+                spi.read(SPACE1, new SwapKey(new Key(i)), context()));
 
         assert readLatch.await(5000, MILLISECONDS) : "Count: " + readLatch.getCount();
 
         Collections.shuffle(keys);
 
         for (final Integer key : keys) {
-            spi.remove(SPACE1, new GridSwapKey(new Key(key)), new CI1<byte[]>() {
+            spi.remove(SPACE1, new SwapKey(new Key(key)), new CI1<byte[]>() {
                 @Override public void apply(byte[] arr) {
                     assertArrayEquals(entries.get(key).getBytes(), arr);
 
@@ -455,7 +455,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         assert rmvLatch.await(5000, MILLISECONDS) : "Count: " + rmvLatch.getCount();
 
         for (final Integer key : keys)
-            assertNull(spi.read(SPACE1, new GridSwapKey(new Key(key)), context()));
+            assertNull(spi.read(SPACE1, new SwapKey(new Key(key)), context()));
     }
 
 
@@ -468,11 +468,11 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
         int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            spi.store(SPACE1, new GridSwapKey("key" + i, i), str2ByteArray("value" + i), context());
+            spi.store(SPACE1, new SwapKey("key" + i, i), str2ByteArray("value" + i), context());
 
         for (int i = 0; i < cnt; i++)
             assertArrayEquals(str2ByteArray("value" + i),
-                spi.read(SPACE1, new GridSwapKey("key" + i, i), context()));
+                spi.read(SPACE1, new SwapKey("key" + i, i), context()));
 
         try (IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1)) {
             assertNotNull(iter);
@@ -501,18 +501,18 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testIterationOverPartition() throws Exception {
-        spi.store(SPACE1, new GridSwapKey("key", 0), str2ByteArray("value"), context());
+        spi.store(SPACE1, new SwapKey("key", 0), str2ByteArray("value"), context());
 
         spi.clear(SPACE1);
 
         int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            spi.store(SPACE1, new GridSwapKey("key" + i, i), str2ByteArray("value" + i), context());
+            spi.store(SPACE1, new SwapKey("key" + i, i), str2ByteArray("value" + i), context());
 
         for (int i = 0; i < cnt; i++)
             assertArrayEquals(str2ByteArray("value" + i),
-                spi.read(SPACE1, new GridSwapKey("key" + i, i), context()));
+                spi.read(SPACE1, new SwapKey("key" + i, i), context()));
 
         try (IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1, 5)) {
             assertNotNull(iter);
@@ -530,7 +530,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
                 iter.remove();
 
-                assertNull(spi.read(SPACE1, new GridSwapKey(key, 5), context()));
+                assertNull(spi.read(SPACE1, new SwapKey(key, 5), context()));
 
                 i++;
             }
@@ -543,14 +543,14 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testSwapIterator() throws Exception {
-        spi.store(SPACE1, new GridSwapKey("key", 0), str2ByteArray("value"), context());
+        spi.store(SPACE1, new SwapKey("key", 0), str2ByteArray("value"), context());
 
         spi.clear(SPACE1);
 
         int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            spi.store(SPACE1, new GridSwapKey("key" + i, i), str2ByteArray("value" + i), context());
+            spi.store(SPACE1, new SwapKey("key" + i, i), str2ByteArray("value" + i), context());
 
         IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> iter = spi.rawIterator(SPACE1);
 

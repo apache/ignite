@@ -1473,7 +1473,7 @@ public class GridGainEx {
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
-            GridSwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
+            SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
             IndexingSpi[] indexingSpi = cfg.getIndexingSpi();
 
             execSvc = cfg.getExecutorService();
@@ -1718,7 +1718,7 @@ public class GridGainEx {
                     }
                 }
 
-                swapspaceSpi = needSwap ? new GridFileSwapSpaceSpi() : new GridNoopSwapSpaceSpi();
+                swapspaceSpi = needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi();
             }
 
             if (indexingSpi == null)

@@ -21,11 +21,11 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * No-op implementation of {@link GridSwapSpaceSpi}. Exists for testing and benchmarking purposes.
+ * No-op implementation of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}. Exists for testing and benchmarking purposes.
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSpaceSpi {
+public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /** Logger. */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -56,43 +56,43 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
+    @Override @Nullable public byte[] read(@Nullable String spaceName, SwapKey key, SwapContext ctx)
         throws IgniteSpiException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<GridSwapKey> keys,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public Map<SwapKey, byte[]> readAll(@Nullable String spaceName, Iterable<SwapKey> keys,
+        SwapContext ctx) throws IgniteSpiException {
         return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void remove(@Nullable String spaceName, SwapKey key, @Nullable IgniteInClosure<byte[]> c,
+        SwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void removeAll(@Nullable String spaceName, Collection<SwapKey> keys,
+        @Nullable IgniteBiInClosure<SwapKey, byte[]> c, SwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void store(@Nullable String spaceName, SwapKey key, @Nullable byte[] val,
+        SwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs,
-        GridSwapContext ctx) throws IgniteSpiException {
+    @Override public void storeAll(@Nullable String spaceName, Map<SwapKey, byte[]> pairs,
+        SwapContext ctx) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(@Nullable GridSwapSpaceSpiListener evictLsnr) {
+    @Override public void setListener(@Nullable SwapSpaceSpiListener evictLsnr) {
         // No-op.
     }
 
@@ -103,7 +103,7 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName,
-        GridSwapContext ctx) throws IgniteSpiException {
+        SwapContext ctx) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
     }
 
@@ -121,6 +121,6 @@ public class GridNoopSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNoopSwapSpaceSpi.class, this);
+        return S.toString(NoopSwapSpaceSpi.class, this);
     }
 }

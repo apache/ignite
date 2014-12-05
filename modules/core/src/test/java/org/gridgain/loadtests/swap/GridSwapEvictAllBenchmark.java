@@ -260,7 +260,7 @@ public class GridSwapEvictAllBenchmark {
         ccfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
         ccfg.setStore(store);
 
-        GridFileSwapSpaceSpi swap = new GridFileSwapSpaceSpi();
+        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 
 //        swap.setConcurrencyLevel(16);
 //        swap.setWriterThreadsCount(16);

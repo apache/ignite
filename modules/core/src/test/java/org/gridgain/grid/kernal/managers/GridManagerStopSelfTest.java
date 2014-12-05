@@ -202,7 +202,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopSwapSpaceManager() throws Exception {
-        GridSwapSpaceSpi spi = new GridFileSwapSpaceSpi();
+        SwapSpaceSpi spi = new FileSwapSpaceSpi();
 
         injectLogger(spi);
 

@@ -56,7 +56,7 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return cfg;
     }

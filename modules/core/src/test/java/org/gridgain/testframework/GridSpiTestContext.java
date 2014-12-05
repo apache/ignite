@@ -443,7 +443,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T readFromSwap(String spaceName, GridSwapKey key, @Nullable ClassLoader ldr)
+    @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
         throws GridException {
         return null;
     }

@@ -29,7 +29,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  *
  */
-public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
+public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     /** */
     private IgniteMarshaller marsh;
 
@@ -45,7 +45,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         if (ctx.config().isDaemon())
             return;
 
-        getSpi().setListener(new GridSwapSpaceSpiListener() {
+        getSpi().setListener(new SwapSpaceSpiListener() {
             @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
                 if (ctx.event().isRecordable(evtType)) {
                     String msg = null;
@@ -135,7 +135,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @return Value.
      * @throws GridException If failed.
      */
-    @Nullable public byte[] read(@Nullable String spaceName, GridSwapKey key, @Nullable ClassLoader ldr)
+    @Nullable public byte[] read(@Nullable String spaceName, SwapKey key, @Nullable ClassLoader ldr)
         throws GridException {
         assert key != null;
 
@@ -157,7 +157,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @throws GridException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T readValue(@Nullable String spaceName, GridSwapKey key, @Nullable ClassLoader ldr)
+    @Nullable public <T> T readValue(@Nullable String spaceName, SwapKey key, @Nullable ClassLoader ldr)
         throws GridException {
         assert key != null;
 
@@ -173,7 +173,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public void write(@Nullable String spaceName, GridSwapKey key, byte[] val, @Nullable ClassLoader ldr)
+    public void write(@Nullable String spaceName, SwapKey key, byte[] val, @Nullable ClassLoader ldr)
         throws GridException {
         assert key != null;
         assert val != null;
@@ -195,7 +195,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public <K, V> void writeAll(String spaceName, Map<GridSwapKey, byte[]> batch,
+    public <K, V> void writeAll(String spaceName, Map<SwapKey, byte[]> batch,
         @Nullable ClassLoader ldr) throws GridException {
         getSpi().storeAll(spaceName, batch, context(ldr));
     }
@@ -213,7 +213,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         throws GridException {
         assert key != null;
 
-        write(spaceName, new GridSwapKey(key), marshal(val), ldr);
+        write(spaceName, new SwapKey(key), marshal(val), ldr);
     }
 
     /**
@@ -227,7 +227,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public void remove(@Nullable String spaceName, GridSwapKey key, @Nullable IgniteInClosure<byte[]> c,
+    public void remove(@Nullable String spaceName, SwapKey key, @Nullable IgniteInClosure<byte[]> c,
         @Nullable ClassLoader ldr) throws GridException {
         assert key != null;
 
@@ -250,8 +250,8 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param ldr Class loader (optional).
      * @throws GridException If failed.
      */
-    public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
-        IgniteBiInClosure<GridSwapKey, byte[]> c, @Nullable ClassLoader ldr) throws GridException {
+    public void removeAll(@Nullable String spaceName, Collection<SwapKey> keys,
+        IgniteBiInClosure<SwapKey, byte[]> c, @Nullable ClassLoader ldr) throws GridException {
         assert keys != null;
 
         try {
@@ -278,7 +278,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
         @Nullable ClassLoader ldr) throws GridException {
         assert key != null;
 
-        remove(spaceName, new GridSwapKey(key), c, ldr);
+        remove(spaceName, new SwapKey(key), c, ldr);
     }
 
     /**
@@ -408,8 +408,8 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param clsLdr Class loader.
      * @return Swap context.
      */
-    private GridSwapContext context(@Nullable ClassLoader clsLdr) {
-        GridSwapContext ctx = new GridSwapContext();
+    private SwapContext context(@Nullable ClassLoader clsLdr) {
+        SwapContext ctx = new SwapContext();
 
         ctx.classLoader(clsLdr != null ? clsLdr : U.gridClassLoader());
 

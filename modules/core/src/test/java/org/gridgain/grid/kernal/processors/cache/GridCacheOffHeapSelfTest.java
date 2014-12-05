@@ -66,7 +66,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

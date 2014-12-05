@@ -44,10 +44,10 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
     private static final long DURATION = 10 * 60 * 1000;
 
     /** Swap context. */
-    private final GridSwapContext swapCtx = new GridSwapContext();
+    private final SwapContext swapCtx = new SwapContext();
 
     /** SPI to test. */
-    private GridSwapSpaceSpi spi;
+    private SwapSpaceSpi spi;
 
     /**
      * Starts the daemon thread.
@@ -65,8 +65,8 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
     /**
      * @return An SPI instance to test.
      */
-    private GridSwapSpaceSpi spi() {
-        GridFileSwapSpaceSpi spi = new GridFileSwapSpaceSpi();
+    private SwapSpaceSpi spi() {
+        FileSwapSpaceSpi spi = new FileSwapSpaceSpi();
 
 //        spi.setConcurrencyLevel(N_THREADS);
 //        spi.setWriterThreadsCount(N_THREADS);
@@ -78,7 +78,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
      * @return Swap context for swap operations.
      */
     @SuppressWarnings("ConstantConditions")
-    private GridSwapContext context() {
+    private SwapContext context() {
         return swapCtx;
     }
 
@@ -144,12 +144,12 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                 try {
                     ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
-                    Map<GridSwapKey, byte[]> entries = new HashMap<>(BATCH_SIZE);
+                    Map<SwapKey, byte[]> entries = new HashMap<>(BATCH_SIZE);
 
                     while (!done.get()) {
                         long l = rnd.nextLong(0, MAX_ENTRIES);
 
-                        entries.put(new GridSwapKey(l), Long.toString(l).getBytes());
+                        entries.put(new SwapKey(l), Long.toString(l).getBytes());
 
                         if (entries.size() == BATCH_SIZE) {
                             spi.storeAll(SPACE_NAME, entries, context());
@@ -206,10 +206,10 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                 try {
                     ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
-                    Collection<GridSwapKey> keys = new ArrayList<>(BATCH_SIZE);
+                    Collection<SwapKey> keys = new ArrayList<>(BATCH_SIZE);
 
                     while (!done.get()) {
-                        keys.add(new GridSwapKey(rnd.nextLong(0, MAX_ENTRIES)));
+                        keys.add(new SwapKey(rnd.nextLong(0, MAX_ENTRIES)));
 
                         if (keys.size() == BATCH_SIZE) {
                             spi.readAll(SPACE_NAME, keys, context());

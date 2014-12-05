@@ -19,7 +19,7 @@ import org.jetbrains.annotations.*;
  * This class also holds information about partition this key belongs to
  * (if needed for caches).
  */
-public class GridSwapKey {
+public class SwapKey {
     /** */
     @GridToStringInclude
     private final Object key;
@@ -34,7 +34,7 @@ public class GridSwapKey {
     /**
      * @param key Key.
      */
-    public GridSwapKey(Object key) {
+    public SwapKey(Object key) {
         this(key, Integer.MAX_VALUE, null);
     }
 
@@ -42,7 +42,7 @@ public class GridSwapKey {
      * @param key Key.
      * @param part Partition.
      */
-    public GridSwapKey(Object key, int part) {
+    public SwapKey(Object key, int part) {
         this(key, part, null);
     }
 
@@ -51,7 +51,7 @@ public class GridSwapKey {
      * @param part Part.
      * @param keyBytes Key bytes.
      */
-    public GridSwapKey(Object key, int part, @Nullable byte[] keyBytes) {
+    public SwapKey(Object key, int part, @Nullable byte[] keyBytes) {
         assert key != null;
         assert part >= 0;
 
@@ -95,8 +95,8 @@ public class GridSwapKey {
         if (obj == this)
             return true;
 
-        if (obj instanceof GridSwapKey) {
-            GridSwapKey other = (GridSwapKey)obj;
+        if (obj instanceof SwapKey) {
+            SwapKey other = (SwapKey)obj;
 
             return part == other.part && key.equals(other.key);
         }
@@ -111,6 +111,6 @@ public class GridSwapKey {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSwapKey.class, this);
+        return S.toString(SwapKey.class, this);
     }
 }

@@ -67,7 +67,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         c.setCacheConfiguration(cc1, cc2);
 
-        c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }

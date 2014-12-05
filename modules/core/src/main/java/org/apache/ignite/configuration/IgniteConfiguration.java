@@ -38,7 +38,6 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.gridgain.grid.spi.swapspace.*;
-import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -368,7 +367,7 @@ public class IgniteConfiguration {
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Checkpoint SPI. */
-    private GridSwapSpaceSpi swapSpaceSpi;
+    private SwapSpaceSpi swapSpaceSpi;
 
     /** Indexing SPI. */
     private IndexingSpi[] indexingSpi;
@@ -2124,26 +2123,26 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link GridSwapSpaceSpi}.
+     * Sets fully configured instances of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}.
      *
-     * @param swapSpaceSpi Fully configured instances of {@link GridSwapSpaceSpi} or
+     * @param swapSpaceSpi Fully configured instances of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi} or
      *      <tt>null</tt> if no SPI provided.
      * @see IgniteConfiguration#getSwapSpaceSpi()
      */
-    public void setSwapSpaceSpi(GridSwapSpaceSpi swapSpaceSpi) {
+    public void setSwapSpaceSpi(SwapSpaceSpi swapSpaceSpi) {
         this.swapSpaceSpi = swapSpaceSpi;
     }
 
     /**
      * Should return fully configured swap space SPI implementation. If not provided,
-     * {@link GridFileSwapSpaceSpi} will be used.
+     * {@link org.gridgain.grid.spi.swapspace.file.FileSwapSpaceSpi} will be used.
      * <p>
      * Note that user can provide one or multiple instances of this SPI (and select later which one
      * is used in a particular context).
      *
      * @return Grid swap space SPI implementation or <tt>null</tt> to use default implementation.
      */
-    public GridSwapSpaceSpi getSwapSpaceSpi() {
+    public SwapSpaceSpi getSwapSpaceSpi() {
         return swapSpaceSpi;
     }
 

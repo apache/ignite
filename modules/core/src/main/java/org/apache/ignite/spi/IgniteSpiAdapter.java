@@ -607,7 +607,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T readFromSwap(String spaceName, GridSwapKey key, @Nullable ClassLoader ldr)
+        @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
             throws GridException {
             return null;
         }

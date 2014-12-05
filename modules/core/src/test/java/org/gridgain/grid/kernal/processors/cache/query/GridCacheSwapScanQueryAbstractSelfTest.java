@@ -56,7 +56,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
             cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));

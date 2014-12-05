@@ -75,7 +75,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
-        c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }

@@ -17,7 +17,7 @@ import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**
- * Tests for "noop" realization of {@link GridSwapSpaceSpi}.
+ * Tests for "noop" realization of {@link org.gridgain.grid.spi.swapspace.SwapSpaceSpi}.
  */
 public class GridNoopSwapSpaceSpiSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -40,11 +40,11 @@ public class GridNoopSwapSpaceSpiSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            GridSwapSpaceSpi spi = ignite.configuration().getSwapSpaceSpi();
+            SwapSpaceSpi spi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(spi);
 
-            assertTrue(spi instanceof GridNoopSwapSpaceSpi);
+            assertTrue(spi instanceof NoopSwapSpaceSpi);
         }
         finally {
             stopAllGrids();

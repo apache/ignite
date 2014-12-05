@@ -71,7 +71,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
             atomicOffheapCacheCfg,
             atomicOffheapTieredCacheCfg);
 
-        c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 

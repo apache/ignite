@@ -22,12 +22,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Test for {@link GridFileSwapSpaceSpi}.
+ * Test for {@link FileSwapSpaceSpi}.
  */
 public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridSwapSpaceSpi spi() {
-        GridFileSwapSpaceSpi s = new GridFileSwapSpaceSpi();
+    @Override protected SwapSpaceSpi spi() {
+        FileSwapSpaceSpi s = new FileSwapSpaceSpi();
 
         s.setMaximumSparsity(0.05f);
         s.setWriteBufferSize(8 * 1024);
@@ -43,7 +43,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
     public void testMultithreadedWrite() throws Exception {
         final AtomicLong valCntr = new AtomicLong();
 
-        final GridSwapKey key = new GridSwapKey("key");
+        final SwapKey key = new SwapKey("key");
 
         final CountDownLatch wLatch = new CountDownLatch(1);
 
@@ -93,15 +93,15 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
      * @param i Integer.
      * @return Swap key.
      */
-    private GridSwapKey key(int i) {
-        return new GridSwapKey(i, i % 11, U.intToBytes(i));
+    private SwapKey key(int i) {
+        return new SwapKey(i, i % 11, U.intToBytes(i));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMultithreadedOperations() throws Exception {
-        final ConcurrentHashMap8<GridSwapKey, byte[]> map = new ConcurrentHashMap8<>();
+        final ConcurrentHashMap8<SwapKey, byte[]> map = new ConcurrentHashMap8<>();
 
         Random rnd = new Random();
 
@@ -136,7 +136,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                 Random rnd = new Random();
 
                 while (!fin.get()) {
-                    final GridSwapKey key = key(rnd.nextInt(keys));
+                    final SwapKey key = key(rnd.nextInt(keys));
 
                     switch(rnd.nextInt(13)) {
                         case 0: // store
@@ -175,12 +175,12 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                         case 3: // storeAll
                         case 4:
                         case 9:
-                            Map<GridSwapKey, byte[]> m = new HashMap<>();
+                            Map<SwapKey, byte[]> m = new HashMap<>();
 
                             int cnt = 1 + rnd.nextInt(25);
 
                             for (int i = 0; i < cnt; i++) {
-                                GridSwapKey k = key(rnd.nextInt(keys));
+                                SwapKey k = key(rnd.nextInt(keys));
 
                                 val = map.remove(k);
 
@@ -196,12 +196,12 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             break;
 
                         case 5: // readAll
-                            HashSet<GridSwapKey> s = new HashSet<>();
+                            HashSet<SwapKey> s = new HashSet<>();
 
                             cnt = 1 + rnd.nextInt(25);
 
                             for (int i = 0; i < cnt; i++) {
-                                GridSwapKey k = key(rnd.nextInt(keys));
+                                SwapKey k = key(rnd.nextInt(keys));
 
                                 val = map.get(k);
 
@@ -214,10 +214,10 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
                                 s.removeAll(m.keySet());
 
-                                Iterator<GridSwapKey> iter = s.iterator();
+                                Iterator<SwapKey> iter = s.iterator();
 
                                 while (iter.hasNext()) {
-                                    GridSwapKey k = iter.next();
+                                    SwapKey k = iter.next();
 
                                     if (map.containsKey(k))
                                         iter.remove();
@@ -285,7 +285,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             cnt = 1 + rnd.nextInt(25);
 
                             for (int i = 0; i < cnt; i++) {
-                                GridSwapKey k = key(rnd.nextInt(keys));
+                                SwapKey k = key(rnd.nextInt(keys));
 
                                 val = map.get(k);
 
@@ -296,8 +296,8 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
                             if (s.isEmpty())
                                 break;
 
-                            spi.removeAll(space, s, new IgniteBiInClosure<GridSwapKey, byte[]>() {
-                                @Override public void apply(GridSwapKey k, byte[] bytes) {
+                            spi.removeAll(space, s, new IgniteBiInClosure<SwapKey, byte[]>() {
+                                @Override public void apply(SwapKey k, byte[] bytes) {
                                     if (bytes != null)
                                         assertNull(map.putIfAbsent(k, bytes));
                                 }
@@ -337,7 +337,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         assertEquals(cnt, spi.count(space));
 
-        for (Map.Entry<GridSwapKey, byte[]> entry : map.entrySet())
+        for (Map.Entry<SwapKey, byte[]> entry : map.entrySet())
             hash1 += (Integer)entry.getKey().key() * Arrays.hashCode(entry.getValue());
 
         assertEquals(hash0, hash1);

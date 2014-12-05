@@ -265,7 +265,7 @@ public interface IgniteSpiContext {
      * @return Swapped value.
      * @throws GridException If any exception occurs.
      */
-    @Nullable public <T> T readFromSwap(String spaceName, GridSwapKey key, @Nullable ClassLoader ldr)
+    @Nullable public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
         throws GridException;
 
 

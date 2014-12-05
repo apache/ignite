@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * Test for {@link GridFileSwapSpaceSpi}.
+ * Test for {@link FileSwapSpaceSpi}.
  */
 public class GridFileSwapCompactionSelfTest extends GridCommonAbstractTest {
     /**
@@ -28,16 +28,16 @@ public class GridFileSwapCompactionSelfTest extends GridCommonAbstractTest {
 
         X.println("file: " + file.getPath());
 
-        GridFileSwapSpaceSpi.SwapFile f = new GridFileSwapSpaceSpi.SwapFile(file, 8);
+        FileSwapSpaceSpi.SwapFile f = new FileSwapSpaceSpi.SwapFile(file, 8);
 
         Random rnd = new Random();
 
-        ArrayList<GridFileSwapSpaceSpi.SwapValue> arr = new ArrayList<>();
+        ArrayList<FileSwapSpaceSpi.SwapValue> arr = new ArrayList<>();
 
         int size = 0;
 
         for (int a = 0; a < 100; a++) {
-            GridFileSwapSpaceSpi.SwapValue[] vals = new GridFileSwapSpaceSpi.SwapValue[1 + rnd.nextInt(10)];
+            FileSwapSpaceSpi.SwapValue[] vals = new FileSwapSpaceSpi.SwapValue[1 + rnd.nextInt(10)];
 
             int size0 = 0;
 
@@ -48,12 +48,12 @@ public class GridFileSwapCompactionSelfTest extends GridCommonAbstractTest {
 
                 size0 += bytes.length;
 
-                vals[i] = new GridFileSwapSpaceSpi.SwapValue(bytes);
+                vals[i] = new FileSwapSpaceSpi.SwapValue(bytes);
 
                 arr.add(vals[i]);
             }
 
-            f.write(new GridFileSwapSpaceSpi.SwapValues(vals, size0), 1);
+            f.write(new FileSwapSpaceSpi.SwapValues(vals, size0), 1);
 
             size += size0;
 
@@ -63,27 +63,27 @@ public class GridFileSwapCompactionSelfTest extends GridCommonAbstractTest {
 
         int i = 0;
 
-        for (GridFileSwapSpaceSpi.SwapValue val : arr)
+        for (FileSwapSpaceSpi.SwapValue val : arr)
             assertEquals(val.idx(), ++i);
 
         i = 0;
 
         for (int cnt = arr.size() / 2; i < cnt; i++) {
 
-            GridFileSwapSpaceSpi.SwapValue v = arr.remove(rnd.nextInt(arr.size()));
+            FileSwapSpaceSpi.SwapValue v = arr.remove(rnd.nextInt(arr.size()));
 
             assertTrue(f.tryRemove(v.idx(), v));
         }
 
         int hash0 = 0;
 
-        for (GridFileSwapSpaceSpi.SwapValue val : arr)
+        for (FileSwapSpaceSpi.SwapValue val : arr)
             hash0 += Arrays.hashCode(val.readValue(f.readCh));
 
-        ArrayList<T2<ByteBuffer, ArrayDeque<GridFileSwapSpaceSpi.SwapValue>>> bufs = new ArrayList();
+        ArrayList<T2<ByteBuffer, ArrayDeque<FileSwapSpaceSpi.SwapValue>>> bufs = new ArrayList();
 
         for (;;) {
-            ArrayDeque<GridFileSwapSpaceSpi.SwapValue> que = new ArrayDeque<>();
+            ArrayDeque<FileSwapSpaceSpi.SwapValue> que = new ArrayDeque<>();
 
             ByteBuffer buf = f.compact(que, 1024);
 
@@ -97,21 +97,21 @@ public class GridFileSwapCompactionSelfTest extends GridCommonAbstractTest {
 
         int hash1 = 0;
 
-        for (GridFileSwapSpaceSpi.SwapValue val : arr)
+        for (FileSwapSpaceSpi.SwapValue val : arr)
             hash1 += Arrays.hashCode(val.value(null));
 
         assertEquals(hash0, hash1);
 
         File file0 = new File(UUID.randomUUID().toString());
 
-        GridFileSwapSpaceSpi.SwapFile f0 = new GridFileSwapSpaceSpi.SwapFile(file0, 8);
+        FileSwapSpaceSpi.SwapFile f0 = new FileSwapSpaceSpi.SwapFile(file0, 8);
 
-        for (T2<ByteBuffer, ArrayDeque<GridFileSwapSpaceSpi.SwapValue>> t : bufs)
+        for (T2<ByteBuffer, ArrayDeque<FileSwapSpaceSpi.SwapValue>> t : bufs)
             f0.write(t.get2(), t.get1(), 1);
 
         int hash2 = 0;
 
-        for (GridFileSwapSpaceSpi.SwapValue val : arr)
+        for (FileSwapSpaceSpi.SwapValue val : arr)
             hash2 += Arrays.hashCode(val.readValue(f0.readCh));
 
         assertEquals(hash2, hash1);

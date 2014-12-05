@@ -51,7 +51,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        GridFileSwapSpaceSpi swap = new GridFileSwapSpaceSpi();
+        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 
         swap.setWriteBufferSize(1);
 
@@ -187,7 +187,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
     /**
      * @return Swap space SPI.
      */
-    private GridSwapSpaceSpi swap() {
+    private SwapSpaceSpi swap() {
         return grid().configuration().getSwapSpaceSpi();
     }
 

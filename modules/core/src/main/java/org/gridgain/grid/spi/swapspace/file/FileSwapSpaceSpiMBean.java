@@ -13,10 +13,10 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridFileSwapSpaceSpi}.
+ * Management bean for {@link FileSwapSpaceSpi}.
  */
 @IgniteMBeanDescription("MBean that provides configuration information on file-based swapspace SPI.")
-public interface GridFileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
+public interface FileSwapSpaceSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets base directory.
      *

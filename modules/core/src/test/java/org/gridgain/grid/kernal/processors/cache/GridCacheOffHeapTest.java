@@ -57,7 +57,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new GridNoopSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 

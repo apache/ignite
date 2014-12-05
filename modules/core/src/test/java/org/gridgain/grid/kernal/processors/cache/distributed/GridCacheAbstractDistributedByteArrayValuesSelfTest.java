@@ -47,7 +47,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
             offheapCacheConfiguration(),
             offheapTieredCacheConfiguration());
 
-        c.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 

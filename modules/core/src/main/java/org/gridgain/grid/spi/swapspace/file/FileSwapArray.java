@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Growing array.
  */
-class GridFileSwapArray<X> {
+class FileSwapArray<X> {
     /** First partition size must be power of two. */
     private static final int FIRST_ARRAY_SIZE = 4096;
 
@@ -33,7 +33,7 @@ class GridFileSwapArray<X> {
     /**
      *
      */
-    GridFileSwapArray() {
+    FileSwapArray() {
         synchronized (ladder) {
             ladder[0] = new AtomicReferenceArray<>(FIRST_ARRAY_SIZE);
         }

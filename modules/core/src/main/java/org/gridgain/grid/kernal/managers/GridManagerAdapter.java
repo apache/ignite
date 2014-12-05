@@ -433,7 +433,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @SuppressWarnings({"unchecked"})
-                    @Nullable @Override public <T> T readFromSwap(String spaceName, GridSwapKey key,
+                    @Nullable @Override public <T> T readFromSwap(String spaceName, SwapKey key,
                         @Nullable ClassLoader ldr) throws GridException {
                         assert ctx.swap().enabled();
 

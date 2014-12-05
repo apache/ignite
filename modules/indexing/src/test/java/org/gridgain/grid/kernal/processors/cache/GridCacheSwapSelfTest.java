@@ -102,11 +102,11 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(1);
 
-            GridSwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
+            SwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(swapSpi);
 
-            assertTrue(swapSpi instanceof GridNoopSwapSpaceSpi);
+            assertTrue(swapSpi instanceof NoopSwapSpaceSpi);
         }
         finally {
             stopAllGrids();
@@ -120,11 +120,11 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(1);
 
-            GridSwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
+            SwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
 
             assertNotNull(swapSpi);
 
-            assertFalse(swapSpi instanceof GridNoopSwapSpaceSpi);
+            assertFalse(swapSpi instanceof NoopSwapSpaceSpi);
         }
         finally {
             stopAllGrids();

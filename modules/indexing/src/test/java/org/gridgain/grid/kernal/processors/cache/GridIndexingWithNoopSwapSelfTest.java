@@ -54,7 +54,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setIndexingSpi(indexing);
 
-        c.setSwapSpaceSpi(new GridNoopSwapSpaceSpi());
+        c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
