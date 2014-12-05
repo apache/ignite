@@ -79,7 +79,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
 
     /** Metrics provider (transient). */
     @GridToStringExclude
-    private GridDiscoveryMetricsProvider metricsProvider;
+    private DiscoveryMetricsProvider metricsProvider;
 
     /** Visible flag (transient). */
     @GridToStringExclude
@@ -117,7 +117,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
      * @param ver Version.
      */
     public GridTcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-        GridDiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
+        DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -390,9 +390,9 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
         byte[] mtr = null;
 
         if (metrics != null) {
-            mtr = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+            mtr = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
 
-            GridDiscoveryMetricsHelper.serialize(mtr, 0, metrics);
+            DiscoveryMetricsHelper.serialize(mtr, 0, metrics);
         }
 
         U.writeByteArray(out, mtr);
@@ -419,7 +419,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = GridDiscoveryMetricsHelper.deserialize(mtr, 0);
+            metrics = DiscoveryMetricsHelper.deserialize(mtr, 0);
 
         order = in.readLong();
         intOrder = in.readLong();

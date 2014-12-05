@@ -82,7 +82,7 @@ public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends Gri
 
         if (!err)
             try {
-                if (!(spi instanceof GridDiscoverySpi))
+                if (!(spi instanceof DiscoverySpi))
                     spi.getNodeAttributes();
 
                 spi.spiStart(getTestGridName());

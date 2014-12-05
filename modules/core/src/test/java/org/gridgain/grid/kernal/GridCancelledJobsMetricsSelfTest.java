@@ -46,7 +46,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCollisionSpi(colSpi);
 
-        GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
+        DiscoverySpi discoSpi = cfg.getDiscoverySpi();
 
         assert discoSpi instanceof GridTcpDiscoverySpi;
 

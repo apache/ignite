@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     }
 
     /** @return Discovery SPI. */
-    private GridDiscoverySpi discovery() {
+    private DiscoverySpi discovery() {
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);

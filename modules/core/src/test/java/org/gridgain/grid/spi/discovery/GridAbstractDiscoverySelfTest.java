@@ -35,7 +35,7 @@ import static org.apache.ignite.product.IgniteProductVersion.*;
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
-    private static final List<GridDiscoverySpi> spis = new ArrayList<>();
+    private static final List<DiscoverySpi> spis = new ArrayList<>();
 
     /** */
     private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
@@ -67,7 +67,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
         boolean isAllDiscovered = false;
 
         while (!isAllDiscovered) {
-            for (GridDiscoverySpi spi : spis) {
+            for (DiscoverySpi spi : spis) {
                 if (spi.getRemoteNodes().size() < (getSpiCount() - 1)) {
                     isAllDiscovered = false;
 
@@ -94,7 +94,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
             else {
                 if (System.currentTimeMillis() > spiStartTime + getMaxDiscoveryTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
-                        GridDiscoverySpi spi = spis.get(i);
+                        DiscoverySpi spi = spis.get(i);
 
                         info("Remote nodes [spiIdx=" + i + ", nodes=" + spi.getRemoteNodes() + ']');
                     }
@@ -111,7 +111,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
     }
 
     /** */
-    private static class DiscoveryListener implements GridDiscoverySpiListener {
+    private static class DiscoveryListener implements DiscoverySpiListener {
         /** * */
         private boolean isMetricsUpdate;
 
@@ -141,7 +141,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
 
         long metricsStartTime = System.currentTimeMillis();
 
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             DiscoveryListener metricsUpdateLsnr = new DiscoveryListener();
 
             spi.setListener(metricsUpdateLsnr);
@@ -167,7 +167,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
             else {
                 if (System.currentTimeMillis() > metricsStartTime + getMaxMetricsWaitTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
-                        GridDiscoverySpi spi = spis.get(i);
+                        DiscoverySpi spi = spis.get(i);
 
                         info("Remote nodes [spiIdx=" + i + ", nodes=" + spi.getRemoteNodes() + ']');
                     }
@@ -193,10 +193,10 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
 
         int i = 0;
 
-        for (final GridDiscoverySpi spi : spis) {
+        for (final DiscoverySpi spi : spis) {
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
-            GridDiscoverySpiListener locHeartbeatLsnr = new GridDiscoverySpiListener() {
+            DiscoverySpiListener locHeartbeatLsnr = new DiscoverySpiListener() {
                 @Override public void onDiscovery(int type, long topVer, ClusterNode node,
                     Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
                     // If METRICS_UPDATED came from local node
@@ -241,7 +241,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      * Checks that physical address of local node is equal to local.ip property.
      */
     public void testLocalNode() {
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             ClusterNode loc = spi.getLocalNode();
 
             Collection<ClusterNode> rmt = spi.getRemoteNodes();
@@ -254,7 +254,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      * Check that "test.node.prop" is present on all nodes.
      */
     public void testNodeAttributes() {
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             assert !spi.getRemoteNodes().isEmpty() : "No remote nodes found in Spi.";
 
             Collection<UUID> nodeIds = new HashSet<>();
@@ -290,7 +290,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      * Checks that each spi can pings all other.
      */
     public void testPing() {
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             for (GridTestResources rscrs : spiRsrcs) {
                 UUID nodeId = rscrs.getNodeId();
 
@@ -308,7 +308,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      * @throws Exception If failed.
      */
     public void testNodeSerialize() throws Exception {
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             ClusterNode node = spi.getLocalNode();
 
             assert node != null;
@@ -323,7 +323,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      * @param idx Index.
      * @return Discovery SPI.
      */
-    protected abstract GridDiscoverySpi getSpi(int idx);
+    protected abstract DiscoverySpi getSpi(int idx);
 
     /**
      * @return SPI count.
@@ -350,7 +350,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
     @Override protected void beforeTestsStarted() throws Exception {
         try {
             for (int i = 0; i < getSpiCount(); i++) {
-                GridDiscoverySpi spi = getSpi(i);
+                DiscoverySpi spi = getSpi(i);
 
                 GridTestResources rsrcMgr = new GridTestResources(getMBeanServer(i));
 
@@ -359,7 +359,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
                 spi.setNodeAttributes(Collections.<String, Object>singletonMap(TEST_ATTRIBUTE_NAME, "true"),
                     fromString("99.99.99"));
 
-                spi.setListener(new GridDiscoverySpiListener() {
+                spi.setListener(new DiscoverySpiListener() {
                     @SuppressWarnings({"NakedNotify"})
                     @Override public void onDiscovery(int type, long topVer, ClusterNode node,
                         Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
@@ -371,7 +371,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
                     }
                 });
 
-                spi.setDataExchange(new GridDiscoverySpiDataExchange() {
+                spi.setDataExchange(new DiscoverySpiDataExchange() {
                     @Override public List<Object> collect(UUID nodeId) {
                         return new LinkedList<>();
                     }
@@ -381,7 +381,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
                     }
                 });
 
-                spi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+                spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
                     @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                         GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                             GridSecuritySubjectType.REMOTE_NODE, n.id());
@@ -439,7 +439,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
         assert spis.size() > 1;
         assert spis.size() == spiRsrcs.size();
 
-        for (GridDiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : spis) {
             spi.setListener(null);
 
             spi.spiStop();

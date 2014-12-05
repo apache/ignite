@@ -30,32 +30,32 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
 
     /** */
     public void testMetricsSize() {
-        byte[] data = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] data = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
 
         // Test serialization.
-        int off = GridDiscoveryMetricsHelper.serialize(data, 0, createMetrics());
+        int off = DiscoveryMetricsHelper.serialize(data, 0, createMetrics());
 
-        assert off == GridDiscoveryMetricsHelper.METRICS_SIZE;
+        assert off == DiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterNodeMetrics res = GridDiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterNodeMetrics res = DiscoveryMetricsHelper.deserialize(data, 0);
 
         assert res != null;
     }
 
     /** */
     public void testSerialization() {
-        byte[] data = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] data = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
 
         ClusterNodeMetrics metrics1 = createMetrics();
 
         // Test serialization.
-        int off = GridDiscoveryMetricsHelper.serialize(data, 0, metrics1);
+        int off = DiscoveryMetricsHelper.serialize(data, 0, metrics1);
 
-        assert off == GridDiscoveryMetricsHelper.METRICS_SIZE;
+        assert off == DiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterNodeMetrics metrics2 = GridDiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterNodeMetrics metrics2 = DiscoveryMetricsHelper.deserialize(data, 0);
 
         assert metrics2 != null;
 
@@ -87,7 +87,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
      * @return Test metrics.
      */
     private ClusterNodeMetrics createMetrics() {
-        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
+        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
 
         metrics.setAvailableProcessors(1);
         metrics.setAverageActiveJobs(2);

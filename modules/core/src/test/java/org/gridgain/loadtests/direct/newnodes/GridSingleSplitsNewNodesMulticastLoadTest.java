@@ -20,8 +20,8 @@ import org.gridgain.testframework.junits.common.*;
 @GridCommonTest(group = "Load Test")
 public class GridSingleSplitsNewNodesMulticastLoadTest extends GridSingleSplitsNewNodesAbstractLoadTest {
     /** {@inheritDoc} */
-    @Override protected GridDiscoverySpi getDiscoverySpi(IgniteConfiguration cfg) {
-        GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
+    @Override protected DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg) {
+        DiscoverySpi discoSpi = cfg.getDiscoverySpi();
 
         assert discoSpi instanceof GridTcpDiscoverySpi: "Wrong default SPI implementation.";
 

@@ -12,20 +12,16 @@ package org.gridgain.grid.spi.discovery;
 import java.lang.annotation.*;
 
 /**
- * This annotation is for all implementations of {@link GridDiscoverySpi} that support
- * disconnect and reconnect operations.
- *
- * @deprecated This annotation has no effect in current version of GridGain and
- *      will be removed in the next major release.
+ * This annotation is for all implementations of {@link DiscoverySpi} that support
+ * topology snapshots history.
  */
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-@Deprecated
-public @interface GridDiscoverySpiReconnectSupport {
+public @interface DiscoverySpiHistorySupport {
     /**
-     * Whether or not target SPI supports node startup order.
+     * Whether or not target SPI supports topology snapshots history.
      */
     @SuppressWarnings({"JavaDoc"})
     public boolean value();

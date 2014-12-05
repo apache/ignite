@@ -59,7 +59,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @return Discovery SPI;
      */
-    private GridDiscoverySpi discoverySpi() {
+    private DiscoverySpi discoverySpi() {
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);

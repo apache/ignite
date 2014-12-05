@@ -35,7 +35,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDiscoverySpi extends IgniteSpi {
+public interface DiscoverySpi extends IgniteSpi {
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
      *
@@ -87,23 +87,23 @@ public interface GridDiscoverySpi extends IgniteSpi {
      *
      * @param lsnr Listener to discovery events or {@code null} to unset the listener.
      */
-    public void setListener(@Nullable GridDiscoverySpiListener lsnr);
+    public void setListener(@Nullable DiscoverySpiListener lsnr);
 
     /**
      * Sets a handler for initial data exchange between GridGain nodes.
      *
      * @param exchange Discovery data exchange handler.
      */
-    public void setDataExchange(GridDiscoverySpiDataExchange exchange);
+    public void setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
-     * {@link GridDiscoveryMetricsProvider#getMetrics()} method to exchange
+     * {@link DiscoveryMetricsProvider#getMetrics()} method to exchange
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
      */
-    public void setMetricsProvider(GridDiscoveryMetricsProvider metricsProvider);
+    public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling
@@ -119,7 +119,7 @@ public interface GridDiscoverySpi extends IgniteSpi {
      *
      * @param auth Discovery SPI authenticator.
      */
-    public void setAuthenticator(GridDiscoverySpiNodeAuthenticator auth);
+    public void setAuthenticator(DiscoverySpiNodeAuthenticator auth);
 
     /**
      * Gets start time of the very first node in the grid. This value should be the same

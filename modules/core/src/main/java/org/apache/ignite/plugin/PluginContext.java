@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.direct.*;
 
 import java.util.*;
@@ -39,20 +38,20 @@ public interface PluginContext {
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying
-     * {@link GridDiscoverySpi} implementation used.
+     * {@link org.gridgain.grid.spi.discovery.DiscoverySpi} implementation used.
      *
      * @return Collection of grid nodes.
      * @see #localNode()
-     * @see GridDiscoverySpi
+     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
      */
     public Collection<ClusterNode> nodes();
 
     /**
-     * Gets local grid node. Instance of local node is provided by underlying {@link GridDiscoverySpi}
+     * Gets local grid node. Instance of local node is provided by underlying {@link org.gridgain.grid.spi.discovery.DiscoverySpi}
      * implementation used.
      *
      * @return Local grid node.
-     * @see GridDiscoverySpi
+     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
      */
     public ClusterNode localNode();
 

@@ -52,7 +52,7 @@ import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
 /**
  * Discovery SPI manager.
  */
-public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
+public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Fake key for {@code null}-named caches. Used inside {@link DiscoCache}. */
     private static final String NULL_CACHE_NAME = UUID.randomUUID().toString();
 
@@ -232,7 +232,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
         getSpi().setMetricsProvider(createMetricsProvider());
 
-        getSpi().setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+        getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
                 throws GridException {
                 return ctx.security().authenticateNode(node, cred);
@@ -243,7 +243,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
         });
 
-        getSpi().setListener(new GridDiscoverySpiListener() {
+        getSpi().setListener(new DiscoverySpiListener() {
             @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
                 Map<Long, Collection<ClusterNode>> snapshots) {
                 final ClusterNode locNode = localNode();
@@ -303,7 +303,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             }
         });
 
-        getSpi().setDataExchange(new GridDiscoverySpiDataExchange() {
+        getSpi().setDataExchange(new DiscoverySpiDataExchange() {
             @Override public List<Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
@@ -361,7 +361,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
              * @return {@code True} if specified component should collect data after all other components,
              *      {@code false} otherwise.
              * @deprecated We shouldn't rely on exact order and size of
-             *      {@link GridDiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
+             *      {@link org.gridgain.grid.spi.discovery.DiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
              *      compatibility (for example, if we will add new grid component in the middle of components startup
              *      routine). This method should be changed to return map (component id -> collected data)
              *      in the next major release.
@@ -479,8 +479,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     /**
      * @return Metrics provider.
      */
-    private GridDiscoveryMetricsProvider createMetricsProvider() {
-        return new GridDiscoveryMetricsProvider() {
+    private DiscoveryMetricsProvider createMetricsProvider() {
+        return new DiscoveryMetricsProvider() {
             /** */
             private final long startTime = U.currentTimeMillis();
 
@@ -488,7 +488,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
             @Override public ClusterNodeMetrics getMetrics() {
                 GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
 
-                ClusterDiscoveryMetricsAdapter nm = new ClusterDiscoveryMetricsAdapter();
+                DiscoveryNodeMetricsAdapter nm = new DiscoveryNodeMetricsAdapter();
 
                 nm.setLastUpdateTime(U.currentTimeMillis());
 
@@ -567,16 +567,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
 
     /** @return {@code True} if ordering is supported. */
     private boolean discoOrdered() {
-        GridDiscoverySpiOrderSupport ann = U.getAnnotation(ctx.config().getDiscoverySpi().getClass(),
-            GridDiscoverySpiOrderSupport.class);
+        DiscoverySpiOrderSupport ann = U.getAnnotation(ctx.config().getDiscoverySpi().getClass(),
+            DiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
     }
 
     /** @return {@code True} if topology snapshots history is supported. */
     private boolean historySupported() {
-        GridDiscoverySpiHistorySupport ann = U.getAnnotation(ctx.config().getDiscoverySpi().getClass(),
-            GridDiscoverySpiHistorySupport.class);
+        DiscoverySpiHistorySupport ann = U.getAnnotation(ctx.config().getDiscoverySpi().getClass(),
+            DiscoverySpiHistorySupport.class);
 
         return ann != null && ann.value();
     }
@@ -1178,7 +1178,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<GridDiscoverySpi> {
     }
 
     /**
-     * Gets first grid node start time, see {@link GridDiscoverySpi#getGridStartTime()}.
+     * Gets first grid node start time, see {@link org.gridgain.grid.spi.discovery.DiscoverySpi#getGridStartTime()}.
      *
      * @return Start time of the first grid node.
      */

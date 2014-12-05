@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.discovery;
 import java.lang.annotation.*;
 
 /**
- * This annotation is for all implementations of {@link GridDiscoverySpi} that support
+ * This annotation is for all implementations of {@link DiscoverySpi} that support
  * proper node ordering. This includes:
  * <ul>
  * <li>
@@ -30,7 +30,7 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridDiscoverySpiOrderSupport {
+public @interface DiscoverySpiOrderSupport {
     /**
      * Whether or not target SPI supports node startup order.
      */

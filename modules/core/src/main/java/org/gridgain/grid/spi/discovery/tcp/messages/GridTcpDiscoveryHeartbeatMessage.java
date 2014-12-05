@@ -18,7 +18,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.spi.discovery.GridDiscoveryMetricsHelper.*;
+import static org.gridgain.grid.spi.discovery.DiscoveryMetricsHelper.*;
 
 /**
  * Heartbeat message.
@@ -191,7 +191,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     private static byte[] serializeMetrics(ClusterNodeMetrics metrics) {
         assert metrics != null;
 
-        byte[] buf = new byte[GridDiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
 
         serialize(buf, 0, metrics);
 
@@ -207,7 +207,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
         assert nodeId != null;
         assert metrics != null;
 
-        byte[] buf = new byte[16 + GridDiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[16 + DiscoveryMetricsHelper.METRICS_SIZE];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);

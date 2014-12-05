@@ -648,8 +648,8 @@ public abstract class GridUtils {
      * @param discoSpi Discovery SPI.
      * @return {@code True} if ordering is supported.
      */
-    public static boolean discoOrdered(GridDiscoverySpi discoSpi) {
-        GridDiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), GridDiscoverySpiOrderSupport.class);
+    public static boolean discoOrdered(DiscoverySpi discoSpi) {
+        DiscoverySpiOrderSupport ann = U.getAnnotation(discoSpi.getClass(), DiscoverySpiOrderSupport.class);
 
         return ann != null && ann.value();
     }

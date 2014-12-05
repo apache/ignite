@@ -39,7 +39,7 @@ import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiSt
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements GridDiscoverySpi {
+abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
@@ -95,13 +95,13 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
     /** Grid discovery listener. */
-    protected volatile GridDiscoverySpiListener lsnr;
+    protected volatile DiscoverySpiListener lsnr;
 
     /** Data exchange. */
-    protected GridDiscoverySpiDataExchange exchange;
+    protected DiscoverySpiDataExchange exchange;
 
     /** Metrics provider. */
-    protected GridDiscoveryMetricsProvider metricsProvider;
+    protected DiscoveryMetricsProvider metricsProvider;
 
     /** Local node attributes. */
     protected Map<String, Object> locNodeAttrs;
@@ -320,17 +320,17 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(@Nullable GridDiscoverySpiListener lsnr) {
+    @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
         this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
-    @Override public void setDataExchange(GridDiscoverySpiDataExchange exchange) {
+    @Override public void setDataExchange(DiscoverySpiDataExchange exchange) {
         this.exchange = exchange;
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricsProvider(GridDiscoveryMetricsProvider metricsProvider) {
+    @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
     }
 

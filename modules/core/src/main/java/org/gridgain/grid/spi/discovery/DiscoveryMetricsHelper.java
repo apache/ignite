@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 /**
  * Helper class to serialize and deserialize node metrics.
  */
-public final class GridDiscoveryMetricsHelper {
+public final class DiscoveryMetricsHelper {
     /** Size of serialized node metrics. */
     public static final int METRICS_SIZE =
         4/*max active jobs*/ +
@@ -71,7 +71,7 @@ public final class GridDiscoveryMetricsHelper {
     /**
      * Enforces singleton.
      */
-    private GridDiscoveryMetricsHelper() {
+    private DiscoveryMetricsHelper() {
         // No-op.
     }
 
@@ -152,7 +152,7 @@ public final class GridDiscoveryMetricsHelper {
     public static ClusterNodeMetrics deserialize(byte[] data, int off) {
         int start = off;
 
-        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
+        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 

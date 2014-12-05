@@ -42,10 +42,10 @@ public @interface GridSpiTest {
 
     /**
      * Optional discovery SPI property to specify which SPI to use for discovering other nodes.
-     * This property is ignored if the spi being tested is an implementation of {@link GridDiscoverySpi} or
+     * This property is ignored if the spi being tested is an implementation of {@link org.gridgain.grid.spi.discovery.DiscoverySpi} or
      * {@link #triggerDiscovery()} is set to {@code false}.
      */
-    public Class<? extends GridDiscoverySpi> discoverySpi() default GridTcpDiscoverySpi.class;
+    public Class<? extends DiscoverySpi> discoverySpi() default GridTcpDiscoverySpi.class;
 
     /**
      * Optional group this test belongs to.

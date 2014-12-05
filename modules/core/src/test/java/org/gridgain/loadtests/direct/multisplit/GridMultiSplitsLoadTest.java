@@ -51,7 +51,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
-        GridDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        DiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         cfg.setDiscoverySpi(discoSpi);
 

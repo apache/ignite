@@ -325,7 +325,7 @@ public class IgniteConfiguration {
     private LifecycleBean[] lifecycleBeans;
 
     /** Discovery SPI. */
-    private GridDiscoverySpi discoSpi;
+    private DiscoverySpi discoSpi;
 
     /** Segmentation policy. */
     private GridSegmentationPolicy segPlc = DFLT_SEG_PLC;
@@ -1779,17 +1779,17 @@ public class IgniteConfiguration {
      *
      * @return Grid discovery SPI implementation or {@code null} to use default implementation.
      */
-    public GridDiscoverySpi getDiscoverySpi() {
+    public DiscoverySpi getDiscoverySpi() {
         return discoSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridDiscoverySpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.discovery.DiscoverySpi}.
      *
-     * @param discoSpi Fully configured instance of {@link GridDiscoverySpi}.
+     * @param discoSpi Fully configured instance of {@link org.gridgain.grid.spi.discovery.DiscoverySpi}.
      * @see IgniteConfiguration#getDiscoverySpi()
      */
-    public void setDiscoverySpi(GridDiscoverySpi discoSpi) {
+    public void setDiscoverySpi(DiscoverySpi discoSpi) {
         this.discoSpi = discoSpi;
     }
 

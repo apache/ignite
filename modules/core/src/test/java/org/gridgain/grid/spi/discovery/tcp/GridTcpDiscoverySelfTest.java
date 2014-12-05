@@ -201,7 +201,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             info("Nodes were started");
 
             for (Map.Entry<String, GridTcpDiscoverySpi> e : discoMap.entrySet()) {
-                GridDiscoverySpi spi = e.getValue();
+                DiscoverySpi spi = e.getValue();
 
                 for (Ignite g : G.allGrids()) {
                     boolean res = spi.pingNode(g.cluster().localNode().id());

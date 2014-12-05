@@ -153,12 +153,12 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         // Set spi into test data.
         getTestData().setSpi(spi);
 
-        if (!(spi instanceof GridDiscoverySpi)) {
+        if (!(spi instanceof DiscoverySpi)) {
             if (spiTest.triggerDiscovery())
                 configureDiscovery(spiTest);
         }
         else
-            getTestData().setDiscoverySpi((GridDiscoverySpi)spi);
+            getTestData().setDiscoverySpi((DiscoverySpi)spi);
 
         getTestResources().inject(spi);
 
@@ -180,7 +180,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         if (nodeAttrs != null)
             getTestData().getAttributes().putAll(nodeAttrs);
 
-        GridDiscoverySpi discoSpi = getTestData().getDiscoverySpi();
+        DiscoverySpi discoSpi = getTestData().getDiscoverySpi();
 
         if (spiTest.triggerDiscovery() && !getTestData().isDiscoveryTest()) {
             getTestData().getAttributes().putAll(
@@ -191,7 +191,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             discoSpi.setMetricsProvider(createMetricsProvider());
 
-            discoSpi.setDataExchange(new GridDiscoverySpiDataExchange() {
+            discoSpi.setDataExchange(new DiscoverySpiDataExchange() {
                 @Override public List<Object> collect(UUID nodeId) {
                     return new ArrayList<>();
                 }
@@ -210,12 +210,12 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             }
         }
 
-        if (spi instanceof GridDiscoverySpi) {
+        if (spi instanceof DiscoverySpi) {
             getTestData().getAttributes().putAll(initSpiClassAndVersionAttributes(spi));
 
-            ((GridDiscoverySpi)spi).setNodeAttributes(getTestData().getAttributes(), VERSION);
+            ((DiscoverySpi)spi).setNodeAttributes(getTestData().getAttributes(), VERSION);
 
-            ((GridDiscoverySpi)spi).setMetricsProvider(createMetricsProvider());
+            ((DiscoverySpi)spi).setMetricsProvider(createMetricsProvider());
         }
 
         try {
@@ -297,7 +297,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If anything failed.
      */
     private void configureDiscovery(GridSpiTest spiTest) throws Exception {
-        GridDiscoverySpi discoSpi = spiTest.discoverySpi().newInstance();
+        DiscoverySpi discoSpi = spiTest.discoverySpi().newInstance();
 
         if (discoSpi instanceof GridTcpDiscoverySpi) {
             GridTcpDiscoverySpi tcpDisco = (GridTcpDiscoverySpi)discoSpi;
@@ -309,7 +309,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         getTestResources().inject(discoSpi);
 
-        discoSpi.setAuthenticator(new GridDiscoverySpiNodeAuthenticator() {
+        discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());
@@ -336,10 +336,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      *
      * @return Dummy metrics provider.
      */
-    protected GridDiscoveryMetricsProvider createMetricsProvider() {
-        return new GridDiscoveryMetricsProvider() {
+    protected DiscoveryMetricsProvider createMetricsProvider() {
+        return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
-            @Override public ClusterNodeMetrics getMetrics() { return new ClusterDiscoveryMetricsAdapter(); }
+            @Override public ClusterNodeMetrics getMetrics() { return new DiscoveryNodeMetricsAdapter(); }
         };
     }
 
@@ -364,8 +364,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
             if (cfg != null) {
                 if (getTestData().isDiscoveryTest() ||
-                    (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof GridDiscoverySpi)) ||
-                    (cfg.type() != ConfigType.SELF && spi instanceof GridDiscoverySpi)) {
+                    (cfg.type() != ConfigType.DISCOVERY && !(spi instanceof DiscoverySpi)) ||
+                    (cfg.type() != ConfigType.SELF && spi instanceof DiscoverySpi)) {
                     assert m.getName().startsWith("get") : "Test configuration must be a getter [method=" +
                         m.getName() + ']';
 
@@ -452,7 +452,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @return Discovery SPI.
      * @throws Exception If failed.
      */
-    @Nullable protected final GridDiscoverySpi getDiscoverySpi() throws Exception {
+    @Nullable protected final DiscoverySpi getDiscoverySpi() throws Exception {
         if (getTestData() != null)
             return getTestData().getDiscoverySpi();
 
@@ -565,7 +565,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         private T spi;
 
         /** */
-        private GridDiscoverySpi discoSpi;
+        private DiscoverySpi discoSpi;
 
         /** */
         private CommunicationSpi commSpi;
@@ -648,14 +648,14 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         /**
          * @return Discovery SPI.
          */
-        public GridDiscoverySpi getDiscoverySpi() {
+        public DiscoverySpi getDiscoverySpi() {
             return discoSpi;
         }
 
         /**
          * @param discoSpi Discovery SPI.
          */
-        public void setDiscoverySpi(GridDiscoverySpi discoSpi) {
+        public void setDiscoverySpi(DiscoverySpi discoSpi) {
             this.discoSpi = discoSpi;
         }
 

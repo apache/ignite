@@ -19,9 +19,9 @@ import java.io.*;
  * Adapter for {@link GridLocalMetrics} interface.
  * <p>
  * Note that whenever adding or removing metric parameters, care
- * must be taken to update {@link GridDiscoveryMetricsHelper} as well.
+ * must be taken to update {@link DiscoveryMetricsHelper} as well.
  */
-public class ClusterDiscoveryMetricsAdapter implements ClusterNodeMetrics, Externalizable {
+public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1008,7 +1008,7 @@ public class ClusterDiscoveryMetricsAdapter implements ClusterNodeMetrics, Exter
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        ClusterDiscoveryMetricsAdapter other = (ClusterDiscoveryMetricsAdapter)obj;
+        DiscoveryNodeMetricsAdapter other = (DiscoveryNodeMetricsAdapter)obj;
 
         return
             availProcs == other.availProcs &&
@@ -1055,6 +1055,6 @@ public class ClusterDiscoveryMetricsAdapter implements ClusterNodeMetrics, Exter
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ClusterDiscoveryMetricsAdapter.class, this);
+        return S.toString(DiscoveryNodeMetricsAdapter.class, this);
     }
 }

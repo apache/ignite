@@ -9,7 +9,6 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
@@ -49,7 +48,7 @@ public final class IgniteSystemProperties {
      * by discovery SPI. Use with care, as proper node ordering is required for
      * cache consistency. If set to {@code true}, then any discovery SPI can be used
      * with distributed cache, otherwise, only discovery SPIs that have annotation
-     * {@link GridDiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
+     * {@link org.gridgain.grid.spi.discovery.DiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
      * be allowed.
      */
     public static final String GG_NO_DISCO_ORDER = "GRIDGAIN_NO_DISCO_ORDER";

@@ -1464,7 +1464,7 @@ public class GridGainEx {
             String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
 
             CommunicationSpi commSpi = cfg.getCommunicationSpi();
-            GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
+            DiscoverySpi discoSpi = cfg.getDiscoverySpi();
             GridEventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();

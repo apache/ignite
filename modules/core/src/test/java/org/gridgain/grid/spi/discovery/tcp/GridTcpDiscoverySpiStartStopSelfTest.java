@@ -37,8 +37,8 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
      * @return Discovery data collector.
      */
     @GridSpiTestConfig
-    public GridDiscoverySpiDataExchange getDataExchange() {
-        return new GridDiscoverySpiDataExchange() {
+    public DiscoverySpiDataExchange getDataExchange() {
+        return new DiscoverySpiDataExchange() {
             @Override public List<Object> collect(UUID nodeId) {
                 return null;
             }
@@ -55,8 +55,8 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
      * @return Authenticator.
      */
     @GridSpiTestConfig
-    public GridDiscoverySpiNodeAuthenticator getAuthenticator() {
-        return new GridDiscoverySpiNodeAuthenticator() {
+    public DiscoverySpiNodeAuthenticator getAuthenticator() {
+        return new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
                 GridSecuritySubjectAdapter subj = new GridSecuritySubjectAdapter(
                     GridSecuritySubjectType.REMOTE_NODE, n.id());

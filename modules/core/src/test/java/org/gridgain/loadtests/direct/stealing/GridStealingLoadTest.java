@@ -70,7 +70,7 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
         // Verify defaults.
         assert failSpi.getMaximumFailoverAttempts() == GridJobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
 
-        GridDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        DiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCollisionSpi(colSpi);

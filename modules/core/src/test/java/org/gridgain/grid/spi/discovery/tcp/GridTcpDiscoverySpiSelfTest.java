@@ -24,7 +24,7 @@ public class GridTcpDiscoverySpiSelfTest extends GridAbstractDiscoverySelfTest<G
     private GridTcpDiscoveryIpFinder ipFinder =  new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected GridDiscoverySpi getSpi(int idx) {
+    @Override protected DiscoverySpi getSpi(int idx) {
         GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
 
         spi.setMetricsProvider(createMetricsProvider());

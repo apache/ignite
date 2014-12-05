@@ -17,11 +17,11 @@ import org.gridgain.grid.util.tostring.*;
  * to make sure that all nodes have updated metrics data about each other.
  * <p>
  * GridGain implementation will supply discovery SPI with metrics provider
- * via {@link GridDiscoverySpi#setMetricsProvider(GridDiscoveryMetricsProvider)}
+ * via {@link DiscoverySpi#setMetricsProvider(DiscoveryMetricsProvider)}
  * method.
  */
 @GridToStringExclude
-public interface GridDiscoveryMetricsProvider {
+public interface DiscoveryMetricsProvider {
     /**
      * This method always returns up-to-date metrics data about local node.
      *

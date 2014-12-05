@@ -16,9 +16,9 @@ import java.util.*;
 
 /**
  * Listener for grid node discovery events. See
- * {@link GridDiscoverySpi} for information on how grid nodes get discovered.
+ * {@link DiscoverySpi} for information on how grid nodes get discovered.
  */
-public interface GridDiscoverySpiListener {
+public interface DiscoverySpiListener {
     /**
      * Notification for grid node discovery events.
      *

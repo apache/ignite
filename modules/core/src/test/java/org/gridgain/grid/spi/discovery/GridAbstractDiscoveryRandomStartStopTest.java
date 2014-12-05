@@ -22,7 +22,7 @@ import java.util.*;
  * Base discovery random start-stop test class.
  * @param <T> Discovery spi type.
  */
-public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends GridDiscoverySpi> extends GridSpiAbstractTest<T> {
+public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final int DFLT_MAX_INTERVAL = 10;
 

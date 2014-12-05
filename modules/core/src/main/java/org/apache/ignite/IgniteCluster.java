@@ -66,7 +66,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param nodeId ID of a node to ping.
      * @return {@code true} if node for a given ID is alive, {@code false} otherwise.
-     * @see org.gridgain.grid.spi.discovery.GridDiscoverySpi
+     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
      */
     public boolean pingNode(UUID nodeId);
 

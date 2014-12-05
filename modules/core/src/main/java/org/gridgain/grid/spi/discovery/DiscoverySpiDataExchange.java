@@ -16,7 +16,7 @@ import java.util.*;
  * is initiated by a new node when it tries to join topology and finishes
  * before it actually joins.
  */
-public interface GridDiscoverySpiDataExchange {
+public interface DiscoverySpiDataExchange {
     /**
      * Collects data from all components. This method is called both
      * on new node that joins topology to transfer its data to existing

@@ -45,9 +45,9 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
         try {
             final Ignite g = startGrid();
 
-            GridDiscoverySpi spi = g.configuration().getDiscoverySpi();
+            DiscoverySpi spi = g.configuration().getDiscoverySpi();
 
-            GridDiscoverySpiHistorySupport ann = U.getAnnotation(spi.getClass(), GridDiscoverySpiHistorySupport.class);
+            DiscoverySpiHistorySupport ann = U.getAnnotation(spi.getClass(), DiscoverySpiHistorySupport.class);
 
             assertNotNull("Spi does not have annotation for history support", ann);
 

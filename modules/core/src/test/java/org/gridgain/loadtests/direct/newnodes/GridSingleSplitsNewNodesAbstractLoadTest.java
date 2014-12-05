@@ -33,7 +33,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      * @param cfg Current configuration.
      * @return Configured discovery spi.
      */
-    protected abstract GridDiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
+    protected abstract DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
     /**
      * @return Discovery spi heartbeat frequency.

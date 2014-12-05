@@ -45,8 +45,8 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
-@GridDiscoverySpiOrderSupport(true)
-@GridDiscoverySpiHistorySupport(true)
+@DiscoverySpiOrderSupport(true)
+@DiscoverySpiHistorySupport(true)
 public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpClientDiscoverySpiMBean {
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
@@ -361,7 +361,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setAuthenticator(GridDiscoverySpiNodeAuthenticator auth) {
+    @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator auth) {
         // No-op.
     }
 
@@ -1203,7 +1203,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param top Topology snapshot.
          */
         private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
-            GridDiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
+            DiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {
                 if (log.isDebugEnabled())

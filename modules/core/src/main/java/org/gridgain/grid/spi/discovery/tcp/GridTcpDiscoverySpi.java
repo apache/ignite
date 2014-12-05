@@ -133,12 +133,12 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridDiscoverySpi
+ * @see org.gridgain.grid.spi.discovery.DiscoverySpi
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
-@GridDiscoverySpiOrderSupport(true)
-@GridDiscoverySpiHistorySupport(true)
+@DiscoverySpiOrderSupport(true)
+@DiscoverySpiHistorySupport(true)
 public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpDiscoverySpiMBean {
     /** Default local port range (value is <tt>100</tt>). */
     public static final int DFLT_PORT_RANGE = 100;
@@ -264,7 +264,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
     /** Node authenticator. */
-    private GridDiscoverySpiNodeAuthenticator nodeAuth;
+    private DiscoverySpiNodeAuthenticator nodeAuth;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -1010,7 +1010,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         if (rmts != null && !rmts.isEmpty()) {
             // This is restart/disconnection and remote nodes are not empty.
             // We need to fire FAIL event for each.
-            GridDiscoverySpiListener lsnr = this.lsnr;
+            DiscoverySpiListener lsnr = this.lsnr;
 
             if (lsnr != null) {
                 Collection<ClusterNode> processed = new LinkedList<>();
@@ -1233,7 +1233,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void setAuthenticator(GridDiscoverySpiNodeAuthenticator nodeAuth) {
+    @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator nodeAuth) {
         this.nodeAuth = nodeAuth;
     }
 
@@ -1713,7 +1713,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         assert type > 0;
         assert node != null;
 
-        GridDiscoverySpiListener lsnr = this.lsnr;
+        DiscoverySpiListener lsnr = this.lsnr;
 
         GridTcpDiscoverySpiState spiState = spiStateCopy();
 

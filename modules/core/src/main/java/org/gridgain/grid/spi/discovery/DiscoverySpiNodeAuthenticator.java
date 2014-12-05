@@ -17,7 +17,7 @@ import org.gridgain.grid.security.*;
 /**
  * Node authenticator.
  */
-public interface GridDiscoverySpiNodeAuthenticator {
+public interface DiscoverySpiNodeAuthenticator {
     /**
      * Security credentials.
      *

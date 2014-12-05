@@ -23,7 +23,7 @@ import java.util.*;
  * @param <T> SPI implementation class.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public abstract class GridAbstractDiscoveryTest<T extends GridDiscoverySpi> extends GridSpiAbstractTest<T> {
+public abstract class GridAbstractDiscoveryTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     @SuppressWarnings({"ClassExplicitlyExtendsThread"})
     private class Pinger extends Thread {

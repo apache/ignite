@@ -97,7 +97,7 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
      * @return Node.
      */
     private GridTestNode getNode(String mac, int pid) {
-        ClusterDiscoveryMetricsAdapter metrics = new ClusterDiscoveryMetricsAdapter();
+        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
 
         metrics.setHeapMemoryMaximum(1024 * 1024 * 1024);
         metrics.setHeapMemoryInitialized(1024 * 1024 * 1024);
