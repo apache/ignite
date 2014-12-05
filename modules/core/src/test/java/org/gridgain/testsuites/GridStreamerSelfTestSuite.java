@@ -10,9 +10,9 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.streamer.index.*;
+import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.streamer.index.*;
-import org.gridgain.grid.streamer.window.*;
 
 /**
  * Streamer test suite.
