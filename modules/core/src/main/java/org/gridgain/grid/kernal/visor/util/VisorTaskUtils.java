@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 
 /**
  * Contains utility methods for Visor tasks and jobs.

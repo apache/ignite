@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.ggfs.split;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -26,7 +26,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Base class for all split resolvers

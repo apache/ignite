@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Tests for DUAL_ASYNC mode.

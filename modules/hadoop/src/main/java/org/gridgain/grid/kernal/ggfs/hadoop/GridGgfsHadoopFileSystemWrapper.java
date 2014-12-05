@@ -13,8 +13,8 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.ipc.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 
 import java.io.*;
 import java.net.*;
@@ -26,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.gridgain.grid.ggfs.IgniteFsFileSystem}.
+ * Adapter to use any Hadoop file system {@link org.apache.hadoop.fs.FileSystem} as {@link org.apache.ignite.fs.IgniteFsFileSystem}.
  */
 public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, AutoCloseable {
     /** Property name for path to Hadoop configuration. */

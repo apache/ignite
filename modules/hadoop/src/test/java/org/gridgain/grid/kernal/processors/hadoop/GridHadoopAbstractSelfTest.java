@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.spi.communication.tcp.*;

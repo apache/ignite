@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 
 /**
  * Descriptor of an input stream opened to the secondary file system.

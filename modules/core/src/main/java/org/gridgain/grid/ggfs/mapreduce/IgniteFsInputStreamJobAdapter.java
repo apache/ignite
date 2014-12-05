@@ -10,14 +10,14 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 import org.apache.ignite.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.*;
 
 import java.io.*;
 
 /**
- * Convenient {@link IgniteFsJob} adapter. It limits data returned from {@link org.gridgain.grid.ggfs.IgniteFsInputStream} to bytes within
+ * Convenient {@link IgniteFsJob} adapter. It limits data returned from {@link org.apache.ignite.fs.IgniteFsInputStream} to bytes within
  * the {@link IgniteFsFileRange} assigned to the job.
  * <p>
  * Under the covers it simply puts job's {@code GridGgfsInputStream} position to range start and wraps in into

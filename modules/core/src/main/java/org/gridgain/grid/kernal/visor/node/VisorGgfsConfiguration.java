@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.node;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

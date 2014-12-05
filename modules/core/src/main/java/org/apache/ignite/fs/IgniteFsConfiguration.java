@@ -7,15 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
 
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
  * {@code GGFS} configuration. More than one file system can be configured within grid.
@@ -60,7 +58,7 @@ public class IgniteFsConfiguration {
     public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
 
     /** Default GGFS mode. */
-    public static final IgniteFsMode DFLT_MODE = DUAL_ASYNC;
+    public static final IgniteFsMode DFLT_MODE = IgniteFsMode.DUAL_ASYNC;
 
     /** Default file's data block size (bytes). */
     public static final int DFLT_BLOCK_SIZE = 1 << 16;

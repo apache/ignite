@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
@@ -23,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * {@link IgniteFsPath} self test.
+ * {@link org.apache.ignite.fs.IgniteFsPath} self test.
  */
 public class GridGgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */

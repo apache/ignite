@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -24,7 +24,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Test for GGFS metrics.

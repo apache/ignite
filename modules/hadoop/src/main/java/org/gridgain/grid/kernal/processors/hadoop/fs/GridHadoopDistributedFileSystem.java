@@ -17,7 +17,7 @@ import org.apache.hadoop.mapreduce.*;
 import java.io.*;
 import java.net.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 
 /**
  * Wrapper of HDFS for support of separated working directory.

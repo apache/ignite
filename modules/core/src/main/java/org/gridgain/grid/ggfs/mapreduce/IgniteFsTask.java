@@ -12,9 +12,9 @@ package org.gridgain.grid.ggfs.mapreduce;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -26,11 +26,11 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
+ * {@link IgniteFsTask#createJob(org.apache.ignite.fs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
- * is provided (either through {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
+ * is provided (either through {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>
  * Once file is split into ranges, each range is passed to {@code GridGgfsTask.createJob()} method in order to create a

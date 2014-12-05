@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;

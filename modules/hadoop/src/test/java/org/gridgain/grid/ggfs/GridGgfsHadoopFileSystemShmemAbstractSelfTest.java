@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;

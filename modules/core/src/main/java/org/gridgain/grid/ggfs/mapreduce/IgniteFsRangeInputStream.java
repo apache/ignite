@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.ggfs.mapreduce;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
- * Decorator for regular {@link org.gridgain.grid.ggfs.IgniteFsInputStream} which streams only data within the given range.
+ * Decorator for regular {@link org.apache.ignite.fs.IgniteFsInputStream} which streams only data within the given range.
  * This stream is used for {@link IgniteFsInputStreamJobAdapter} convenience adapter to create
  * jobs which will be working only with the assigned range. You can also use it explicitly when
  * working with {@link IgniteFsJob} directly.

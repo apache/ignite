@@ -12,6 +12,7 @@ package org.gridgain.grid.ggfs;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -20,7 +21,7 @@ import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Test suite for GGFS event tests.

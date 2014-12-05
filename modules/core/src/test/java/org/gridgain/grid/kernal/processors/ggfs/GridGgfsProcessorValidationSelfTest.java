@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -24,13 +24,13 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Tests for node validation logic in {@link GridGgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link GridGgfsProcessor#validateLocalGgfsConfigurations(org.gridgain.grid.ggfs.IgniteFsConfiguration[])}.
+ * {@link GridGgfsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.fs.IgniteFsConfiguration[])}.
  * <p>
  * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
@@ -474,7 +474,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     }
 
     /**
-     * @param grpSize Group size to use in {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @param grpSize Group size to use in {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper}.
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */

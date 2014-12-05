@@ -10,8 +10,8 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 import org.apache.ignite.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 
 import java.io.*;
 
@@ -19,8 +19,8 @@ import java.io.*;
  * Defines executable unit for {@link IgniteFsTask}. Before this job is executed, it is assigned one of the
  * ranges provided by the {@link IgniteFsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
- * {@link #execute(org.apache.ignite.IgniteFs, IgniteFsFileRange, org.gridgain.grid.ggfs.IgniteFsInputStream)} method is given {@link IgniteFsFileRange} this
- * job is expected to operate on, and already opened {@link org.gridgain.grid.ggfs.IgniteFsInputStream} for the file this range belongs to.
+ * {@link #execute(org.apache.ignite.IgniteFs, IgniteFsFileRange, org.apache.ignite.fs.IgniteFsInputStream)} method is given {@link IgniteFsFileRange} this
+ * job is expected to operate on, and already opened {@link org.apache.ignite.fs.IgniteFsInputStream} for the file this range belongs to.
  * <p>
  * Note that provided input stream has position already adjusted to range start. However, it will not
  * automatically stop on range end. This is done to provide capability in some cases to look beyond

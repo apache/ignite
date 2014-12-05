@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs.split;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 import org.gridgain.grid.util.typedef.*;

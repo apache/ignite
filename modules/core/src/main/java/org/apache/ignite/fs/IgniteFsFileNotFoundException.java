@@ -7,36 +7,30 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
-
-import org.jetbrains.annotations.*;
+package org.apache.ignite.fs;
 
 /**
- * Exception thrown when target path supposed to be created already exists.
+ * {@code GGFS} exception indicating that target resource is not found.
  */
-public class IgniteFsPathAlreadyExistsException extends IgniteFsInvalidPathException {
+public class IgniteFsFileNotFoundException extends IgniteFsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
+     * Creates exception with error message specified.
+     *
      * @param msg Error message.
      */
-    public IgniteFsPathAlreadyExistsException(String msg) {
+    public IgniteFsFileNotFoundException(String msg) {
         super(msg);
     }
 
     /**
+     * Creates exception with given exception cause.
+     *
      * @param cause Exception cause.
      */
-    public IgniteFsPathAlreadyExistsException(Throwable cause) {
+    public IgniteFsFileNotFoundException(Throwable cause) {
         super(cause);
-    }
-
-    /**
-     * @param msg Error message.
-     * @param cause Exception cause.
-     */
-    public IgniteFsPathAlreadyExistsException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
     }
 }

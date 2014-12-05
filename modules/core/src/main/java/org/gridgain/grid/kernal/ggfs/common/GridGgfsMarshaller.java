@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -316,7 +316,7 @@ public class GridGgfsMarshaller {
     }
 
     /**
-     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.gridgain.grid.ggfs.IgniteFsPath)}
+     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.fs.IgniteFsPath)}
      * method.
      *
      * @param in Data input.

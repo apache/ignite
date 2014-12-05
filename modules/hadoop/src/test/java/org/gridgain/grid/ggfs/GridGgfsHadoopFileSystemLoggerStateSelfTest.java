@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
@@ -29,7 +30,7 @@ import java.nio.file.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 
 /**

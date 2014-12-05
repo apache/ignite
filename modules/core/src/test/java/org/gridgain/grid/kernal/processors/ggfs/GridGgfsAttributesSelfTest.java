@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * {@link GridGgfsAttributes} test case.

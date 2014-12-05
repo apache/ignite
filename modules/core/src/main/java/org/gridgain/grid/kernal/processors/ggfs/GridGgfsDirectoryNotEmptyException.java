@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 
 /**
  * Exception indicating that directory can not be deleted because it is not empty.

@@ -11,6 +11,7 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;

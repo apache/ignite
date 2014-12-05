@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.ggfs.mapreduce;
 
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 
 import java.util.*;
 
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
+ * passed to {@link IgniteFsTask#createJob(org.apache.ignite.fs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
@@ -25,7 +25,7 @@ import java.util.*;
  *     <li>{@link IgniteFsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>
- *     <li>Maximum file range length for that task (see {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
+ *     <li>Maximum file range length for that task (see {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
  * </ul>
  */
 public interface IgniteFsTaskArgs<T> {

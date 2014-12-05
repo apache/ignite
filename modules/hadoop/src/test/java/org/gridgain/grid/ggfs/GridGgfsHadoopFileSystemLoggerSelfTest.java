@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -16,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
 
 /**

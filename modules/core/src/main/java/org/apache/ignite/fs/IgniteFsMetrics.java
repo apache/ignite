@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
 
 /**
  * {@code GGFS} metrics snapshot for the file system. Note, that some metrics are global and

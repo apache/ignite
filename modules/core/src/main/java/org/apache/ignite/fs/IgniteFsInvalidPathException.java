@@ -7,43 +7,43 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
 
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception thrown by file system components.
+ * {@code GGFS} exception indicating that operation target is invalid
+ * (e.g. not a file while expecting to be a file).
  */
-public class IgniteFsException extends GridException {
+public class IgniteFsInvalidPathException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates an instance of GGFS exception with descriptive error message.
+     * Creates exception with given error message.
      *
      * @param msg Error message.
      */
-    public IgniteFsException(String msg) {
+    public IgniteFsInvalidPathException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates an instance of GGFS exception caused by nested exception.
+     * Creates exception with given exception cause.
      *
      * @param cause Exception cause.
      */
-    public IgniteFsException(Throwable cause) {
+    public IgniteFsInvalidPathException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates an instance of GGFS exception with error message and underlying cause.
+     * Creates exception with given error message and exception cause.
      *
      * @param msg Error message.
-     * @param cause Exception cause.
+     * @param cause Error cause.
      */
-    public IgniteFsException(String msg, @Nullable Throwable cause) {
+    public IgniteFsInvalidPathException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

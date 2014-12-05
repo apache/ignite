@@ -13,13 +13,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
@@ -1708,7 +1708,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1742,7 +1742,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
-     * {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.

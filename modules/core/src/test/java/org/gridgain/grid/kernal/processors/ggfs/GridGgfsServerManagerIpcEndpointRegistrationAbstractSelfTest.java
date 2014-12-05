@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.

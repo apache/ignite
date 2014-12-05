@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
 
 /**
  * {@code GGFS} exception indicating that file system structure was modified concurrently. This error

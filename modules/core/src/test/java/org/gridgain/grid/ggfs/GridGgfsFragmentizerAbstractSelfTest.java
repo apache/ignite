@@ -10,6 +10,7 @@
 package org.gridgain.grid.ggfs;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 
 /**

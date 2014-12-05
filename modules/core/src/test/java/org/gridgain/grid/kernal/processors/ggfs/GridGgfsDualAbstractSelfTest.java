@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.GridTestUtils;
@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.

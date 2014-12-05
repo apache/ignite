@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * GGFS Hadoop file system IPC loopback self test in SECONDARY mode.

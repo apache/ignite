@@ -10,12 +10,12 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import junit.framework.*;
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  *

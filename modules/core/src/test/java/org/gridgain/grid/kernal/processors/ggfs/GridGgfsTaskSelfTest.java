@@ -12,11 +12,11 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.ggfs.mapreduce.records.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -32,7 +32,7 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Tests for {@link org.gridgain.grid.ggfs.mapreduce.IgniteFsTask}.

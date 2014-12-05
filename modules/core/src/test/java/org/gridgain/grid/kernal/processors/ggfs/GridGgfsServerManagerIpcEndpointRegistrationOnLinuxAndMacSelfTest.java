@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.util.typedef.*;
 
-import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 
 /**
  * Tests for {@link GridGgfsServer} that checks all IPC endpoint registration types

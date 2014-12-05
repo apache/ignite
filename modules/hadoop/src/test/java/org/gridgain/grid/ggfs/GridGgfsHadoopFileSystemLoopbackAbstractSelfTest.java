@@ -9,6 +9,8 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.fs.*;
+
 import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**

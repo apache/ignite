@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.hadoop.planner;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;

@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Hadoop 2.x compliant file system.

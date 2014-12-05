@@ -10,7 +10,7 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.ggfs.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

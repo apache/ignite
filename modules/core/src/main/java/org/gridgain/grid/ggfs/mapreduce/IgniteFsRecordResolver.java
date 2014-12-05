@@ -10,8 +10,8 @@
 package org.gridgain.grid.ggfs.mapreduce;
 
 import org.apache.ignite.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

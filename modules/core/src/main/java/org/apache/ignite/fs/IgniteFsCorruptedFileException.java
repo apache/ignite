@@ -7,28 +7,36 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
+
+import org.jetbrains.annotations.*;
 
 /**
- * Exception thrown when GridGain detects that remote HDFS version differs from version of HDFS libraries
- * in GridGain classpath.
+ * Exception thrown when target file's block is not found in data cache.
  */
-public class IgniteFsInvalidHdfsVersionException extends IgniteFsException {
+public class IgniteFsCorruptedFileException extends IgniteFsException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public IgniteFsInvalidHdfsVersionException(String msg) {
+    public IgniteFsCorruptedFileException(String msg) {
         super(msg);
+    }
+
+    /**
+     * @param cause Error cause.
+     */
+    public IgniteFsCorruptedFileException(Throwable cause) {
+        super(cause);
     }
 
     /**
      * @param msg Error message.
      * @param cause Error cause.
      */
-    public IgniteFsInvalidHdfsVersionException(String msg, Throwable cause) {
+    public IgniteFsCorruptedFileException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

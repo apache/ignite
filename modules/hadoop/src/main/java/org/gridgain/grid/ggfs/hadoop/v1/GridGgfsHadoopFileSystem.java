@@ -16,8 +16,8 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.hdfs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -31,8 +31,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.gridgain.grid.ggfs.IgniteFsConfiguration.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
 

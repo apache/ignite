@@ -12,6 +12,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
@@ -28,7 +29,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.ggfs.IgniteFsMode.*;
+import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Ensures correct modes resolution for SECONDARY paths.

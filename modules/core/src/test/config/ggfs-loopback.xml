@@ -74,7 +74,7 @@
 
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.gridgain.grid.ggfs.IgniteFsConfiguration">
+                <bean class="org.apache.ignite.fs.IgniteFsConfiguration">
                     <property name="name" value="ggfs"/>
                     <property name="metaCacheName" value="ggfs-meta"/>
                     <property name="dataCacheName" value="ggfs-data"/>
@@ -109,7 +109,7 @@
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
-                        <bean class="org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper">
+                        <bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>

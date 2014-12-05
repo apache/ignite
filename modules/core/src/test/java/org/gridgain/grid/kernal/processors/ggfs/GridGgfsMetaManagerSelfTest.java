@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;

@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.concurrent.*;
 
 /**
- * Tests for {@link org.gridgain.grid.ggfs.IgniteFsGroupDataBlocksKeyMapper} hash.
+ * Tests for {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper} hash.
  */
 public class GridGgfsGroupDataBlockKeyMapperHashSelfTest extends GridGgfsCommonAbstractTest {
     /**

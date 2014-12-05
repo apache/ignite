@@ -7,43 +7,36 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.ggfs;
+package org.apache.ignite.fs;
 
 import org.jetbrains.annotations.*;
 
 /**
- * {@code GGFS} exception indicating that operation target is invalid
- * (e.g. not a file while expecting to be a file).
+ * Exception thrown when parent supposed to be a directory is a file.
  */
-public class IgniteFsInvalidPathException extends IgniteFsException {
+public class IgniteFsParentNotDirectoryException extends IgniteFsInvalidPathException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with given error message.
-     *
      * @param msg Error message.
      */
-    public IgniteFsInvalidPathException(String msg) {
+    public IgniteFsParentNotDirectoryException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates exception with given exception cause.
-     *
      * @param cause Exception cause.
      */
-    public IgniteFsInvalidPathException(Throwable cause) {
+    public IgniteFsParentNotDirectoryException(Throwable cause) {
         super(cause);
     }
 
     /**
-     * Creates exception with given error message and exception cause.
-     *
      * @param msg Error message.
-     * @param cause Error cause.
+     * @param cause Exception cause.
      */
-    public IgniteFsInvalidPathException(String msg, @Nullable Throwable cause) {
+    public IgniteFsParentNotDirectoryException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -90,7 +90,7 @@ public final class GridGgfsFileInfo implements Externalizable {
     }
 
     /**
-     * Constructs directory or file info with {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with {@link org.apache.ignite.fs.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
