@@ -1463,10 +1463,10 @@ public class GridGainEx {
 
             String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
 
-            GridCommunicationSpi commSpi = cfg.getCommunicationSpi();
+            CommunicationSpi commSpi = cfg.getCommunicationSpi();
             GridDiscoverySpi discoSpi = cfg.getDiscoverySpi();
             GridEventStorageSpi evtSpi = cfg.getEventStorageSpi();
-            GridCollisionSpi colSpi = cfg.getCollisionSpi();
+            CollisionSpi colSpi = cfg.getCollisionSpi();
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             GridDeploymentSpi deploySpi = cfg.getDeploymentSpi();
@@ -1695,7 +1695,7 @@ public class GridGainEx {
                 deploySpi = new GridLocalDeploymentSpi();
 
             if (cpSpi == null)
-                cpSpi = new CheckpointSpi[] {new GridNoopCheckpointSpi()};
+                cpSpi = new CheckpointSpi[] {new NoopCheckpointSpi()};
 
             if (failSpi == null)
                 failSpi = new GridFailoverSpi[] {new GridAlwaysFailoverSpi()};

@@ -222,24 +222,24 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      * Test collision SPI.
      */
     @IgniteSpiMultipleInstancesSupport(true)
-    public static class GridTestCollision extends IgniteSpiAdapter implements GridCollisionSpi {
+    public static class GridTestCollision extends IgniteSpiAdapter implements CollisionSpi {
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
-            Collection<GridCollisionJobContext> activeJobs = ctx.activeJobs();
-            Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        @Override public void onCollision(CollisionContext ctx) {
+            Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
+            Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
             synchronized (mux) {
                 colResolutionCnt++;
             }
 
-            for (GridCollisionJobContext job : waitJobs)
+            for (CollisionJobContext job : waitJobs)
                 job.activate();
 
-            for (GridCollisionJobContext job : activeJobs)
+            for (CollisionJobContext job : activeJobs)
                 job.cancel();
         }
 
@@ -261,7 +261,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
             // No-op.
         }
     }

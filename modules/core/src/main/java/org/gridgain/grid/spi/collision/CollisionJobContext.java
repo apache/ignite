@@ -15,7 +15,7 @@ import org.apache.ignite.compute.*;
  * This interface defines set of operations that collision SPI implementation can perform on
  * jobs that are either waiting or executing.
  */
-public interface GridCollisionJobContext {
+public interface CollisionJobContext {
     /**
      * Gets current task session associated with this job.
      *

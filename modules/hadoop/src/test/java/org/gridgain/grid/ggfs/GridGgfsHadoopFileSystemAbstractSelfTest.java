@@ -334,7 +334,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     }
 
     /** @return Communication SPI. */
-    private GridCommunicationSpi communicationSpi() {
+    private CommunicationSpi communicationSpi() {
         GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);

@@ -14,22 +14,22 @@ import java.util.*;
 /**
  * Tes
  */
-public class GridCollisionTestContext implements GridCollisionContext {
+public class GridCollisionTestContext implements CollisionContext {
     /** Active jobs. */
-    private Collection<GridCollisionJobContext> activeJobs;
+    private Collection<CollisionJobContext> activeJobs;
 
     /** Wait jobs. */
-    private Collection<GridCollisionJobContext> waitJobs;
+    private Collection<CollisionJobContext> waitJobs;
 
     /** Held jobs. */
-    private Collection<GridCollisionJobContext> heldJobs;
+    private Collection<CollisionJobContext> heldJobs;
 
     /**
      * @param activeJobs Active jobs.
      * @param waitJobs Waiting jobs.
      */
-    public GridCollisionTestContext(Collection<GridCollisionJobContext> activeJobs,
-        Collection<GridCollisionJobContext> waitJobs) {
+    public GridCollisionTestContext(Collection<CollisionJobContext> activeJobs,
+        Collection<CollisionJobContext> waitJobs) {
         this.activeJobs = activeJobs;
         this.waitJobs = waitJobs;
     }
@@ -39,26 +39,26 @@ public class GridCollisionTestContext implements GridCollisionContext {
      * @param waitJobs Waiting jobs.
      * @param heldJobs Held jobs.
      */
-    public GridCollisionTestContext(Collection<GridCollisionJobContext> activeJobs,
-        Collection<GridCollisionJobContext> waitJobs,
-        Collection<GridCollisionJobContext> heldJobs) {
+    public GridCollisionTestContext(Collection<CollisionJobContext> activeJobs,
+        Collection<CollisionJobContext> waitJobs,
+        Collection<CollisionJobContext> heldJobs) {
         this.activeJobs = activeJobs;
         this.waitJobs = waitJobs;
         this.heldJobs = heldJobs;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCollisionJobContext> activeJobs() {
+    @Override public Collection<CollisionJobContext> activeJobs() {
         return mask(activeJobs);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCollisionJobContext> heldJobs() {
+    @Override public Collection<CollisionJobContext> heldJobs() {
         return mask(heldJobs);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCollisionJobContext> waitingJobs() {
+    @Override public Collection<CollisionJobContext> waitingJobs() {
         return mask(waitJobs);
     }
 
@@ -66,7 +66,7 @@ public class GridCollisionTestContext implements GridCollisionContext {
      * @param c Collection to check for {@code null}.
      * @return Non-null collection.
      */
-    private Collection<GridCollisionJobContext> mask(Collection<GridCollisionJobContext> c) {
-        return c == null ? Collections.<GridCollisionJobContext>emptyList() : c;
+    private Collection<CollisionJobContext> mask(Collection<CollisionJobContext> c) {
+        return c == null ? Collections.<CollisionJobContext>emptyList() : c;
     }
 }

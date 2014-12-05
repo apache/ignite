@@ -45,7 +45,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
         ds.setUser("sa");
         ds.setPassword("");
 
-        GridJdbcCheckpointSpi spi = new GridJdbcCheckpointSpi();
+        JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
         spi.setDataSource(ds);
         spi.setCheckpointTableName("checkpoints");
@@ -73,7 +73,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         cacheCfg.setName(cacheName);
 
-        GridCacheCheckpointSpi spi = new GridCacheCheckpointSpi();
+        CacheCheckpointSpi spi = new CacheCheckpointSpi();
 
         spi.setCacheName(cacheName);
 

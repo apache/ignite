@@ -24,7 +24,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <li>Cache name (see {@link #setCacheName(String)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * {@link GridCacheCheckpointSpi} can be configured as follows:
+ * {@link CacheCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -47,7 +47,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * {@link GridCacheCheckpointSpi} can be configured from Spring XML configuration file:
+ * {@link CacheCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
@@ -76,7 +76,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * @see org.gridgain.grid.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridCacheCheckpointSpiMBean {
+public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, CacheCheckpointSpiMBean {
     /** Default cache name (value is <tt>checkpoints</tt>). */
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
@@ -121,7 +121,7 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements Checkpoi
         if (log.isDebugEnabled())
             log.debug(configInfo("cacheName", cacheName));
 
-        registerMBean(gridName, this, GridCacheCheckpointSpiMBean.class);
+        registerMBean(gridName, this, CacheCheckpointSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -223,6 +223,6 @@ public class GridCacheCheckpointSpi extends IgniteSpiAdapter implements Checkpoi
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheCheckpointSpi.class, this);
+        return S.toString(CacheCheckpointSpi.class, this);
     }
 }

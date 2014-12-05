@@ -131,12 +131,12 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridCommunicationSpi
+ * @see org.gridgain.grid.spi.communication.CommunicationSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class GridTcpCommunicationSpi extends IgniteSpiAdapter
-    implements GridCommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
+    implements CommunicationSpi<GridTcpCommunicationMessageAdapter>, GridTcpCommunicationSpiMBean {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower). For troubleshooting see " +
@@ -246,7 +246,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv))
                         rmv.forceClose();
 
-                    GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
+                    CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr0 = lsnr;
 
                     if (lsnr0 != null)
                         lsnr0.onDisconnected(id);
@@ -436,7 +436,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     private final ConcurrentMap<UUID, GridCommunicationClient> clients = GridConcurrentFactory.newMap();
 
     /** SPI listener. */
-    private volatile GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr;
+    private volatile CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr;
 
     /** Bound port. */
     private int boundTcpPort = -1;
@@ -998,14 +998,14 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr) {
+    @Override public void setListener(CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr) {
         this.lsnr = lsnr;
     }
 
     /**
      * @return Listener.
      */
-    public GridCommunicationListener getListener() {
+    public CommunicationListener getListener() {
         return lsnr;
     }
 
@@ -1886,7 +1886,7 @@ public class GridTcpCommunicationSpi extends IgniteSpiAdapter
      * @param msgC Closure to call when message processing finished.
      */
     protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
-        GridCommunicationListener<GridTcpCommunicationMessageAdapter> lsnr = this.lsnr;
+        CommunicationListener<GridTcpCommunicationMessageAdapter> lsnr = this.lsnr;
 
         if (lsnr != null)
             // Notify listener of a new message.

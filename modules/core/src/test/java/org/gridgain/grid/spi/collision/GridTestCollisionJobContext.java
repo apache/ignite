@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
 /**
  * Test implementation for job collision context.
  */
-public class GridTestCollisionJobContext implements GridCollisionJobContext {
+public class GridTestCollisionJobContext implements CollisionJobContext {
     /** Task session. */
     private ComputeTaskSession ses;
 

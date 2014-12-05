@@ -128,7 +128,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             cacheCfg.setName(cacheName);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            GridCacheCheckpointSpi spi = new GridCacheCheckpointSpi();
+            CacheCheckpointSpi spi = new CacheCheckpointSpi();
 
             spi.setCacheName(cacheName);
 
@@ -137,7 +137,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             cfg.setCheckpointSpi(spi);
         }
         else if (gridName.contains("jdbc")) {
-            GridJdbcCheckpointSpi spi = new GridJdbcCheckpointSpi();
+            JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
             jdbcDataSource ds = new jdbcDataSource();
 

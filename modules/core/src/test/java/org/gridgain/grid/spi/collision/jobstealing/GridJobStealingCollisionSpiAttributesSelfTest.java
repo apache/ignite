@@ -116,9 +116,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
      * @throws Exception If test failed.
      */
     public void testSameAttribute() throws Exception {
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         GridTestNode rmtNode = (GridTestNode)getSpiContext().remoteNodes().iterator().next();
 
@@ -149,9 +149,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
      * @throws Exception If test failed.
      */
     public void testEmptyRemoteAttribute() throws Exception {
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -181,9 +181,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         // Thus we have to wait for the message to be expired.
         Thread.sleep(50);
 
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         GridTestNode rmtNode = (GridTestNode)F.first(getSpiContext().remoteNodes());
 
@@ -208,9 +208,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
     * @throws Exception If test failed.
     */
     public void testDiffAttribute() throws Exception {
-       List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+       List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-       Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+       Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
       GridTestNode rmtNode = (GridTestNode)F.first(getSpiContext().remoteNodes());
 
@@ -246,9 +246,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         // Thus we have to wait for the message to be expired.
         Thread.sleep(50);
 
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -273,9 +273,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         // Thus we have to wait for the message to be expired.
         Thread.sleep(50);
 
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -301,9 +301,9 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         // Thus we have to wait for the message to be expired.
         Thread.sleep(50);
 
-        List<GridCollisionJobContext> waitCtxs = Collections.emptyList();
+        List<CollisionJobContext> waitCtxs = Collections.emptyList();
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 

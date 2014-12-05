@@ -36,8 +36,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
         String taskAttrKey = "testTaskPriority";
         String jobAttrKey = "testJobPriority";
 
-        List<GridCollisionJobContext> activeJobs = makeContextList(taskAttrKey);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(taskAttrKey);
+        List<CollisionJobContext> activeJobs = makeContextList(taskAttrKey);
+        List<CollisionJobContext> passiveJobs = makeContextList(taskAttrKey);
 
         getSpi().setParallelJobsNumber(12);
         getSpi().setPriorityAttributeKey(taskAttrKey);
@@ -47,7 +47,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         int incVal = getSpi().getStarvationIncrement();
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 assert ((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -64,7 +64,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
                 assert p == incVal + ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -77,19 +77,19 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollision() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
         getSpi().setParallelJobsNumber(20);
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             assert ((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -99,17 +99,17 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollision0() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             assert ((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -120,8 +120,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     public void testCollision1() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
         getSpi().setParallelJobsNumber(12);
 
@@ -131,7 +131,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         String jobAttrKey = DFLT_JOB_PRIORITY_ATTRIBUTE_KEY;
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 assert ((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -148,7 +148,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
                 assert p == incVal + ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -158,19 +158,19 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollision2() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
         getSpi().setParallelJobsNumber(10);
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -180,19 +180,19 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollision3() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
         getSpi().setParallelJobsNumber(5);
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -202,8 +202,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollisionEmpty() throws Exception {
-        Collection<GridCollisionJobContext> activeJobs = new ArrayList<>();
-        Collection<GridCollisionJobContext> passiveJobs = new ArrayList<>();
+        Collection<CollisionJobContext> activeJobs = new ArrayList<>();
+        Collection<CollisionJobContext> passiveJobs = new ArrayList<>();
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
@@ -215,10 +215,10 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollisionWithoutPriorityAttribute() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 ((GridTestCollisionTaskSession)ctx.getTaskSession()).setPriorityAttributeKey("bad-attr-name");
 
@@ -239,7 +239,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 assert ((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -251,7 +251,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
             }
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -261,10 +261,10 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollisionWithWrongPriorityAttribute() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null);
+        List<CollisionJobContext> activeJobs = makeContextList(null);
+        List<CollisionJobContext> passiveJobs = makeContextList(null);
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 ((GridTestCollisionJobContext)ctx).setTaskSession(new GridTestCollisionTaskSession(100,
                     DFLT_PRIORITY_ATTRIBUTE_KEY) {
@@ -294,7 +294,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 assert ((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -306,7 +306,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
             }
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -317,8 +317,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testCollision4() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null, false);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null, false);
+        List<CollisionJobContext> activeJobs = makeContextList(null, false);
+        List<CollisionJobContext> passiveJobs = makeContextList(null, false);
 
         int incVal = 2;
 
@@ -329,7 +329,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         String jobAttrKey = DFLT_JOB_PRIORITY_ATTRIBUTE_KEY;
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             int taskP = ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
 
             if (taskP >= 8) {
@@ -350,7 +350,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
             }
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -362,8 +362,8 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @throws Exception If failed.
      */
     public void testCollision5() throws Exception {
-        List<GridCollisionJobContext> activeJobs = makeContextList(null, false);
-        List<GridCollisionJobContext> passiveJobs = makeContextList(null, false);
+        List<CollisionJobContext> activeJobs = makeContextList(null, false);
+        List<CollisionJobContext> passiveJobs = makeContextList(null, false);
 
         getSpi().setParallelJobsNumber(12);
         getSpi().setStarvationPreventionEnabled(false);
@@ -372,7 +372,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
 
         String jobAttrKey = DFLT_JOB_PRIORITY_ATTRIBUTE_KEY;
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             int taskP = ((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority();
 
             if (taskP >= 8) {
@@ -387,7 +387,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
             assert ctx.getJobContext().<String, Integer>getAttribute(jobAttrKey) == null;
         }
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -398,11 +398,11 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @param shuffle Whether result list should be shuffle.
      * @return List of job collision contexts.
      */
-    private List<GridCollisionJobContext> makeContextList(@Nullable String attrKey, boolean shuffle) {
+    private List<CollisionJobContext> makeContextList(@Nullable String attrKey, boolean shuffle) {
         if (attrKey == null)
             attrKey = DFLT_PRIORITY_ATTRIBUTE_KEY;
 
-        List<GridCollisionJobContext> jobs = new ArrayList<>();
+        List<CollisionJobContext> jobs = new ArrayList<>();
 
         for (int i = 0; i < 10; i++)
             jobs.add(new GridTestCollisionJobContext(new GridTestCollisionTaskSession(i, attrKey)));
@@ -417,7 +417,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<G
      * @param attrKey Attribute key.
      * @return List of job collision contexts.
      */
-    private List<GridCollisionJobContext> makeContextList(@Nullable String attrKey) {
+    private List<CollisionJobContext> makeContextList(@Nullable String attrKey) {
         return makeContextList(attrKey, true);
     }
 }

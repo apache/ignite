@@ -16,11 +16,11 @@ import org.hsqldb.jdbc.*;
 /**
  * Grid jdbc checkpoint SPI custom config self test.
  */
-@GridSpiTest(spi = GridJdbcCheckpointSpi.class, group = "Checkpoint SPI")
+@GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
 public class GridJdbcCheckpointSpiCustomConfigSelfTest extends
-    GridCheckpointSpiAbstractTest<GridJdbcCheckpointSpi> {
+    GridCheckpointSpiAbstractTest<JdbcCheckpointSpi> {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridJdbcCheckpointSpi spi) throws Exception {
+    @Override protected void spiConfigure(JdbcCheckpointSpi spi) throws Exception {
         jdbcDataSource ds = new jdbcDataSource();
 
         ds.setDatabase("jdbc:hsqldb:mem:gg_test_" + getClass().getSimpleName());

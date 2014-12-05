@@ -28,7 +28,6 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.gridgain.grid.spi.checkpoint.*;
-import org.gridgain.grid.spi.checkpoint.noop.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.collision.noop.*;
 import org.gridgain.grid.spi.communication.*;
@@ -350,13 +349,13 @@ public class IgniteConfiguration {
     private long segChkFreq = DFLT_SEG_CHK_FREQ;
 
     /** Communication SPI. */
-    private GridCommunicationSpi commSpi;
+    private CommunicationSpi commSpi;
 
     /** Event storage SPI. */
     private GridEventStorageSpi evtSpi;
 
     /** Collision SPI. */
-    private GridCollisionSpi colSpi;
+    private CollisionSpi colSpi;
 
     /** Authentication SPI. */
     private AuthenticationSpi authSpi;
@@ -1937,17 +1936,17 @@ public class IgniteConfiguration {
      *
      * @return Grid communication SPI implementation or {@code null} to use default implementation.
      */
-    public GridCommunicationSpi getCommunicationSpi() {
+    public CommunicationSpi getCommunicationSpi() {
         return commSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridCommunicationSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.communication.CommunicationSpi}.
      *
-     * @param commSpi Fully configured instance of {@link GridCommunicationSpi}.
+     * @param commSpi Fully configured instance of {@link org.gridgain.grid.spi.communication.CommunicationSpi}.
      * @see IgniteConfiguration#getCommunicationSpi()
      */
-    public void setCommunicationSpi(GridCommunicationSpi commSpi) {
+    public void setCommunicationSpi(CommunicationSpi commSpi) {
         this.commSpi = commSpi;
     }
 
@@ -1961,18 +1960,18 @@ public class IgniteConfiguration {
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
-    public GridCollisionSpi getCollisionSpi() {
+    public CollisionSpi getCollisionSpi() {
         return colSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridCollisionSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.collision.CollisionSpi}.
      *
-     * @param colSpi Fully configured instance of {@link GridCollisionSpi} or
+     * @param colSpi Fully configured instance of {@link org.gridgain.grid.spi.collision.CollisionSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getCollisionSpi()
      */
-    public void setCollisionSpi(GridCollisionSpi colSpi) {
+    public void setCollisionSpi(CollisionSpi colSpi) {
         this.colSpi = colSpi;
     }
 
@@ -2040,7 +2039,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured checkpoint SPI implementation. If not provided,
-     * {@link GridNoopCheckpointSpi} will be used.
+     * {@link org.gridgain.grid.spi.checkpoint.noop.NoopCheckpointSpi} will be used.
      *
      * @return Grid checkpoint SPI implementation or {@code null} to use default implementation.
      */

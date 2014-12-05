@@ -42,7 +42,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCommunicationSpi<T extends Serializable> extends IgniteSpi {
+public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
     /**
      * Sends given message to destination node. Note that characteristics of the
      * exchange such as durability, guaranteed delivery or error notification is
@@ -101,5 +101,5 @@ public interface GridCommunicationSpi<T extends Serializable> extends IgniteSpi 
      *
      * @param lsnr Listener to set or {@code null} to unset the listener.
      */
-    public void setListener(@Nullable GridCommunicationListener<T> lsnr);
+    public void setListener(@Nullable CommunicationListener<T> lsnr);
 }

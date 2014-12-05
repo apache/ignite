@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- * No-op implementation of {@link GridCollisionSpi}. This is default implementation
+ * No-op implementation of {@link org.gridgain.grid.spi.collision.CollisionSpi}. This is default implementation
  * since {@code 4.5.0} version. When grid is started with {@link GridNoopCollisionSpi}
  * jobs are activated immediately on arrival to mapped node. This approach suits well
  * for large amount of small jobs (which is a wide-spread use case). User still can
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridNoopCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
+public class GridNoopCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         // No-op.
@@ -36,12 +36,12 @@ public class GridNoopCollisionSpi extends IgniteSpiAdapter implements GridCollis
     }
 
     /** {@inheritDoc} */
-    @Override public void onCollision(GridCollisionContext ctx) {
+    @Override public void onCollision(CollisionContext ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void setExternalCollisionListener(@Nullable GridCollisionExternalListener lsnr) {
+    @Override public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr) {
         // No-op.
     }
 

@@ -61,7 +61,7 @@ public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(cacheCfg1, cacheCfg2);
 
-        GridCacheCheckpointSpi cp = new GridCacheCheckpointSpi();
+        CacheCheckpointSpi cp = new CacheCheckpointSpi();
 
         cp.setCacheName(CP_CACHE);
 

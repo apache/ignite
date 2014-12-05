@@ -12,11 +12,11 @@ package org.gridgain.grid.spi.collision;
 import java.util.*;
 
 /**
- * Listener to be set on {@link GridCollisionSpi} for notification of external
+ * Listener to be set on {@link CollisionSpi} for notification of external
  * collision events (e.g. job stealing). Once grid receives such notification,
  * it will immediately invoke collision SPI.
  */
-public interface GridCollisionExternalListener extends EventListener {
+public interface CollisionExternalListener extends EventListener {
     /**
      * Callback invoked by Collision SPI whenever an external collision
      * event occurs.

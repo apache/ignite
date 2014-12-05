@@ -15,9 +15,9 @@ import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.spi.collision.*;
 
 /**
- * Adapter for {@link GridCollisionJobContext}.
+ * Adapter for {@link org.gridgain.grid.spi.collision.CollisionJobContext}.
  */
-public abstract class GridCollisionJobContextAdapter implements GridCollisionJobContext {
+public abstract class GridCollisionJobContextAdapter implements CollisionJobContext {
     /** */
     private final GridJobWorker jobWorker;
 

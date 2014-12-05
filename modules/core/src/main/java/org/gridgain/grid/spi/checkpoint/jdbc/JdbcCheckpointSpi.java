@@ -51,7 +51,7 @@ import java.text.*;
  * this SPI from Spring configuration file. Refer to {@code Apache DBCP} project for more information.
  * <p>
  * <h2 class="header">Java Example</h2>
- * {@link GridJdbcCheckpointSpi} can be configured as follows:
+ * {@link JdbcCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -72,7 +72,7 @@ import java.text.*;
  * </pre>
  *
  * <h2 class="header">Spring Example</h2>
- * {@link GridJdbcCheckpointSpi} can be configured from Spring XML configuration file:
+ * {@link JdbcCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
@@ -94,7 +94,7 @@ import java.text.*;
  */
 @SuppressWarnings({"JDBCResourceOpenedButNotSafelyClosed", "JDBCExecuteWithNonConstantString"})
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridJdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridJdbcCheckpointSpiMBean {
+public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, JdbcCheckpointSpiMBean {
     /** Default number of retries in case of errors (value is {@code 2}). */
     public static final int DFLT_NUMBER_OF_RETRIES = 2;
 

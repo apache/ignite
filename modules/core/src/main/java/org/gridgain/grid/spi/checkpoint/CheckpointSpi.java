@@ -10,9 +10,6 @@
 package org.gridgain.grid.spi.checkpoint;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.checkpoint.cache.*;
-import org.gridgain.grid.spi.checkpoint.jdbc.*;
-import org.gridgain.grid.spi.checkpoint.noop.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -38,11 +35,11 @@ import org.jetbrains.annotations.*;
  * <p>
  * GridGain provides the following {@code GridCheckpointSpi} implementations:
  * <ul>
- * <li>{@link GridNoopCheckpointSpi} - default</li>
+ * <li>{@link org.gridgain.grid.spi.checkpoint.noop.NoopCheckpointSpi} - default</li>
  * <li>{@link org.gridgain.grid.spi.checkpoint.sharedfs.SharedFsCheckpointSpi}</li>
  * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
- * <li>{@link GridJdbcCheckpointSpi}</li>
- * <li>{@link GridCacheCheckpointSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.checkpoint.jdbc.JdbcCheckpointSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.checkpoint.cache.CacheCheckpointSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when

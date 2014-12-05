@@ -151,23 +151,23 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      */
     @IgniteSpiMultipleInstancesSupport(true)
     private static class GridCancelCollisionSpi extends IgniteSpiAdapter
-        implements GridCollisionSpi {
+        implements CollisionSpi {
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** */
-        private GridCollisionExternalListener lsnr;
+        private CollisionExternalListener lsnr;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
-            Collection<GridCollisionJobContext> activeJobs = ctx.activeJobs();
-            Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        @Override public void onCollision(CollisionContext ctx) {
+            Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
+            Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
-            for (GridCollisionJobContext job : waitJobs)
+            for (CollisionJobContext job : waitJobs)
                 job.activate();
 
-            for (GridCollisionJobContext job : activeJobs) {
+            for (CollisionJobContext job : activeJobs) {
                 log.info("Cancelling job : " + job.getJob());
 
                 job.cancel();
@@ -192,13 +192,13 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
             this.lsnr = lsnr;
         }
 
         /** */
         public void externalCollision() {
-            GridCollisionExternalListener tmp = lsnr;
+            CollisionExternalListener tmp = lsnr;
 
             if (tmp != null)
                 tmp.onExternalCollision();

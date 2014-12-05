@@ -96,7 +96,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCollisionManager() throws Exception {
-        GridCollisionSpi spi = new GridFifoQueueCollisionSpi();
+        CollisionSpi spi = new GridFifoQueueCollisionSpi();
 
         injectLogger(spi);
 
@@ -111,7 +111,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopCommunicationManager() throws Exception {
-        GridCommunicationSpi spi = new GridTcpCommunicationSpi();
+        CommunicationSpi spi = new GridTcpCommunicationSpi();
 
         injectLogger(spi);
 

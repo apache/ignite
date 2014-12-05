@@ -568,7 +568,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         private GridDiscoverySpi discoSpi;
 
         /** */
-        private GridCommunicationSpi commSpi;
+        private CommunicationSpi commSpi;
 
         /** */
         private GridSpiTestContext spiCtx;
@@ -627,7 +627,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         /**
          * @param commSpi Communication SPI.
          */
-        public void setCommSpi(GridCommunicationSpi commSpi) {
+        public void setCommSpi(CommunicationSpi commSpi) {
             this.commSpi = commSpi;
         }
 

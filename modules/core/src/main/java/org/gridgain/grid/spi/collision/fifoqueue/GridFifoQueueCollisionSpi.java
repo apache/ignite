@@ -63,7 +63,7 @@ import java.util.*;
  * </pre>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
+public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     GridFifoQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is
@@ -172,16 +172,16 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+    @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onCollision(GridCollisionContext ctx) {
+    @Override public void onCollision(CollisionContext ctx) {
         assert ctx != null;
 
-        Collection<GridCollisionJobContext> activeJobs = ctx.activeJobs();
-        Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
+        Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
         // Save initial sizes to limit iteration.
         int activeSize = activeJobs.size();
@@ -193,13 +193,13 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridC
 
         int parallelJobsNum0 = parallelJobsNum;
 
-        Iterator<GridCollisionJobContext> it = null;
+        Iterator<CollisionJobContext> it = null;
 
         if (activeSize < parallelJobsNum0) {
             it = waitJobs.iterator();
 
             while (it.hasNext()) {
-                GridCollisionJobContext waitCtx = it.next();
+                CollisionJobContext waitCtx = it.next();
 
                 waitCtx.activate();
 
@@ -222,7 +222,7 @@ public class GridFifoQueueCollisionSpi extends IgniteSpiAdapter implements GridC
                 it = waitJobs.iterator();
 
             while (it.hasNext()) {
-                GridCollisionJobContext waitCtx = it.next();
+                CollisionJobContext waitCtx = it.next();
 
                 waitCtx.cancel();
 

@@ -70,7 +70,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<GridTcpC
      * Accumulating listener.
      */
     @SuppressWarnings({"deprecation"})
-    private class MessageListener implements GridCommunicationListener<GridTcpCommunicationMessageAdapter> {
+    private class MessageListener implements CommunicationListener<GridTcpCommunicationMessageAdapter> {
         /** Node id of local node. */
         private final UUID locNodeId;
 

@@ -536,13 +536,13 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
     /** */
     @IgniteSpiMultipleInstancesSupport(true)
-    private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
+    private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
+        @Override public void onCollision(CollisionContext ctx) {
             // No-op.
         }
 
@@ -564,7 +564,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
             // No-op.
         }
     }
@@ -574,13 +574,13 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      * This test might be working on distributed environment.
      */
     @IgniteSpiMultipleInstancesSupport(true)
-    private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
+    private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
+        @Override public void onCollision(CollisionContext ctx) {
             // No-op.
         }
 
@@ -602,7 +602,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
             // No-op.
         }
     }

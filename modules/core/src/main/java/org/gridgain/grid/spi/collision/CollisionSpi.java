@@ -41,7 +41,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCollisionSpi extends IgniteSpi {
+public interface CollisionSpi extends IgniteSpi {
     /**
      * This is a callback called when either new grid job arrived or executing job finished its
      * execution. When new job arrives it is added to the end of the wait list and this
@@ -51,12 +51,12 @@ public interface GridCollisionSpi extends IgniteSpi {
      * <p>
      * Implementation of this method should act on all lists, each of which contains collision
      * job contexts that define a set of operations available during collision resolution. Refer
-     * to {@link GridCollisionContext} and {@link GridCollisionJobContext} documentation for
+     * to {@link CollisionContext} and {@link CollisionJobContext} documentation for
      * more information.
      *
      * @param ctx Collision context which contains all collision lists.
      */
-    public void onCollision(GridCollisionContext ctx);
+    public void onCollision(CollisionContext ctx);
 
     /**
      * Listener to be set for notification of external collision events (e.g. job stealing).
@@ -76,5 +76,5 @@ public interface GridCollisionSpi extends IgniteSpi {
      *
      * @param lsnr Listener for external collision events.
      */
-    public void setExternalCollisionListener(@Nullable GridCollisionExternalListener lsnr);
+    public void setExternalCollisionListener(@Nullable CollisionExternalListener lsnr);
 }

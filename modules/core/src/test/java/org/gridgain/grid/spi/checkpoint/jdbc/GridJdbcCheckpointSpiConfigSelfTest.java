@@ -13,22 +13,22 @@ import org.gridgain.testframework.junits.spi.*;
 import org.hsqldb.jdbc.*;
 import javax.sql.*;
 
-import static org.gridgain.grid.spi.checkpoint.jdbc.GridJdbcCheckpointSpi.*;
+import static org.gridgain.grid.spi.checkpoint.jdbc.JdbcCheckpointSpi.*;
 
 /**
  * Grid jdbc checkpoint SPI config self test.
  */
-@GridSpiTest(spi = GridJdbcCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridJdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridJdbcCheckpointSpi> {
+@GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
+public class GridJdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<JdbcCheckpointSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridJdbcCheckpointSpi(), "dataSource", null);
+        checkNegativeSpiProperty(new JdbcCheckpointSpi(), "dataSource", null);
 
         DataSource ds = new jdbcDataSource();
 
-        GridJdbcCheckpointSpi spi = new GridJdbcCheckpointSpi();
+        JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
         spi.setDataSource(ds);
 

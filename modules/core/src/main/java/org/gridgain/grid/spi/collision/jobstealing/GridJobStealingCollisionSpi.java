@@ -156,7 +156,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
+public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     GridJobStealingCollisionSpiMBean {
     /** Maximum number of attempts to steal job by another node (default is {@code 5}). */
     public static final int DFLT_MAX_STEALING_ATTEMPTS = 5;
@@ -262,7 +262,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
 
     /** */
-    private GridCollisionExternalListener extLsnr;
+    private CollisionExternalListener extLsnr;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -274,7 +274,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     private final AtomicInteger stealReqs = new AtomicInteger();
 
     /** */
-    private Comparator<GridCollisionJobContext> cmp;
+    private Comparator<CollisionJobContext> cmp;
 
     /** {@inheritDoc} */
     @IgniteSpiConfiguration(optional = true)
@@ -430,7 +430,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void setExternalCollisionListener(GridCollisionExternalListener extLsnr) {
+    @Override public void setExternalCollisionListener(CollisionExternalListener extLsnr) {
         this.extLsnr = extLsnr;
     }
 
@@ -543,7 +543,7 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
                         log.debug("Received steal request [nodeId=" + nodeId + ", msg=" + msg +
                             ", stealReqs=" + stealReqs0 + ']');
 
-                    GridCollisionExternalListener tmp = extLsnr;
+                    CollisionExternalListener tmp = extLsnr;
 
                     // Let grid know that collisions should be resolved.
                     if (tmp != null)
@@ -563,11 +563,11 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void onCollision(GridCollisionContext ctx) {
+    @Override public void onCollision(CollisionContext ctx) {
         assert ctx != null;
 
-        Collection<GridCollisionJobContext> activeJobs = ctx.activeJobs();
-        Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
+        Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
         heldNum = ctx.heldJobs().size();
 
@@ -596,8 +596,8 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
      * @param activeJobs Active jobs.
      * @return Number of rejected jobs.
      */
-    private int checkBusy(Collection<GridCollisionJobContext> waitJobs,
-        Collection<GridCollisionJobContext> activeJobs) {
+    private int checkBusy(Collection<CollisionJobContext> waitJobs,
+        Collection<CollisionJobContext> activeJobs) {
 
         int activeSize = activeJobs.size();
         int waitSize = waitJobs.size();
@@ -610,12 +610,12 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
         int activated = 0;
         int rejected = 0;
 
-        Collection<GridCollisionJobContext> waitPriJobs = sortJobs(waitJobs, waitSize);
+        Collection<CollisionJobContext> waitPriJobs = sortJobs(waitJobs, waitSize);
 
         int activeJobsThreshold0 = activeJobsThreshold;
         int waitJobsThreshold0 = waitJobsThreshold;
 
-        for (GridCollisionJobContext waitCtx : waitPriJobs) {
+        for (CollisionJobContext waitCtx : waitPriJobs) {
             if (activeJobs.size() < activeJobsThreshold0) {
                 activated++;
 
@@ -781,12 +781,12 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
      * @param waitSize Snapshot size.
      * @return Sorted waiting jobs by priority.
      */
-    private Collection<GridCollisionJobContext> sortJobs(Collection<GridCollisionJobContext> waitJobs, int waitSize) {
-        List<GridCollisionJobContext> passiveList = new ArrayList<>(waitJobs.size());
+    private Collection<CollisionJobContext> sortJobs(Collection<CollisionJobContext> waitJobs, int waitSize) {
+        List<CollisionJobContext> passiveList = new ArrayList<>(waitJobs.size());
 
         int i = 0;
 
-        for (GridCollisionJobContext waitJob : waitJobs) {
+        for (CollisionJobContext waitJob : waitJobs) {
             passiveList.add(waitJob);
 
             if (i++ == waitSize)
@@ -801,10 +801,10 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
     /**
      * @return Comparator.
      */
-    private Comparator<GridCollisionJobContext> comparator() {
+    private Comparator<CollisionJobContext> comparator() {
         if (cmp == null) {
-            cmp = new Comparator<GridCollisionJobContext>() {
-                @Override public int compare(GridCollisionJobContext o1, GridCollisionJobContext o2) {
+            cmp = new Comparator<CollisionJobContext>() {
+                @Override public int compare(CollisionJobContext o1, CollisionJobContext o2) {
                     int p1 = getJobPriority(o1.getJobContext());
                     int p2 = getJobPriority(o2.getJobContext());
 
@@ -851,8 +851,8 @@ public class GridJobStealingCollisionSpi extends IgniteSpiAdapter implements Gri
      * @param waitJobs Waiting jobs.
      * @param activeJobs Active jobs.
      */
-    private void checkIdle(Collection<GridCollisionJobContext> waitJobs,
-        Collection<GridCollisionJobContext> activeJobs) {
+    private void checkIdle(Collection<CollisionJobContext> waitJobs,
+        Collection<CollisionJobContext> activeJobs) {
         // Check for overflow.
         int max = waitJobsThreshold + activeJobsThreshold;
 

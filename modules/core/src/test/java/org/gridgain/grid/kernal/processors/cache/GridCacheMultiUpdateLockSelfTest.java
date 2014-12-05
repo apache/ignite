@@ -54,7 +54,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        cfg.setCheckpointSpi(new GridNoopCheckpointSpi());
+        cfg.setCheckpointSpi(new NoopCheckpointSpi());
 
         return cfg;
     }

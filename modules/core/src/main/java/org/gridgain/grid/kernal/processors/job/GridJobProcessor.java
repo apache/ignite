@@ -23,7 +23,6 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
-import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -655,16 +654,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // Invoke collision SPI.
             ctx.collision().onCollision(
                 // Passive jobs view.
-                new AbstractCollection<GridCollisionJobContext>() {
-                    @NotNull @Override public Iterator<GridCollisionJobContext> iterator() {
+                new AbstractCollection<org.gridgain.grid.spi.collision.CollisionJobContext>() {
+                    @NotNull @Override public Iterator<org.gridgain.grid.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = passiveJobs.values().iterator();
 
-                        return new Iterator<GridCollisionJobContext>() {
+                        return new Iterator<org.gridgain.grid.spi.collision.CollisionJobContext>() {
                             @Override public boolean hasNext() {
                                 return iter.hasNext();
                             }
 
-                            @Override public GridCollisionJobContext next() {
+                            @Override public org.gridgain.grid.spi.collision.CollisionJobContext next() {
                                 return new CollisionJobContext(iter.next(), true);
                             }
 
@@ -680,11 +679,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 },
 
                 // Active jobs view.
-                new AbstractCollection<GridCollisionJobContext>() {
-                    @NotNull @Override public Iterator<GridCollisionJobContext> iterator() {
+                new AbstractCollection<org.gridgain.grid.spi.collision.CollisionJobContext>() {
+                    @NotNull @Override public Iterator<org.gridgain.grid.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
-                        return new Iterator<GridCollisionJobContext>() {
+                        return new Iterator<org.gridgain.grid.spi.collision.CollisionJobContext>() {
                             private GridJobWorker w;
 
                             {
@@ -714,11 +713,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return w != null;
                             }
 
-                            @Override public GridCollisionJobContext next() {
+                            @Override public org.gridgain.grid.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
 
-                                GridCollisionJobContext ret = new CollisionJobContext(w, false);
+                                org.gridgain.grid.spi.collision.CollisionJobContext ret = new CollisionJobContext(w, false);
 
                                 w = null;
 
@@ -741,11 +740,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 },
 
                 // Held jobs view.
-                new AbstractCollection<GridCollisionJobContext>() {
-                    @NotNull @Override public Iterator<GridCollisionJobContext> iterator() {
+                new AbstractCollection<org.gridgain.grid.spi.collision.CollisionJobContext>() {
+                    @NotNull @Override public Iterator<org.gridgain.grid.spi.collision.CollisionJobContext> iterator() {
                         final Iterator<GridJobWorker> iter = activeJobs.values().iterator();
 
-                        return new Iterator<GridCollisionJobContext>() {
+                        return new Iterator<org.gridgain.grid.spi.collision.CollisionJobContext>() {
                             private GridJobWorker w;
 
                             {
@@ -775,11 +774,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 return w != null;
                             }
 
-                            @Override public GridCollisionJobContext next() {
+                            @Override public org.gridgain.grid.spi.collision.CollisionJobContext next() {
                                 if (w == null)
                                     throw new NoSuchElementException();
 
-                                GridCollisionJobContext ret = new CollisionJobContext(w, false);
+                                org.gridgain.grid.spi.collision.CollisionJobContext ret = new CollisionJobContext(w, false);
 
                                 w = null;
 
@@ -1503,7 +1502,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class CollisionExternalListener implements GridCollisionExternalListener {
+    private class CollisionExternalListener implements org.gridgain.grid.spi.collision.CollisionExternalListener {
         /** {@inheritDoc} */
         @Override public void onExternalCollision() {
             assert !jobAlwaysActivate;

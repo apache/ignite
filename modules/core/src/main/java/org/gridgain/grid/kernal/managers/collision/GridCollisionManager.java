@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.*;
 /**
  * This class defines a collision manager.
  */
-public class GridCollisionManager extends GridManagerAdapter<GridCollisionSpi> {
+public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     /** Reference for external listener. */
-    private final AtomicReference<GridCollisionExternalListener> extLsnr =
+    private final AtomicReference<CollisionExternalListener> extLsnr =
         new AtomicReference<>();
 
     /**
@@ -42,9 +42,9 @@ public class GridCollisionManager extends GridManagerAdapter<GridCollisionSpi> {
         startSpi();
 
         if (enabled()) {
-            getSpi().setExternalCollisionListener(new GridCollisionExternalListener() {
+            getSpi().setExternalCollisionListener(new CollisionExternalListener() {
                 @Override public void onExternalCollision() {
-                    GridCollisionExternalListener lsnr = extLsnr.get();
+                    CollisionExternalListener lsnr = extLsnr.get();
 
                     if (lsnr != null)
                         lsnr.onExternalCollision();
@@ -84,7 +84,7 @@ public class GridCollisionManager extends GridManagerAdapter<GridCollisionSpi> {
     /**
      * @param lsnr Listener to external collision events.
      */
-    public void setCollisionExternalListener(@Nullable GridCollisionExternalListener lsnr) {
+    public void setCollisionExternalListener(@Nullable CollisionExternalListener lsnr) {
         if (enabled()) {
             if (lsnr != null && !extLsnr.compareAndSet(null, lsnr))
                 assert false : "Collision external listener has already been set " +
@@ -100,23 +100,23 @@ public class GridCollisionManager extends GridManagerAdapter<GridCollisionSpi> {
      * @param heldJobs List of held jobs.
      */
     public void onCollision(
-        final Collection<GridCollisionJobContext> waitJobs,
-        final Collection<GridCollisionJobContext> activeJobs,
-        final Collection<GridCollisionJobContext> heldJobs) {
+        final Collection<CollisionJobContext> waitJobs,
+        final Collection<CollisionJobContext> activeJobs,
+        final Collection<CollisionJobContext> heldJobs) {
         if (enabled()) {
             if (log.isDebugEnabled())
                 log.debug("Resolving job collisions [waitJobs=" + waitJobs + ", activeJobs=" + activeJobs + ']');
 
-            getSpi().onCollision(new GridCollisionContext() {
-                @Override public Collection<GridCollisionJobContext> activeJobs() {
+            getSpi().onCollision(new CollisionContext() {
+                @Override public Collection<CollisionJobContext> activeJobs() {
                     return activeJobs;
                 }
 
-                @Override public Collection<GridCollisionJobContext> waitingJobs() {
+                @Override public Collection<CollisionJobContext> waitingJobs() {
                     return waitJobs;
                 }
 
-                @Override public Collection<GridCollisionJobContext> heldJobs() {
+                @Override public Collection<CollisionJobContext> heldJobs() {
                     return heldJobs;
                 }
             });

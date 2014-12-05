@@ -55,21 +55,21 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings( {"PublicInnerClass"})
     @IgniteSpiMultipleInstancesSupport(true)
-    public static class TestCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi {
+    public static class TestCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
-            Collection<GridCollisionJobContext> activeJobs = ctx.activeJobs();
-            Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        @Override public void onCollision(CollisionContext ctx) {
+            Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
+            Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
             assert waitJobs != null;
             assert activeJobs != null;
 
 
-            for (GridCollisionJobContext job : waitJobs) {
+            for (CollisionJobContext job : waitJobs) {
                 assert job.getJob() != null;
                 assert job.getJobContext() != null;
                 assert job.getTaskSession() != null;
@@ -98,7 +98,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+        @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
             // No-op.
         }
     }

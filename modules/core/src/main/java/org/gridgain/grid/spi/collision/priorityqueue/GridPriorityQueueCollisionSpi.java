@@ -151,7 +151,7 @@ import java.util.*;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements GridCollisionSpi,
+public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
     GridPriorityQueueCollisionSpiMBean {
     /**
      * Default number of parallel jobs allowed (value is {@code 95} which is
@@ -382,17 +382,17 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void setExternalCollisionListener(GridCollisionExternalListener lsnr) {
+    @Override public void setExternalCollisionListener(CollisionExternalListener lsnr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onCollision(GridCollisionContext ctx) {
+    @Override public void onCollision(CollisionContext ctx) {
         assert ctx != null;
 
         int activeSize = ctx.activeJobs().size();
 
-        Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
         int waitSize = waitJobs.size();
 
@@ -459,10 +459,10 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
      * @param num Number of elements to take.
      * @return A new list, containing @code min(num, source.size()) elements.
      */
-    private static ArrayList<GridCollisionJobContextWrapper> slice(Collection<GridCollisionJobContext> src, int num) {
+    private static ArrayList<GridCollisionJobContextWrapper> slice(Collection<CollisionJobContext> src, int num) {
         ArrayList<GridCollisionJobContextWrapper> slice = new ArrayList<>();
 
-        Iterator<GridCollisionJobContext> iter = src.iterator();
+        Iterator<CollisionJobContext> iter = src.iterator();
 
         for (int i = 0; i < num && iter.hasNext(); i++)
             slice.add(new GridCollisionJobContextWrapper(iter.next(), i));
@@ -495,7 +495,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
      * @param ctx Collision job context.
      * @return Job priority.
      */
-    private int getJobPriority(GridCollisionJobContext ctx) {
+    private int getJobPriority(CollisionJobContext ctx) {
         assert ctx != null;
 
         Integer p = null;
@@ -581,7 +581,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
      */
     private static class GridCollisionJobContextWrapper {
         /** Wrapped collision context. */
-        private final GridCollisionJobContext ctx;
+        private final CollisionJobContext ctx;
 
         /** Index of wrapped context in original collection. */
         private final int originalIdx;
@@ -590,7 +590,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
          * @param ctx Wrapped collision context.
          * @param originalIdx Index of wrapped context in original collection.
          */
-        private GridCollisionJobContextWrapper(GridCollisionJobContext ctx, int originalIdx) {
+        private GridCollisionJobContextWrapper(CollisionJobContext ctx, int originalIdx) {
             this.ctx = ctx;
             this.originalIdx = originalIdx;
         }
@@ -598,7 +598,7 @@ public class GridPriorityQueueCollisionSpi extends IgniteSpiAdapter implements G
         /**
          * @return Wrapped collision context.
          */
-        public GridCollisionJobContext getContext() {
+        public CollisionJobContext getContext() {
             return ctx;
         }
 

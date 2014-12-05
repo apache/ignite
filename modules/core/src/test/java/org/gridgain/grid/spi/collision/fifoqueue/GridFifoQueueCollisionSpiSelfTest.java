@@ -27,19 +27,19 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
     public void testCollision0() throws Exception {
         GridCollisionTestContext cntx = createContext(15, 20);
 
-        Collection<GridCollisionJobContext> activeJobs = cntx.activeJobs();
-        Collection<GridCollisionJobContext> passiveJobs = cntx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = cntx.activeJobs();
+        Collection<CollisionJobContext> passiveJobs = cntx.waitingJobs();
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             assert ((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
         int i = 0;
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             if (i++ < 15)
                 assert !((GridTestCollisionJobContext)ctx).isActivated();
             else
@@ -58,12 +58,12 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
 
         GridCollisionTestContext cntx = createContext(0, 33);
 
-        Collection<GridCollisionJobContext> activeJobs = cntx.activeJobs();
-        Collection<GridCollisionJobContext> passiveJobs = cntx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = cntx.activeJobs();
+        Collection<CollisionJobContext> passiveJobs = cntx.waitingJobs();
 
         getSpi().onCollision(cntx);
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionJobContext)ctx).getIndex() == 32) {
                 assert !((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -85,12 +85,12 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
 
         GridCollisionTestContext cntx = createContext(11, 0);
 
-        Collection<GridCollisionJobContext> activeJobs = cntx.activeJobs();
-        Collection<GridCollisionJobContext> passiveJobs = cntx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = cntx.activeJobs();
+        Collection<CollisionJobContext> passiveJobs = cntx.waitingJobs();
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             assert !((GridTestCollisionJobContext)ctx).isActivated();
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
@@ -106,14 +106,14 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
 
         GridCollisionTestContext cntx = createContext(10, 10);
 
-        Collection<GridCollisionJobContext> activeJobs = cntx.activeJobs();
-        Collection<GridCollisionJobContext> passiveJobs = cntx.waitingJobs();
+        Collection<CollisionJobContext> activeJobs = cntx.activeJobs();
+        Collection<CollisionJobContext> passiveJobs = cntx.waitingJobs();
 
         getSpi().onCollision(new GridCollisionTestContext(activeJobs, passiveJobs));
 
         int i = 0;
 
-        for (GridCollisionJobContext ctx : activeJobs) {
+        for (CollisionJobContext ctx : activeJobs) {
             if (i++ < 10)
                 assert !((GridTestCollisionJobContext)ctx).isActivated();
             else
@@ -122,7 +122,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
             assert !((GridTestCollisionJobContext)ctx).isCanceled();
         }
 
-        for (GridCollisionJobContext ctx : passiveJobs) {
+        for (CollisionJobContext ctx : passiveJobs) {
             if (((GridTestCollisionJobContext)ctx).getIndex() < 5) {
                 assert ((GridTestCollisionJobContext)ctx).isActivated();
                 assert !((GridTestCollisionJobContext)ctx).isCanceled();
@@ -142,12 +142,12 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<GridF
      * @return New context with the given numbers of jobs, which will update when one of jobs get activated.
      */
     private GridCollisionTestContext createContext(int activeNum, int passiveNum) {
-        final Collection<GridCollisionJobContext> activeJobs = new ConcurrentLinkedQueue<>();
+        final Collection<CollisionJobContext> activeJobs = new ConcurrentLinkedQueue<>();
 
         for (int i = 0; i < activeNum; i++)
             activeJobs.add(new GridTestCollisionJobContext(new GridTestCollisionTaskSession(), i));
 
-        final Collection<GridCollisionJobContext> passiveJobs = new ConcurrentLinkedQueue<>();
+        final Collection<CollisionJobContext> passiveJobs = new ConcurrentLinkedQueue<>();
 
         for (int i = 0; i < passiveNum; i++)
             passiveJobs.add(new GridTestCollisionJobContext(new GridTestCollisionTaskSession(), i,

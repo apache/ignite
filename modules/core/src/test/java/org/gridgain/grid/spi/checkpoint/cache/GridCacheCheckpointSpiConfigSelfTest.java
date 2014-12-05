@@ -5,13 +5,13 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Grid cache checkpoint SPI config self test.
  */
-@GridSpiTest(spi = GridCacheCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridCacheCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridCacheCheckpointSpi> {
+@GridSpiTest(spi = CacheCheckpointSpi.class, group = "Checkpoint SPI")
+public class GridCacheCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<CacheCheckpointSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridCacheCheckpointSpi(), "cacheName", null);
-        checkNegativeSpiProperty(new GridCacheCheckpointSpi(), "cacheName", "");
+        checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", null);
+        checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", "");
     }
 }

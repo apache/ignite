@@ -130,8 +130,8 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testTwoPassiveJobs() throws Exception {
-        final List<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
-        final List<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
+        final List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
+        final List<CollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         CI1<GridTestCollisionJobContext> lsnr = new CI1<GridTestCollisionJobContext>() {
             @Override public void apply(GridTestCollisionJobContext c) {
@@ -166,12 +166,12 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testOnePassiveOneActiveJobs() throws Exception {
-        List<GridCollisionJobContext> waitCtxs = new ArrayList<>(1);
+        List<CollisionJobContext> waitCtxs = new ArrayList<>(1);
 
         // Add passive.
         Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
-        List<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
+        List<CollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
@@ -199,14 +199,14 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testMultiplePassiveOneActive() throws Exception {
-        List<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
+        List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 
         Collections.addAll(waitCtxs,
             new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()),
             new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()),
             new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
-        Collection<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
+        Collection<CollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
@@ -236,8 +236,8 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testMultiplePassiveZeroActive() throws Exception {
-        final List<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
-        final List<GridCollisionJobContext> activeCtxs = new ArrayList<>(2);
+        final List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
+        final List<CollisionJobContext> activeCtxs = new ArrayList<>(2);
 
         CI1<GridTestCollisionJobContext> lsnr = new CI1<GridTestCollisionJobContext>() {
             @Override public void apply(GridTestCollisionJobContext c) {
@@ -291,12 +291,12 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testOnePassiveZeroActive() throws Exception {
-        List<GridCollisionJobContext> waitCtxs = new ArrayList<>(1);
+        List<CollisionJobContext> waitCtxs = new ArrayList<>(1);
 
         // Add passive.
         Collections.addAll(waitCtxs, new GridTestCollisionJobContext(createTaskSession(), IgniteUuid.randomUuid()));
 
-        Collection<GridCollisionJobContext> activeCtxs = Collections.emptyList();
+        Collection<CollisionJobContext> activeCtxs = Collections.emptyList();
 
         ClusterNode rmtNode = F.first(getSpiContext().remoteNodes());
 
@@ -317,9 +317,9 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testZeroPassiveOneActive() throws Exception {
-        Collection<GridCollisionJobContext> empty = Collections.emptyList();
+        Collection<CollisionJobContext> empty = Collections.emptyList();
 
-        List<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
+        List<CollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),
@@ -344,7 +344,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testZeroPassiveZeroActive() throws Exception {
-        Collection<GridCollisionJobContext> empty = Collections.emptyList();
+        Collection<CollisionJobContext> empty = Collections.emptyList();
 
         getSpi().onCollision(new GridCollisionTestContext(empty, empty));
 
@@ -365,7 +365,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
      * @throws Exception If test failed.
      */
     public void testMaxHopsExceeded() throws Exception {
-        Collection<GridCollisionJobContext> waitCtxs = new ArrayList<>(2);
+        Collection<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 
         GridTestCollisionJobContext excluded = new GridTestCollisionJobContext(createTaskSession(),
             IgniteUuid.randomUuid());
@@ -377,7 +377,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Gri
 
         Collections.addAll(waitCtxs, ctx1, excluded, ctx2);
 
-        Collection<GridCollisionJobContext> activeCtxs = new ArrayList<>(1);
+        Collection<CollisionJobContext> activeCtxs = new ArrayList<>(1);
 
         // Add active.
         Collections.addAll(activeCtxs, new GridTestCollisionJobContext(createTaskSession(),

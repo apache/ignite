@@ -43,7 +43,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     private static GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** Communication spi for grid start. */
-    private GridCommunicationSpi commSpi;
+    private CommunicationSpi commSpi;
 
     /** Marshaller used in test. */
     private IgniteMarshaller marsh = new IgniteJdkMarshaller();
@@ -211,7 +211,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
      * @return Started grid.
      * @throws Exception If grid start failed.
      */
-    private Ignite startGridWithSpi(int idx, GridCommunicationSpi commSpi) throws Exception {
+    private Ignite startGridWithSpi(int idx, CommunicationSpi commSpi) throws Exception {
         this.commSpi = commSpi;
 
         try {

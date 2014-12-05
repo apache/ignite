@@ -442,7 +442,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @return SPI instance.
      */
-    private GridCommunicationSpi getCommunication() {
+    private CommunicationSpi getCommunication() {
         GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
 
         spi.setTcpNoDelay(true);

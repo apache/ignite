@@ -15,19 +15,19 @@ import java.util.*;
  * Context for resolving collisions. This context contains collections of
  * waiting jobs, active jobs, and held jobs. If continuations are not used
  * (see {@link org.apache.ignite.compute.ComputeJobContinuation}), then collection of held jobs will
- * always be empty. {@link GridCollisionSpi} will manipulate these lists
+ * always be empty. {@link CollisionSpi} will manipulate these lists
  * to make sure that only allowed number of jobs are running in parallel or
  * waiting to be executed.
  * @since 3.5
  */
-public interface GridCollisionContext {
+public interface CollisionContext {
     /**
      * Gets ordered collection of collision contexts for jobs that are currently executing.
      * It can be empty but never {@code null}.
      *
      * @return Ordered number of collision contexts for currently executing jobs.
      */
-    public Collection<GridCollisionJobContext> activeJobs();
+    public Collection<CollisionJobContext> activeJobs();
 
     /**
      * Gets ordered collection of collision contexts for jobs that are currently waiting
@@ -35,11 +35,11 @@ public interface GridCollisionContext {
      * arrived job, if any, will always be represented by the last item in this list.
      * <p>
      * This list is guaranteed not to change while
-     * {@link GridCollisionSpi#onCollision(GridCollisionContext)} method is being executed.
+     * {@link CollisionSpi#onCollision(CollisionContext)} method is being executed.
      *
      * @return Ordered collection of collision contexts for waiting jobs.
      */
-    public Collection<GridCollisionJobContext> waitingJobs();
+    public Collection<CollisionJobContext> waitingJobs();
 
     /**
      * Gets collection of jobs that are currently in {@code held} state. Job can enter
@@ -50,5 +50,5 @@ public interface GridCollisionContext {
      *
      * @return Collection of jobs that are currently in {@code held} state.
      */
-    public Collection<GridCollisionJobContext> heldJobs();
+    public Collection<CollisionJobContext> heldJobs();
 }

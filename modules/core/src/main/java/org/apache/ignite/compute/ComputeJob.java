@@ -10,7 +10,6 @@
 package org.apache.ignite.compute;
 
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.collision.*;
 import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.*;
  * <ol>
  * <li>
  *      If collision SPI is defined, then job gets put on waiting list which is passed to underlying
- *      {@link GridCollisionSpi} SPI. Otherwise job will be submitted to the executor
+ *      {@link org.gridgain.grid.spi.collision.CollisionSpi} SPI. Otherwise job will be submitted to the executor
  *      service responsible for job execution immediately upon arrival.
  * </li>
  * <li>

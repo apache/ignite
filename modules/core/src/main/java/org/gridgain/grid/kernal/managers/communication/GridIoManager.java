@@ -46,7 +46,7 @@ import static org.gridgain.grid.util.nio.GridNioBackPressureControl.*;
 /**
  * Grid communication manager.
  */
-public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Serializable>> {
+public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
@@ -105,7 +105,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         new ConcurrentHashMap8<>();
 
     /** Communication message listener. */
-    private GridCommunicationListener<Serializable> commLsnr;
+    private CommunicationListener<Serializable> commLsnr;
 
     /** Grid marshaller. */
     private final IgniteMarshaller marsh;
@@ -170,7 +170,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         utilityCachePool = ctx.utilityCachePool();
         affPool = Executors.newFixedThreadPool(1);
 
-        getSpi().setListener(commLsnr = new GridCommunicationListener<Serializable>() {
+        getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
@@ -880,7 +880,7 @@ public class GridIoManager extends GridManagerAdapter<GridCommunicationSpi<Seria
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
 
-            GridCommunicationListener commLsnr = this.commLsnr;
+            CommunicationListener commLsnr = this.commLsnr;
 
             if (commLsnr == null)
                 throw new GridException("Trying to send message when grid is not fully started.");

@@ -18,7 +18,7 @@ import org.apache.ignite.spi.*;
  * about jdbc checkpoint SPI.
  */
 @IgniteMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
-public interface GridJdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
+public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of retries in case of DB failure.
      *

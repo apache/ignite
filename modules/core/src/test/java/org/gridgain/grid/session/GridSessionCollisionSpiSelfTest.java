@@ -113,10 +113,10 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void onCollision(GridCollisionContext ctx) {
-            Collection<GridCollisionJobContext> waitJobs = ctx.waitingJobs();
+        @Override public void onCollision(CollisionContext ctx) {
+            Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
-            for (GridCollisionJobContext job : waitJobs) {
+            for (CollisionJobContext job : waitJobs) {
                 IgniteUuid jobId = job.getJobContext().getJobId();
 
                 try {

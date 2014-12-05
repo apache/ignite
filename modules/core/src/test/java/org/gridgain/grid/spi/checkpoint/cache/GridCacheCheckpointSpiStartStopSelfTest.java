@@ -6,10 +6,10 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Grid cache checkpoint SPI start stop self test.
  */
-@GridSpiTest(spi = GridCacheCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridCacheCheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridCacheCheckpointSpi> {
+@GridSpiTest(spi = CacheCheckpointSpi.class, group = "Checkpoint SPI")
+public class GridCacheCheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<CacheCheckpointSpi> {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridCacheCheckpointSpi spi) throws Exception {
+    @Override protected void spiConfigure(CacheCheckpointSpi spi) throws Exception {
         spi.setCacheName("test-checkpoints");
 
         super.spiConfigure(spi);

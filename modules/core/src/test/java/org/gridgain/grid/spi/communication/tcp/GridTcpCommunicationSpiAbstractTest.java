@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 /**
  * Test for {@link GridTcpCommunicationSpi}
  */
-abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<GridCommunicationSpi> {
+abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi> {
     /** */
     private static final int SPI_COUNT = 3;
 
@@ -42,7 +42,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCommunicationSpi getSpi(int idx) {
+    @Override protected CommunicationSpi getSpi(int idx) {
         GridTcpCommunicationSpi spi = new GridTcpCommunicationSpi();
 
         if (!useShmem)
@@ -65,7 +65,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         super.testSendToManyNodes();
 
         // Test idle clients remove.
-        for (GridCommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi spi : spis.values()) {
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
             assert clients.size() == 2;
@@ -87,7 +87,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (GridCommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi spi : spis.values()) {
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 10 && !clients.isEmpty(); i++) {

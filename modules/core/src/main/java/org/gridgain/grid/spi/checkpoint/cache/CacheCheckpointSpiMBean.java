@@ -10,7 +10,7 @@ import org.apache.ignite.spi.*;
  *
  */
 @IgniteMBeanDescription("MBean provides information about cache checkpoint SPI.")
-public interface GridCacheCheckpointSpiMBean extends IgniteSpiManagementMBean {
+public interface CacheCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets cache name to be used by this SPI..
      *
