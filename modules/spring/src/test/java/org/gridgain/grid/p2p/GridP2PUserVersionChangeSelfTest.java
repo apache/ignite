@@ -43,7 +43,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings({"ProhibitedExceptionDeclared", "ObjectEquality", "unchecked"})
 public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** Test task class name. */
     private static final String TEST_TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
@@ -101,7 +101,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testRedeployVersionChangeContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         checkRedeployVersionChange();
     }
@@ -110,7 +110,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testRedeployVersionChangeSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         checkRedeployVersionChange();
     }
@@ -167,7 +167,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRedeployOnNodeRestartContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         try {
             Ignite ignite1 = startGrid(1);
@@ -213,7 +213,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRedeployOnNodeRestartSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         try {
             Ignite ignite1 = startGrid(1);
@@ -273,7 +273,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
      */
     // TODO: GG-5678 Uncomment when fix
     public void _testCacheRedeployVersionChangeContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         try {
             Ignite ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");

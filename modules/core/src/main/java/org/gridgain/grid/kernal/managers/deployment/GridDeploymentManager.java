@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Deployment manager.
@@ -382,7 +382,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @return Deployment class if found.
      */
     @Nullable public GridDeployment getGlobalDeployment(
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         String rsrcName,
         String clsName,
         String userVer,
@@ -516,8 +516,8 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
      * @param mode Mode to check.
      * @return {@code True} if shared mode.
      */
-    private boolean isPerVersionMode(GridDeploymentMode mode) {
-        return mode == GridDeploymentMode.CONTINUOUS || mode == GridDeploymentMode.SHARED;
+    private boolean isPerVersionMode(IgniteDeploymentMode mode) {
+        return mode == IgniteDeploymentMode.CONTINUOUS || mode == IgniteDeploymentMode.SHARED;
     }
 
     /**
@@ -553,7 +553,7 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        private LocalDeployment(GridDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
+        private LocalDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
             String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, /*local*/true);
         }

@@ -25,7 +25,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -63,7 +63,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     private static final String TEST_VALUE_2 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue2";
 
     /** */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

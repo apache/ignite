@@ -36,7 +36,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     private static ClassLoader extLdr;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private boolean initGar;
@@ -165,7 +165,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         checkGar();
     }
@@ -176,7 +176,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         checkGar();
     }
@@ -187,7 +187,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         checkGar();
     }
@@ -198,7 +198,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         checkGar();
     }

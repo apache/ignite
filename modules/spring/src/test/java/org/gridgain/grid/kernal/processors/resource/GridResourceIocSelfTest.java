@@ -47,7 +47,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     private static final String TEST_EXT_TASK = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** Path to GAR file. */
     private String garFile;
@@ -332,7 +332,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
         UserResourceTask task = new UserResourceTask();
 
-        GridDeployment dep = new GridTestDeployment(GridDeploymentMode.PRIVATE, task.getClass().getClassLoader(),
+        GridDeployment dep = new GridTestDeployment(IgniteDeploymentMode.PRIVATE, task.getClass().getClassLoader(),
             IgniteUuid.randomUuid(), "", task.getClass().getName(), false);
 
         dep.addDeployedClass(task.getClass());
@@ -362,7 +362,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testUndeployPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         processTestWithUndeploy();
     }
@@ -373,7 +373,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testUndeployIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         processTestWithUndeploy();
     }
@@ -384,7 +384,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testUndeployContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         processTestWithUndeploy();
     }
@@ -395,7 +395,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testUndeploySharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTestWithUndeploy();
     }
@@ -406,7 +406,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testStopNodePrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         processTestWithNodeStop();
     }
@@ -417,7 +417,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testStopNodeIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         processTestWithNodeStop();
     }
@@ -428,7 +428,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testStopNodeSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTestWithNodeStop();
     }
@@ -439,7 +439,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         processTestGarUndeployed();
     }
@@ -450,7 +450,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         processTestGarUndeployed();
     }
@@ -461,7 +461,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         processTestGarUndeployed();
     }
@@ -472,7 +472,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTestGarUndeployed();
     }

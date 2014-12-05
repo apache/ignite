@@ -17,7 +17,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Tests for node attributes consistency checks.
@@ -30,7 +30,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static GridDeploymentMode mode = SHARED;
+    private static IgniteDeploymentMode mode = SHARED;
 
     /** */
     private static boolean p2pEnabled;

@@ -78,7 +78,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     private final String usrVer;
 
     /** Deployment mode. */
-    private final GridDeploymentMode depMode;
+    private final IgniteDeploymentMode depMode;
 
     /** {@code True} to omit any output to INFO or higher. */
     private boolean quiet;
@@ -115,7 +115,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     GridDeploymentClassLoader(
         IgniteUuid id,
         String usrVer,
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
@@ -195,7 +195,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     GridDeploymentClassLoader(
         IgniteUuid id,
         String usrVer,
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
@@ -245,7 +245,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeploymentMode deployMode() {
+    @Override public IgniteDeploymentMode deployMode() {
         return depMode;
     }
 

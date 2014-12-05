@@ -27,7 +27,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /** Deployment mode. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** IP finder. */
     private final GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
@@ -59,7 +59,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTestBothNodesDeploy(GridDeploymentMode depMode) throws Exception {
+    private void processTestBothNodesDeploy(IgniteDeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -106,27 +106,27 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTestBothNodesDeploy(GridDeploymentMode.PRIVATE);
+        processTestBothNodesDeploy(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTestBothNodesDeploy(GridDeploymentMode.ISOLATED);
+        processTestBothNodesDeploy(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTestBothNodesDeploy(GridDeploymentMode.CONTINUOUS);
+        processTestBothNodesDeploy(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTestBothNodesDeploy(GridDeploymentMode.SHARED);
+        processTestBothNodesDeploy(IgniteDeploymentMode.SHARED);
     }
 }

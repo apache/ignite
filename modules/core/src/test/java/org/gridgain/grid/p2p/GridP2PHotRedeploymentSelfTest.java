@@ -26,7 +26,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     private static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** P2P timeout. */
     private static final long P2P_TIMEOUT = 1000;
@@ -49,7 +49,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    private void processTestHotRedeployment(GridDeploymentMode depMode) throws Exception {
+    private void processTestHotRedeployment(IgniteDeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -91,7 +91,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    private void processTestClassLoaderHotRedeployment(GridDeploymentMode depMode) throws Exception {
+    private void processTestClassLoaderHotRedeployment(IgniteDeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -157,7 +157,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderIsolatedMode() throws Exception {
-        processTestHotRedeployment(GridDeploymentMode.PRIVATE);
+        processTestHotRedeployment(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -166,7 +166,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderIsolatedClassLoaderMode() throws Exception {
-        processTestHotRedeployment(GridDeploymentMode.ISOLATED);
+        processTestHotRedeployment(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -175,7 +175,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderContinuousMode() throws Exception {
-        processTestHotRedeployment(GridDeploymentMode.CONTINUOUS);
+        processTestHotRedeployment(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -184,7 +184,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderSharedMode() throws Exception {
-        processTestHotRedeployment(GridDeploymentMode.SHARED);
+        processTestHotRedeployment(IgniteDeploymentMode.SHARED);
     }
 
     /**
@@ -193,7 +193,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentPrivateMode() throws Exception {
-        processTestClassLoaderHotRedeployment(GridDeploymentMode.PRIVATE);
+        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -202,7 +202,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentIsolatedMode() throws Exception {
-        processTestClassLoaderHotRedeployment(GridDeploymentMode.ISOLATED);
+        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -211,7 +211,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentContinuousMode() throws Exception {
-        processTestClassLoaderHotRedeployment(GridDeploymentMode.CONTINUOUS);
+        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -220,6 +220,6 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentSharedMode() throws Exception {
-        processTestClassLoaderHotRedeployment(GridDeploymentMode.SHARED);
+        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.SHARED);
     }
 }

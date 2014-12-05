@@ -45,7 +45,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     private static final URL[] URLS;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /**
      * Initialize URLs.
@@ -103,45 +103,45 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridDeploymentMode#PRIVATE} mode.
+     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} mode.
      *
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         affinityTest();
     }
 
     /**
-     * Test {@link GridDeploymentMode#ISOLATED} mode.
+     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#ISOLATED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         affinityTest();
     }
 
     /**
-     * Test {@link GridDeploymentMode#CONTINUOUS} mode.
+     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} mode.
      *
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         affinityTest();
     }
 
     /**
-     * Test {@link GridDeploymentMode#SHARED} mode.
+     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         affinityTest();
     }

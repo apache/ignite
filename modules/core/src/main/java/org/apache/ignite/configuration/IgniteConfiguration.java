@@ -113,8 +113,8 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link GridDeploymentMode#SHARED}). */
-    public static final GridDeploymentMode DFLT_DEPLOYMENT_MODE = GridDeploymentMode.SHARED;
+    /** Default deployment mode (value is {@link IgniteDeploymentMode#SHARED}). */
+    public static final IgniteDeploymentMode DFLT_DEPLOYMENT_MODE = IgniteDeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
@@ -405,7 +405,7 @@ public class IgniteConfiguration {
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
-    private GridDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
+    private IgniteDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
 
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
@@ -2203,17 +2203,17 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      */
-    public void setDeploymentMode(GridDeploymentMode deployMode) {
+    public void setDeploymentMode(IgniteDeploymentMode deployMode) {
         this.deployMode = deployMode;
     }
 
     /**
      * Gets deployment mode for deploying tasks and other classes on this node.
-     * Refer to {@link GridDeploymentMode} documentation for more information.
+     * Refer to {@link IgniteDeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
      */
-    public GridDeploymentMode getDeploymentMode() {
+    public IgniteDeploymentMode getDeploymentMode() {
         return deployMode;
     }
 

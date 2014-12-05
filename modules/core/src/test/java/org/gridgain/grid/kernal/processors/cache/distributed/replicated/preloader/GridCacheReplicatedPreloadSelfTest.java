@@ -28,7 +28,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;

@@ -42,7 +42,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -95,7 +95,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         processTest(false);
     }
@@ -106,7 +106,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTest(true);
     }

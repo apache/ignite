@@ -351,7 +351,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         try {
             Map<String, CachedResource> map = null;
 
-            if (dep.deployMode() == GridDeploymentMode.PRIVATE) {
+            if (dep.deployMode() == IgniteDeploymentMode.PRIVATE) {
                 Map<Class<?>, Map<Class<?>, Map<String, CachedResource>>> m = dep.meta(CLS_RSRC_CACHE);
 
                 if (m != null) {
@@ -390,7 +390,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         try {
             Map<String, CachedResource> map;
 
-            if (dep.deployMode() == GridDeploymentMode.PRIVATE) {
+            if (dep.deployMode() == IgniteDeploymentMode.PRIVATE) {
                 Map<Class<?>, Map<Class<?>, Map<String, CachedResource>>> m = dep.addMetaIfAbsent(CLS_RSRC_CACHE,
                     F.<Class<?>, Map<Class<?>, Map<String, CachedResource>>>newMap());
 

@@ -63,7 +63,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDeploymentMode(GridDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
 
         return cfg;
     }

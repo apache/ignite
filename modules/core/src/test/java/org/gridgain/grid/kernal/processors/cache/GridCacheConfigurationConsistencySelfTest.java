@@ -36,7 +36,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -57,7 +57,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private GridCacheMode cacheMode = REPLICATED;
 
     /** */
-    private GridDeploymentMode depMode = SHARED;
+    private IgniteDeploymentMode depMode = SHARED;
 
     /** */
     private C1<GridCacheConfiguration, Void> initCache;

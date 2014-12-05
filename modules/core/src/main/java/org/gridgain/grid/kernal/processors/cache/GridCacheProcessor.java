@@ -45,7 +45,7 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.GridDeploymentMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
@@ -301,7 +301,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteConfiguration cfg = ctx.config();
 
-        GridDeploymentMode depMode = cfg.getDeploymentMode();
+        IgniteDeploymentMode depMode = cfg.getDeploymentMode();
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !CU.isSystemCache(cc.getName()))
@@ -498,7 +498,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        GridDeploymentMode depMode = ctx.config().getDeploymentMode();
+        IgniteDeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
@@ -1008,8 +1008,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (F.isEmpty(rmtAttrs) || F.isEmpty(locAttrs))
             return;
 
-        GridDeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        GridDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
+        IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
+        IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
         // TODO GG-9141 Check tx configuration consistency.
 

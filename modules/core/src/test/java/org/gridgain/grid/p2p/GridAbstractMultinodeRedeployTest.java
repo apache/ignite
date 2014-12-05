@@ -29,7 +29,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
     private static final int ITERATIONS = 1000;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
@@ -70,7 +70,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
      * @param depMode deployment mode.
      * @throws Throwable If task execution failed.
      */
-    protected void processTest(GridDeploymentMode depMode) throws Throwable {
+    protected void processTest(IgniteDeploymentMode depMode) throws Throwable {
         this.depMode = depMode;
 
         try {

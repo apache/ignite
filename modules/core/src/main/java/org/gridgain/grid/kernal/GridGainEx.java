@@ -1439,7 +1439,7 @@ public class GridGainEx {
                 }
                 else {
                     try {
-                        GridDeploymentMode depMode = GridDeploymentMode.valueOf(depModeName);
+                        IgniteDeploymentMode depMode = IgniteDeploymentMode.valueOf(depModeName);
 
                         if (myCfg.getDeploymentMode() != depMode)
                             myCfg.setDeploymentMode(depMode);

@@ -28,7 +28,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -45,7 +45,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processTest(GridDeploymentMode depMode) throws Exception {
+    private void processTest(IgniteDeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -72,7 +72,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTest(GridDeploymentMode.PRIVATE);
+        processTest(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -81,7 +81,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTest(GridDeploymentMode.ISOLATED);
+        processTest(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -90,7 +90,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTest(GridDeploymentMode.CONTINUOUS);
+        processTest(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -99,7 +99,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTest(GridDeploymentMode.SHARED);
+        processTest(IgniteDeploymentMode.SHARED);
     }
 
     /**

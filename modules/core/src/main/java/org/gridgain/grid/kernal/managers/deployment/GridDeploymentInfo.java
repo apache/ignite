@@ -36,7 +36,7 @@ public interface GridDeploymentInfo {
     /**
      * @return Deployment mode.
      */
-    public GridDeploymentMode deployMode();
+    public IgniteDeploymentMode deployMode();
 
     /**
      * @return Local deployment ownership flag.

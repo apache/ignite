@@ -36,7 +36,7 @@ import static org.gridgain.grid.kernal.processors.resource.GridResourceTestUtils
 @GridCommonTest(group = "Resource Self")
 public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** Semaphore. */
     private static CountDownLatch cnt;
@@ -100,7 +100,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testNodeLeftInSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         try {
             Ignite ignite1 = startGrid(1, new GridSpringResourceContextImpl(new GenericApplicationContext()));
@@ -148,7 +148,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @param mode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processTestLocalNode(GridDeploymentMode mode) throws Exception {
+    private void processTestLocalNode(IgniteDeploymentMode mode) throws Exception {
         depMode = mode;
 
         try {
@@ -185,7 +185,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @param mode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processTestRemoteNode(GridDeploymentMode mode) throws Exception {
+    private void processTestRemoteNode(IgniteDeploymentMode mode) throws Exception {
         depMode = mode;
 
         try {
@@ -227,7 +227,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
-    private void processTestRemoteNodeP2P(GridDeploymentMode mode) throws Exception {
+    private void processTestRemoteNodeP2P(IgniteDeploymentMode mode) throws Exception {
         depMode = mode;
 
         try {
@@ -269,7 +269,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testLocalNodePrivateMode() throws Exception {
-        processTestLocalNode(GridDeploymentMode.PRIVATE);
+        processTestLocalNode(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -278,7 +278,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testLocalNodeIsolatedMode() throws Exception {
-        processTestLocalNode(GridDeploymentMode.ISOLATED);
+        processTestLocalNode(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -287,7 +287,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testLocalNodeContinuousMode() throws Exception {
-        processTestLocalNode(GridDeploymentMode.CONTINUOUS);
+        processTestLocalNode(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -296,7 +296,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testLocalNodeSharedMode() throws Exception {
-        processTestLocalNode(GridDeploymentMode.SHARED);
+        processTestLocalNode(IgniteDeploymentMode.SHARED);
     }
 
     /**
@@ -305,7 +305,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testRemoteNodePrivateMode() throws Exception {
-        processTestRemoteNode(GridDeploymentMode.PRIVATE);
+        processTestRemoteNode(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -314,7 +314,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testRemoteNodeIsolatedMode() throws Exception {
-        processTestRemoteNode(GridDeploymentMode.ISOLATED);
+        processTestRemoteNode(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -323,7 +323,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testRemoteNodeContinuousMode() throws Exception {
-        processTestRemoteNode(GridDeploymentMode.CONTINUOUS);
+        processTestRemoteNode(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -332,7 +332,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testRemoteNodeSharedMode() throws Exception {
-        processTestRemoteNode(GridDeploymentMode.SHARED);
+        processTestRemoteNode(IgniteDeploymentMode.SHARED);
     }
 
     /**
@@ -341,7 +341,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testP2PRemoteNodePrivateMode() throws Exception {
-        processTestRemoteNodeP2P(GridDeploymentMode.PRIVATE);
+        processTestRemoteNodeP2P(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -350,7 +350,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testP2PRemoteNodeIsolatedMode() throws Exception {
-        processTestRemoteNodeP2P(GridDeploymentMode.ISOLATED);
+        processTestRemoteNodeP2P(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -359,7 +359,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testP2PRemoteNodeContinuousMode() throws Exception {
-        processTestRemoteNodeP2P(GridDeploymentMode.CONTINUOUS);
+        processTestRemoteNodeP2P(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -368,7 +368,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testP2PRemoteNodeSharedMode() throws Exception {
-        processTestRemoteNodeP2P(GridDeploymentMode.SHARED);
+        processTestRemoteNodeP2P(IgniteDeploymentMode.SHARED);
     }
 
     /**

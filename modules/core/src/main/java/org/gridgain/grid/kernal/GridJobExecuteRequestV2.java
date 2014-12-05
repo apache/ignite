@@ -82,7 +82,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
         Map<? extends Serializable, ? extends Serializable> jobAttrs,
         String cpSpi,
         IgniteUuid clsLdrId,
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         boolean dynamicSiblings,
         Map<UUID, IgniteUuid> ldrParticipants,
         boolean forceLocDep,

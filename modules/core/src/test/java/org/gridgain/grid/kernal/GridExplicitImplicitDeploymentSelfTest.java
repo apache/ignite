@@ -41,7 +41,7 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
         cfg.setPeerClassLoadingLocalClassPathExclude(GridDeploymentResourceTestTask.class.getName(),
             GridDeploymentResourceTestJob.class.getName());
 
-        cfg.setDeploymentMode(GridDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
 
         return cfg;
     }

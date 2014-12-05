@@ -31,7 +31,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private static UserResource jobRsrc;
@@ -59,7 +59,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processSharedModeTest(GridDeploymentMode depMode) throws Exception {
+    private void processSharedModeTest(IgniteDeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -95,7 +95,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     public void testLocalDeployment() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         try {
             Ignite ignite1 = startGrid(1);
@@ -137,7 +137,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
-    private void processIsolatedModeTest(GridDeploymentMode depMode) throws Exception {
+    private void processIsolatedModeTest(IgniteDeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -174,7 +174,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processIsolatedModeTest(GridDeploymentMode.PRIVATE);
+        processIsolatedModeTest(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -183,7 +183,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processIsolatedModeTest(GridDeploymentMode.ISOLATED);
+        processIsolatedModeTest(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -192,7 +192,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processSharedModeTest(GridDeploymentMode.CONTINUOUS);
+        processSharedModeTest(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -201,7 +201,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processSharedModeTest(GridDeploymentMode.SHARED);
+        processSharedModeTest(IgniteDeploymentMode.SHARED);
     }
 
     /**

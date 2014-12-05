@@ -27,7 +27,7 @@ import java.net.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -48,7 +48,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTest(GridDeploymentMode depMode) throws Exception {
+    private void processTest(IgniteDeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -87,7 +87,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processFilterTest(GridDeploymentMode depMode) throws Exception {
+    private void processFilterTest(IgniteDeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -130,7 +130,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTest(GridDeploymentMode.PRIVATE);
+        processTest(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -139,7 +139,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTest(GridDeploymentMode.ISOLATED);
+        processTest(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -148,7 +148,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTest(GridDeploymentMode.CONTINUOUS);
+        processTest(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -157,7 +157,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTest(GridDeploymentMode.SHARED);
+        processTest(IgniteDeploymentMode.SHARED);
     }
 
     /**
@@ -166,7 +166,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testFilterPrivateMode() throws Exception {
-        processFilterTest(GridDeploymentMode.PRIVATE);
+        processFilterTest(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -175,7 +175,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testFilterIsolatedMode() throws Exception {
-        processFilterTest(GridDeploymentMode.ISOLATED);
+        processFilterTest(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -184,7 +184,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testFilterContinuousMode() throws Exception {
-        processFilterTest(GridDeploymentMode.CONTINUOUS);
+        processFilterTest(IgniteDeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -193,6 +193,6 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testFilterSharedMode() throws Exception {
-        processFilterTest(GridDeploymentMode.SHARED);
+        processFilterTest(IgniteDeploymentMode.SHARED);
     }
 }

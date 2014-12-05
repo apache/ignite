@@ -78,7 +78,7 @@ public class GridResourceSharedUndeploySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDeploymentMode(GridDeploymentMode.SHARED);
+        cfg.setDeploymentMode(IgniteDeploymentMode.SHARED);
 
         return cfg;
     }

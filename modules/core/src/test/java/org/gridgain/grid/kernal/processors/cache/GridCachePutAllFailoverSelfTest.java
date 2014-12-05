@@ -579,7 +579,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setDeploymentMode(GridDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
 
         GridTcpDiscoverySpi discoverySpi = new GridTcpDiscoverySpi();
 

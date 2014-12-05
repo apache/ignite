@@ -73,7 +73,7 @@ import org.jetbrains.annotations.*;
  *  </li>
  * </ol>
  */
-public enum GridDeploymentMode {
+public enum IgniteDeploymentMode {
     /**
      * In this mode deployed classes do not share user resources
      * (see {@link org.apache.ignite.resources.IgniteUserResource}). Basically, user resources are created
@@ -174,7 +174,7 @@ public enum GridDeploymentMode {
     CONTINUOUS;
 
     /** Enum values. */
-    private static final GridDeploymentMode[] VALS = values();
+    private static final IgniteDeploymentMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -182,7 +182,7 @@ public enum GridDeploymentMode {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridDeploymentMode fromOrdinal(int ord) {
+    @Nullable public static IgniteDeploymentMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

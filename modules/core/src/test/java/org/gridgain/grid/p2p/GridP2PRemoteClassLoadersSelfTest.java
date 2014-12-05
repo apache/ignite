@@ -28,7 +28,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -52,7 +52,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed..
      */
     @SuppressWarnings("unchecked")
-    private void processTestSameRemoteClassLoader(GridDeploymentMode depMode) throws Exception {
+    private void processTestSameRemoteClassLoader(IgniteDeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -103,7 +103,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTestDifferentRemoteClassLoader(GridDeploymentMode depMode) throws Exception {
+    private void processTestDifferentRemoteClassLoader(IgniteDeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -161,7 +161,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderPrivateMode() throws Exception {
-        processTestSameRemoteClassLoader(GridDeploymentMode.PRIVATE);
+        processTestSameRemoteClassLoader(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -170,7 +170,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderIsolatedMode() throws Exception {
-        processTestSameRemoteClassLoader(GridDeploymentMode.ISOLATED);
+        processTestSameRemoteClassLoader(IgniteDeploymentMode.ISOLATED);
     }
 
     /**
@@ -179,7 +179,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testDifferentClassLoaderPrivateMode() throws Exception {
-        processTestDifferentRemoteClassLoader(GridDeploymentMode.PRIVATE);
+        processTestDifferentRemoteClassLoader(IgniteDeploymentMode.PRIVATE);
     }
 
     /**
@@ -188,7 +188,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testDifferentClassLoaderIsolatedMode() throws Exception {
-        processTestDifferentRemoteClassLoader(GridDeploymentMode.ISOLATED);
+        processTestDifferentRemoteClassLoader(IgniteDeploymentMode.ISOLATED);
     }
 
     /**

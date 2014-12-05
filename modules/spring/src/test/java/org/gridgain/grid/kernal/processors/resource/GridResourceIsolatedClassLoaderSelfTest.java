@@ -78,7 +78,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        cfg.setDeploymentMode(GridDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
 
         return cfg;
     }

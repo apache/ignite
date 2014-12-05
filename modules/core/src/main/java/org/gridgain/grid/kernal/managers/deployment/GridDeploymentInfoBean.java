@@ -32,7 +32,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     private IgniteUuid clsLdrId;
 
     /** */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private String userVer;
@@ -59,7 +59,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
      * @param participants Participants.
      * @param locDepOwner Local deployment owner flag.
      */
-    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, GridDeploymentMode depMode,
+    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, IgniteDeploymentMode depMode,
         Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         this.clsLdrId = clsLdrId;
         this.depMode = depMode;
@@ -85,7 +85,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeploymentMode deployMode() {
+    @Override public IgniteDeploymentMode deployMode() {
         return depMode;
     }
 
@@ -252,7 +252,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
                 byte depMode0 = commState.getByte();
 
-                depMode = GridDeploymentMode.fromOrdinal(depMode0);
+                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
@@ -338,7 +338,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         clsLdrId = U.readGridUuid(in);
-        depMode = GridDeploymentMode.fromOrdinal(in.readByte());
+        depMode = IgniteDeploymentMode.fromOrdinal(in.readByte());
         userVer = U.readString(in);
         locDepOwner = in.readBoolean();
         participants = U.readMap(in);

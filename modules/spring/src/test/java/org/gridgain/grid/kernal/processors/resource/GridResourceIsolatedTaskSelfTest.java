@@ -79,7 +79,7 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDeploymentMode(GridDeploymentMode.PRIVATE);
+        cfg.setDeploymentMode(IgniteDeploymentMode.PRIVATE);
 
         return cfg;
     }

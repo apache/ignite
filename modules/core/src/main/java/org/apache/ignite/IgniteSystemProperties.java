@@ -286,7 +286,7 @@ public final class IgniteSystemProperties {
      * System property to override deployment mode configuration parameter.
      * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
      *
-     * @see org.apache.ignite.configuration.GridDeploymentMode
+     * @see org.apache.ignite.configuration.IgniteDeploymentMode
      * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
      */
     public static final String GG_DEP_MODE_OVERRIDE = "GRIDGAIN_DEPLOYMENT_MODE_OVERRIDE";

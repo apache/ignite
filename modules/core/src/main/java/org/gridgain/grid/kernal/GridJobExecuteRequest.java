@@ -103,7 +103,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     private IgniteUuid clsLdrId;
 
     /** */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private boolean dynamicSiblings;
@@ -173,7 +173,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         Map<? extends Serializable, ? extends Serializable> jobAttrs,
         String cpSpi,
         IgniteUuid clsLdrId,
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         boolean dynamicSiblings,
         Map<UUID, IgniteUuid> ldrParticipants,
         boolean forceLocDep,
@@ -347,7 +347,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     /**
      * @return Deployment mode.
      */
-    public GridDeploymentMode getDeploymentMode() {
+    public IgniteDeploymentMode getDeploymentMode() {
         return depMode;
     }
 
@@ -680,7 +680,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 byte depMode0 = commState.getByte();
 
-                depMode = GridDeploymentMode.fromOrdinal(depMode0);
+                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

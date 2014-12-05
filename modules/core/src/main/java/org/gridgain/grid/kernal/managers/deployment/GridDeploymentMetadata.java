@@ -21,7 +21,7 @@ import java.util.*;
  */
 class GridDeploymentMetadata {
     /** Deployment mode. */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private String alias;
@@ -85,7 +85,7 @@ class GridDeploymentMetadata {
      *
      * @return Property depMode.
      */
-    GridDeploymentMode deploymentMode() {
+    IgniteDeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -94,7 +94,7 @@ class GridDeploymentMetadata {
      *
      * @param depMode Property depMode.
      */
-    void deploymentMode(GridDeploymentMode depMode) {
+    void deploymentMode(IgniteDeploymentMode depMode) {
         this.depMode = depMode;
     }
 

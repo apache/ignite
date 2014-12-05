@@ -41,7 +41,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /**
      * Initialize URLs.
@@ -115,7 +115,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         processTest(false, false);
     }
@@ -126,18 +126,18 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         processTest(false, false);
     }
 
     /**
-     * Test {@link GridDeploymentMode#CONTINUOUS} mode.
+     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} mode.
      *
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         processTest(false, false);
     }
@@ -148,7 +148,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTest(false, false);
     }
@@ -159,7 +159,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testRedeployPrivateMode() throws Exception {
-        depMode = GridDeploymentMode.PRIVATE;
+        depMode = IgniteDeploymentMode.PRIVATE;
 
         processTest(true, false);
     }
@@ -170,7 +170,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testRedeployIsolatedMode() throws Exception {
-        depMode = GridDeploymentMode.ISOLATED;
+        depMode = IgniteDeploymentMode.ISOLATED;
 
         processTest(true, false);
     }
@@ -181,7 +181,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testRedeployContinuousMode() throws Exception {
-        depMode = GridDeploymentMode.CONTINUOUS;
+        depMode = IgniteDeploymentMode.CONTINUOUS;
 
         processTest(true, false);
     }
@@ -192,7 +192,7 @@ public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest 
      * @throws Exception if error occur.
      */
     public void testRedeploySharedMode() throws Exception {
-        depMode = GridDeploymentMode.SHARED;
+        depMode = IgniteDeploymentMode.SHARED;
 
         processTest(true, false);
     }

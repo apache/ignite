@@ -36,7 +36,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     private IgniteUuid clsLdrId;
 
     /** */
-    private GridDeploymentMode depMode;
+    private IgniteDeploymentMode depMode;
 
     /** */
     private String srcClsName;
@@ -60,7 +60,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
         byte[] src,
         String srcClsName,
         IgniteUuid clsLdrId,
-        GridDeploymentMode depMode,
+        IgniteDeploymentMode depMode,
         String userVer,
         Map<UUID, IgniteUuid> ldrParties) {
         this.src = src;
@@ -95,7 +95,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     /**
      * @return Deployment mode.
      */
-    public GridDeploymentMode deploymentMode() {
+    public IgniteDeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -141,7 +141,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         src = U.readByteArray(in);
 
-        depMode = GridDeploymentMode.fromOrdinal(in.readInt());
+        depMode = IgniteDeploymentMode.fromOrdinal(in.readInt());
 
         clsLdrId = U.readGridUuid(in);
         srcClsName = U.readString(in);

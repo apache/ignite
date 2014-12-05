@@ -227,7 +227,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param recordEvt {@code True} to record event.
      * @return Deployment.
      */
-    private GridDeployment deploy(GridDeploymentMode depMode, ClassLoader ldr, Class<?> cls, String alias,
+    private GridDeployment deploy(IgniteDeploymentMode depMode, ClassLoader ldr, Class<?> cls, String alias,
         boolean recordEvt) {
         GridDeployment dep = null;
 
