@@ -448,7 +448,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Address resolver. */
-    private GridAddressResolver addrRslvr;
+    private IgniteAddressResolver addrRslvr;
 
     /** Local node ID message. */
     private NodeIdMessage nodeIdMsg;
@@ -580,7 +580,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      */
     @GridSpiConfiguration(optional = true)
     @IgniteAddressResolverResource
-    public void setAddressResolver(GridAddressResolver addrRslvr) {
+    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
@@ -591,7 +591,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      *
      * @return Address resolver.
      */
-    public GridAddressResolver getAddressResolver() {
+    public IgniteAddressResolver getAddressResolver() {
         return addrRslvr;
     }
 

@@ -116,7 +116,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             new InetSocketAddress("127.0.0.1", commLocPort), F.asList(new InetSocketAddress("127.0.0.1", commExtPort))
         );
 
-        cfg.setAddressResolver(new GridAddressResolver() {
+        cfg.setAddressResolver(new IgniteAddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
                 return mp.get(addr);
             }

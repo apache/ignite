@@ -8303,7 +8303,7 @@ public abstract class GridUtils {
      * @throws GridException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
-        GridAddressResolver addrRslvr,
+        IgniteAddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
     ) throws GridException {

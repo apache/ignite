@@ -106,7 +106,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
 
     /** Address resolver injector. */
-    private GridResourceBasicInjector<GridAddressResolver> addrsRslvrInjector;
+    private GridResourceBasicInjector<IgniteAddressResolver> addrsRslvrInjector;
 
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;

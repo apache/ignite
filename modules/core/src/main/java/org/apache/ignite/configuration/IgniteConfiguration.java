@@ -387,7 +387,7 @@ public class IgniteConfiguration {
     private GridIndexingSpi[] indexingSpi;
 
     /** Address resolver. */
-    private GridAddressResolver addrRslvr;
+    private IgniteAddressResolver addrRslvr;
 
     /** Cache configurations. */
     private GridCacheConfiguration[] cacheCfg;
@@ -2202,7 +2202,7 @@ public class IgniteConfiguration {
      *
      * @return Address resolver.
      */
-    public GridAddressResolver getAddressResolver() {
+    public IgniteAddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -2211,7 +2211,7 @@ public class IgniteConfiguration {
      *
      * @param addrRslvr Address resolver.
      */
-    public void setAddressResolver(GridAddressResolver addrRslvr) {
+    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         this.addrRslvr = addrRslvr;
     }
 
