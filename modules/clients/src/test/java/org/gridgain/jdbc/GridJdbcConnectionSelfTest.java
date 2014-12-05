@@ -10,7 +10,6 @@
 package org.gridgain.jdbc;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -27,7 +26,7 @@ import java.util.concurrent.*;
  */
 public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
@@ -47,7 +46,7 @@ public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CUSTOM_CACHE_NAME));
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
@@ -55,7 +54,7 @@ public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         if (!gridName.endsWith("0"))
             clientCfg.setRestTcpPort(CUSTOM_PORT);

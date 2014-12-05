@@ -36,7 +36,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings("FloatingPointEquality")
 public class GridJdbcResultSetSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
     private static final String URL = "jdbc:gridgain://127.0.0.1/";
@@ -62,7 +62,7 @@ public class GridJdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cache);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

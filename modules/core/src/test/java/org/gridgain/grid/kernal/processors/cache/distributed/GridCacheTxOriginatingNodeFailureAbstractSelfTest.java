@@ -19,7 +19,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
@@ -174,10 +173,9 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (GridKernal g : grids) {
-                    GridCacheAdapter<?, ?> cache = g.internalCache();
+                    GridCacheSharedContext<Object, Object> ctx = g.context().cache().context();
 
-                    int txNum = cache.isNear() ? ((GridNearCacheAdapter)cache).dht().context().tm().idMapSize() :
-                        cache.context().tm().idMapSize();
+                    int txNum = ctx.tm().idMapSize();
 
                     if (txNum != 0)
                         return false;

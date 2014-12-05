@@ -13,7 +13,6 @@ import org.apache.ignite.configuration.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -60,7 +59,7 @@ public class GridClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTe
 
         assert c.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(REST_TCP_PORT);
         clientCfg.setRestTcpSslEnabled(true);

@@ -25,7 +25,7 @@ import java.util.*;
 
 import static org.gridgain.client.GridClientProtocol.*;
 import static org.gridgain.client.integration.GridClientAbstractSelfTest.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  *
@@ -44,7 +44,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
     private static final int ROUTER_JETTY_PORT = 8081;
 
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -61,14 +61,14 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(BINARY_PORT);
         clientCfg.setRestJettyPath(REST_JETTY_CFG);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

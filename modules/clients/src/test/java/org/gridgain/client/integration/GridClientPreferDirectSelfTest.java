@@ -30,7 +30,7 @@ import static org.gridgain.client.integration.GridClientAbstractMultiNodeSelfTes
  */
 public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int NODES_CNT = 6;
@@ -51,7 +51,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
@@ -61,7 +61,7 @@ public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         assert c.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 

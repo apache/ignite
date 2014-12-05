@@ -10,7 +10,6 @@
 package org.gridgain.client;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -30,7 +29,7 @@ public class GridClientTcpTaskExecutionAfterTopologyRestartSelfTest extends Grid
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(PORT);
 

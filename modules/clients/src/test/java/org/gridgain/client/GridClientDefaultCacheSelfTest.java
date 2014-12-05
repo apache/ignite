@@ -21,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static org.gridgain.client.GridClientProtocol.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Tests that client is able to connect to a grid with only default cache enabled.
@@ -31,7 +31,7 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Host. */
     private static final String HOST = "127.0.0.1";
@@ -70,13 +70,13 @@ public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestJettyPath(REST_JETTY_CFG);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

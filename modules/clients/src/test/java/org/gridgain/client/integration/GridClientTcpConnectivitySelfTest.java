@@ -12,7 +12,6 @@ package org.gridgain.client.integration;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -28,7 +27,7 @@ public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnect
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         if (addr != null)
             clientCfg.setRestTcpHost(addr);

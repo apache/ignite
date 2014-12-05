@@ -11,9 +11,8 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,7 +28,7 @@ import java.util.concurrent.*;
  */
 public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String HOST = "127.0.0.1";
@@ -51,7 +50,7 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(TCP_PORT);
 
@@ -138,16 +137,16 @@ public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
     /**
      * Test SPI.
      */
-    private class TestDiscoverySpi extends GridTcpDiscoverySpi {
+    private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws GridSpiException {
+        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             gridReady.countDown();
 
             try {
                 proceed.await();
             }
             catch (InterruptedException e) {
-                throw new GridSpiException("Failed to await start signal.", e);
+                throw new IgniteSpiException("Failed to await start signal.", e);
             }
 
             super.spiStart(gridName);

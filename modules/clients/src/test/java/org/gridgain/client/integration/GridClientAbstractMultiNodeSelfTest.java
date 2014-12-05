@@ -15,6 +15,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.ssl.*;
@@ -51,7 +52,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Partitioned cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";
@@ -125,7 +126,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
         assert c.getClientConnectionConfiguration() == null;
 
         if (restEnabled) {
-            GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+            ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
             clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
@@ -139,7 +140,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             c.setClientConnectionConfiguration(clientCfg);
         }
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
@@ -751,14 +752,14 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      * Communication SPI which checks cache flags.
      */
     @SuppressWarnings("unchecked")
-    private static class TestCommunicationSpi extends GridTcpCommunicationSpi {
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** Node ID. */
         @IgniteLocalNodeIdResource
         private UUID nodeId;
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
-            throws GridSpiException {
+            throws IgniteSpiException {
             checkSyncFlags((GridIoMessage)msg);
 
             super.sendMessage(node, msg);

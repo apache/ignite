@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.client.*;
@@ -37,7 +38,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String CACHE_NAME = "cache";
@@ -56,7 +57,7 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GridSystemProperties.GG_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
+        System.setProperty(IgniteSystemProperties.GG_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
 
         startGrid(0);
     }
@@ -65,7 +66,7 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        System.clearProperty(GridSystemProperties.GG_REST_MAX_TASK_RESULTS);
+        System.clearProperty(IgniteSystemProperties.GG_REST_MAX_TASK_RESULTS);
     }
 
     /** {@inheritDoc} */
@@ -86,13 +87,13 @@ public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(BINARY_PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

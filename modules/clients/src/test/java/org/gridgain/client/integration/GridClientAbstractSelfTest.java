@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.testframework.GridTestUtils.*;
@@ -45,7 +45,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
 @SuppressWarnings("deprecation")
 public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String CACHE_NAME = "cache";
@@ -185,7 +185,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(BINARY_PORT);
 
@@ -201,7 +201,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
@@ -210,7 +210,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
-        clientCfg.setClientMessageInterceptor(new GridClientMessageInterceptor() {
+        clientCfg.setClientMessageInterceptor(new ClientMessageInterceptor() {
             @Override public Object onReceive(@Nullable Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
@@ -228,7 +228,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         });
 
         // Specify swap SPI, otherwise test fails on windows.
-        cfg.setSwapSpaceSpi(new GridFileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return cfg;
     }

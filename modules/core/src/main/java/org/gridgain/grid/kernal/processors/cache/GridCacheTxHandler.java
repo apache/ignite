@@ -101,6 +101,34 @@ public class GridCacheTxHandler<K, V> {
                 processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse<K, V>)msg);
             }
         });
+
+        ctx.io().addHandler(0, GridCacheOptimisticCheckPreparedTxRequest.class,
+            new CI2<UUID, GridCacheOptimisticCheckPreparedTxRequest<K, V>>() {
+                @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest<K, V> req) {
+                    processCheckPreparedTxRequest(nodeId, req);
+                }
+            });
+
+        ctx.io().addHandler(0, GridCacheOptimisticCheckPreparedTxResponse.class,
+            new CI2<UUID, GridCacheOptimisticCheckPreparedTxResponse<K, V>>() {
+                @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse<K, V> res) {
+                    processCheckPreparedTxResponse(nodeId, res);
+                }
+            });
+
+        ctx.io().addHandler(0, GridCachePessimisticCheckCommittedTxRequest.class,
+            new CI2<UUID, GridCachePessimisticCheckCommittedTxRequest<K, V>>() {
+                @Override public void apply(UUID nodeId, GridCachePessimisticCheckCommittedTxRequest<K, V> req) {
+                    processCheckCommittedTxRequest(nodeId, req);
+                }
+            });
+
+        ctx.io().addHandler(0, GridCachePessimisticCheckCommittedTxResponse.class,
+            new CI2<UUID, GridCachePessimisticCheckCommittedTxResponse<K, V>>() {
+                @Override public void apply(UUID nodeId, GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
+                    processCheckCommittedTxResponse(nodeId, res);
+                }
+            });
     }
 
     /**
@@ -149,7 +177,7 @@ public class GridCacheTxHandler<K, V> {
                         throw new GridClosureException(ex);
 
                     IgniteFuture<GridCacheTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
-                        locTx.transactionNodes(), req.last(), req.lastBackups());
+                        req.transactionNodes(), req.last(), req.lastBackups());
 
                     if (locTx.isRollbackOnly())
                         locTx.rollbackAsync();
@@ -1315,5 +1343,134 @@ public class GridCacheTxHandler<K, V> {
         }
 
         return tx;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    protected void processCheckPreparedTxRequest(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest<K, V> req) {
+        if (log.isDebugEnabled())
+            log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
+
+        boolean prepared = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+
+        GridCacheOptimisticCheckPreparedTxResponse<K, V> res =
+            new GridCacheOptimisticCheckPreparedTxResponse<>(req.version(), req.futureId(), req.miniId(), prepared);
+
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Sending check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
+
+            ctx.io().send(nodeId, res);
+        }
+        catch (ClusterTopologyException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send check prepared transaction response (did node leave grid?) [nodeId=" +
+                    nodeId + ", res=" + res + ']');
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to send response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse<K, V> res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        GridCacheOptimisticCheckPreparedTxFuture<K, V> fut = (GridCacheOptimisticCheckPreparedTxFuture<K, V>)ctx.mvcc().
+            <Boolean>future(res.version(), res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received response for unknown future (will ignore): " + res);
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    protected void processCheckCommittedTxRequest(final UUID nodeId,
+        final GridCachePessimisticCheckCommittedTxRequest<K, V> req) {
+        if (log.isDebugEnabled())
+            log.debug("Processing check committed transaction request [nodeId=" + nodeId + ", req=" + req + ']');
+
+        IgniteFuture<GridCacheCommittedTxInfo<K, V>> infoFut = ctx.tm().checkPessimisticTxCommitted(req);
+
+        infoFut.listenAsync(new CI1<IgniteFuture<GridCacheCommittedTxInfo<K, V>>>() {
+            @Override public void apply(IgniteFuture<GridCacheCommittedTxInfo<K, V>> infoFut) {
+                GridCacheCommittedTxInfo<K, V> info = null;
+
+                try {
+                    info = infoFut.get();
+                }
+                catch (GridException e) {
+                    U.error(log, "Failed to obtain committed info for transaction (will rollback): " + req, e);
+                }
+
+                GridCachePessimisticCheckCommittedTxResponse<K, V>
+                    res = new GridCachePessimisticCheckCommittedTxResponse<>(
+                    req.version(), req.futureId(), req.miniId(), info);
+
+                if (log.isDebugEnabled())
+                    log.debug("Finished waiting for tx committed info [req=" + req + ", res=" + res + ']');
+
+                sendCheckCommittedResponse(nodeId, res);            }
+        });
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    protected void processCheckCommittedTxResponse(UUID nodeId,
+        GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing check committed transaction response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        GridCachePessimisticCheckCommittedTxFuture<K, V> fut =
+            (GridCachePessimisticCheckCommittedTxFuture<K, V>)ctx.mvcc().<GridCacheCommittedTxInfo<K, V>>future(
+                res.version(), res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received response for unknown future (will ignore): " + res);
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * Sends check committed response to remote node.
+     *
+     * @param nodeId Node ID to send to.
+     * @param res Reponse to send.
+     */
+    private void sendCheckCommittedResponse(UUID nodeId, GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Sending check committed transaction response [nodeId=" + nodeId + ", res=" + res + ']');
+
+            ctx.io().send(nodeId, res);
+        }
+        catch (ClusterTopologyException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send check committed transaction response (did node leave grid?) [nodeId=" +
+                    nodeId + ", res=" + res + ']');
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to send response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
+        }
     }
 }

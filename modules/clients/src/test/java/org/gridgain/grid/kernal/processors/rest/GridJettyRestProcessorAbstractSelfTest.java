@@ -16,7 +16,7 @@ import java.net.*;
 import java.util.*;
 import java.util.regex.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Tests for Jetty REST protocol.

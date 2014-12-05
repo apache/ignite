@@ -30,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 @SuppressWarnings("unchecked")
 public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String CACHE_NAME = "cache";
@@ -75,13 +75,13 @@ public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

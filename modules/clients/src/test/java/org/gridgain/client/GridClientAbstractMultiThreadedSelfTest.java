@@ -47,7 +47,7 @@ import static org.gridgain.testframework.GridTestUtils.*;
  */
 public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Partitioned cache name. */
     protected static final String PARTITIONED_CACHE_NAME = "partitioned";
@@ -155,7 +155,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
         assert c.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
 
@@ -167,7 +167,7 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
 
         c.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

@@ -57,14 +57,12 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      * @param tx Transaction.
      * @param originatingThreadId Originating thread ID.
      * @param futId Future ID.
-     * @param miniId Mini future ID.
      */
     public GridCachePessimisticCheckCommittedTxRequest(GridCacheTxEx<K, V> tx, long originatingThreadId, IgniteUuid futId,
-        IgniteUuid miniId, boolean nearOnlyCheck) {
+        boolean nearOnlyCheck) {
         super(tx.xidVersion(), 0);
 
         this.futId = futId;
-        this.miniId = miniId;
         this.nearOnlyCheck = nearOnlyCheck;
 
         nearXidVer = tx.nearXidVersion();
@@ -105,6 +103,13 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @param miniId Mini ID to set.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
     }
 
     /**

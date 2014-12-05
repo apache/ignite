@@ -92,9 +92,9 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     private IgniteConfiguration cacheTestConfiguration(IgniteConfiguration cfg) {
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         ipFinder.setShared(true);
 
@@ -104,7 +104,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         // Ensure - no authentication.
         clientCfg.setRestSecretKey(null);

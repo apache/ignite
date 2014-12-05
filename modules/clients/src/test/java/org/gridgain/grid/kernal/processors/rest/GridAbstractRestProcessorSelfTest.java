@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -22,7 +21,7 @@ import org.gridgain.testframework.junits.common.*;
  */
 abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Local host. */
     protected static final String LOC_HOST = "127.0.0.1";
@@ -62,11 +61,11 @@ abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest 
 
         assert cfg.getClientConnectionConfiguration() == null;
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

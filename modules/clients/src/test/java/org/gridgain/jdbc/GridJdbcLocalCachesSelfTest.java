@@ -29,7 +29,7 @@ import static org.gridgain.jdbc.GridJdbcDriver.*;
  */
 public class GridJdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final GridTcpDiscoveryIpFinder IP_FINDER = new GridTcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -55,7 +55,7 @@ public class GridJdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setIndexingSpi(idx);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

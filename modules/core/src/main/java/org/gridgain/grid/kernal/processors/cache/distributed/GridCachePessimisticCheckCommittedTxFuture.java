@@ -123,27 +123,30 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
             if (rmtNode.id().equals(failedNodeId))
                 continue;
 
-            /*
-             * Send message to all cache nodes in the topology.
-             */
+            GridCachePessimisticCheckCommittedTxRequest<K, V> req = new GridCachePessimisticCheckCommittedTxRequest<>(
+                tx,
+                originatingThreadId, futureId(), nearCheck);
 
-            MiniFuture fut = new MiniFuture(rmtNode.id());
+            if (rmtNode.isLocal())
+                add(cctx.tm().checkPessimisticTxCommitted(req));
+            else {
+                MiniFuture fut = new MiniFuture(rmtNode.id());
 
-            GridCachePessimisticCheckCommittedTxRequest<K, V> req = new GridCachePessimisticCheckCommittedTxRequest<>(tx,
-                originatingThreadId, futureId(), fut.futureId(), nearCheck);
+                req.miniId(fut.futureId());
 
-            add(fut);
+                add(fut);
 
-            try {
-                cctx.io().send(rmtNode.id(), req);
-            }
-            catch (ClusterTopologyException ignored) {
-                fut.onNodeLeft();
-            }
-            catch (GridException e) {
-                fut.onError(e);
+                try {
+                    cctx.io().send(rmtNode.id(), req);
+                }
+                catch (ClusterTopologyException ignored) {
+                    fut.onNodeLeft();
+                }
+                catch (GridException e) {
+                    fut.onError(e);
 
-                break;
+                    break;
+                }
             }
         }
 

@@ -1905,15 +1905,16 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     GridCacheTxEntry<K, V> write = tx.writeMap().get(entry.txKey());
 
                     if (write != null) {
-                        GridCacheEntryEx<K, V> cached = entry.cached();
+                        GridCacheEntryEx<K, V> cached = write.cached();
 
-                        if (cached == null || cached.detached()) {
+                        GridCacheTxEntry<K, V> recovered = entry.cleanCopy(write.context());
+
+                        if (cached == null || cached.detached())
                             cached = write.context().cache().entryEx(entry.key(), tx.topologyVersion());
 
-                            entry.cached(cached, cached.keyBytes());
-                        }
+                        recovered.cached(cached, cached.keyBytes());
 
-                        tx.writeMap().put(entry.txKey(), entry);
+                        tx.writeMap().put(entry.txKey(), recovered);
 
                         continue;
                     }
@@ -1937,6 +1938,45 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             salvageTx(tx);
         }
+    }
+
+    /**
+     * @param req Check committed request.
+     * @return Check committed future.
+     */
+    public IgniteFuture<GridCacheCommittedTxInfo<K, V>> checkPessimisticTxCommitted(GridCachePessimisticCheckCommittedTxRequest req) {
+        // First check if we have near transaction with this ID.
+        GridCacheTxEx<K, V> tx = localTxForRecovery(req.nearXidVersion(), !req.nearOnlyCheck());
+
+        // Either we found near transaction or one of transactions is being committed by user.
+        // Wait for it and send reply.
+        if (tx != null) {
+            assert tx.local();
+
+            if (log.isDebugEnabled())
+                log.debug("Found active near transaction, will wait for completion [req=" + req + ", tx=" + tx + ']');
+
+            final GridCacheTxEx<K, V> tx0 = tx;
+
+            return tx.finishFuture().chain(new C1<IgniteFuture<GridCacheTx>, GridCacheCommittedTxInfo<K, V>>() {
+                @Override public GridCacheCommittedTxInfo<K, V> apply(IgniteFuture<GridCacheTx> txFut) {
+                    GridCacheCommittedTxInfo<K, V> info = null;
+
+                    if (tx0.state() == COMMITTED)
+                        info = new GridCacheCommittedTxInfo<>(tx0);
+
+                    return info;
+                }
+            });
+        }
+
+        GridCacheCommittedTxInfo<K, V> info = txCommitted(req.nearXidVersion(), req.originatingNodeId(),
+            req.originatingThreadId());
+
+        if (info == null)
+            info = txCommitted(req.nearXidVersion(), req.originatingNodeId(), req.originatingThreadId());
+
+        return new GridFinishedFutureEx<>(info);
     }
 
     /**
