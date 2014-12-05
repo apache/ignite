@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.authentication;
+package org.apache.ignite.spi.authentication;
 
 import org.gridgain.grid.security.*;
 

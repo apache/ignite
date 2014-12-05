@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.authentication;
+package org.apache.ignite.spi.authentication;
 
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.security.*;
@@ -17,13 +17,13 @@ import org.gridgain.grid.security.*;
  * supports only {@code authentication} and does not provide any {@code authorization}
  * functionality.
  * <p>
- * The default authentication SPI is {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi}
+ * The default authentication SPI is {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi}
  * which permits any request.
  * <p>
  * Gridgain provides the following {@code GridAuthenticationSpi} implementations:
  * <ul>
  * <li>
- *     {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi} - permits any request.
+ *     {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} - permits any request.
  * </li>
  * <li>
  *     {@code GridPasscodeAuthenticationSpi} -

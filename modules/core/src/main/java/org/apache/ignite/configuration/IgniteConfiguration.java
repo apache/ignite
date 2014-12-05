@@ -18,6 +18,7 @@ import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.streamer.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
@@ -26,7 +27,6 @@ import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
-import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.checkpoint.noop.*;
 import org.gridgain.grid.spi.collision.*;
@@ -1978,7 +1978,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.authentication.noop.NoopAuthenticationSpi} will be used.
+     * {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} will be used.
      *
      * @return Grid authentication SPI implementation or {@code null} to use default implementation.
      */
@@ -1987,9 +1987,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi}.
      *
-     * @param authSpi Fully configured instance of {@link org.gridgain.grid.spi.authentication.AuthenticationSpi} or
+     * @param authSpi Fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi} or
      * {@code null} if no SPI provided.
      * @see IgniteConfiguration#getAuthenticationSpi()
      */

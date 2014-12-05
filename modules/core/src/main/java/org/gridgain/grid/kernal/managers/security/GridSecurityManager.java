@@ -10,10 +10,10 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.spi.authentication.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,7 +23,7 @@ import java.util.*;
  */
 public interface GridSecurityManager extends GridManager {
     /**
-     * Authenticates grid node with it's attributes via underlying {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}s.
+     * Authenticates grid node with it's attributes via underlying {@link org.apache.ignite.spi.authentication.AuthenticationSpi}s.
      *
      * @param node Node id to authenticate.
      * @param cred Security credentials.
@@ -40,7 +40,7 @@ public interface GridSecurityManager extends GridManager {
     public boolean isGlobalNodeAuthentication();
 
     /**
-     * Authenticates subject via underlying {@link org.gridgain.grid.spi.authentication.AuthenticationSpi}s.
+     * Authenticates subject via underlying {@link org.apache.ignite.spi.authentication.AuthenticationSpi}s.
      *
      * @param ctx Authentication context.
      * @return {@code True} if succeeded, {@code false} otherwise.

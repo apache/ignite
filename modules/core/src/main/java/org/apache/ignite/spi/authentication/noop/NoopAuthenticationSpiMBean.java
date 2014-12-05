@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.authentication.noop;
+package org.apache.ignite.spi.authentication.noop;
 
 import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
