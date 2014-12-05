@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;

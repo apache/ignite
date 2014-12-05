@@ -7,17 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication.tcp;
-
-import org.gridgain.testframework.junits.spi.*;
+package org.apache.ignite.spi.communication.tcp;
 
 /**
  *
  */
-@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiTcpSelfTest extends GridTcpCommunicationSpiAbstractTest {
+public class GridTcpCommunicationSpiMultithreadedTcpSelfTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
     /** */
-    public GridTcpCommunicationSpiTcpSelfTest() {
+    public GridTcpCommunicationSpiMultithreadedTcpSelfTest() {
         super(false);
     }
 }

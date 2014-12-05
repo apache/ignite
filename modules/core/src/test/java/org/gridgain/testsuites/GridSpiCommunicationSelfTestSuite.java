@@ -10,7 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.communication.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
 
 /**
  * Test suite for all communication SPIs.

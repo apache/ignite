@@ -29,7 +29,7 @@ import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.spi.communication.*;
+import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -1929,7 +1929,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured SPI communication  implementation. If not provided,
-     * {@link org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi} will be used by default.
+     * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi} will be used by default.
      *
      * @return Grid communication SPI implementation or {@code null} to use default implementation.
      */
@@ -1938,9 +1938,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.communication.CommunicationSpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.communication.CommunicationSpi}.
      *
-     * @param commSpi Fully configured instance of {@link org.gridgain.grid.spi.communication.CommunicationSpi}.
+     * @param commSpi Fully configured instance of {@link org.apache.ignite.spi.communication.CommunicationSpi}.
      * @see IgniteConfiguration#getCommunicationSpi()
      */
     public void setCommunicationSpi(CommunicationSpi commSpi) {

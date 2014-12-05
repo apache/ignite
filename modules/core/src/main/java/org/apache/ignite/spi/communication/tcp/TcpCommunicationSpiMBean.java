@@ -1,4 +1,4 @@
-package org.gridgain.grid.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;

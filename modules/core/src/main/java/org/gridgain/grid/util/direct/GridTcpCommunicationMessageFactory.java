@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.dataload.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
-import org.gridgain.grid.spi.communication.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.jdk8.backport.*;
 
 import java.util.*;

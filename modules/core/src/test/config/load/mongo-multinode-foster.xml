@@ -156,7 +156,7 @@
             TCP communication SPI.
         -->
         <property name="communicationSpi">
-            <bean class="org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="connectionBufferSize" value="0"/>
             </bean>
         </property>

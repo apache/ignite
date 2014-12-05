@@ -99,7 +99,7 @@ public interface IgniteSpiContext {
 
     /**
      * Sends a message to a remote node. The underlying communication mechanism is defined by
-     * {@link org.gridgain.grid.spi.communication.CommunicationSpi} implementation used.
+     * {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
      *
      * @param node Node to send a message to.
      * @param msg Message to send.
@@ -110,7 +110,7 @@ public interface IgniteSpiContext {
 
     /**
      * Register a message listener to receive messages sent by remote nodes. The underlying
-     * communication mechanism is defined by {@link org.gridgain.grid.spi.communication.CommunicationSpi} implementation used.
+     * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
      * <p>
      * This method can be used by jobs to communicate with other nodes in the grid. Remote nodes
      * can send messages by calling {@link #send(org.apache.ignite.cluster.ClusterNode, Serializable, String)} method.

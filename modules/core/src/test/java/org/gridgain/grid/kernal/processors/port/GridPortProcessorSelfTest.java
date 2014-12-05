@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.port;
 
-import org.gridgain.grid.spi.communication.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 

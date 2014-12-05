@@ -16,7 +16,7 @@ import org.apache.ignite.logger.log4j.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.spi.communication.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;

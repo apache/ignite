@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp;
 
-import org.gridgain.grid.spi.communication.*;
+import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.nio.*;

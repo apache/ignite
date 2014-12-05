@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication;
+package org.apache.ignite.spi.communication;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;

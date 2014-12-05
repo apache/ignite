@@ -663,7 +663,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
-                                            <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
+                                            <packages>org.gridgain.grid.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
@@ -865,7 +865,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
-                                            <packages>org.gridgain.grid.spi.communication:org.gridgain.grid.spi.communication.tcp</packages>
+                                            <packages>org.gridgain.grid.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>

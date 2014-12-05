@@ -14,7 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.communication.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi} and {@link org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi}.
+ * Test for {@link GridTcpDiscoverySpi} and {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
 public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */

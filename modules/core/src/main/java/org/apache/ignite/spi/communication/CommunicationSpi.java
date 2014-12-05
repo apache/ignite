@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication;
+package org.apache.ignite.spi.communication;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.*;
@@ -32,7 +32,7 @@ import java.util.*;
  * <p>
  * GridGain comes with built-in communication SPI implementations:
  * <ul>
- *      <li>{@link org.gridgain.grid.spi.communication.tcp.TcpCommunicationSpi}</li>
+ *      <li>{@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when

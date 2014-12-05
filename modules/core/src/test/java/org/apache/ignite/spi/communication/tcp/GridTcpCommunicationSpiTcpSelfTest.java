@@ -7,23 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi.communication.tcp;
+package org.apache.ignite.spi.communication.tcp;
 
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
 
 /**
- * TCP communication SPI config start-stop test.
+ *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<TcpCommunicationSpi> {
-    /**
-     * @return Local port.
-     * @throws Exception If failed.
-     */
-    @GridSpiTestConfig
-    public int getLocalPort() throws Exception {
-        return GridTestUtils.getNextCommPort(getClass());
+public class GridTcpCommunicationSpiTcpSelfTest extends GridTcpCommunicationSpiAbstractTest {
+    /** */
+    public GridTcpCommunicationSpiTcpSelfTest() {
+        super(false);
     }
 }
