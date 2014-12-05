@@ -228,8 +228,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             throw new IgniteSpiException("Unknown local address: " + locAddr, e);
         }
 
-        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
-            GridTcpDiscoveryMulticastIpFinder mcastIpFinder = ((GridTcpDiscoveryMulticastIpFinder)ipFinder);
+        if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
+            TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
 
             if (mcastIpFinder.getLocalAddress() == null)
                 mcastIpFinder.setLocalAddress(locAddr);

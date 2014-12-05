@@ -18,7 +18,7 @@ import java.util.*;
  * GridTcpDiscoverySharedFsIpFinder test.
  */
 public class GridTcpDiscoverySharedFsIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoverySharedFsIpFinder> {
+    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoverySharedFsIpFinder> {
     /**
      * Constructor.
      *
@@ -29,8 +29,8 @@ public class GridTcpDiscoverySharedFsIpFinderSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected GridTcpDiscoverySharedFsIpFinder ipFinder() {
-        GridTcpDiscoverySharedFsIpFinder finder = new GridTcpDiscoverySharedFsIpFinder();
+    @Override protected TcpDiscoverySharedFsIpFinder ipFinder() {
+        TcpDiscoverySharedFsIpFinder finder = new TcpDiscoverySharedFsIpFinder();
 
         assert finder.isShared() : "Ip finder should be shared by default.";
 

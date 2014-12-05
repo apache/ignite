@@ -19,7 +19,7 @@ import java.util.*;
  * GridTcpDiscoveryMulticastIpFinder test.
  */
 public class GridTcpDiscoveryMulticastIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoveryMulticastIpFinder> {
+    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryMulticastIpFinder> {
     /**
      * @throws Exception In case of error.
      */
@@ -28,8 +28,8 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected GridTcpDiscoveryMulticastIpFinder ipFinder() throws Exception {
-        GridTcpDiscoveryMulticastIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
+    @Override protected TcpDiscoveryMulticastIpFinder ipFinder() throws Exception {
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
         ipFinder.setMulticastGroup(GridTestUtils.getNextMulticastGroup(getClass()));
         ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
@@ -44,19 +44,19 @@ public class GridTcpDiscoveryMulticastIpFinderSelfTest
     public void testExchange() throws Exception {
         String locAddr = null;
 
-        GridTcpDiscoveryMulticastIpFinder ipFinder1 = null;
-        GridTcpDiscoveryMulticastIpFinder ipFinder2 = null;
-        GridTcpDiscoveryMulticastIpFinder ipFinder3 = null;
+        TcpDiscoveryMulticastIpFinder ipFinder1 = null;
+        TcpDiscoveryMulticastIpFinder ipFinder2 = null;
+        TcpDiscoveryMulticastIpFinder ipFinder3 = null;
 
         try {
             ipFinder1 = ipFinder();
 
-            ipFinder2 = new GridTcpDiscoveryMulticastIpFinder();
+            ipFinder2 = new TcpDiscoveryMulticastIpFinder();
 
             ipFinder2.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder2.setMulticastPort(ipFinder1.getMulticastPort());
 
-            ipFinder3 = new GridTcpDiscoveryMulticastIpFinder();
+            ipFinder3 = new TcpDiscoveryMulticastIpFinder();
 
             ipFinder3.setMulticastGroup(ipFinder1.getMulticastGroup());
             ipFinder3.setMulticastPort(ipFinder1.getMulticastPort());

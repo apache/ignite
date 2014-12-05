@@ -115,7 +115,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             spi.setIpFinder(finder);
         }
         else if (gridName.contains("MulticastIpFinder")) {
-            GridTcpDiscoveryMulticastIpFinder finder = new GridTcpDiscoveryMulticastIpFinder();
+            TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
             finder.setAddressRequestAttempts(10);
             finder.setMulticastGroup(GridTestUtils.getNextMulticastGroup(getClass()));
@@ -703,7 +703,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 TcpDiscoverySpi spi = (TcpDiscoverySpi)g.configuration().getDiscoverySpi();
 
-                GridTcpDiscoveryMulticastIpFinder ipFinder = (GridTcpDiscoveryMulticastIpFinder)spi.getIpFinder();
+                TcpDiscoveryMulticastIpFinder ipFinder = (TcpDiscoveryMulticastIpFinder)spi.getIpFinder();
 
                 boolean found = false;
 

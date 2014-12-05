@@ -50,7 +50,7 @@ public class CacheNodeWithStoreStartup {
         // Discovery SPI.
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        TcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
         ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
 

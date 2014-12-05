@@ -1066,7 +1066,7 @@ public abstract class GridAbstractTest extends TestCase {
         String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
         if (!F.isEmpty(mcastAddr)) {
-            GridTcpDiscoveryMulticastIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
+            TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
             ipFinder.setMulticastGroup(mcastAddr);
             ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));

@@ -17,7 +17,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
  * JDBC IP finder self test.
  */
 public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
-    GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoveryJdbcIpFinder> {
+    GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryJdbcIpFinder> {
     /** */
     private ComboPooledDataSource dataSrc;
 
@@ -34,8 +34,8 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridTcpDiscoveryJdbcIpFinder ipFinder() throws Exception {
-        GridTcpDiscoveryJdbcIpFinder finder = new GridTcpDiscoveryJdbcIpFinder();
+    @Override protected TcpDiscoveryJdbcIpFinder ipFinder() throws Exception {
+        TcpDiscoveryJdbcIpFinder finder = new TcpDiscoveryJdbcIpFinder();
 
         assert finder.isShared() : "IP finder should be shared by default.";
 

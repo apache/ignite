@@ -1676,7 +1676,7 @@ public class GridGainEx {
                 TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
 
                 if (tcpDisco.getIpFinder() == null)
-                    tcpDisco.setIpFinder(new GridTcpDiscoveryMulticastIpFinder());
+                    tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
             }
 
             if (evtSpi == null)

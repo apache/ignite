@@ -22,9 +22,7 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -68,11 +66,11 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
  * (see {@link #setIpFinder(org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder)}).
  * See the following IP finder implementations for details on configuration:
  * <ul>
- * <li>{@link GridTcpDiscoverySharedFsIpFinder}</li>
+ * <li>{@link org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder}</li>
  * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder}</li>
- * <li>{@link GridTcpDiscoveryJdbcIpFinder}</li>
+ * <li>{@link org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
- * <li>{@link GridTcpDiscoveryMulticastIpFinder} - default</li>
+ * <li>{@link org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} - default</li>
  * </ul>
  * </li>
  * </ul>
@@ -853,8 +851,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
 
-        if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
-            GridTcpDiscoveryMulticastIpFinder mcastIpFinder = ((GridTcpDiscoveryMulticastIpFinder)ipFinder);
+        if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
+            TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
 
             if (mcastIpFinder.getLocalAddress() == null)
                 mcastIpFinder.setLocalAddress(locAddr);

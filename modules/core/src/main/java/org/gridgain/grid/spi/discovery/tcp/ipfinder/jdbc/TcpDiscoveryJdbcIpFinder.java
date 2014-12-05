@@ -43,7 +43,7 @@ import static java.sql.Connection.*;
  * <p>
  * The database will contain 1 table which will hold IP addresses.
  */
-public class GridTcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Query to get addresses. */
     public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
 
@@ -83,7 +83,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Constructor.
      */
-    public GridTcpDiscoveryJdbcIpFinder() {
+    public TcpDiscoveryJdbcIpFinder() {
         setShared(true);
     }
 
@@ -356,6 +356,6 @@ public class GridTcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryJdbcIpFinder.class, this);
+        return S.toString(TcpDiscoveryJdbcIpFinder.class, this);
     }
 }

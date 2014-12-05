@@ -394,12 +394,12 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         if (spi instanceof TcpDiscoverySpi) {
             TcpDiscoveryIpFinder ipFinder = ((TcpDiscoverySpi)spi).getIpFinder();
 
-            if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
+            if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
                 String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
                 if (mcastAddr != null && !mcastAddr.isEmpty()) {
-                    ((GridTcpDiscoveryMulticastIpFinder)ipFinder).setMulticastGroup(mcastAddr);
-                    ((GridTcpDiscoveryMulticastIpFinder)ipFinder).setMulticastPort(
+                    ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastGroup(mcastAddr);
+                    ((TcpDiscoveryMulticastIpFinder)ipFinder).setMulticastPort(
                         GridTestUtils.getNextMulticastPort(getClass()));
                 }
             }

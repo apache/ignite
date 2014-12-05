@@ -20,7 +20,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.io.*;
@@ -183,7 +182,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /**
      * Sets IP finder for IP addresses sharing and storing.
      * <p>
-     * If not provided {@link GridTcpDiscoveryMulticastIpFinder} will be used by default.
+     * If not provided {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} will be used by default.
      *
      * @param ipFinder IP finder.
      */

@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Note that this finder is shared by default (see {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
-public class GridTcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Default path for discovering of local nodes (testing only). Note that this path is relative to
      * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
@@ -82,7 +82,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapte
     /**
      * Constructor.
      */
-    public GridTcpDiscoverySharedFsIpFinder() {
+    public TcpDiscoverySharedFsIpFinder() {
         setShared(true);
     }
 
@@ -253,6 +253,6 @@ public class GridTcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapte
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoverySharedFsIpFinder.class, this);
+        return S.toString(TcpDiscoverySharedFsIpFinder.class, this);
     }
 }
