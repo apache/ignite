@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * About dialog.
  */
-public class GridAboutDialog extends JDialog {
+public class IgniteAboutDialog extends JDialog {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class GridAboutDialog extends JDialog {
     private static final Color VALUE_BORDER_COLOR = new Color(0xcdcdcd);
 
     /** Global reference to about dialog to prevent double open. */
-    private static GridAboutDialog aboutDlg;
+    private static IgniteAboutDialog aboutDlg;
 
     /** Application name */
     private final String appName;
@@ -58,7 +58,7 @@ public class GridAboutDialog extends JDialog {
      * @param release Release date.
      * @param copyright Copyright.
      */
-    GridAboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
+    IgniteAboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
         this.appName = appName;
 
         this.bannerSpec = bannerSpec;
@@ -305,7 +305,7 @@ public class GridAboutDialog extends JDialog {
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {
-                        aboutDlg = new GridAboutDialog(appName, bannerSpec, ver, release, copyright);
+                        aboutDlg = new IgniteAboutDialog(appName, bannerSpec, ver, release, copyright);
 
                         aboutDlg.setLocationRelativeTo(null);
                         aboutDlg.setVisible(true);

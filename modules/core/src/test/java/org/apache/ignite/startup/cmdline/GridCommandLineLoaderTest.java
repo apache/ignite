@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.startup.cmdline;
+package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
 import org.apache.ignite.startup.cmdline.*;
@@ -55,6 +55,6 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
             }
         });
 
-        GridCommandLineStartup.main(new String[]{path});
+        IgniteCommandLineStartup.main(new String[]{path});
     }
 }

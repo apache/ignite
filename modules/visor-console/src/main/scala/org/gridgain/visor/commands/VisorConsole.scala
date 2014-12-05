@@ -16,7 +16,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util
 import javax.swing.ImageIcon
-import org.apache.ignite.startup.cmdline.GridAboutDialog
+import org.apache.ignite.startup.cmdline.IgniteAboutDialog
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.visor.visor
@@ -197,7 +197,7 @@ object VisorConsole extends App {
                 Array[Class[_]](aboutHndCls),
                 new java.lang.reflect.InvocationHandler {
                     def invoke(proxy: Any, mth: java.lang.reflect.Method, args: Array[Object]) = {
-                        GridAboutDialog.centerShow("Visor - GridGain Shell Console", bannerIconUrl.toExternalForm,
+                        IgniteAboutDialog.centerShow("Visor - GridGain Shell Console", bannerIconUrl.toExternalForm,
                             VISOR_VER, releaseDate, VISOR_COPYRIGHT)
 
                         null

@@ -29,7 +29,7 @@ import java.util.*;
  * @see <a href="http://jcommander.org/">JCommander command line parameters parsing library</a>
  */
 @SuppressWarnings("FieldCanBeLocal")
-public class GridCommandLineTransformer {
+public class IgniteCommandLineTransformer {
     /** Prefix for every custom JVM option. */
     static final String JVM_OPTION_PREFIX = "-J";
 
@@ -57,7 +57,7 @@ public class GridCommandLineTransformer {
     /**
      * Private constructor to promote usage of a factory method {@link #transform(String...)}.
      */
-    private GridCommandLineTransformer() {
+    private IgniteCommandLineTransformer() {
         // No-op
     }
 
@@ -92,7 +92,7 @@ public class GridCommandLineTransformer {
     public static String transform(String... args) {
         assert args != null;
 
-        return new GridCommandLineTransformer().doTransformation(args);
+        return new IgniteCommandLineTransformer().doTransformation(args);
     }
 
     /**
