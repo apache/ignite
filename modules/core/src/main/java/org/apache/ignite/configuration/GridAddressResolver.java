@@ -7,7 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite.configuration;
+
+import org.gridgain.grid.*;
 
 import java.net.*;
 import java.util.*;
@@ -27,7 +29,7 @@ public interface GridAddressResolver {
      *      Note that if there are more than one external network the local address
      *      can be mapped differently to each and therefore may need to return
      *      multiple external addresses.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws org.gridgain.grid.GridException Thrown if any exception occurs.
      */
     public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) throws GridException;
 }
