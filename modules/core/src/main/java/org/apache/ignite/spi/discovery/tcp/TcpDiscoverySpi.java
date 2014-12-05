@@ -19,7 +19,7 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;

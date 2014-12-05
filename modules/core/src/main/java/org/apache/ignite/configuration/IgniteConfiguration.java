@@ -26,8 +26,8 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.security.*;
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -47,7 +47,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to

@@ -37,7 +37,7 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;

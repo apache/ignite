@@ -14,7 +14,7 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;

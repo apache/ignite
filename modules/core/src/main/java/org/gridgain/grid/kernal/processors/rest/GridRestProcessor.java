@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
-import static org.gridgain.grid.security.GridSecuritySubjectType.*;
+import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.

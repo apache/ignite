@@ -12,7 +12,7 @@ package org.apache.ignite.spi.discovery;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 
 /**
  * Node authenticator.

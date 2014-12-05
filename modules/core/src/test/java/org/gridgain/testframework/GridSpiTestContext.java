@@ -16,7 +16,7 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;

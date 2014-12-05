@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.managers.security;
 
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 
 import java.io.*;
 import java.util.*;

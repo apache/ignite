@@ -10,7 +10,7 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**

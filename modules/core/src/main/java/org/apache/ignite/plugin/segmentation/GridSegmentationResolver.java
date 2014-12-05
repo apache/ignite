@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.segmentation;
+package org.apache.ignite.plugin.segmentation;
 
 import org.gridgain.grid.*;
 

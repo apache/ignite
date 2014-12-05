@@ -9,7 +9,7 @@
 
 package org.apache.ignite.spi.authentication;
 
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 
 import java.net.*;
 import java.util.*;

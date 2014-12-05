@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.managers.securesession;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

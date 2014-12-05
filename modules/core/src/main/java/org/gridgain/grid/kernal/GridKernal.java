@@ -62,7 +62,7 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.securesession.noop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;

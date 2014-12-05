@@ -16,7 +16,7 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

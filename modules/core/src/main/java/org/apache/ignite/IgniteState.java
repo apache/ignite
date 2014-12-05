@@ -9,7 +9,7 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.jetbrains.annotations.*;
 
 /**

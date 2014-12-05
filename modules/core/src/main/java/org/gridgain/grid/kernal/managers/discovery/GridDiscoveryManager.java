@@ -25,8 +25,8 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.service.*;
-import org.gridgain.grid.security.*;
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -47,7 +47,7 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
  * Discovery SPI manager.

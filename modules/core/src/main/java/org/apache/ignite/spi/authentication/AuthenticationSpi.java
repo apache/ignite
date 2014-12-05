@@ -10,7 +10,7 @@
 package org.apache.ignite.spi.authentication;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 
 /**
  * Authentication SPI used for authenticating grid nodes and remote clients. This SPI

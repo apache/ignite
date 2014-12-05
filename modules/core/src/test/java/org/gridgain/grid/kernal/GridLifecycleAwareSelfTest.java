@@ -15,7 +15,7 @@ import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

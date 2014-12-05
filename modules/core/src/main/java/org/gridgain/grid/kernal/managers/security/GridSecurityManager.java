@@ -13,7 +13,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.authentication.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

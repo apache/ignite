@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.visor.node;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

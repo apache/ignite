@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.visor.event;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;

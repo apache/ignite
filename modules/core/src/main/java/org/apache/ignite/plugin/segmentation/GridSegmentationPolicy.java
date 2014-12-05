@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.segmentation;
+package org.apache.ignite.plugin.segmentation;
 
 /**
  * Policy that defines how node will react on topology segmentation. Note that default

@@ -32,7 +32,7 @@ import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
-import org.gridgain.grid.segmentation.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
@@ -81,7 +81,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
-import static org.gridgain.grid.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
  * This class defines a factory for the main GridGain API. It controls Grid life cycle

@@ -635,7 +635,7 @@
                                         </group>
                                         <group>
                                             <title>Security APIs</title>
-                                            <packages>org.gridgain.grid.security</packages>
+                                            <packages>org.apache.ignite.plugin.security</packages>
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
@@ -687,7 +687,7 @@
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
-                                            <packages>org.gridgain.grid.segmentation</packages>
+                                            <packages>org.apache.ignite.plugin.segmentation</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
@@ -837,7 +837,7 @@
                                         </group>
                                         <group>
                                             <title>Security APIs</title>
-                                            <packages>org.gridgain.grid.security</packages>
+                                            <packages>org.apache.ignite.plugin.security</packages>
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
@@ -889,7 +889,7 @@
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
-                                            <packages>org.gridgain.grid.segmentation</packages>
+                                            <packages>org.apache.ignite.plugin.segmentation</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>

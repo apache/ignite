@@ -3,7 +3,7 @@ package org.gridgain.client.router;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

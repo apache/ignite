@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.security;
+package org.apache.ignite.plugin.security;
 
 import java.io.*;
 import java.net.*;
