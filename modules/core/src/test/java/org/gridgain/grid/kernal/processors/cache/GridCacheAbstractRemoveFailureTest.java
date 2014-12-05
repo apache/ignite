@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Tests that removes are not lost when topology changes.

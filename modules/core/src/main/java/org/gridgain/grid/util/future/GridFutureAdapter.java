@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Future adapter.
@@ -39,10 +39,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     protected static IgniteLogger log;
 
     /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private static final boolean CONCUR_NOTIFY = GridSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
+    private static final boolean CONCUR_NOTIFY = IgniteSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Initial state. */
     private static final int INIT = 0;

@@ -14,7 +14,7 @@ import org.apache.ignite.product.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Tests version methods.

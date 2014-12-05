@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Implementation of {@link org.apache.ignite.scheduler.SchedulerFuture} interface.
@@ -105,10 +105,10 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     private int lastLsnrExecCnt;
 
     /** Synchronous notification flag. */
-    private volatile boolean syncNotify = GridSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private volatile boolean concurNotify = GridSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
+    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Mutex. */
     private final Object mux = new Object();

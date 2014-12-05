@@ -51,7 +51,7 @@ public class GridJmxPortFinder {
             return;
         }
 
-        int jmxPort = GridSystemProperties.getInteger(GG_JMX_PORT, -1);
+        int jmxPort = IgniteSystemProperties.getInteger(GG_JMX_PORT, -1);
 
         if (jmxPort != -1) {
             System.out.println(jmxPort);

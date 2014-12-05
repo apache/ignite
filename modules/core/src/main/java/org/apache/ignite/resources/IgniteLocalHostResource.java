@@ -9,7 +9,6 @@
 
 package org.apache.ignite.resources;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.spi.*;
 
 import java.lang.annotation.*;
@@ -17,7 +16,7 @@ import java.lang.annotation.*;
 /**
  * Annotates a field or a setter method for injection of local host address or host name for
  * connection binding. Local host is provided via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} or
- * via {@link GridSystemProperties#GG_LOCAL_HOST} system or environment property.
+ * via {@link org.gridgain.grid.IgniteSystemProperties#GG_LOCAL_HOST} system or environment property.
  * <p>
  * Local node ID can be injected into instances of following classes:
  * <ul>

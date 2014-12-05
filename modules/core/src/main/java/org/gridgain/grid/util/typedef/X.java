@@ -21,7 +21,7 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Defines global scope.
@@ -185,7 +185,7 @@ public final class X {
      * @return Value of the system property or environment variable.
      *         Returns the default value if neither can be found for given name.
      * @deprecated This method will be removed in the next major release.
-     *             Use {@link GridSystemProperties#getString(String)} instead.
+     *             Use {@link org.gridgain.grid.IgniteSystemProperties#getString(String)} instead.
      */
     @Deprecated
     @Nullable public static String getSystemOrEnv(String name, String dflt) {
@@ -901,7 +901,7 @@ public final class X {
      * @throws GridException If GridGain home folder was not set.
      */
     public static String resolveGridGainHome() throws GridException {
-        String var = GridSystemProperties.getString(GG_HOME);
+        String var = IgniteSystemProperties.getString(GG_HOME);
 
         if (var != null)
             return var;

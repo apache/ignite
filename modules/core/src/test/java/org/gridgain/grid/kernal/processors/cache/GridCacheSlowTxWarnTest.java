@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
@@ -23,7 +22,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Test to check slow TX warning timeout defined by
- * {@link GridSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
+ * {@link org.gridgain.grid.IgniteSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {

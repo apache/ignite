@@ -10,7 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.startup.cmdline.*;
+import org.apache.ignite.startup.cmdline.*;
 
 /**
  * Loaders self-test suite.

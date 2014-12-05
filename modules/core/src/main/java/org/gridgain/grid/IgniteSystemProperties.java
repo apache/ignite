@@ -19,7 +19,7 @@ import javax.net.ssl.*;
  * Contains constants for all system properties and environmental variables in GridGain. These
  * properties and variables can be used to affect the behavior of GridGain.
  */
-public final class GridSystemProperties {
+public final class IgniteSystemProperties {
     /**
      * If this system property is present the GridGain will include grid name into verbose log.
      */
@@ -452,7 +452,7 @@ public final class GridSystemProperties {
     /**
      * Enforces singleton.
      */
-    private GridSystemProperties() {
+    private IgniteSystemProperties() {
         // No-op.
     }
 

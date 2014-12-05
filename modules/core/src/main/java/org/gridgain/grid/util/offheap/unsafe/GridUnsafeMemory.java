@@ -19,7 +19,7 @@ import sun.misc.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**
@@ -39,7 +39,7 @@ public class GridUnsafeMemory {
     private static final int ADDR_SIZE = UNSAFE.addressSize();
 
     /** Safe offheap release flag. */
-    private static final boolean SAFE_RELEASE = GridSystemProperties.getBoolean(GG_OFFHEAP_SAFE_RELEASE);
+    private static final boolean SAFE_RELEASE = IgniteSystemProperties.getBoolean(GG_OFFHEAP_SAFE_RELEASE);
 
     /** Total size. */
     @GridToStringInclude

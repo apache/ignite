@@ -23,7 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.util.GridUtils.*;
 
 /**
@@ -62,7 +62,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
     private IgniteConfiguration getConfiguration(IgniteLogger log) {
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
-        String ggHome = GridSystemProperties.getString(GG_HOME);
+        String ggHome = IgniteSystemProperties.getString(GG_HOME);
 
         assert ggHome != null;
 

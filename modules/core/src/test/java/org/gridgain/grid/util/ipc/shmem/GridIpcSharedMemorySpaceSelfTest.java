@@ -48,7 +48,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBasicOperations() throws Exception {
-        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), UUID.randomUUID().toString());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), UUID.randomUUID().toString());
 
         assert tokFile.createNewFile();
 
@@ -138,7 +138,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testForceClose() throws Exception {
-        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 
@@ -179,7 +179,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadAfterClose() throws Exception {
-        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 
@@ -217,7 +217,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWriteAfterClose() throws Exception {
-        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 

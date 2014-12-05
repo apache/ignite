@@ -49,7 +49,7 @@ public final class GridSingleExecutionTest {
      */
     @SuppressWarnings({"CallToSystemExit"})
     public static void main(String[] args) throws Exception {
-        System.setProperty(GridSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');
 

@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.logging.*;
 
 import static java.util.logging.Level.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Logger to use with Java logging. Implementation simply delegates to Java Logging.

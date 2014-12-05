@@ -85,7 +85,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
@@ -610,7 +610,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = GridSystemProperties.getBoolean(GG_UPDATE_NOTIFIER, true);
+        boolean notifyEnabled = IgniteSystemProperties.getBoolean(GG_UPDATE_NOTIFIER, true);
 
         GridUpdateNotifier verChecker0 = null;
 
@@ -859,7 +859,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
 
-        String intervalStr = GridSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
+        String intervalStr = IgniteSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
 
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);

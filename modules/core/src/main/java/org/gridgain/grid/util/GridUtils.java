@@ -65,7 +65,7 @@ import java.util.logging.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
@@ -1484,7 +1484,7 @@ public abstract class GridUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = GridSystemProperties.getString(GG_LOCAL_HOST);
+        String sysLocHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -2223,7 +2223,7 @@ public abstract class GridUtils {
         assert Thread.holdsLock(GridUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = GridSystemProperties.getString(GG_HOME);
+        String ggHome0 = IgniteSystemProperties.getString(GG_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;

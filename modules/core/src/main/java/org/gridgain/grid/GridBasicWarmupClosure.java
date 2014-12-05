@@ -183,10 +183,10 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
 
         Collection<Ignite> ignites = new LinkedList<>();
 
-        String old = System.getProperty(GridSystemProperties.GG_UPDATE_NOTIFIER);
+        String old = System.getProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER);
 
         try {
-            System.setProperty(GridSystemProperties.GG_UPDATE_NOTIFIER, "false");
+            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
 
             GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -222,7 +222,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
             if (old == null)
                 old = "false";
 
-            System.setProperty(GridSystemProperties.GG_UPDATE_NOTIFIER, old);
+            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, old);
         }
     }
 

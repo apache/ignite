@@ -11,7 +11,7 @@ package org.gridgain.grid.util.io;
 
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Test for {@link GridUnsafeDataOutput}.

@@ -82,7 +82,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
             fileName = U.nodeIdLogFileName(nodeId, baseFileName);
         }
         else {
-            String tmpDir = GridSystemProperties.getString("java.io.tmpdir");
+            String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
 
             if (tmpDir != null) {
                 baseFileName = new File(tmpDir, "gridgain.log").getAbsolutePath();

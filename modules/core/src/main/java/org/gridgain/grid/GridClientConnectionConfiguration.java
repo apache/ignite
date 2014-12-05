@@ -158,12 +158,12 @@ public class GridClientConnectionConfiguration {
      * accessing GridGain APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
-     * {@link GridSystemProperties#GG_JETTY_HOST} and {@link GridSystemProperties#GG_JETTY_PORT}
+     * {@link IgniteSystemProperties#GG_JETTY_HOST} and {@link IgniteSystemProperties#GG_JETTY_PORT}
      * as host and port respectively.
      *
      * @return Path to {@code JETTY} XML configuration file.
-     * @see GridSystemProperties#GG_JETTY_HOST
-     * @see GridSystemProperties#GG_JETTY_PORT
+     * @see IgniteSystemProperties#GG_JETTY_HOST
+     * @see IgniteSystemProperties#GG_JETTY_PORT
      */
     public String getRestJettyPath() {
         return jettyPath;
@@ -182,8 +182,8 @@ public class GridClientConnectionConfiguration {
      * Gets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @return Secret key.
-     * @see GridSystemProperties#GG_JETTY_HOST
-     * @see GridSystemProperties#GG_JETTY_PORT
+     * @see IgniteSystemProperties#GG_JETTY_HOST
+     * @see IgniteSystemProperties#GG_JETTY_PORT
      */
     @Nullable public String getRestSecretKey() {
         return restSecretKey;

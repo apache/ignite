@@ -26,7 +26,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
-import org.gridgain.grid.GridSystemProperties._
+import org.gridgain.grid.IgniteSystemProperties._
 import IgniteEventType._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
@@ -1505,7 +1505,7 @@ object visor extends VisorTag {
                 val cfg = cfgs.iterator().next()
 
                 // Setting up 'Config URL' for properly print in console.
-                System.setProperty(GridSystemProperties.GG_CONFIG_URL, url.getPath)
+                System.setProperty(IgniteSystemProperties.GG_CONFIG_URL, url.getPath)
 
                 var cpuCnt = Runtime.getRuntime.availableProcessors
 
@@ -1576,7 +1576,7 @@ object visor extends VisorTag {
     def open(cfg: IgniteConfiguration, cfgPath: String) {
         val daemon = Ignition.isDaemon
 
-        val shutdownHook = GridSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
+        val shutdownHook = IgniteSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
         Ignition.setDaemon(true)

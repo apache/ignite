@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**
@@ -54,7 +54,7 @@ public final class CommandLineStartup {
      * Static initializer.
      */
     static {
-        String quiteStr = System.getProperty(GridSystemProperties.GG_QUIET);
+        String quiteStr = System.getProperty(IgniteSystemProperties.GG_QUIET);
 
         boolean quite = true;
 
@@ -65,7 +65,7 @@ public final class CommandLineStartup {
                 if ("false".equalsIgnoreCase(quiteStr))
                     quite = false;
                 else if (!"true".equalsIgnoreCase(quiteStr)) {
-                    System.err.println("Invalid value for '" + GridSystemProperties.GG_QUIET +
+                    System.err.println("Invalid value for '" + IgniteSystemProperties.GG_QUIET +
                         "' VM parameter (must be {true|false}): " + quiteStr);
 
                     quite = false;

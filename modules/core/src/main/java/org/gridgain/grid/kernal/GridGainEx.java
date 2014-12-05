@@ -73,7 +73,7 @@ import java.util.logging.*;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.IgniteState.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -1414,13 +1414,13 @@ public class GridGainEx {
                 clientCfg = new GridClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = GridSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = IgniteSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = GridSystemProperties.getString(GG_LOCAL_HOST);
+            String locHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1429,7 +1429,7 @@ public class GridGainEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = GridSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
+            String depModeName = IgniteSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1774,34 +1774,34 @@ public class GridGainEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = GridSystemProperties.getString(GG_SMTP_FROM);
+            String fromEmail = IgniteSystemProperties.getString(GG_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = GridSystemProperties.getString(GG_SMTP_HOST);
+            String smtpHost = IgniteSystemProperties.getString(GG_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = GridSystemProperties.getString(GG_SMTP_USERNAME);
+            String smtpUsername = IgniteSystemProperties.getString(GG_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = GridSystemProperties.getString(GG_SMTP_PWD);
+            String smtpPwd = IgniteSystemProperties.getString(GG_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            int smtpPort = GridSystemProperties.getInteger(GG_SMTP_PORT,-1);
+            int smtpPort = IgniteSystemProperties.getInteger(GG_SMTP_PORT, -1);
 
             if(smtpPort != -1)
                 myCfg.setSmtpPort(smtpPort);
 
-            myCfg.setSmtpSsl(GridSystemProperties.getBoolean(GG_SMTP_SSL));
+            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(GG_SMTP_SSL));
 
-            String adminEmails = GridSystemProperties.getString(GG_ADMIN_EMAILS);
+            String adminEmails = IgniteSystemProperties.getString(GG_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1922,7 +1922,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (GridSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
+            if (IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {

@@ -120,7 +120,7 @@ public class GridHadoopTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static void downloadHive() throws Exception {
-        String ver = GridSystemProperties.getString("hive.version", "0.13.1");
+        String ver = IgniteSystemProperties.getString("hive.version", "0.13.1");
 
         X.println("Will use Hive version: " + ver);
 
@@ -133,7 +133,7 @@ public class GridHadoopTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static void downloadHadoop() throws Exception {
-        String ver = GridSystemProperties.getString("hadoop.version", "2.4.1");
+        String ver = IgniteSystemProperties.getString("hadoop.version", "2.4.1");
 
         X.println("Will use Hadoop version: " + ver);
 
@@ -153,7 +153,7 @@ public class GridHadoopTestSuite extends TestSuite {
      */
     private static void download(String appName, String homeVariable, String downloadPath, String destName)
         throws Exception {
-        String homeVal = GridSystemProperties.getString(homeVariable);
+        String homeVal = IgniteSystemProperties.getString(homeVariable);
 
         if (!F.isEmpty(homeVal) && new File(homeVal).isDirectory()) {
             X.println(homeVariable + " is set to: " + homeVal);

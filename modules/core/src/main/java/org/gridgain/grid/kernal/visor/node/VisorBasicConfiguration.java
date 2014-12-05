@@ -18,7 +18,7 @@ import java.io.*;
 import java.util.*;
 
 import static java.lang.System.*;
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**

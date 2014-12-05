@@ -16,7 +16,7 @@ import org.gridgain.scalar.tests._
 import examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.gridgain.grid.GridSystemProperties._
+import org.gridgain.grid.IgniteSystemProperties._
 import org.gridgain.testframework.GridTestUtils
 
 /**

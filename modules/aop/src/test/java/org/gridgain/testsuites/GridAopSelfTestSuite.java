@@ -14,7 +14,7 @@ import org.gridgain.grid.gridify.*;
 import org.gridgain.testframework.*;
 import org.test.gridify.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * AOP test suite.

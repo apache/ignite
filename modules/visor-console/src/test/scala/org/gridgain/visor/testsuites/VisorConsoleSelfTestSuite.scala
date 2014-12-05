@@ -13,7 +13,7 @@ package org.gridgain.visor.testsuites
 
 import java.net.{InetAddress, UnknownHostException}
 
-import org.gridgain.grid.GridSystemProperties._
+import org.gridgain.grid.IgniteSystemProperties._
 import org.gridgain.visor.commands.VisorArgListSpec
 import org.gridgain.visor.commands.ack.VisorAckCommandSpec
 import org.gridgain.visor.commands.alert.VisorAlertCommandSpec

@@ -44,7 +44,7 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIdsGet() throws Exception {
-        File tokFile = new File(GridSystemProperties.getString("java.io.tmpdir"), getTestGridName());
+        File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestGridName());
 
         assert tokFile.createNewFile() || tokFile.exists();
 

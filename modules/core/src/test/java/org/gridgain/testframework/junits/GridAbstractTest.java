@@ -87,7 +87,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     static {
-        System.setProperty(GridSystemProperties.GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
+        System.setProperty(IgniteSystemProperties.GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
     }
 
     /** */

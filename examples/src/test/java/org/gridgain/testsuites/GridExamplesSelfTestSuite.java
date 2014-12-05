@@ -13,7 +13,7 @@ import junit.framework.*;
 import org.gridgain.examples.*;
 import org.gridgain.testframework.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Examples test suite.

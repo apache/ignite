@@ -21,7 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * IP Finder which works only with pre-configured list of IP addresses specified
@@ -50,7 +50,7 @@ public class GridTcpDiscoveryVmIpFinder extends GridTcpDiscoveryIpFinderAdapter 
      * Initialize from system property.
      */
     {
-        String ips = GridSystemProperties.getString(GG_TCP_DISCOVERY_ADDRESSES);
+        String ips = IgniteSystemProperties.getString(GG_TCP_DISCOVERY_ADDRESSES);
 
         if (!F.isEmpty(ips)) {
             Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();

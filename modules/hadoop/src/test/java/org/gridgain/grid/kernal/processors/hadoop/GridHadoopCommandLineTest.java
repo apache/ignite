@@ -127,11 +127,11 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        hiveHome = GridSystemProperties.getString("HIVE_HOME");
+        hiveHome = IgniteSystemProperties.getString("HIVE_HOME");
 
         assertFalse("HIVE_HOME hasn't been set.", F.isEmpty(hiveHome));
 
-        hadoopHome = GridSystemProperties.getString("HADOOP_HOME");
+        hadoopHome = IgniteSystemProperties.getString("HADOOP_HOME");
 
         assertFalse("HADOOP_HOME hasn't been set.", F.isEmpty(hadoopHome));
 

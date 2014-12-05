@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Colocated get future.
@@ -45,7 +45,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    private static final int MAX_REMAP_CNT = GridSystemProperties.getInteger(GG_NEAR_GET_MAX_REMAPS,
+    private static final int MAX_REMAP_CNT = IgniteSystemProperties.getInteger(GG_NEAR_GET_MAX_REMAPS,
         DFLT_MAX_REMAP_CNT);
 
     /** Context. */

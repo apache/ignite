@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 

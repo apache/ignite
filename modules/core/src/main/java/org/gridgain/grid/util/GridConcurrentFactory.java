@@ -14,14 +14,14 @@ import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 
 /**
  * Concurrent map factory.
  */
 public class GridConcurrentFactory {
     /** Default concurrency level. */
-    private static final int CONCURRENCY_LEVEL = GridSystemProperties.getInteger(GG_MAP_CONCURRENCY_LEVEL, 256);
+    private static final int CONCURRENCY_LEVEL = IgniteSystemProperties.getInteger(GG_MAP_CONCURRENCY_LEVEL, 256);
 
     /**
      * Ensure singleton.

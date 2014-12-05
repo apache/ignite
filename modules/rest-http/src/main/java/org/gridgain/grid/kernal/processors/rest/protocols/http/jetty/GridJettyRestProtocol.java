@@ -28,7 +28,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.GridSystemProperties.*;
+import static org.gridgain.grid.IgniteSystemProperties.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
@@ -39,7 +39,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      */
     static {
-        if (!GridSystemProperties.getBoolean(GG_JETTY_LOG_NO_OVERRIDE)) {
+        if (!IgniteSystemProperties.getBoolean(GG_JETTY_LOG_NO_OVERRIDE)) {
             Properties p = new Properties();
 
             p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
@@ -164,7 +164,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Checks {@link GridSystemProperties#GG_JETTY_PORT} system property
+     * Checks {@link org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT} system property
      * and overrides default connector port if it present.
      * Then initializes {@code port} with the found value.
      *
