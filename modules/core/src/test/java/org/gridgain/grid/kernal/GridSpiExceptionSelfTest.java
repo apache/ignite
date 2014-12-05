@@ -111,7 +111,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
      * Test deployment spi that throws an exception on try to register any class.
      */
     @IgniteSpiMultipleInstancesSupport(true)
-    private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements GridDeploymentSpi {
+    private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements DeploymentSpi {
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
             startStopwatch();
@@ -123,7 +123,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridDeploymentResource findResource(String rsrcName) {
+        @Nullable @Override public DeploymentResource findResource(String rsrcName) {
             // No-op.
             return null;
         }
@@ -140,7 +140,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setListener(GridDeploymentListener lsnr) {
+        @Override public void setListener(DeploymentListener lsnr) {
             // No-op.
         }
     }

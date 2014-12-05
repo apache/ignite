@@ -447,7 +447,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * Test deployment spi.
      */
-    private static class TestDeploymentSpi extends GridLocalDeploymentSpi {
+    private static class TestDeploymentSpi extends LocalDeploymentSpi {
         /** */
         private volatile int deployCnt;
 

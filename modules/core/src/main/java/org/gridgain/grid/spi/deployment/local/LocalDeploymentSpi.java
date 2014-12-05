@@ -41,12 +41,12 @@ import java.util.concurrent.*;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
- * @see GridDeploymentSpi
+ * @see org.gridgain.grid.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-@GridIgnoreIfPeerClassLoadingDisabled
-public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridLocalDeploymentSpiMBean {
+@IgnoreIfPeerClassLoadingDisabled
+public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, LocalDeploymentSpiMBean {
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
@@ -57,14 +57,14 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
         new ConcurrentLinkedHashMap<>(16, 0.75f, 64);
 
     /** Deployment SPI listener.    */
-    private volatile GridDeploymentListener lsnr;
+    private volatile DeploymentListener lsnr;
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, GridLocalDeploymentSpiMBean.class);
+        registerMBean(gridName, this, LocalDeploymentSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -82,7 +82,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeploymentResource findResource(String rsrcName) {
+    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
         assert rsrcName != null;
 
         // Last updated class loader has highest priority in search.
@@ -106,7 +106,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
                     assert cls != null;
 
                     // Return resource.
-                    return new GridDeploymentResourceAdapter(rsrcName, cls, ldr);
+                    return new DeploymentResourceAdapter(rsrcName, cls, ldr);
                 }
                 catch (ClassNotFoundException ignored) {
                     // No-op.
@@ -363,19 +363,19 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
      * @param clsLdr Released class loader.
      */
     private void onClassLoaderReleased(ClassLoader clsLdr) {
-        GridDeploymentListener tmp = lsnr;
+        DeploymentListener tmp = lsnr;
 
         if (tmp != null)
             tmp.onUnregistered(clsLdr);
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(GridDeploymentListener lsnr) {
+    @Override public void setListener(DeploymentListener lsnr) {
         this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridLocalDeploymentSpi.class, this);
+        return S.toString(LocalDeploymentSpi.class, this);
     }
 }

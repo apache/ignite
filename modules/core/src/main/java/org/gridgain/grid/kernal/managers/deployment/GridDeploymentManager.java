@@ -30,7 +30,7 @@ import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 /**
  * Deployment manager.
  */
-public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi> {
+public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     /** Local deployment storage. */
     private GridDeploymentStore locStore;
 
@@ -53,10 +53,10 @@ public class GridDeploymentManager extends GridManagerAdapter<GridDeploymentSpi>
         super(ctx, ctx.config().getDeploymentSpi());
 
         if (!ctx.config().isPeerClassLoadingEnabled()) {
-            GridDeploymentSpi spi = ctx.config().getDeploymentSpi();
+            DeploymentSpi spi = ctx.config().getDeploymentSpi();
 
-            GridIgnoreIfPeerClassLoadingDisabled ann = U.getAnnotation(spi.getClass(),
-                GridIgnoreIfPeerClassLoadingDisabled.class);
+            IgnoreIfPeerClassLoadingDisabled ann = U.getAnnotation(spi.getClass(),
+                IgnoreIfPeerClassLoadingDisabled.class);
 
             locDep = ann != null ?
                 new LocalDeployment(

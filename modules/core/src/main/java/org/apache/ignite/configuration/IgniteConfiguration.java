@@ -31,7 +31,6 @@ import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.spi.communication.*;
 import org.gridgain.grid.spi.deployment.*;
-import org.gridgain.grid.spi.deployment.local.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.eventstorage.*;
@@ -362,7 +361,7 @@ public class IgniteConfiguration {
     private GridSecureSessionSpi sesSpi;
 
     /** Deployment SPI. */
-    private GridDeploymentSpi deploySpi;
+    private DeploymentSpi deploySpi;
 
     /** Checkpoint SPI. */
     private CheckpointSpi[] cpSpi;
@@ -2017,21 +2016,21 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured deployment SPI implementation. If not provided,
-     * {@link GridLocalDeploymentSpi} will be used.
+     * {@link org.gridgain.grid.spi.deployment.local.LocalDeploymentSpi} will be used.
      *
      * @return Grid deployment SPI implementation or {@code null} to use default implementation.
      */
-    public GridDeploymentSpi getDeploymentSpi() {
+    public DeploymentSpi getDeploymentSpi() {
         return deploySpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridDeploymentSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.deployment.DeploymentSpi}.
      *
-     * @param deploySpi Fully configured instance of {@link GridDeploymentSpi}.
+     * @param deploySpi Fully configured instance of {@link org.gridgain.grid.spi.deployment.DeploymentSpi}.
      * @see IgniteConfiguration#getDeploymentSpi()
      */
-    public void setDeploymentSpi(GridDeploymentSpi deploySpi) {
+    public void setDeploymentSpi(DeploymentSpi deploySpi) {
         this.deploySpi = deploySpi;
     }
 

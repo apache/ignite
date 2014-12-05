@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.deployment;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.deployment.local.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -23,7 +22,7 @@ import org.jetbrains.annotations.*;
  * When method {@link #findResource(String)} is called by the system, SPI must return a
  * class loader associated with given class. Every time a class loader
  * gets (re)deployed or released, callbacks
- * {@link GridDeploymentListener#onUnregistered(ClassLoader)}} must be called by SPI.
+ * {@link DeploymentListener#onUnregistered(ClassLoader)}} must be called by SPI.
  * <p>
  * If peer class loading is enabled (which is default behavior, see
  * {@link org.apache.ignite.configuration.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is usually
@@ -40,7 +39,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * Gridgain provides the following {@code GridDeploymentSpi} implementations:
  * <ul>
- * <li>{@link GridLocalDeploymentSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.deployment.local.LocalDeploymentSpi}</li>
  * <li>{@gglink org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
@@ -50,14 +49,14 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDeploymentSpi extends IgniteSpi {
+public interface DeploymentSpi extends IgniteSpi {
     /**
      * Finds class loader for the given class.
      *
      * @param rsrcName Class name or class alias to find class loader for.
      * @return Deployed class loader, or {@code null} if not deployed.
      */
-    public GridDeploymentResource findResource(String rsrcName);
+    public DeploymentResource findResource(String rsrcName);
 
     /**
      * Registers a class loader with this SPI. This method exists
@@ -95,5 +94,5 @@ public interface GridDeploymentSpi extends IgniteSpi {
      *
      * @param lsnr Listener for deployment events. {@code null} to unset the listener.
      */
-    public void setListener(@Nullable GridDeploymentListener lsnr);
+    public void setListener(@Nullable DeploymentListener lsnr);
 }

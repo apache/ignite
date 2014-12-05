@@ -65,7 +65,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerVersionStore(GridDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentPerVersionStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(spi, ctx, comm);
 
         missedRsrcCacheSize = ctx.config().getPeerClassLoadingMissedResourcesCacheSize();

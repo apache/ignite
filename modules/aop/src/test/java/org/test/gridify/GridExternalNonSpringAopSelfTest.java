@@ -511,7 +511,7 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
-        cfg.setDeploymentSpi(new GridLocalDeploymentSpi());
+        cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
         ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
 

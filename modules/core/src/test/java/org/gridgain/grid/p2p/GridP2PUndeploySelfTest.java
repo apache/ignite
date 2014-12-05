@@ -34,14 +34,14 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     private static final String TEST_TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
 
     /** */
-    private Map<String, GridLocalDeploymentSpi> spis = new HashMap<>();
+    private Map<String, LocalDeploymentSpi> spis = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName,
         GridTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
-        GridLocalDeploymentSpi spi = new GridLocalDeploymentSpi();
+        LocalDeploymentSpi spi = new LocalDeploymentSpi();
 
         spis.put(gridName, spi);
 
@@ -78,8 +78,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             ignite2.compute().execute(task1.getName(), 2);
 
-            GridLocalDeploymentSpi spi1 = spis.get(ignite1.name());
-            GridLocalDeploymentSpi spi2 = spis.get(ignite2.name());
+            LocalDeploymentSpi spi1 = spis.get(ignite1.name());
+            LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
             assert spi1.findResource(task1.getName()) != null;
             assert spi2.findResource(task1.getName()) != null;
@@ -126,8 +126,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             ignite1.compute().execute(task1.getName(), ignite2.cluster().localNode().id());
 
-            GridLocalDeploymentSpi spi1 = spis.get(ignite1.name());
-            GridLocalDeploymentSpi spi2 = spis.get(ignite2.name());
+            LocalDeploymentSpi spi1 = spis.get(ignite1.name());
+            LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
             assert spi1.findResource(task1.getName()) != null;
 

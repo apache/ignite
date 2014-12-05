@@ -35,7 +35,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener(new GridDeploymentListener() {
+        getSpi().setListener(new DeploymentListener() {
             @Override public void onUnregistered(ClassLoader ldr) { tasks.remove(ldr); }
         });
     }
@@ -74,11 +74,11 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
 
         deploy(task);
 
-        GridDeploymentResource t1 = getSpi().findResource(task.getName());
+        DeploymentResource t1 = getSpi().findResource(task.getName());
 
         assert t1 != null;
 
-        GridDeploymentResource t2 = getSpi().findResource(task.getName());
+        DeploymentResource t2 = getSpi().findResource(task.getName());
 
         assert t1.equals(t2);
         assert t1.getResourceClass() == t2.getResourceClass();

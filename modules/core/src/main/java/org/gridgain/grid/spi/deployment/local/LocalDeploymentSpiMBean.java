@@ -13,9 +13,9 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management MBean for {@link GridLocalDeploymentSpi} SPI.
+ * Management MBean for {@link LocalDeploymentSpi} SPI.
  */
 @IgniteMBeanDescription("MBean that provides access to local deployment SPI configuration.")
-public interface GridLocalDeploymentSpiMBean extends IgniteSpiManagementMBean {
+public interface LocalDeploymentSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

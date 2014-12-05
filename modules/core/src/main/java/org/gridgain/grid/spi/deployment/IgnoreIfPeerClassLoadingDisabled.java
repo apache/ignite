@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.deployment;
 import java.lang.annotation.*;
 
 /**
- * This annotation is for all implementations of {@link GridDeploymentSpi} that may be
+ * This annotation is for all implementations of {@link DeploymentSpi} that may be
  * ignored if peer class loading is disabled.
  * If so, system manages deployment information without invoking SPI.
  */
@@ -20,6 +20,6 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridIgnoreIfPeerClassLoadingDisabled {
+public @interface IgnoreIfPeerClassLoadingDisabled {
     // No-op.
 }

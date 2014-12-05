@@ -50,7 +50,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerLoaderStore(GridDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentPerLoaderStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(spi, ctx, comm);
     }
 

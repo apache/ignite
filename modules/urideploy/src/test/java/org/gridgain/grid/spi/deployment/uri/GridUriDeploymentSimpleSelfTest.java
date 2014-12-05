@@ -43,7 +43,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
 
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
 
-        GridDeploymentResource task = spi.findResource(TestTask.class.getName());
+        DeploymentResource task = spi.findResource(TestTask.class.getName());
 
         assert task != null;
         assert task.getResourceClass() == TestTask.class;
@@ -70,7 +70,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
 
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);
 
-        GridDeploymentResource task = spi.findResource("TestTaskWithName");
+        DeploymentResource task = spi.findResource("TestTaskWithName");
 
         assert task != null;
         assert task.getResourceClass() == TestTaskWithName.class;
@@ -98,8 +98,8 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);
 
-        GridDeploymentResource task1 = spi.findResource("TestTaskWithName");
-        GridDeploymentResource task2 = spi.findResource(TestTask.class.getName());
+        DeploymentResource task1 = spi.findResource("TestTaskWithName");
+        DeploymentResource task2 = spi.findResource(TestTask.class.getName());
 
         assert task1 != null;
         assert task1.getResourceClass() == TestTaskWithName.class;

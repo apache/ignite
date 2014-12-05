@@ -49,7 +49,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
      * @throws Exception if test GAR wasn't deployed
      */
     private ClassLoader getGarClassLoader() throws Exception {
-        GridDeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
+        DeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
 
         assert task != null;
 

@@ -28,7 +28,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnKernalStop() throws Exception {
-        GridDeploymentSpi spi = new GridTestDeploymentSpi();
+        DeploymentSpi spi = new GridTestDeploymentSpi();
 
         GridTestKernalContext ctx = newContext();
 
@@ -55,7 +55,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * Test deployment SPI implementation.
      */
-    private static class GridTestDeploymentSpi implements GridDeploymentSpi {
+    private static class GridTestDeploymentSpi implements DeploymentSpi {
         /** {@inheritDoc} */
         @Override public void onContextDestroyed() {
             /* No-op. */
@@ -74,13 +74,13 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public void spiStop() throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public void setListener(GridDeploymentListener lsnr) { /* No-op. */ }
+        @Override public void setListener(DeploymentListener lsnr) { /* No-op. */ }
 
         /** {@inheritDoc} */
         @Override public String getName() { return getClass().getSimpleName(); }
 
         /** {@inheritDoc} */
-        @Override public GridDeploymentResource findResource(String rsrcName) { return null; }
+        @Override public DeploymentResource findResource(String rsrcName) { return null; }
 
         /** {@inheritDoc} */
         @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException { return false; }

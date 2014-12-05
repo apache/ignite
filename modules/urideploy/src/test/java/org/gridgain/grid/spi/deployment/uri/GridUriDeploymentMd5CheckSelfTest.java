@@ -37,7 +37,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     public void testMd5FileCheck() throws Exception {
         undeployCntr.set(0);
 
-        GridDeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
+        DeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
 
         assert task == null;
 
@@ -68,7 +68,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     public void testMd5DirectoryCheck() throws Exception {
         undeployCntr.set(0);
 
-        GridDeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask6");
+        DeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask6");
 
         assert task == null;
 
@@ -171,7 +171,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      */
     @Override
     protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener(new GridDeploymentListener() {
+        getSpi().setListener(new DeploymentListener() {
             @Override
             public void onUnregistered(ClassLoader ldr) {
                 undeployCntr.incrementAndGet();

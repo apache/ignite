@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Local deployment SPI start-stop test.
  */
-@GridSpiTest(spi = GridLocalDeploymentSpi.class, group = "Deployment SPI")
-public class GridLocalDeploymentSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridLocalDeploymentSpi> {
+@GridSpiTest(spi = LocalDeploymentSpi.class, group = "Deployment SPI")
+public class GridLocalDeploymentSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<LocalDeploymentSpi> {
     // No-op.
 }

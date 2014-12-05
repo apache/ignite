@@ -21,8 +21,8 @@ import java.util.*;
 /**
  * Local deployment SPI test.
  */
-@GridSpiTest(spi = GridLocalDeploymentSpi.class, group = "Deployment SPI")
-public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLocalDeploymentSpi> {
+@GridSpiTest(spi = LocalDeploymentSpi.class, group = "Deployment SPI")
+public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDeploymentSpi> {
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
         Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
@@ -34,7 +34,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener(new GridDeploymentListener() {
+        getSpi().setListener(new DeploymentListener() {
             @Override public void onUnregistered(ClassLoader ldr) { tasks.remove(ldr); }
         });
     }
@@ -55,7 +55,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
 
         clss.add(taskCls);
 
-        tasks.put(GridLocalDeploymentSpi.class.getClassLoader(), clss);
+        tasks.put(LocalDeploymentSpi.class.getClassLoader(), clss);
     }
 
     /**
@@ -77,7 +77,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<GridLoca
         deploy(task);
 
         // Note we use task name instead of class name.
-        GridDeploymentResource t1 = getSpi().findResource(taskName);
+        DeploymentResource t1 = getSpi().findResource(taskName);
 
         assert t1 != null;
 

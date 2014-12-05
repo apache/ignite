@@ -46,7 +46,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentLocalStore(GridDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentLocalStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(spi, ctx, comm);
     }
 
@@ -129,7 +129,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             return dep;
         }
 
-        GridDeploymentResource rsrc = spi.findResource(alias);
+        DeploymentResource rsrc = spi.findResource(alias);
 
         if (rsrc != null) {
             dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(), rsrc.getResourceClass(), alias,
@@ -325,7 +325,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             GridDeployment dep = deployment(cls.getName());
 
             if (dep == null) {
-                GridDeploymentResource rsrc = spi.findResource(cls.getName());
+                DeploymentResource rsrc = spi.findResource(cls.getName());
 
                 if (rsrc != null && rsrc.getClassLoader() == clsLdr)
                     dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
@@ -537,7 +537,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /**
      *
      */
-    private class LocalDeploymentListener implements GridDeploymentListener {
+    private class LocalDeploymentListener implements DeploymentListener {
         /** {@inheritDoc} */
         @Override public void onUnregistered(ClassLoader ldr) {
             if (log.isDebugEnabled())

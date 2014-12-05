@@ -13,7 +13,7 @@ package org.gridgain.grid.spi.deployment;
  * Listener for deployment events. It is used by grid implementation
  * to properly create or release resources associated with any deployment.
  */
-public interface GridDeploymentListener {
+public interface DeploymentListener {
     /**
      * Called when a deployment has been unregistered..
      *

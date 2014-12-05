@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.Map.*;
 
 /**
- * Implementation of {@link GridDeploymentSpi} which can deploy tasks from
+ * Implementation of {@link org.gridgain.grid.spi.deployment.DeploymentSpi} which can deploy tasks from
  * different sources like file system folders, FTP, email and HTTP.
  * There are different ways to deploy tasks in grid and every deploy method
  * depends on selected source protocol. This SPI is configured to work
@@ -296,12 +296,12 @@ import java.util.Map.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridDeploymentSpi
+ * @see org.gridgain.grid.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploymentSpi, GridUriDeploymentSpiMBean {
+public class GridUriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, GridUriDeploymentSpiMBean {
     /**
      * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
      * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
@@ -363,7 +363,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     private int firstScanCntr;
 
     /** Deployment listener which processes all notifications from scanners. */
-    private volatile GridDeploymentListener lsnr;
+    private volatile DeploymentListener lsnr;
 
     /** */
     private final Object mux = new Object();
@@ -455,7 +455,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(@Nullable GridDeploymentListener lsnr) {
+    @Override public void setListener(@Nullable DeploymentListener lsnr) {
         this.lsnr = lsnr;
     }
 
@@ -669,7 +669,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public GridDeploymentResource findResource(String rsrcName) {
+    @Override public DeploymentResource findResource(String rsrcName) {
         assert rsrcName != null;
 
         // Wait until all scanners finish their first scanning.
@@ -713,7 +713,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
                         // class name and not the resource name.
                         String alias = rsrc.get2();
 
-                        return new GridDeploymentResourceAdapter(
+                        return new DeploymentResourceAdapter(
                             alias != null ? alias : rsrcName,
                             cls,
                             unitDesc.getClassLoader());
@@ -722,7 +722,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
                     else if (!ComputeTask.class.isAssignableFrom(cls)) {
                         unitDesc.addResource(cls);
 
-                        return new GridDeploymentResourceAdapter(rsrcName, cls, unitDesc.getClassLoader());
+                        return new DeploymentResourceAdapter(rsrcName, cls, unitDesc.getClassLoader());
                     }
                 }
                 catch (ClassNotFoundException ignored) {
@@ -1314,7 +1314,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
         if (!clsLdr.equals(getClass().getClassLoader()))
             GridUriDeploymentFileProcessor.cleanupUnit(clsLdr, log);
 
-        GridDeploymentListener tmp = lsnr;
+        DeploymentListener tmp = lsnr;
 
         if (tmp != null)
             tmp.onUnregistered(clsLdr);

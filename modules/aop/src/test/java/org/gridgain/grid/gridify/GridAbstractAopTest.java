@@ -671,7 +671,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDeploymentSpi(new GridLocalDeploymentSpi());
+        cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
         ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
 

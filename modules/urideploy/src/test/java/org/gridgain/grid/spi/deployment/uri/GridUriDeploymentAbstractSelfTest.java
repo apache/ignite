@@ -24,7 +24,7 @@ public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener(new GridDeploymentListener() {
+        getSpi().setListener(new DeploymentListener() {
             @Override public void onUnregistered(ClassLoader ldr) {
                 // No-op.
             }
@@ -50,7 +50,7 @@ public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractT
     protected void checkTask(String taskName) throws Exception {
         assert taskName != null;
 
-        GridDeploymentResource task = getSpi().findResource(taskName);
+        DeploymentResource task = getSpi().findResource(taskName);
 
         assert task != null;
 
@@ -64,7 +64,7 @@ public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractT
     protected void checkNoTask(String taskName) throws Exception {
         assert taskName != null;
 
-        GridDeploymentResource task = getSpi().findResource(taskName);
+        DeploymentResource task = getSpi().findResource(taskName);
 
         assert task == null;
 

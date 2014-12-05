@@ -12,9 +12,9 @@ package org.gridgain.grid.spi.deployment;
 import org.gridgain.grid.util.typedef.internal.*;
 
 /**
- * Simple adapter for {@link GridDeploymentResource} interface.
+ * Simple adapter for {@link DeploymentResource} interface.
  */
-public class GridDeploymentResourceAdapter implements GridDeploymentResource {
+public class DeploymentResourceAdapter implements DeploymentResource {
     /** */
     private final String name;
 
@@ -31,7 +31,7 @@ public class GridDeploymentResourceAdapter implements GridDeploymentResource {
      * @param rsrcCls Class.
      * @param clsLdr Class loader.
      */
-    public GridDeploymentResourceAdapter(String name, Class<?> rsrcCls, ClassLoader clsLdr) {
+    public DeploymentResourceAdapter(String name, Class<?> rsrcCls, ClassLoader clsLdr) {
         assert name != null;
         assert rsrcCls != null;
         assert clsLdr != null;
@@ -64,7 +64,7 @@ public class GridDeploymentResourceAdapter implements GridDeploymentResource {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        GridDeploymentResourceAdapter rsrc = (GridDeploymentResourceAdapter)obj;
+        DeploymentResourceAdapter rsrc = (DeploymentResourceAdapter)obj;
 
         return clsLdr.equals(rsrc.clsLdr) == true && name.equals(rsrc.name) == true &&
             rsrcCls.equals(rsrc.rsrcCls) == true;
@@ -82,6 +82,6 @@ public class GridDeploymentResourceAdapter implements GridDeploymentResource {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDeploymentResourceAdapter.class, this);
+        return S.toString(DeploymentResourceAdapter.class, this);
     }
 }

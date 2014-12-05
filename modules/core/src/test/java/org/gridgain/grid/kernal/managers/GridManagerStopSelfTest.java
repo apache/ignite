@@ -127,7 +127,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopDeploymentManager() throws Exception {
-        GridDeploymentSpi spi = new GridLocalDeploymentSpi();
+        DeploymentSpi spi = new LocalDeploymentSpi();
 
         injectLogger(spi);
 

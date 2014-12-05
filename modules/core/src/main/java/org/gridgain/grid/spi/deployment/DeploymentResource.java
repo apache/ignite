@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.deployment;
 /**
  * Generic abstraction over deployed resource containing resource's name, class and corresponding class loader.
  */
-public interface GridDeploymentResource {
+public interface DeploymentResource {
     /**
      * Gets resource name, either class name or alias name, such as alias
      * specified by {@link org.apache.ignite.compute.ComputeTaskName} annotation.
