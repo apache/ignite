@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.discovery.tcp.ipfinder.vm;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 
 import java.util.*;

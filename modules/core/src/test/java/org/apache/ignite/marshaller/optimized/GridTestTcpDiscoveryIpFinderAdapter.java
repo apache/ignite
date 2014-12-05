@@ -9,7 +9,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.gridgain.grid.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.GridTcpDiscoveryIpFinderAdapter;
 
 import java.net.InetSocketAddress;

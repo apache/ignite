@@ -13,8 +13,8 @@ import org.apache.commons.codec.binary.*;
 import org.apache.commons.codec.digest.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -49,7 +49,7 @@ final class GridUriDeploymentFileProcessor {
      * @param uri GAR file deployment URI.
      * @param deployDir deployment directory with downloaded GAR files.
      * @param log Logger.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if file could not be read.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if file could not be read.
      * @return List of tasks from given file.
      */
     @Nullable static GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
@@ -310,7 +310,7 @@ final class GridUriDeploymentFileProcessor {
      * @param file GAR file.
      * @param uri GAR file deployment URI.
      * @param log Logger.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if it's impossible to open file.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if it's impossible to open file.
      * @return List of tasks from descriptor.
      */
     @SuppressWarnings({"ClassLoader2Instantiation"})
@@ -360,7 +360,7 @@ final class GridUriDeploymentFileProcessor {
      * @param file GAR file or directory.
      * @param uri GAR file deployment URI.
      * @param log Logger.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if file reading error happened.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if file reading error happened.
      * @return List of tasks from given file.
      */
     private static GridUriDeploymentFileProcessorResult processNoDescriptorFile(File file, String uri, IgniteLogger log)

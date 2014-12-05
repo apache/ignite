@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 import java.util.*;
 

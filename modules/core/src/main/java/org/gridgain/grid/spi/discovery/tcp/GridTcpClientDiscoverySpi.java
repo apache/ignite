@@ -12,8 +12,8 @@ package org.gridgain.grid.spi.discovery.tcp;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -368,7 +368,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     private boolean joinTopology(boolean recon) throws IgniteSpiException {
         if (!recon)

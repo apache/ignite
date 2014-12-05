@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri.scanners.file;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -52,7 +52,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
      * @param filter Found files filter.
      * @param lsnr Scanner listener which should be notifier about changes.
      * @param log Logger.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
      *      directory.
      */
     public GridUriDeploymentFileScanner(
@@ -73,7 +73,7 @@ public class GridUriDeploymentFileScanner extends GridUriDeploymentScanner {
      * directory path and creating file filters.
      *
      * @param uri Scanning URI with "file" scheme.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if URI is {@code null} or is not a
      *      directory.
      */
     private void initialize(URI uri) throws IgniteSpiException {

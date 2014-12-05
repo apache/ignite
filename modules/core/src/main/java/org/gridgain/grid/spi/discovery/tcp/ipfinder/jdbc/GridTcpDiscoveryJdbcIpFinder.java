@@ -11,8 +11,8 @@ package org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -258,7 +258,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     /**
      * Checks configuration validity.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
@@ -321,7 +321,7 @@ public class GridTcpDiscoveryJdbcIpFinder extends GridTcpDiscoveryIpFinderAdapte
     /**
      * Checks correctness of existing DB schema.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException If schema wasn't properly initialized.
+     * @throws org.apache.ignite.spi.IgniteSpiException If schema wasn't properly initialized.
      */
     private void checkSchema() throws IgniteSpiException {
         try {

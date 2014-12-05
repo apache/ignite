@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.spi;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.testframework.junits.spi.*;
 
 /**

@@ -11,7 +11,7 @@ package org.gridgain.grid.spi.checkpoint.jdbc;
 
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management bean that provides general administrative and configuration information

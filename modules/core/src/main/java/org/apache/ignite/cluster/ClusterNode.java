@@ -57,11 +57,11 @@ import java.util.*;
  * <li>{@code org.gridgain.grid.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
  * <li>
  *      {@code spiName.org.gridgain.spi.class} - SPI implementation class for every SPI,
- *      where {@code spiName} is the name of the SPI (see {@link org.gridgain.grid.spi.IgniteSpi#getName()}.
+ *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * <li>
  *      {@code spiName.org.gridgain.spi.ver} - SPI version for every SPI,
- *      where {@code spiName} is the name of the SPI (see {@link org.gridgain.grid.spi.IgniteSpi#getName()}.
+ *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * </ul>
  * <p>

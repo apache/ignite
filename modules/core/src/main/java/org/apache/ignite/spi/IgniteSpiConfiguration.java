@@ -7,18 +7,23 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi;
+package org.apache.ignite.spi;
 
 import java.lang.annotation.*;
 
 /**
- * Annotates {@code NO-OP} SPI implementations. {@code NO-OP} implementations are empty implementations
- * and sometimes the system may provide optimizations to remove any overhead that may be involved
- * with SPI invocation.
+ * Annotates SPI configuration setters on whether or not it is optional.
+ * <p>
+ * Note that this annotation is used only for documentation purposes now and is not checked by
+ * GridGain implementation.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface IgniteSpiNoop {
-    // No-op.
+@Target(ElementType.METHOD)
+public @interface IgniteSpiConfiguration {
+    /**
+     * Whether this configuration setting is optional or not.
+     */
+    @SuppressWarnings("JavaDoc")
+    public boolean optional();
 }

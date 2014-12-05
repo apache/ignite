@@ -11,8 +11,8 @@ package org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -109,7 +109,7 @@ public class GridTcpDiscoverySharedFsIpFinder extends GridTcpDiscoveryIpFinderAd
      * Initializes folder to work with.
      *
      * @return Folder.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private File initFolder() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {

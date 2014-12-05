@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Tests manager with {@link org.gridgain.grid.spi.IgniteSpiNoop} SPI's.
+ * Tests manager with {@link org.apache.ignite.spi.IgniteSpiNoop} SPI's.
  */
 public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**

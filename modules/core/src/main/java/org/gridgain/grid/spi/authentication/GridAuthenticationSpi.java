@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.authentication;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.noop.*;
 
 /**
@@ -65,7 +65,7 @@ public interface GridAuthenticationSpi extends IgniteSpi {
      * @param authCtx Authentication context. Contains all necessary information required to authenticate
      *      the subject.
      * @return Authenticated subject context or {@code null} if authentication did not pass.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If authentication resulted in system error.
+     * @throws org.apache.ignite.spi.IgniteSpiException If authentication resulted in system error.
      *      Note that bad credentials should not cause this exception.
      */
     public GridSecuritySubject authenticate(GridAuthenticationContext authCtx) throws IgniteSpiException;

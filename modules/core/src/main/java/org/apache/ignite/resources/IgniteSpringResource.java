@@ -22,7 +22,7 @@ import java.lang.annotation.*;
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * <li>{@link org.gridgain.grid.spi.IgniteSpi}</li>
+ * <li>{@link org.apache.ignite.spi.IgniteSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.collision.noop;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.collision.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

@@ -17,11 +17,11 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -742,7 +742,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          *
          * @param node Destination node.
          * @param msg Message to be sent.
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         private void sendMessage0(ClusterNode node, GridTcpCommunicationMessageAdapter msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {

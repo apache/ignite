@@ -11,6 +11,7 @@ package org.gridgain.grid.spi.indexing.h2.opt;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -18,7 +19,6 @@ import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -80,7 +80,7 @@ public class GridLuceneIndex implements Closeable {
      * @param spaceName Space name.
      * @param type Type descriptor.
      * @param storeVal Store value in index.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public GridLuceneIndex(GridIndexingMarshaller marshaller, @Nullable GridUnsafeMemory mem,
         @Nullable String spaceName, GridIndexingTypeDescriptor type, boolean storeVal) throws IgniteSpiException {
@@ -135,7 +135,7 @@ public class GridLuceneIndex implements Closeable {
      * @param val Value.
      * @param ver Version.
      * @param expires Expiration time.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public void store(GridIndexingEntity<?> key, GridIndexingEntity<?> val, byte[] ver, long expires)
         throws IgniteSpiException {
@@ -195,7 +195,7 @@ public class GridLuceneIndex implements Closeable {
      * Removes entry for given key from this index.
      *
      * @param key Key.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public void remove(GridIndexingEntity<?> key) throws IgniteSpiException {
         try {
@@ -215,7 +215,7 @@ public class GridLuceneIndex implements Closeable {
      * @param qry Query.
      * @param filters Filters over result.
      * @return Query result.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public <K, V> GridCloseableIterator<GridIndexingKeyValueRow<K, V>> query(String qry,
         GridIndexingQueryFilter filters) throws IgniteSpiException {
@@ -306,7 +306,7 @@ public class GridLuceneIndex implements Closeable {
          * @param searcher Searcher.
          * @param docs Docs.
          * @param filters Filters over result.
-         * @throws org.gridgain.grid.spi.IgniteSpiException if failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException if failed.
          */
         private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IgniteBiPredicate<K, V> filters)
             throws IgniteSpiException {
@@ -332,7 +332,7 @@ public class GridLuceneIndex implements Closeable {
         /**
          * Finds next element.
          *
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         private void findNext() throws IgniteSpiException {
             curr = null;

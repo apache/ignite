@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 

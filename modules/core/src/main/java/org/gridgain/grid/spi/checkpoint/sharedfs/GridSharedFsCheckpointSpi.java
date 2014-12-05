@@ -12,8 +12,8 @@ package org.gridgain.grid.spi.checkpoint.sharedfs;
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -236,7 +236,7 @@ public class GridSharedFsCheckpointSpi extends IgniteSpiAdapter implements GridC
      * Gets next available shared path if possible or {@code null}.
      *
      * @return File object represented shared directory.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Throws if initializing has filed.
+     * @throws org.apache.ignite.spi.IgniteSpiException Throws if initializing has filed.
      */
     @Nullable private File getNextSharedPath() throws IgniteSpiException {
         if (folder != null) {

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.deployment;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.deployment.local.*;
 import org.jetbrains.annotations.*;
 
@@ -75,7 +75,7 @@ public interface GridDeploymentSpi extends IgniteSpi {
      *      Currently the only alias in the system is {@link org.apache.ignite.compute.ComputeTaskName} for
      *      task classes; in future, there may be others.
      * @return {@code True} if resource was registered.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If registration failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If registration failed.
      */
     public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException;
 

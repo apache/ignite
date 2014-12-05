@@ -16,8 +16,8 @@ import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -546,7 +546,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements GridCheckpo
     }
 
     /**
-     * Implementation of {@link org.gridgain.grid.spi.IgniteSpiThread} that takes care about outdated S3 data.
+     * Implementation of {@link org.apache.ignite.spi.IgniteSpiThread} that takes care about outdated S3 data.
      * Every checkpoint has expiration date after which it makes no sense to
      * keep it. This worker periodically cleans S3 bucket according to checkpoints
      * expiration time.

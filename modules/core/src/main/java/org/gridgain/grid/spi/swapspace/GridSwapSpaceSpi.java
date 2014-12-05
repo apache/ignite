@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.swapspace;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.spi.swapspace.noop.*;
 import org.jetbrains.annotations.*;
@@ -51,7 +51,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * Entirely clears data space with given name, if any.
      *
      * @param spaceName Space name to clear.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public void clear(@Nullable String spaceName) throws IgniteSpiException;
 
@@ -61,7 +61,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      *
      * @param spaceName Space name to get size for.
      * @return Size in bytes.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public long size(@Nullable String spaceName) throws IgniteSpiException;
 
@@ -71,7 +71,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      *
      * @param spaceName Space name to get number of entries for.
      * @return Number of stored entries in specified space.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public long count(@Nullable String spaceName) throws IgniteSpiException;
 
@@ -84,7 +84,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param ctx Swap context.
      * @return Value as array of bytes stored in specified data space that matches
      *      to given key.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     @Nullable public byte[] read(@Nullable String spaceName, GridSwapKey key, GridSwapContext ctx)
         throws IgniteSpiException;
@@ -98,7 +98,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param ctx Swap context.
      * @return Map in which keys are the ones passed into method and values are
      *      corresponding values read from swap storage.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public Map<GridSwapKey, byte[]> readAll(@Nullable String spaceName,
         Iterable<GridSwapKey> keys, GridSwapContext ctx) throws IgniteSpiException;
@@ -111,7 +111,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param c Optional closure that takes removed value and executes after actual
      *      removing. If there was no value in storage the closure is not executed.
      * @param ctx Swap context.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public void remove(@Nullable String spaceName, GridSwapKey key,
         @Nullable IgniteInClosure<byte[]> c, GridSwapContext ctx) throws IgniteSpiException;
@@ -124,7 +124,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param c Optional closure that takes removed value and executes after actual
      *      removing. If there was no value in storage the closure is not executed.
      * @param ctx Swap context.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public void removeAll(@Nullable String spaceName, Collection<GridSwapKey> keys,
         @Nullable IgniteBiInClosure<GridSwapKey, byte[]> c, GridSwapContext ctx) throws IgniteSpiException;
@@ -137,7 +137,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      *      read or remove stored value.
      * @param val Some value as array of bytes to store into specified data space.
      * @param ctx Swap context.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public void store(@Nullable String spaceName, GridSwapKey key, @Nullable byte[] val, GridSwapContext ctx)
         throws IgniteSpiException;
@@ -149,7 +149,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param spaceName Space name to store key-value pairs into.
      * @param pairs Map of stored key-value pairs where each one is an array of bytes.
      * @param ctx Swap context.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any errors.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
      */
     public void storeAll(@Nullable String spaceName, Map<GridSwapKey, byte[]> pairs, GridSwapContext ctx)
         throws IgniteSpiException;
@@ -166,7 +166,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      *
      * @param spaceName Space name.
      * @return Partitions IDs or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public Collection<Integer> partitions(@Nullable String spaceName) throws IgniteSpiException;
 
@@ -176,7 +176,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param ctx Swap context.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable <K> IgniteSpiCloseableIterator<K> keyIterator(@Nullable String spaceName, GridSwapContext ctx)
         throws IgniteSpiException;
@@ -186,7 +186,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      *
      * @param spaceName Space name.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws IgniteSpiException;
@@ -197,7 +197,7 @@ public interface GridSwapSpaceSpi extends IgniteSpi {
      * @param spaceName Space name.
      * @param part Partition.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
         int part) throws IgniteSpiException;

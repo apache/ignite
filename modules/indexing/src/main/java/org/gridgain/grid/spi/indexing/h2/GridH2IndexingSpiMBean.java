@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.indexing.h2;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.h2.api.*;
 import org.jetbrains.annotations.*;
 

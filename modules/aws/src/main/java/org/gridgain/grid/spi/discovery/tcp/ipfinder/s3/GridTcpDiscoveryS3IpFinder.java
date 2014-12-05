@@ -15,8 +15,8 @@ import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -214,7 +214,7 @@ public class GridTcpDiscoveryS3IpFinder extends GridTcpDiscoveryIpFinderAdapter 
     /**
      * Amazon s3 client initialization.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     @SuppressWarnings({"BusyWait"})
     private void initClient() throws IgniteSpiException {

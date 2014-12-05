@@ -11,7 +11,7 @@ package org.gridgain.grid.spi.discovery;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;
 
@@ -110,7 +110,7 @@ public interface GridDiscoverySpi extends IgniteSpi {
      * {@link #spiStop()} with accounting that it is not a full stop,
      * but disconnect due to segmentation.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
      */
     public void disconnect() throws IgniteSpiException;
 

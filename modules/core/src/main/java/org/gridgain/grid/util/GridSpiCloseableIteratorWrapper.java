@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
- * Wrapper used to covert {@link org.gridgain.grid.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.
+ * Wrapper used to covert {@link org.apache.ignite.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.
  */
 public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
     /** */

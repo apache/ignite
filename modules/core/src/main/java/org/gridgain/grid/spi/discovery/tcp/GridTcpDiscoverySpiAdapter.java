@@ -15,8 +15,8 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -604,7 +604,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      *
      * @return Resolved addresses without duplicates and local address (potentially
      *      empty but never null).
-     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
         List<InetSocketAddress> res = new ArrayList<>();
@@ -660,7 +660,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Gr
      * port (or 0 port) with {@link #DFLT_PORT}.
      *
      * @return Registered addresses.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     protected Collection<InetSocketAddress> registeredAddresses() throws IgniteSpiException {
         Collection<InetSocketAddress> res = new LinkedList<>();

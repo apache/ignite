@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.indexing.h2.opt;
 
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.*;
 

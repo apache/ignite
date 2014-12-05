@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management MBean for {@link GridAdaptiveLoadBalancingSpi} SPI.

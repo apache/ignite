@@ -10,8 +10,8 @@
 package org.gridgain.grid.loadtest.swapspace;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;

@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.file.*;
@@ -808,7 +808,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * @param desc Deployment descriptor.
      * @param clss Registered classes array.
      * @return Map of new resources added for registered class loader.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If resource already registered. Exception thrown
+     * @throws org.apache.ignite.spi.IgniteSpiException If resource already registered. Exception thrown
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */
@@ -1004,7 +1004,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * Fills in list of URIs with all available URIs and encodes them if
      * encoding is enabled.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if at least one URI has incorrect syntax.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if at least one URI has incorrect syntax.
      */
     private void initializeUriList() throws IgniteSpiException {
         for (String uri : uriList) {
@@ -1036,7 +1036,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
     /**
      * Add configuration for file scanner {@link GridUriDeploymentFileScanner}.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if default URI syntax is incorrect.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if default URI syntax is incorrect.
      */
     private void addDefaultUri() throws IgniteSpiException {
         assert uriEncodedList != null;
@@ -1071,7 +1071,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements GridDeploy
      * system property value if first is {@code null}) and path relative
      * to base one - {@link #DEPLOY_TMP_ROOT_NAME}/{@code local node ID}.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if temporary directory could not be created.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if temporary directory could not be created.
      */
     private void initializeTemporaryDirectoryPath() throws IgniteSpiException {
         String tmpDirPath = this.tmpDirPath == null ? System.getProperty("java.io.tmpdir") : this.tmpDirPath;

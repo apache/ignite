@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.swapspace.file;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link GridFileSwapSpaceSpi}.

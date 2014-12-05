@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.sql.*;
@@ -35,7 +35,7 @@ abstract class GridH2ResultSetIterator<T> implements IgniteSpiCloseableIterator<
 
     /**
      * @param data Data array.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     protected GridH2ResultSetIterator(ResultSet data) throws IgniteSpiException {
         this.data = data;

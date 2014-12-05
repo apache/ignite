@@ -11,15 +11,15 @@ package org.gridgain.grid.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
 /**
- * Implementation of {@link org.gridgain.grid.spi.IgniteSpiThread} that takes care about outdated files.
+ * Implementation of {@link org.apache.ignite.spi.IgniteSpiThread} that takes care about outdated files.
  * Every checkpoint has expiration date after which it makes no sense to
  * keep it. This class periodically compares files last access time with given
  * expiration time.

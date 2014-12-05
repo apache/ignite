@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.deployment.local;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -199,7 +199,7 @@ public class GridLocalDeploymentSpi extends IgniteSpiAdapter implements GridDepl
      * @param ldrRsrcs Class loader resources.
      * @param cls Registered classes collection.
      * @return Map of new resources added for registered class loader.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If resource already registered. Exception thrown
+     * @throws org.apache.ignite.spi.IgniteSpiException If resource already registered. Exception thrown
      * if registered resources conflicts with rule when all task classes must be
      * annotated with different task names.
      */

@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
@@ -27,7 +27,7 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
 /**
  * Multicast-based IP finder.

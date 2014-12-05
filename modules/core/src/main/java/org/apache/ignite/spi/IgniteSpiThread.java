@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.spi;
+package org.apache.ignite.spi;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;

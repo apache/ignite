@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri.scanners;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 

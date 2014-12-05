@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.collision.priorityqueue;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management bean that provides access to the priority queue collision SPI configuration.

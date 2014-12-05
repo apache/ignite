@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 
 import org.apache.ignite.*;
+import org.apache.ignite.spi.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.*;
@@ -19,7 +20,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -30,7 +30,7 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
 /**
  * Jetty REST protocol implementation.

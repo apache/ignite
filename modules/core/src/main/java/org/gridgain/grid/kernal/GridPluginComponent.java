@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

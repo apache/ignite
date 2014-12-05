@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.swapspace;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;

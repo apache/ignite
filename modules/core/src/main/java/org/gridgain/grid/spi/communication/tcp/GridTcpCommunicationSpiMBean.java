@@ -1,7 +1,7 @@
 package org.gridgain.grid.spi.communication.tcp;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * MBean provide access to TCP-based communication SPI.

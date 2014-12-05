@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
@@ -40,7 +40,7 @@ final class GridUriDeploymentSpringParser {
      * @param in Input stream with XML.
      * @param log Logger
      * @return Grid wrapper for the input stream.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if incoming input stream could not be
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if incoming input stream could not be
      *      read or parsed by {@code Spring} {@link XmlBeanFactory}.
      * @see XmlBeanFactory
      */

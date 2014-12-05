@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 
 /**
  * Defines "rich" closeable iterator interface that is also acts like lambda function and iterable.

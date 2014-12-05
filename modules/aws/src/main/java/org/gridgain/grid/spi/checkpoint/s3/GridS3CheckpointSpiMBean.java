@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.checkpoint.s3;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link GridS3CheckpointSpi}.

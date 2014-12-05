@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ public interface GridIndexingEntity<T> {
      * the {@link #bytes()} and return the actual value.
      *
      * @return Indexed value.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If value de-serialization failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If value de-serialization failed.
      */
     @Nullable public T value() throws IgniteSpiException;
 

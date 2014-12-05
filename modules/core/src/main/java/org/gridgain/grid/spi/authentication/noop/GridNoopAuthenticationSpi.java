@@ -11,9 +11,9 @@ package org.gridgain.grid.spi.authentication.noop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.authentication.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;

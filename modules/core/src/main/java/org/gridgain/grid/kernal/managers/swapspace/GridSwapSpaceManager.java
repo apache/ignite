@@ -12,10 +12,10 @@ package org.gridgain.grid.kernal.managers.swapspace;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -331,7 +331,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      *
      * @param spaceName Space name.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
         throws GridException {
@@ -365,7 +365,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<GridSwapSpaceSpi> {
      * @param spaceName Space name.
      * @param ldr Class loader.
      * @return Iterator over space entries or {@code null} if space is unknown.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public <K> GridCloseableIterator<K> keysIterator(@Nullable String spaceName,
         @Nullable ClassLoader ldr) throws GridException {

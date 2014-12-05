@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.message.*;
@@ -53,7 +53,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
         int valType, long expirationTime) throws IgniteSpiException {
@@ -81,7 +81,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param obj Object.
      * @param type Value type.
      * @return Value.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private static Value wrap(Object obj, int type) throws IgniteSpiException {
         switch (type) {
@@ -154,7 +154,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /**
      * Should be called to remove reference on value.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public synchronized void onSwap() throws GridException {
         setValue(VAL_COL, null);

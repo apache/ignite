@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc;
 
 import com.mchange.v2.c3p0.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 
 /**

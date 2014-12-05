@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.managers;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

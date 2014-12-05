@@ -15,11 +15,11 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.security.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
@@ -45,7 +45,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.spi.IgnitePortProtocol.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
 import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatusCheckMessage.*;
@@ -651,7 +651,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Starts or restarts SPI after stop (to reconnect).
      *
      * @param restart {@code True} if SPI is restarted after stop.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private void spiStart0(boolean restart) throws IgniteSpiException {
         if (!restart)
@@ -769,7 +769,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @SuppressWarnings("BusyWait")
     private void registerLocalNodeAddress() throws IgniteSpiException {
@@ -800,7 +800,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
@@ -901,7 +901,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Stops SPI finally or stops SPI for restart.
      *
      * @param disconnect {@code True} if SPI is being disconnected.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private void spiStop0(boolean disconnect) throws IgniteSpiException {
         if (ctxInitLatch.getCount() > 0)
@@ -1056,7 +1056,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     }
 
     /**
-     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
      * @return {@code true} if IP finder contains local address.
      */
     private boolean ipFinderHasLocalAddress() throws IgniteSpiException {
@@ -1149,7 +1149,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param addr Address of the node.
      * @return ID of the remote node if node alive.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws GridException {
@@ -1240,7 +1240,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Tries to join this node to topology.
      *
-     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
      */
     private void joinTopology() throws IgniteSpiException {
         synchronized (mux) {
@@ -1393,7 +1393,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * sent to first node connection succeeded to.
      *
      * @return {@code true} if send succeeded.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If any error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
      */
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
@@ -1518,7 +1518,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * @param msg Message to send.
      * @param addr Address to send message to.
      * @return Response read from the recipient or {@code null} if no response is supposed.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If an error occurs.
+     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     @Nullable private Integer sendMessageDirectly(GridTcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
         throws IgniteSpiException {
@@ -1647,7 +1647,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If marshalling failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If marshalling failed.
      */
     private void marshalCredentials(GridTcpDiscoveryNode node) throws IgniteSpiException {
         try {
@@ -1669,7 +1669,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
      *
      * @param node Node to unmarshall credentials for.
      * @return Security credentials.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If unmarshal fails.
+     * @throws org.apache.ignite.spi.IgniteSpiException If unmarshal fails.
      */
     private GridSecurityCredentials unmarshalCredentials(GridTcpDiscoveryNode node) throws IgniteSpiException {
         try {
@@ -3395,7 +3395,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
          *
          * @param node Node to send message to.
          * @param msg Message.
-         * @throws org.gridgain.grid.spi.IgniteSpiException Last failure if all attempts failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException Last failure if all attempts failed.
          */
         private void trySendMessageDirectly(GridTcpDiscoveryNode node, GridTcpDiscoveryAbstractMessage msg)
             throws IgniteSpiException {
@@ -4429,7 +4429,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
         /**
          * Constructor.
          *
-         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+         * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
         TcpServer() throws IgniteSpiException {
             super(gridName, "tcp-disco-srvr", log);

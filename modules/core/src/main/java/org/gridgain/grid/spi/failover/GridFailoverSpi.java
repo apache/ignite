@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.failover;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.failover.jobstealing.*;
 import org.gridgain.grid.spi.failover.never.*;

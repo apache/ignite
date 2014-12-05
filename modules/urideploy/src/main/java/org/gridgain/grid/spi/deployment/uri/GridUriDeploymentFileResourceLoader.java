@@ -10,7 +10,8 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
+
 import java.io.*;
 
 /**
@@ -43,7 +44,7 @@ class GridUriDeploymentFileResourceLoader {
      * @param ignoreUnknownRsrc Whether unresolved classes should be
      *      ignored or not.
      * @return Loaded class.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If class could not be loaded and
+     * @throws org.apache.ignite.spi.IgniteSpiException If class could not be loaded and
      *      {@code ignoreUnknownRsrc} parameter is {@code true}.
      */
     @SuppressWarnings("unchecked")

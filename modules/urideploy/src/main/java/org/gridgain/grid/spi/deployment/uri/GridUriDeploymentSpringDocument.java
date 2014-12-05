@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
@@ -43,7 +43,7 @@ class GridUriDeploymentSpringDocument {
      *
      * @param clsLdr Class loader.
      * @return Declared tasks.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if there are no tasks in
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if there are no tasks in
      *      configuration or configuration could not be read.
      */
     @SuppressWarnings({"unchecked"})

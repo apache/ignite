@@ -12,13 +12,13 @@ package org.gridgain.grid.kernal.managers.indexing;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -713,7 +713,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param spaceName Space name.
      * @param swapSpaceName Swap space name.
      * @param key key.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public void onSwap(String spi, String spaceName, String swapSpaceName, Object key) throws IgniteSpiException {
         if (!busyLock.enterBusy())
@@ -735,7 +735,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public void onUnswap(String spi, String spaceName, Object key, Object val, byte[] valBytes)
         throws IgniteSpiException {
@@ -1197,7 +1197,7 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
          *
          * @param x Object with this property.
          * @return Property value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         public abstract Object value(Object x) throws IgniteSpiException;
 

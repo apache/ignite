@@ -13,8 +13,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -545,7 +545,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      *
      * @param key Swap key.
      * @return Key bytes.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     private byte[] keyBytes(GridSwapKey key) throws IgniteSpiException {
         assert key != null;
@@ -585,7 +585,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * @param name Space name.
      * @param create Whether to create space if it doesn't exist.
      * @return Space.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
      */
     @Nullable private Space space(@Nullable String name, boolean create) throws IgniteSpiException {
         String masked = name != null ? name : DFLT_SPACE_NAME;
@@ -613,7 +613,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
      * Validates space name.
      *
      * @param name Space name.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If name is invalid.
+     * @throws org.apache.ignite.spi.IgniteSpiException If name is invalid.
      */
     private void validateName(@Nullable String name) throws IgniteSpiException {
         if (name == null)
@@ -673,7 +673,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * @param space Space.
          * @return Value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
         @Nullable public synchronized byte[] value(Space space) throws IgniteSpiException {
@@ -703,7 +703,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * @param ch File channel.
          * @return Bytes.
-         * @throws org.gridgain.grid.spi.IgniteSpiException if failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException if failed.
          */
         @Nullable byte[] readValue(StripedFileChannel ch) throws IgniteSpiException {
             byte[] v = new byte[len];
@@ -798,7 +798,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * Adds to queue.
          *
          * @param val Swap value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         public void add(SwapValue val) throws IgniteSpiException {
             lock.lock();
@@ -1404,7 +1404,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * Initializes space.
          *
-         * @throws org.gridgain.grid.spi.IgniteSpiException If initialization failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If initialization failed.
          */
         public void initialize() throws IgniteSpiException {
             if (initializer.succeeded())
@@ -1534,7 +1534,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
         /**
          * Clears space.
          *
-         * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+         * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
         public void clear() throws IgniteSpiException {
             Iterator<Map.Entry<GridSwapKey, byte[]>> iter = entriesIterator();
@@ -1564,7 +1564,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          *
          * @param key Key.
          * @param val Value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+         * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
         public void store(final GridSwapKey key, @Nullable final byte[] val) throws IgniteSpiException {
             assert key != null;
@@ -1608,7 +1608,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          *
          * @param key Key.
          * @return Value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+         * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
         @Nullable public byte[] read(GridSwapKey key) throws IgniteSpiException {
             assert key != null;
@@ -1632,7 +1632,7 @@ public class GridFileSwapSpaceSpi extends IgniteSpiAdapter implements GridSwapSp
          * @param key Key.
          * @param read If value has to be read.
          * @return Value.
-         * @throws org.gridgain.grid.spi.IgniteSpiException In case of error.
+         * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
          */
         @Nullable public byte[] remove(GridSwapKey key, boolean read) throws IgniteSpiException {
             assert key != null;

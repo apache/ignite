@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.eventstorage.memory;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link GridMemoryEventStorageSpi}.

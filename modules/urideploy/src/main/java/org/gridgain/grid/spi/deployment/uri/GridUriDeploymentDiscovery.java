@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
@@ -44,7 +44,7 @@ final class GridUriDeploymentDiscovery {
      *      references to them.
      * @return Set of found and loaded classes or empty set if file does not
      *      exist.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown if given JAR file references to none
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown if given JAR file references to none
      *      existed class or IOException occurred during processing.
      */
     static Set<Class<? extends ComputeTask<?, ?>>> getClasses(ClassLoader clsLdr, File file)

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
@@ -31,7 +31,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param val Value.
      * @param expirationTime Expiration time in millis.
      * @return Row.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
         throws IgniteSpiException;

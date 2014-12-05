@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.communication;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.communication.tcp.*;
 import org.jetbrains.annotations.*;
 
@@ -50,7 +50,7 @@ public interface GridCommunicationSpi<T extends Serializable> extends IgniteSpi 
      *
      * @param destNode Destination node.
      * @param msg Message to send.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error during sending the message.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error during sending the message.
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */

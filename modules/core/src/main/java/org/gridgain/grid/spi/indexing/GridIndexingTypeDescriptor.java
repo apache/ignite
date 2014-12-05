@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.indexing;
 
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 import java.util.*;
 
@@ -50,7 +50,7 @@ public interface GridIndexingTypeDescriptor {
      * @param obj Object to get field value from.
      * @param field Field name.
      * @return Value for given field.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public <T> T value(Object obj, String field) throws IgniteSpiException;
 

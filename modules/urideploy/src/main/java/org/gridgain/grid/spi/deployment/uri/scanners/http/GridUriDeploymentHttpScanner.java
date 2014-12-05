@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.deployment.uri.scanners.http;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.spi.deployment.uri.scanners.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -55,7 +55,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
      * @param filter Filename filter.
      * @param lsnr Deployment listener.
      * @param log Logger to use.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error.
      */
     public GridUriDeploymentHttpScanner(
         String gridName,
@@ -80,7 +80,7 @@ public class GridUriDeploymentHttpScanner extends GridUriDeploymentScanner {
 
     /**
      * @param uri HTTP URI.
-     * @throws org.gridgain.grid.spi.IgniteSpiException Thrown in case of any error.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error.
      */
     private void initialize(URI uri) throws IgniteSpiException {
         assert "http".equals(uri.getScheme()) || "https".equals(uri.getScheme());

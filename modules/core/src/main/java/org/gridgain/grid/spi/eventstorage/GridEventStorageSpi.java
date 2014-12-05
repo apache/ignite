@@ -11,7 +11,7 @@ package org.gridgain.grid.spi.eventstorage;
 
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 import java.util.*;
 
@@ -51,7 +51,7 @@ public interface GridEventStorageSpi extends IgniteSpi {
      * Records single event.
      *
      * @param evt Event that should be recorded.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If event recording failed for any reason.
+     * @throws org.apache.ignite.spi.IgniteSpiException If event recording failed for any reason.
      */
     public void record(IgniteEvent evt) throws IgniteSpiException;
 }

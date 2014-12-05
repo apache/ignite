@@ -10,7 +10,7 @@
 package org.gridgain.grid.spi.indexing.h2.opt;
 
 
-import org.gridgain.grid.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +27,7 @@ public class GridH2KeyValueRowOnheap extends GridH2AbstractKeyValueRow {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
         long expirationTime) throws IgniteSpiException {

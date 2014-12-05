@@ -10,7 +10,8 @@
 package org.gridgain.grid.spi.deployment.uri;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -33,7 +34,7 @@ class GridUriDeploymentClassLoaderFactory {
      * @param file GAR file or directory with unpacked GAR file.
      * @param log Logger.
      * @return Class Loader.
-     * @throws org.gridgain.grid.spi.IgniteSpiException In case of any error.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any error.
      */
     public static ClassLoader create(ClassLoader parent, File file, IgniteLogger log) throws IgniteSpiException {
         assert parent != null;

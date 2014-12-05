@@ -11,8 +11,8 @@ package org.gridgain.grid.spi.indexing;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -133,7 +133,7 @@ public abstract class GridIndexingSpiAbstractSelfTest<X extends GridIndexingSpi>
     /**
      * @param row Row
      * @return Value.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     private Map<String, Object> value(GridIndexingKeyValueRow<Integer, Map<String, Object>> row) throws IgniteSpiException {
         return row.value().value();

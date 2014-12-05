@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.spi.indexing;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Marshaller to be used in indexing SPI. This marshaller automatically
@@ -23,7 +23,7 @@ public interface GridIndexingMarshaller {
      * @param bytes Bytes.
      * @param <T> Value type.
      * @return Value.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public <T> GridIndexingEntity<T> unmarshal(byte[] bytes) throws IgniteSpiException;
 
@@ -32,7 +32,7 @@ public interface GridIndexingMarshaller {
      *
      * @param entity Entity.
      * @return Bytes.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public byte[] marshal(GridIndexingEntity<?> entity) throws IgniteSpiException;
 }

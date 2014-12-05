@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.spi.indexing.h2.opt;
 
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.store.*;
@@ -78,7 +78,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws org.gridgain.grid.spi.IgniteSpiException If failed.
+     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     public GridH2KeyValueRowOffheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
         long expirationTime) throws IgniteSpiException {

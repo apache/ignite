@@ -10,8 +10,8 @@
 package org.gridgain.grid.spi.deployment.local;
 
 import org.apache.ignite.compute.*;
+import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.deployment.*;
 import org.gridgain.testframework.junits.spi.*;
 
