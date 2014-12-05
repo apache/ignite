@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.typedef;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
@@ -21,7 +22,7 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Defines global scope.
@@ -185,7 +186,7 @@ public final class X {
      * @return Value of the system property or environment variable.
      *         Returns the default value if neither can be found for given name.
      * @deprecated This method will be removed in the next major release.
-     *             Use {@link org.gridgain.grid.IgniteSystemProperties#getString(String)} instead.
+     *             Use {@link org.apache.ignite.IgniteSystemProperties#getString(String)} instead.
      */
     @Deprecated
     @Nullable public static String getSystemOrEnv(String name, String dflt) {

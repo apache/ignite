@@ -42,7 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -962,7 +962,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * Sets the minimum number of messages for this SPI, that are buffered
      * prior to sending.
      * <p>
-     * Defaults to either {@code 512} or {@link org.gridgain.grid.IgniteSystemProperties#GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
+     * Defaults to either {@code 512} or {@link org.apache.ignite.IgniteSystemProperties#GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
      * system property (if specified).
      *
      * @param minBufferedMsgCnt Minimum buffered message count.
@@ -981,7 +981,7 @@ public class GridTcpCommunicationSpi extends GridSpiAdapter
      * Sets the buffer size ratio for this SPI. As messages are sent,
      * the buffer size is adjusted using this ratio.
      * <p>
-     * Defaults to either {@code 0.8} or {@link org.gridgain.grid.IgniteSystemProperties#GG_COMMUNICATION_BUF_RESIZE_RATIO}
+     * Defaults to either {@code 0.8} or {@link org.apache.ignite.IgniteSystemProperties#GG_COMMUNICATION_BUF_RESIZE_RATIO}
      * system property (if specified).
      *
      * @param bufSizeRatio Buffer size ratio.

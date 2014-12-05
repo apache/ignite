@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.*;
@@ -19,7 +19,7 @@ import sun.misc.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.util.offheap.GridOffHeapEvent.*;
 
 /**

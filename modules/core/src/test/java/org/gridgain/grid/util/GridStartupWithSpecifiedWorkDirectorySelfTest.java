@@ -13,7 +13,6 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.logger.java.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -23,7 +22,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.util.GridUtils.*;
 
 /**

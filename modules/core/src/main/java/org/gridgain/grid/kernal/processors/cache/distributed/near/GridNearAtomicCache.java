@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;

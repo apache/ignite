@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 
+import org.apache.ignite.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.*;
@@ -28,7 +29,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.spi.GridPortProtocol.*;
 
 /**
@@ -164,7 +165,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Checks {@link org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT} system property
+     * Checks {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT} system property
      * and overrides default connector port if it present.
      * Then initializes {@code port} with the found value.
      *

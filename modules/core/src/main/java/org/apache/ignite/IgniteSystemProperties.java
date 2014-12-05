@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
@@ -286,7 +286,7 @@ public final class IgniteSystemProperties {
      * System property to override deployment mode configuration parameter.
      * Valid values for property are: PRIVATE, ISOLATED, SHARED or CONTINUOUS.
      *
-     * @see GridDeploymentMode
+     * @see org.gridgain.grid.GridDeploymentMode
      * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
      */
     public static final String GG_DEP_MODE_OVERRIDE = "GRIDGAIN_DEPLOYMENT_MODE_OVERRIDE";

@@ -21,7 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * IP Finder which works only with pre-configured list of IP addresses specified

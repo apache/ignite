@@ -16,7 +16,7 @@ import sun.misc.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Data input based on {@code Unsafe} operations.

@@ -44,7 +44,7 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.spi.indexing.GridIndexType.*;
 import static org.gridgain.grid.spi.indexing.h2.opt.GridH2AbstractKeyValueRow.*;
 import static org.h2.result.SortOrder.*;

@@ -73,7 +73,7 @@ import java.util.logging.*;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.IgniteState.*;
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;

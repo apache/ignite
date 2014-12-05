@@ -11,12 +11,13 @@
 
 package org.gridgain.scalar.testsuites
 
+import org.apache.ignite.IgniteSystemProperties
 import org.scalatest._
 import org.gridgain.scalar.tests._
 import examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.gridgain.grid.IgniteSystemProperties._
+import IgniteSystemProperties._
 import org.gridgain.testframework.GridTestUtils
 
 /**

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -18,7 +19,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Future that is completed at creation time.

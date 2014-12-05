@@ -27,7 +27,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Log4j-based implementation for logging. This logger should be used

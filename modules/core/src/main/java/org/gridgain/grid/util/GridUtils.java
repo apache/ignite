@@ -65,7 +65,7 @@ import java.util.logging.*;
 import java.util.regex.*;
 import java.util.zip.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 

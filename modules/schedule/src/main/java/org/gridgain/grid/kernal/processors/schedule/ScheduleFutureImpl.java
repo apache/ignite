@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of {@link org.apache.ignite.scheduler.SchedulerFuture} interface.

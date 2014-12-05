@@ -19,7 +19,7 @@ import org.jdk8.backport.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Processes job metrics.

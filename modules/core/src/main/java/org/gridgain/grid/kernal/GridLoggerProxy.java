@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  *
@@ -157,7 +157,7 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements IgniteL
     }
 
     /**
-     * Enriches the log message with grid name if {@link org.gridgain.grid.IgniteSystemProperties#GG_LOG_GRID_NAME}
+     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#GG_LOG_GRID_NAME}
      * system property is set.
      *
      * @param m Message to enrich.

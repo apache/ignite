@@ -15,7 +15,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 import static java.lang.System.*;
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**

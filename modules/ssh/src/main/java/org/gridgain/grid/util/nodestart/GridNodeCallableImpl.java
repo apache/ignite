@@ -21,7 +21,7 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * SSH-based node starter.

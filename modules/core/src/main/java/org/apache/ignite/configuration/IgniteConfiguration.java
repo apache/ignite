@@ -710,7 +710,7 @@ public class IgniteConfiguration {
      *
      * @return Whether or not to use SSL fot SMTP.
      * @see #DFLT_SMTP_SSL
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_SSL
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_SSL
      */
     public boolean isSmtpSsl() {
         return smtpSsl;
@@ -729,7 +729,7 @@ public class IgniteConfiguration {
      *
      * @return Whether or not to use STARTTLS fot SMTP.
      * @see #DFLT_SMTP_STARTTLS
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_STARTTLS
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_STARTTLS
      */
     public boolean isSmtpStartTls() {
         return smtpStartTls;
@@ -747,7 +747,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @return SMTP host name or {@code null} if SMTP is not configured.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_HOST
      */
     public String getSmtpHost() {
         return smtpHost;
@@ -766,7 +766,7 @@ public class IgniteConfiguration {
      *
      * @return SMTP port.
      * @see #DFLT_SMTP_PORT
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_PORT
      */
     public int getSmtpPort() {
         return smtpPort;
@@ -784,7 +784,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @return SMTP username or {@code null}.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_USERNAME
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_USERNAME
      */
     public String getSmtpUsername() {
         return smtpUsername;
@@ -802,7 +802,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @return SMTP password or {@code null}.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_PWD
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_PWD
      */
     public String getSmtpPassword() {
         return smtpPwd;
@@ -819,7 +819,7 @@ public class IgniteConfiguration {
      * @return Optional set of admin emails where email notifications will be set.
      *      If {@code null} - emails will be sent only to the email in the license
      *      if one provided.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_ADMIN_EMAILS
+     * @see org.apache.ignite.IgniteSystemProperties#GG_ADMIN_EMAILS
      */
     public String[] getAdminEmails() {
         return adminEmails;
@@ -832,7 +832,7 @@ public class IgniteConfiguration {
      * @return Optional FROM email address for email notifications. If {@code null}
      *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
      * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_FROM
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_FROM
      */
     public String getSmtpFromEmail() {
         return smtpFromEmail;
@@ -851,7 +851,7 @@ public class IgniteConfiguration {
      * Sets whether or not to enable lifecycle email notifications.
      *
      * @param lifeCycleEmailNtf {@code True} to enable lifecycle email notifications.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_LIFECYCLE_EMAIL_NOTIFY
+     * @see org.apache.ignite.IgniteSystemProperties#GG_LIFECYCLE_EMAIL_NOTIFY
      */
     public void setLifeCycleEmailNotification(boolean lifeCycleEmailNtf) {
         this.lifeCycleEmailNtf = lifeCycleEmailNtf;
@@ -869,7 +869,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @param smtpSsl Whether or not SMTP uses SSL.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_SSL
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_SSL
      */
     public void setSmtpSsl(boolean smtpSsl) {
         this.smtpSsl = smtpSsl;
@@ -887,7 +887,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @param smtpStartTls Whether or not SMTP uses STARTTLS.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_STARTTLS
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_STARTTLS
      */
     public void setSmtpStartTls(boolean smtpStartTls) {
         this.smtpStartTls = smtpStartTls;
@@ -905,7 +905,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @param smtpHost SMTP host to set or {@code null} to disable sending emails.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_HOST
      */
     public void setSmtpHost(String smtpHost) {
         this.smtpHost = smtpHost;
@@ -924,7 +924,7 @@ public class IgniteConfiguration {
      *
      * @param smtpPort SMTP port to set.
      * @see #DFLT_SMTP_PORT
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_PORT
      */
     public void setSmtpPort(int smtpPort) {
         this.smtpPort = smtpPort;
@@ -942,7 +942,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @param smtpUsername SMTP username or {@code null}.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_USERNAME
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_USERNAME
      */
     public void setSmtpUsername(String smtpUsername) {
         this.smtpUsername = smtpUsername;
@@ -960,7 +960,7 @@ public class IgniteConfiguration {
      * configuration property.
      *
      * @param smtpPwd SMTP password or {@code null}.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_PWD
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_PWD
      */
     public void setSmtpPassword(String smtpPwd) {
         this.smtpPwd = smtpPwd;
@@ -977,7 +977,7 @@ public class IgniteConfiguration {
      * @param adminEmails Optional set of admin emails where email notifications will be set.
      *      If {@code null} - emails will be sent only to the email in the license
      *      if one provided.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_ADMIN_EMAILS
+     * @see org.apache.ignite.IgniteSystemProperties#GG_ADMIN_EMAILS
      */
     public void setAdminEmails(String[] adminEmails) {
         this.adminEmails = adminEmails;
@@ -990,7 +990,7 @@ public class IgniteConfiguration {
      * @param smtpFromEmail Optional FROM email address for email notifications. If {@code null}
      *      - {@link #DFLT_SMTP_FROM_EMAIL} will be used by default.
      * @see #DFLT_SMTP_FROM_EMAIL
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_SMTP_FROM
+     * @see org.apache.ignite.IgniteSystemProperties#GG_SMTP_FROM
      */
     public void setSmtpFromEmail(String smtpFromEmail) {
         this.smtpFromEmail = smtpFromEmail;
@@ -1371,7 +1371,7 @@ public class IgniteConfiguration {
      *
      * @return GridGain installation home or {@code null} to make the system attempt to
      *      infer it automatically.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_HOME
+     * @see org.apache.ignite.IgniteSystemProperties#GG_HOME
      */
     public String getGridGainHome() {
         return ggHome;
@@ -1382,7 +1382,7 @@ public class IgniteConfiguration {
      *
      * @param ggHome {@code GridGain} installation folder.
      * @see IgniteConfiguration#getGridGainHome()
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_HOME
+     * @see org.apache.ignite.IgniteSystemProperties#GG_HOME
      */
     public void setGridGainHome(String ggHome) {
         this.ggHome = ggHome;
@@ -1397,7 +1397,7 @@ public class IgniteConfiguration {
      *
      * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getGridGainHome()
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_HOME
+     * @see org.apache.ignite.IgniteSystemProperties#GG_HOME
      */
     public String getWorkDirectory() {
         return ggWork;
@@ -2354,12 +2354,12 @@ public class IgniteConfiguration {
      * accessing GridGain APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
-     * {@link org.gridgain.grid.IgniteSystemProperties#GG_JETTY_HOST} and {@link org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT}
+     * {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT}
      * as host and port respectively.
      *
      * @return Path to {@code JETTY} XML configuration file.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_HOST
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
      * @deprecated Use {@link GridClientConnectionConfiguration#getRestJettyPath()}.
      */
     @Deprecated
@@ -2383,8 +2383,8 @@ public class IgniteConfiguration {
      * external {@code REST} access is turned on.
      *
      * @return Flag indicating whether external {@code REST} access is enabled or not.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_HOST
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
      * @deprecated Use {@link GridClientConnectionConfiguration}.
      */
     @Deprecated
@@ -2884,8 +2884,8 @@ public class IgniteConfiguration {
      * Gets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @return Secret key.
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_HOST
-     * @see org.gridgain.grid.IgniteSystemProperties#GG_JETTY_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
      * @deprecated Use {@link GridClientConnectionConfiguration#getRestSecretKey()}.
      */
     @Deprecated

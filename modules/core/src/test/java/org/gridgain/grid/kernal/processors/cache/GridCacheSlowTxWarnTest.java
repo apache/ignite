@@ -22,7 +22,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Test to check slow TX warning timeout defined by
- * {@link org.gridgain.grid.IgniteSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
+ * {@link org.apache.ignite.IgniteSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {

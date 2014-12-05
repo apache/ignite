@@ -18,7 +18,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Reflection field and method cache for classes.

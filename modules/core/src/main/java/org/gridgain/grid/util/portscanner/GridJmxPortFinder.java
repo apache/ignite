@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.portscanner;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.io.*;
 import java.net.*;

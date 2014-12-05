@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;

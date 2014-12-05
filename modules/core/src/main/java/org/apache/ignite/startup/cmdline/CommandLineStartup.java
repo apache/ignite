@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 
 /**

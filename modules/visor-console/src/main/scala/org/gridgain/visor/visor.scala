@@ -12,7 +12,7 @@
 package org.gridgain.visor
 
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.{IgniteState, Ignition}
+import org.apache.ignite.{IgniteSystemProperties, IgniteState, Ignition}
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
@@ -26,7 +26,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
-import org.gridgain.grid.IgniteSystemProperties._
+import IgniteSystemProperties._
 import IgniteEventType._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._

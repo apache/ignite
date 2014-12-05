@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Concurrent map factory.

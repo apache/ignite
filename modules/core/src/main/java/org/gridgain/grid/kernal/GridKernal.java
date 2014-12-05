@@ -85,7 +85,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
-import static org.gridgain.grid.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
