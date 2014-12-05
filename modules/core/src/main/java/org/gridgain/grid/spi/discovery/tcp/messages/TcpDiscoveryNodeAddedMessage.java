@@ -24,9 +24,9 @@ import java.util.*;
  * When newly added node receives the message it connects to its next and finishes
  * join process.
  */
-@GridTcpDiscoveryEnsureDelivery
-@GridTcpDiscoveryRedirectToClient
-public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMessage {
+@TcpDiscoveryEnsureDelivery
+@TcpDiscoveryRedirectToClient
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,7 +34,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private TcpDiscoveryNode node;
 
     /** Pending messages from previous node. */
-    private Collection<GridTcpDiscoveryAbstractMessage> msgs;
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
 
     /** Discarded message ID. */
     private IgniteUuid discardMsgId;
@@ -58,7 +58,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryNodeAddedMessage() {
+    public TcpDiscoveryNodeAddedMessage() {
         // No-op.
     }
 
@@ -70,8 +70,8 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      * @param newNodeDiscoData New Node discovery data.
      * @param gridStartTime Start time of the first grid node.
      */
-    public GridTcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
-        List<Object> newNodeDiscoData, long gridStartTime) {
+    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
+                                        List<Object> newNodeDiscoData, long gridStartTime) {
         super(creatorNodeId);
 
         assert node != null;
@@ -98,7 +98,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<GridTcpDiscoveryAbstractMessage> messages() {
+    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
         return msgs;
     }
 
@@ -117,7 +117,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      * @param msgs Pending messages to send to new node.
      * @param discardMsgId Discarded message ID.
      */
-    public void messages(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
         this.msgs = msgs;
         this.discardMsgId = discardMsgId;
     }
@@ -241,6 +241,6 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNodeAddedMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryNodeAddedMessage.class, this, "super", super.toString());
     }
 }

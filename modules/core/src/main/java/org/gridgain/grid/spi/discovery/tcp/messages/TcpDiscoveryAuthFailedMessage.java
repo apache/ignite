@@ -12,22 +12,23 @@ package org.gridgain.grid.spi.discovery.tcp.messages;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 /**
- * Message telling joining node that it failed coordinator's validation check.
+ * Message telling joining node that its authentication failed on coordinator.
  */
-public class GridTcpDiscoveryCheckFailedMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Coordinator version. */
-    private String err;
+    /** Coordinator address. */
+    private InetAddress addr;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryCheckFailedMessage() {
+    public TcpDiscoveryAuthFailedMessage() {
         // No-op.
     }
 
@@ -35,37 +36,37 @@ public class GridTcpDiscoveryCheckFailedMessage extends GridTcpDiscoveryAbstract
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
-     * @param err Error message from coordinator.
+     * @param addr Coordinator address.
      */
-    public GridTcpDiscoveryCheckFailedMessage(UUID creatorNodeId, String err) {
+    public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress addr) {
         super(creatorNodeId);
 
-        this.err = err;
+        this.addr = addr;
     }
 
     /**
-     * @return Error message from coordinator.
+     * @return Coordinator address.
      */
-    public String error() {
-        return err;
+    public InetAddress address() {
+        return addr;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeString(out, err);
+        U.writeByteArray(out, addr.getAddress());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        err = U.readString(in);
+        addr = InetAddress.getByAddress(U.readByteArray(in));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryCheckFailedMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryAuthFailedMessage.class, this, "super", super.toString());
     }
 }

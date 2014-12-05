@@ -9,67 +9,67 @@
 
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Sent by coordinator across the ring to finish node add process.
+ * Message sent by coordinator when some operation handling is over. All receiving
+ * nodes should discard this and all preceding messages in local buffers.
  */
-@GridTcpDiscoveryEnsureDelivery
-@GridTcpDiscoveryRedirectToClient
-public class GridTcpDiscoveryNodeAddFinishedMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Added node ID. */
-    private UUID nodeId;
+    /** ID of the message to discard (this and all preceding). */
+    private IgniteUuid msgId;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryNodeAddFinishedMessage() {
+    public TcpDiscoveryDiscardMessage() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param creatorNodeId ID of the creator node (coordinator).
-     * @param nodeId Added node ID.
+     * @param creatorNodeId Creator node ID.
+     * @param msgId Message ID.
      */
-    public GridTcpDiscoveryNodeAddFinishedMessage(UUID creatorNodeId, UUID nodeId) {
+    public TcpDiscoveryDiscardMessage(UUID creatorNodeId, IgniteUuid msgId) {
         super(creatorNodeId);
 
-        this.nodeId = nodeId;
+        this.msgId = msgId;
     }
 
     /**
-     * Gets ID of the node added.
+     * Gets message ID to discard (this and all preceding).
      *
-     * @return ID of the node added.
+     * @return Message ID.
      */
-    public UUID nodeId() {
-        return nodeId;
+    public IgniteUuid msgId() {
+        return msgId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeUuid(out, nodeId);
+        U.writeGridUuid(out, msgId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        nodeId = U.readUuid(in);
+        msgId = U.readGridUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNodeAddFinishedMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryDiscardMessage.class, this, "super", super.toString());
     }
 }

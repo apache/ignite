@@ -34,8 +34,8 @@ import static org.gridgain.grid.spi.discovery.DiscoveryMetricsHelper.*;
  * When message reaches coordinator second time it is discarded (it finishes the
  * second pass).
  */
-@GridTcpDiscoveryRedirectToClient
-public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMessage {
+@TcpDiscoveryRedirectToClient
+public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryHeartbeatMessage() {
+    public TcpDiscoveryHeartbeatMessage() {
         // No-op.
     }
 
@@ -58,7 +58,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
      *
      * @param creatorNodeId Creator node.
      */
-    public GridTcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
+    public TcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
 
         metrics = U.newHashMap(1);
@@ -181,7 +181,7 @@ public class GridTcpDiscoveryHeartbeatMessage extends GridTcpDiscoveryAbstractMe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
     }
 
     /**

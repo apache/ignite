@@ -9,26 +9,27 @@
 
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
+import org.gridgain.grid.spi.discovery.tcp.internal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 
 /**
- * Message telling joining node that its authentication failed on coordinator.
+ * Message telling joining node that new topology already contain
+ * different node with same ID.
  */
-public class GridTcpDiscoveryAuthFailedMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Coordinator address. */
-    private InetAddress addr;
+    /** Node with duplicate ID. */
+    private TcpDiscoveryNode node;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryAuthFailedMessage() {
+    public TcpDiscoveryDuplicateIdMessage() {
         // No-op.
     }
 
@@ -36,37 +37,39 @@ public class GridTcpDiscoveryAuthFailedMessage extends GridTcpDiscoveryAbstractM
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
-     * @param addr Coordinator address.
+     * @param node Node with same ID.
      */
-    public GridTcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress addr) {
+    public TcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node) {
         super(creatorNodeId);
 
-        this.addr = addr;
+        assert node != null;
+
+        this.node = node;
     }
 
     /**
-     * @return Coordinator address.
+     * @return Node with duplicate ID.
      */
-    public InetAddress address() {
-        return addr;
+    public TcpDiscoveryNode node() {
+        return node;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeByteArray(out, addr.getAddress());
+        out.writeObject(node);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        addr = InetAddress.getByAddress(U.readByteArray(in));
+        node = (TcpDiscoveryNode)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryAuthFailedMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
     }
 }

@@ -15,56 +15,66 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Handshake response.
+ * Sent by node that has detected node failure to coordinator across the ring,
+ * then sent by coordinator across the ring.
  */
-public class GridTcpDiscoveryHandshakeResponse extends GridTcpDiscoveryAbstractMessage {
+@TcpDiscoveryEnsureDelivery
+@TcpDiscoveryRedirectToClient
+public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** ID of the failed node. */
+    private UUID failedNodeId;
+
+    /** Internal order of the failed node. */
     private long order;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryHandshakeResponse() {
+    public TcpDiscoveryNodeFailedMessage() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param creatorNodeId Creator node ID.
-     * @param locNodeOrder Local node order.
+     * @param creatorNodeId ID of the node that detects nodes failure.
+     * @param failedNodeId ID of the failed nodes.
+     * @param order Order of the failed node.
      */
-    public GridTcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
+    public TcpDiscoveryNodeFailedMessage(UUID creatorNodeId, UUID failedNodeId, long order) {
         super(creatorNodeId);
 
-        order = locNodeOrder;
+        assert failedNodeId != null;
+        assert order > 0;
+
+        this.failedNodeId = failedNodeId;
+        this.order = order;
     }
 
     /**
-     * Gets order of the node sent the response.
+     * Gets ID of the failed node.
      *
-     * @return Order of the node sent the response.
+     * @return ID of the failed node.
+     */
+    public UUID failedNodeId() {
+        return failedNodeId;
+    }
+
+    /**
+     * @return Internal order of the failed node.
      */
     public long order() {
         return order;
-    }
-
-    /**
-     * Sets order of the node sent the response.
-     *
-     * @param order Order of the node sent the response.
-     */
-    public void order(long order) {
-        this.order = order;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
+        U.writeUuid(out, failedNodeId);
         out.writeLong(order);
     }
 
@@ -72,11 +82,12 @@ public class GridTcpDiscoveryHandshakeResponse extends GridTcpDiscoveryAbstractM
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
+        failedNodeId = U.readUuid(in);
         order = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryHandshakeResponse.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryNodeFailedMessage.class, this, "super", super.toString());
     }
 }

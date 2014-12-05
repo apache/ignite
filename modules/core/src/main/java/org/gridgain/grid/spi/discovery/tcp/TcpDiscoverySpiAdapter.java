@@ -419,7 +419,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @throws IOException If IO failed or write timed out.
      * @throws GridException If marshalling failed.
      */
-    protected void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg) throws IOException, GridException {
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException, GridException {
         writeToSocket(sock, msg, new GridByteArrayOutputStream(8 * 1024)); // 8K.
     }
 
@@ -433,7 +433,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @throws GridException If marshalling failed.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
-    protected void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg, GridByteArrayOutputStream bout)
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, GridByteArrayOutputStream bout)
         throws IOException, GridException {
         assert sock != null;
         assert msg != null;
@@ -679,7 +679,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param msg Message.
      * @return Error.
      */
-    protected IgniteSpiException duplicateIdError(GridTcpDiscoveryDuplicateIdMessage msg) {
+    protected IgniteSpiException duplicateIdError(TcpDiscoveryDuplicateIdMessage msg) {
         assert msg != null;
 
         return new IgniteSpiException("Local node has the same ID as existing node in topology " +
@@ -691,7 +691,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param msg Message.
      * @return Error.
      */
-    protected IgniteSpiException authenticationFailedError(GridTcpDiscoveryAuthFailedMessage msg) {
+    protected IgniteSpiException authenticationFailedError(TcpDiscoveryAuthFailedMessage msg) {
         assert msg != null;
 
         return new IgniteSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
@@ -702,7 +702,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param msg Message.
      * @return Error.
      */
-    protected IgniteSpiException checkFailedError(GridTcpDiscoveryCheckFailedMessage msg) {
+    protected IgniteSpiException checkFailedError(TcpDiscoveryCheckFailedMessage msg) {
         assert msg != null;
 
         return versionCheckFailed(msg) ? new IgniteSpiVersionCheckException(msg.error()) :
@@ -713,8 +713,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param msg Message.
      * @return Whether delivery of the message is ensured.
      */
-    protected boolean ensured(GridTcpDiscoveryAbstractMessage msg) {
-        return U.getAnnotation(msg.getClass(), GridTcpDiscoveryEnsureDelivery.class) != null;
+    protected boolean ensured(TcpDiscoveryAbstractMessage msg) {
+        return U.getAnnotation(msg.getClass(), TcpDiscoveryEnsureDelivery.class) != null;
     }
 
     /**
@@ -724,7 +724,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      *      and create separate message for failed version check with next major release.
      */
     @Deprecated
-    private static boolean versionCheckFailed(GridTcpDiscoveryCheckFailedMessage msg) {
+    private static boolean versionCheckFailed(TcpDiscoveryCheckFailedMessage msg) {
         return msg.error().contains("versions are not compatible");
     }
 
@@ -913,7 +913,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         private final GridByteArrayOutputStream bout = new GridByteArrayOutputStream(100 * 1024);
 
         /** Message queue. */
-        private final BlockingDeque<GridTcpDiscoveryAbstractMessage> queue = new LinkedBlockingDeque<>();
+        private final BlockingDeque<TcpDiscoveryAbstractMessage> queue = new LinkedBlockingDeque<>();
 
         /** Backed interrupted flag. */
         private volatile boolean interrupted;
@@ -933,7 +933,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
                 log.debug("Message worker started [locNodeId=" + locNodeId + ']');
 
             while (!isInterrupted()) {
-                GridTcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
+                TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
 
                 if (msg == null)
                     continue;
@@ -966,10 +966,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          *
          * @param msg Message to add.
          */
-        void addMessage(GridTcpDiscoveryAbstractMessage msg) {
+        void addMessage(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
-            if (msg instanceof GridTcpDiscoveryHeartbeatMessage)
+            if (msg instanceof TcpDiscoveryHeartbeatMessage)
                 queue.addFirst(msg);
             else
                 queue.add(msg);
@@ -978,7 +978,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
                 log.debug("Message has been added to queue: " + msg);
         }
 
-        protected abstract void processMessage(GridTcpDiscoveryAbstractMessage msg);
+        protected abstract void processMessage(TcpDiscoveryAbstractMessage msg);
 
         /**
          * @param sock Socket.
@@ -986,7 +986,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @throws IOException If IO failed.
          * @throws GridException If marshalling failed.
          */
-        protected final void writeToSocket(Socket sock, GridTcpDiscoveryAbstractMessage msg)
+        protected final void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg)
             throws IOException, GridException {
             bout.reset();
 

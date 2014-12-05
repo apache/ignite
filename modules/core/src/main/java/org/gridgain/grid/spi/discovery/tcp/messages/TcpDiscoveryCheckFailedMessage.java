@@ -9,27 +9,25 @@
 
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
-import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Message sent by coordinator when some operation handling is over. All receiving
- * nodes should discard this and all preceding messages in local buffers.
+ * Message telling joining node that it failed coordinator's validation check.
  */
-public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** ID of the message to discard (this and all preceding). */
-    private IgniteUuid msgId;
+    /** Coordinator version. */
+    private String err;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryDiscardMessage() {
+    public TcpDiscoveryCheckFailedMessage() {
         // No-op.
     }
 
@@ -37,39 +35,37 @@ public class GridTcpDiscoveryDiscardMessage extends GridTcpDiscoveryAbstractMess
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
-     * @param msgId Message ID.
+     * @param err Error message from coordinator.
      */
-    public GridTcpDiscoveryDiscardMessage(UUID creatorNodeId, IgniteUuid msgId) {
+    public TcpDiscoveryCheckFailedMessage(UUID creatorNodeId, String err) {
         super(creatorNodeId);
 
-        this.msgId = msgId;
+        this.err = err;
     }
 
     /**
-     * Gets message ID to discard (this and all preceding).
-     *
-     * @return Message ID.
+     * @return Error message from coordinator.
      */
-    public IgniteUuid msgId() {
-        return msgId;
+    public String error() {
+        return err;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeGridUuid(out, msgId);
+        U.writeString(out, err);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        msgId = U.readGridUuid(in);
+        err = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryDiscardMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryCheckFailedMessage.class, this, "super", super.toString());
     }
 }

@@ -18,7 +18,7 @@ import java.util.*;
  * Message telling joining node that it has loopback problem (misconfiguration).
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
  */
-public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbst
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryLoopbackProblemMessage() {
+    public TcpDiscoveryLoopbackProblemMessage() {
         // No-op.
     }
 
@@ -42,8 +42,8 @@ public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbst
      * @param addrs Remote node addresses.
      * @param hostNames Remote node host names.
      */
-    public GridTcpDiscoveryLoopbackProblemMessage(UUID creatorNodeId, Collection<String> addrs,
-        Collection<String> hostNames) {
+    public TcpDiscoveryLoopbackProblemMessage(UUID creatorNodeId, Collection<String> addrs,
+                                              Collection<String> hostNames) {
         super(creatorNodeId);
 
         this.addrs = addrs;
@@ -82,6 +82,6 @@ public class GridTcpDiscoveryLoopbackProblemMessage extends GridTcpDiscoveryAbst
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryLoopbackProblemMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryLoopbackProblemMessage.class, this, "super", super.toString());
     }
 }

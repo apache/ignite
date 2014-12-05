@@ -23,7 +23,7 @@ import java.util.*;
  * If a failed node id is specified then the message is sent across the ring up to the sender node
  * to ensure that the failed node is actually failed.
  */
-public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,7 +45,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryStatusCheckMessage() {
+    public TcpDiscoveryStatusCheckMessage() {
         // No-op.
     }
 
@@ -55,7 +55,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
      * @param creatorNode Creator node.
      * @param failedNodeId Failed node id.
      */
-    public GridTcpDiscoveryStatusCheckMessage(TcpDiscoveryNode creatorNode, UUID failedNodeId) {
+    public TcpDiscoveryStatusCheckMessage(TcpDiscoveryNode creatorNode, UUID failedNodeId) {
         super(creatorNode.id());
 
         this.creatorNode = creatorNode;
@@ -118,6 +118,6 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryStatusCheckMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryStatusCheckMessage.class, this, "super", super.toString());
     }
 }

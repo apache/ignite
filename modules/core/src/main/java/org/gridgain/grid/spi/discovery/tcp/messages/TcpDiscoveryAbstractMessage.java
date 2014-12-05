@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Base class to implement discovery messages.
  */
-public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable {
+public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +57,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
-    protected GridTcpDiscoveryAbstractMessage() {
+    protected TcpDiscoveryAbstractMessage() {
         // No-op.
     }
 
@@ -66,7 +66,7 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
      *
      * @param creatorNodeId Creator node ID.
      */
-    protected GridTcpDiscoveryAbstractMessage(UUID creatorNodeId) {
+    protected TcpDiscoveryAbstractMessage(UUID creatorNodeId) {
         id = IgniteUuid.fromUuid(creatorNodeId);
     }
 
@@ -248,8 +248,8 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
     @Override public final boolean equals(Object obj) {
         if (this == obj)
             return true;
-        else if (obj instanceof GridTcpDiscoveryAbstractMessage)
-            return id.equals(((GridTcpDiscoveryAbstractMessage)obj).id);
+        else if (obj instanceof TcpDiscoveryAbstractMessage)
+            return id.equals(((TcpDiscoveryAbstractMessage)obj).id);
 
         return false;
     }
@@ -261,6 +261,6 @@ public abstract class GridTcpDiscoveryAbstractMessage implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
+        return S.toString(TcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
     }
 }

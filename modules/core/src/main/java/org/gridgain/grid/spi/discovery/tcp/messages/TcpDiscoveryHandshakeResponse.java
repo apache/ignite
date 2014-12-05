@@ -10,56 +10,73 @@
 package org.gridgain.grid.spi.discovery.tcp.messages;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Ping request.
+ * Handshake response.
  */
-public class GridTcpDiscoveryPingRequest extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Pinged client node ID. */
-    private UUID clientNodeId;
+    /** */
+    private long order;
 
     /**
-     * For {@link Externalizable}.
+     * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryPingRequest() {
+    public TcpDiscoveryHandshakeResponse() {
         // No-op.
     }
 
     /**
+     * Constructor.
+     *
      * @param creatorNodeId Creator node ID.
-     * @param clientNodeId Pinged client node ID.
+     * @param locNodeOrder Local node order.
      */
-    public GridTcpDiscoveryPingRequest(UUID creatorNodeId, @Nullable UUID clientNodeId) {
+    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
         super(creatorNodeId);
 
-        this.clientNodeId = clientNodeId;
+        order = locNodeOrder;
     }
 
     /**
-     * @return Pinged client node ID.
+     * Gets order of the node sent the response.
+     *
+     * @return Order of the node sent the response.
      */
-    @Nullable public UUID clientNodeId() {
-        return clientNodeId;
+    public long order() {
+        return order;
+    }
+
+    /**
+     * Sets order of the node sent the response.
+     *
+     * @param order Order of the node sent the response.
+     */
+    public void order(long order) {
+        this.order = order;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeUuid(out, clientNodeId);
+        out.writeLong(order);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        clientNodeId = U.readUuid(in);
+        order = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryHandshakeResponse.class, this, "super", super.toString());
     }
 }

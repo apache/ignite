@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Ping response.
  */
-public class GridTcpDiscoveryPingResponse extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -25,14 +25,14 @@ public class GridTcpDiscoveryPingResponse extends GridTcpDiscoveryAbstractMessag
     /**
      * For {@link Externalizable}.
      */
-    public GridTcpDiscoveryPingResponse() {
+    public TcpDiscoveryPingResponse() {
         // No-op.
     }
 
     /**
      * @param creatorNodeId Creator node ID.
      */
-    public GridTcpDiscoveryPingResponse(UUID creatorNodeId) {
+    public TcpDiscoveryPingResponse(UUID creatorNodeId) {
         super(creatorNodeId);
     }
 

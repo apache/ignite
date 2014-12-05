@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Message telling that client node is reconnecting to topology.
  */
-public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,12 +31,12 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
 
     /** Pending messages. */
     @GridToStringExclude
-    private Collection<GridTcpDiscoveryAbstractMessage> msgs;
+    private Collection<TcpDiscoveryAbstractMessage> msgs;
 
     /**
      * For {@link Externalizable}.
      */
-    public GridTcpDiscoveryClientReconnectMessage() {
+    public TcpDiscoveryClientReconnectMessage() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
      * @param routerNodeId New router node ID.
      * @param lastMsgId Last message ID.
      */
-    public GridTcpDiscoveryClientReconnectMessage(UUID creatorNodeId, UUID routerNodeId, IgniteUuid lastMsgId) {
+    public TcpDiscoveryClientReconnectMessage(UUID creatorNodeId, UUID routerNodeId, IgniteUuid lastMsgId) {
         super(creatorNodeId);
 
         this.routerNodeId = routerNodeId;
@@ -69,14 +69,14 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
     /**
      * @param msgs Pending messages.
      */
-    public void pendingMessages(Collection<GridTcpDiscoveryAbstractMessage> msgs) {
+    public void pendingMessages(Collection<TcpDiscoveryAbstractMessage> msgs) {
         this.msgs = msgs;
     }
 
     /**
      * @return Pending messages.
      */
-    public Collection<GridTcpDiscoveryAbstractMessage> pendingMessages() {
+    public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
         return msgs;
     }
 
@@ -114,6 +114,6 @@ public class GridTcpDiscoveryClientReconnectMessage extends GridTcpDiscoveryAbst
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryClientReconnectMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClientReconnectMessage.class, this, "super", super.toString());
     }
 }

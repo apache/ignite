@@ -206,7 +206,7 @@ public class TcpDiscoveryStatistics {
      *
      * @param msg Received message.
      */
-    public synchronized void onMessageReceived(GridTcpDiscoveryAbstractMessage msg) {
+    public synchronized void onMessageReceived(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
         Integer cnt = F.addIfAbsent(rcvdMsgs, msg.getClass().getSimpleName(), new Callable<Integer>() {
@@ -227,7 +227,7 @@ public class TcpDiscoveryStatistics {
      *
      * @param msg Processed message.
      */
-    public synchronized void onMessageProcessingStarted(GridTcpDiscoveryAbstractMessage msg) {
+    public synchronized void onMessageProcessingStarted(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
         Integer cnt = F.addIfAbsent(procMsgs, msg.getClass().getSimpleName(), new Callable<Integer>() {
@@ -259,7 +259,7 @@ public class TcpDiscoveryStatistics {
      *
      * @param msg Processed message.
      */
-    public synchronized void onMessageProcessingFinished(GridTcpDiscoveryAbstractMessage msg) {
+    public synchronized void onMessageProcessingFinished(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
         Long startTs = msgsProcStartTs.get(msg.id());
@@ -285,14 +285,14 @@ public class TcpDiscoveryStatistics {
      * @param msg Sent message.
      * @param time Time taken to serialize message.
      */
-    public synchronized void onMessageSent(GridTcpDiscoveryAbstractMessage msg, long time) {
+    public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time) {
         assert msg != null;
         assert time >= 0;
 
         if (crdSinceTs.get() > 0 &&
-            (msg instanceof GridTcpDiscoveryNodeAddedMessage) ||
-            (msg instanceof GridTcpDiscoveryNodeLeftMessage) ||
-            (msg instanceof GridTcpDiscoveryNodeFailedMessage)) {
+            (msg instanceof TcpDiscoveryNodeAddedMessage) ||
+            (msg instanceof TcpDiscoveryNodeLeftMessage) ||
+            (msg instanceof TcpDiscoveryNodeFailedMessage)) {
             ringMsgsSndTs.put(msg.id(), U.currentTimeMillis());
 
             ringMsgsSent++;
@@ -337,7 +337,7 @@ public class TcpDiscoveryStatistics {
      *
      * @param msg Message.
      */
-    public synchronized void onRingMessageReceived(GridTcpDiscoveryAbstractMessage msg) {
+    public synchronized void onRingMessageReceived(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
         Long sentTs = ringMsgsSndTs.get(msg.id());

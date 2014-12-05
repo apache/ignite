@@ -958,7 +958,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 if (++i == 2) {
                     simulateNodeFailure();
 
@@ -973,7 +973,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     private static class FailBeforeNodeLeftSentSpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof GridTcpDiscoveryNodeLeftMessage) {
+            if (msg instanceof TcpDiscoveryNodeLeftMessage) {
                 simulateNodeFailure();
 
                 throw new RuntimeException("Avoid message sending: " + msg.getClass());

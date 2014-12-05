@@ -15,33 +15,30 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Sent by node that is stopping to coordinator across the ring,
- * then sent by coordinator across the ring.
+ * Handshake request.
  */
-@GridTcpDiscoveryEnsureDelivery
-@GridTcpDiscoveryRedirectToClient
-public class GridTcpDiscoveryNodeLeftMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryNodeLeftMessage() {
+    public TcpDiscoveryHandshakeRequest() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param creatorNodeId ID of the node that is about to leave the topology.
+     * @param creatorNodeId Creator node ID.
      */
-    public GridTcpDiscoveryNodeLeftMessage(UUID creatorNodeId) {
+    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId) {
         super(creatorNodeId);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNodeLeftMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString());
     }
 }

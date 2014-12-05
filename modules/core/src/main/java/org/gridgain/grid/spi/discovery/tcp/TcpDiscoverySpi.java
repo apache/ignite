@@ -43,8 +43,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 import static org.gridgain.grid.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
-import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeartbeatMessage.*;
-import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatusCheckMessage.*;
+import static org.gridgain.grid.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage.*;
+import static org.gridgain.grid.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.*;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -253,7 +253,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private final Collection<SocketAddress> fromAddrs = new GridConcurrentHashSet<>();
 
     /** Response on join request from coordinator (in case of duplicate ID or auth failure). */
-    private final GridTuple<GridTcpDiscoveryAbstractMessage> joinRes = F.t1();
+    private final GridTuple<TcpDiscoveryAbstractMessage> joinRes = F.t1();
 
     /** Context initialization latch. */
     @GridToStringExclude
@@ -919,7 +919,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         if (msgWorker != null && msgWorker.isAlive() && !disconnect) {
             // Send node left message only if it is final stop.
-            msgWorker.addMessage(new GridTcpDiscoveryNodeLeftMessage(locNodeId));
+            msgWorker.addMessage(new TcpDiscoveryNodeLeftMessage(locNodeId));
 
             synchronized (mux) {
                 long threshold = U.currentTimeMillis() + netTimeout;
@@ -1093,7 +1093,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         if (!res && !node.isClient()) {
             LT.warn(log, null, "Failed to ping node (status check will be initiated): " + nodeId);
 
-            msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode, node.id()));
+            msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, node.id()));
         }
 
         return res;
@@ -1175,9 +1175,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         sock = openSocket(addr);
 
-                        writeToSocket(sock, new GridTcpDiscoveryPingRequest(locNodeId, clientNodeId));
+                        writeToSocket(sock, new TcpDiscoveryPingRequest(locNodeId, clientNodeId));
 
-                        GridTcpDiscoveryPingResponse res = readMessage(sock, null, netTimeout);
+                        TcpDiscoveryPingResponse res = readMessage(sock, null, netTimeout);
 
                         if (locNodeId.equals(res.creatorNodeId())) {
                             if (log.isDebugEnabled())
@@ -1322,13 +1322,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (spiState == CONNECTED)
                     break;
                 else if (spiState == DUPLICATE_ID)
-                    throw duplicateIdError((GridTcpDiscoveryDuplicateIdMessage)joinRes.get());
+                    throw duplicateIdError((TcpDiscoveryDuplicateIdMessage)joinRes.get());
                 else if (spiState == AUTH_FAILED)
-                    throw authenticationFailedError((GridTcpDiscoveryAuthFailedMessage)joinRes.get());
+                    throw authenticationFailedError((TcpDiscoveryAuthFailedMessage)joinRes.get());
                 else if (spiState == CHECK_FAILED)
-                    throw checkFailedError((GridTcpDiscoveryCheckFailedMessage)joinRes.get());
+                    throw checkFailedError((TcpDiscoveryCheckFailedMessage)joinRes.get());
                 else if (spiState == LOOPBACK_PROBLEM) {
-                    GridTcpDiscoveryLoopbackProblemMessage msg = (GridTcpDiscoveryLoopbackProblemMessage)joinRes.get();
+                    TcpDiscoveryLoopbackProblemMessage msg = (TcpDiscoveryLoopbackProblemMessage)joinRes.get();
 
                     boolean locHostLoopback = locHost.isLoopbackAddress();
 
@@ -1362,7 +1362,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param msg Error message.
      * @return Remote grid version parsed from error message.
      * @deprecated This method was created for preserving backward compatibility. During major version update
-     *      parsing of error message should be replaced with new {@link GridTcpDiscoveryCheckFailedMessage}
+     *      parsing of error message should be replaced with new {@link org.gridgain.grid.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage}
      *      which contains all necessary information.
      */
     @Deprecated
@@ -1393,7 +1393,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      */
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
-        GridTcpDiscoveryAbstractMessage joinReq = new GridTcpDiscoveryJoinRequestMessage(locNode,
+        TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
             exchange.collect(locNodeId));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
@@ -1516,7 +1516,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @return Response read from the recipient or {@code null} if no response is supposed.
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
-    @Nullable private Integer sendMessageDirectly(GridTcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
+    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
         throws IgniteSpiException {
         assert msg != null;
         assert addr != null;
@@ -1546,9 +1546,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 openSock = true;
 
                 // Handshake.
-                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                writeToSocket(sock, new TcpDiscoveryHandshakeRequest(locNodeId));
 
-                GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
+                TcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
                 if (locNodeId.equals(res.creatorNodeId())) {
                     if (log.isDebugEnabled())
@@ -1577,7 +1577,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 // Connection has been established, but
                 // join request may not be unmarshalled on remote host.
                 // E.g. due to class not found issue.
-                joinReqSent = msg instanceof GridTcpDiscoveryJoinRequestMessage;
+                joinReqSent = msg instanceof TcpDiscoveryJoinRequestMessage;
 
                 return readReceipt(sock, ackTimeout0);
             }
@@ -1888,12 +1888,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param msgs Messages to include.
      * @param discardMsgId Discarded message ID.
      */
-    private void prepareNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg, UUID destNodeId,
-        @Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
+    private void prepareNodeAddedMessage(TcpDiscoveryAbstractMessage msg, UUID destNodeId,
+        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
         assert destNodeId != null;
 
-        if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
-            GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
+        if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+            TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
             TcpDiscoveryNode node = nodeAddedMsg.node();
 
@@ -1929,10 +1929,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * @param msg Message to clear.
      */
-    private void clearNodeAddedMessage(GridTcpDiscoveryAbstractMessage msg) {
-        if (msg instanceof GridTcpDiscoveryNodeAddedMessage) {
+    private void clearNodeAddedMessage(TcpDiscoveryAbstractMessage msg) {
+        if (msg instanceof TcpDiscoveryNodeAddedMessage) {
             // Nullify topology before registration.
-            GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = (GridTcpDiscoveryNodeAddedMessage)msg;
+            TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
@@ -1998,7 +1998,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         if (next != null)
-            msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
+            msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, next.id(), next.internalOrder()));
     }
 
     /**
@@ -2119,10 +2119,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param msg Message.
      * @return {@code True} if recordable in debug mode.
      */
-    private boolean recordable(GridTcpDiscoveryAbstractMessage msg) {
-        return !(msg instanceof GridTcpDiscoveryHeartbeatMessage) &&
-            !(msg instanceof GridTcpDiscoveryStatusCheckMessage) &&
-            !(msg instanceof GridTcpDiscoveryDiscardMessage);
+    private boolean recordable(TcpDiscoveryAbstractMessage msg) {
+        return !(msg instanceof TcpDiscoveryHeartbeatMessage) &&
+            !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
+            !(msg instanceof TcpDiscoveryDiscardMessage);
     }
 
     /**
@@ -2189,7 +2189,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                GridTcpDiscoveryHeartbeatMessage msg = new GridTcpDiscoveryHeartbeatMessage(locNodeId);
+                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(locNodeId);
 
                 msg.verify(locNodeId);
 
@@ -2202,7 +2202,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Thread that sends status check messages to next node if local node has not
-     * been receiving heartbeats ({@link GridTcpDiscoveryHeartbeatMessage})
+     * been receiving heartbeats ({@link org.gridgain.grid.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage})
      * for {@link TcpDiscoverySpi#getMaxMissedHeartbeats()} *
      * {@link TcpDiscoverySpi#getHeartbeatFrequency()}.
      */
@@ -2258,7 +2258,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 // 4. Send status check message.
                 lastSent = U.currentTimeMillis();
 
-                msgWorker.addMessage(new GridTcpDiscoveryStatusCheckMessage(locNode, null));
+                msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, null));
             }
         }
     }
@@ -2395,7 +2395,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private static final int MAX = 1024;
 
         /** Pending messages. */
-        private final Queue<GridTcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
+        private final Queue<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
 
         /** Discarded message ID. */
         private IgniteUuid discardId;
@@ -2406,11 +2406,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Message to add.
          */
-        void add(GridTcpDiscoveryAbstractMessage msg) {
+        void add(TcpDiscoveryAbstractMessage msg) {
             msgs.add(msg);
 
             while (msgs.size() > MAX) {
-                GridTcpDiscoveryAbstractMessage polled = msgs.poll();
+                TcpDiscoveryAbstractMessage polled = msgs.poll();
 
                 assert polled != null;
 
@@ -2427,14 +2427,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param lastMsgId Last message ID.
          * @return Collection of messages.
          */
-        @Nullable Collection<GridTcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
+        @Nullable Collection<TcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
             assert lastMsgId != null;
 
-            Collection<GridTcpDiscoveryAbstractMessage> copy = new ArrayList<>(msgs.size());
+            Collection<TcpDiscoveryAbstractMessage> copy = new ArrayList<>(msgs.size());
 
             boolean skip = true;
 
-            for (GridTcpDiscoveryAbstractMessage msg : msgs) {
+            for (TcpDiscoveryAbstractMessage msg : msgs) {
                 if (skip) {
                     if (msg.id().equals(lastMsgId))
                         skip = false;
@@ -2452,7 +2452,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msgs Message.
          * @param discardId Discarded message ID.
          */
-        void reset(@Nullable Collection<GridTcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardId) {
+        void reset(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardId) {
             this.msgs.clear();
 
             if (msgs != null)
@@ -2492,7 +2492,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private final PendingMessages pendingMsgs = new PendingMessages();
 
         /** Last message that updated topology. */
-        private GridTcpDiscoveryAbstractMessage lastMsg;
+        private TcpDiscoveryAbstractMessage lastMsg;
 
         /** Force pending messages send. */
         private boolean forceSndPending;
@@ -2509,7 +2509,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @param msg Message to process.
          */
-        @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
             if (log.isDebugEnabled())
                 log.debug("Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
@@ -2518,25 +2518,25 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             stats.onMessageProcessingStarted(msg);
 
-            if (msg instanceof GridTcpDiscoveryJoinRequestMessage)
-                processJoinRequestMessage((GridTcpDiscoveryJoinRequestMessage)msg);
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                processJoinRequestMessage((TcpDiscoveryJoinRequestMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryClientReconnectMessage)
-                processClientReconnectMessage((GridTcpDiscoveryClientReconnectMessage)msg);
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryNodeAddedMessage)
-                processNodeAddedMessage((GridTcpDiscoveryNodeAddedMessage)msg);
+            else if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryNodeAddFinishedMessage)
-                processNodeAddFinishedMessage((GridTcpDiscoveryNodeAddFinishedMessage)msg);
+            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                processNodeAddFinishedMessage((TcpDiscoveryNodeAddFinishedMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryNodeLeftMessage)
-                processNodeLeftMessage((GridTcpDiscoveryNodeLeftMessage)msg);
+            else if (msg instanceof TcpDiscoveryNodeLeftMessage)
+                processNodeLeftMessage((TcpDiscoveryNodeLeftMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryNodeFailedMessage)
-                processNodeFailedMessage((GridTcpDiscoveryNodeFailedMessage)msg);
+            else if (msg instanceof TcpDiscoveryNodeFailedMessage)
+                processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryHeartbeatMessage) {
+            else if (msg instanceof TcpDiscoveryHeartbeatMessage) {
                 if (msg.client()) {
                     ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
@@ -2549,13 +2549,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         log.debug("Received heartbeat message from unknown client node: " + msg);
                 }
                 else
-                    processHeartbeatMessage((GridTcpDiscoveryHeartbeatMessage)msg);
+                    processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
             }
-            else if (msg instanceof GridTcpDiscoveryStatusCheckMessage)
-                processStatusCheckMessage((GridTcpDiscoveryStatusCheckMessage)msg);
+            else if (msg instanceof TcpDiscoveryStatusCheckMessage)
+                processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
 
-            else if (msg instanceof GridTcpDiscoveryDiscardMessage)
-                processDiscardMessage((GridTcpDiscoveryDiscardMessage)msg);
+            else if (msg instanceof TcpDiscoveryDiscardMessage)
+                processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
@@ -2569,7 +2569,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Message to send
          */
         @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
-        private void sendMessageAcrossRing(GridTcpDiscoveryAbstractMessage msg) {
+        private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
             assert ring.hasRemoteNodes();
@@ -2662,9 +2662,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 openSock = true;
 
                                 // Handshake.
-                                writeToSocket(sock, new GridTcpDiscoveryHandshakeRequest(locNodeId));
+                                writeToSocket(sock, new TcpDiscoveryHandshakeRequest(locNodeId));
 
-                                GridTcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
+                                TcpDiscoveryHandshakeResponse res = readMessage(sock, null, ackTimeout0);
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
@@ -2699,8 +2699,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     // ID is as expected. Check node order.
                                     if (nextOrder != next.internalOrder()) {
                                         // Is next currently being added?
-                                        boolean nextNew = (msg instanceof GridTcpDiscoveryNodeAddedMessage &&
-                                            ((GridTcpDiscoveryNodeAddedMessage)msg).node().id().equals(nextId));
+                                        boolean nextNew = (msg instanceof TcpDiscoveryNodeAddedMessage &&
+                                            ((TcpDiscoveryNodeAddedMessage)msg).node().id().equals(nextId));
 
                                         if (!nextNew) {
                                             if (log.isDebugEnabled())
@@ -2769,7 +2769,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 failure = TcpDiscoverySpi.this.failedNodes.size() < failedNodes.size();
                             }
 
-                            assert !forceSndPending || msg instanceof GridTcpDiscoveryNodeLeftMessage;
+                            assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
                             if (failure || forceSndPending) {
                                 if (log.isDebugEnabled())
@@ -2782,7 +2782,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                                 boolean skip = pendingMsgs.discardId != null;
 
-                                for (GridTcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.msgs) {
+                                for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.msgs) {
                                     if (skip) {
                                         if (pendingMsg.id().equals(pendingMsgs.discardId))
                                             skip = false;
@@ -2903,8 +2903,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
                     }
 
-                    if (msg instanceof GridTcpDiscoveryStatusCheckMessage) {
-                        GridTcpDiscoveryStatusCheckMessage msg0 = (GridTcpDiscoveryStatusCheckMessage)msg;
+                    if (msg instanceof TcpDiscoveryStatusCheckMessage) {
+                        TcpDiscoveryStatusCheckMessage msg0 = (TcpDiscoveryStatusCheckMessage)msg;
 
                         if (next.id().equals(msg0.failedNodeId())) {
                             next = null;
@@ -2947,7 +2947,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
-                    msgWorker.addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+                    msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
             }
         }
 
@@ -2955,8 +2955,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Message.
          * @return Whether to redirect message to client nodes.
          */
-        private boolean redirectToClients(GridTcpDiscoveryAbstractMessage msg) {
-            return msg.verified() && U.getAnnotation(msg.getClass(), GridTcpDiscoveryRedirectToClient.class) != null;
+        private boolean redirectToClients(TcpDiscoveryAbstractMessage msg) {
+            return msg.verified() && U.getAnnotation(msg.getClass(), TcpDiscoveryRedirectToClient.class) != null;
         }
 
         /**
@@ -2964,7 +2964,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Message to register.
          */
-        private void registerPendingMessage(GridTcpDiscoveryAbstractMessage msg) {
+        private void registerPendingMessage(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
             if (ensured(msg)) {
@@ -2982,7 +2982,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Join request message.
          */
-        private void processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) {
+        private void processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
 
             TcpDiscoveryNode node = msg.node();
@@ -3012,7 +3012,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         log.debug(errMsg);
 
                     try {
-                        trySendMessageDirectly(node, new GridTcpDiscoveryLoopbackProblemMessage(
+                        trySendMessageDirectly(node, new TcpDiscoveryLoopbackProblemMessage(
                             locNodeId, locNode.addresses(), locNode.hostNames()));
                     }
                     catch (IgniteSpiException e) {
@@ -3032,7 +3032,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
-                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                            addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 existingNode.id(), existingNode.internalOrder()));
 
                             // Ignore this join request since existing node is about to fail
@@ -3041,7 +3041,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
 
                         try {
-                            trySendMessageDirectly(node, new GridTcpDiscoveryDuplicateIdMessage(locNodeId,
+                            trySendMessageDirectly(node, new TcpDiscoveryDuplicateIdMessage(locNodeId,
                                 existingNode));
                         }
                         catch (IgniteSpiException e) {
@@ -3085,7 +3085,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 U.addressesAsString(node));
 
                         try {
-                            trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                            trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3112,7 +3112,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     ", addrs=" + U.addressesAsString(node));
 
                             try {
-                                trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -3167,7 +3167,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     try {
                         trySendMessageDirectly(node,
-                            new GridTcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                            new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
                     }
                     catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
@@ -3217,7 +3217,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 ", rmtNodeId=" + locNode.id() + ']';
 
                             trySendMessageDirectly(node,
-                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3256,7 +3256,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 ", rmtNodeId=" + locNode.id() + ']';
 
                             trySendMessageDirectly(node,
-                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3316,7 +3316,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 ", rmtNodeId=" + locNode.id() + ']';
 
                             trySendMessageDirectly(node,
-                                new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                         }
                         catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
@@ -3357,7 +3357,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             ", rmtNodeId=" + locNode.id() + ']';
 
                         trySendMessageDirectly(node,
-                            new GridTcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                     }
                     catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
@@ -3375,7 +3375,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Internal order has been assigned to node: " + node);
 
-                GridTcpDiscoveryNodeAddedMessage nodeAddedMsg = new GridTcpDiscoveryNodeAddedMessage(locNodeId,
+                TcpDiscoveryNodeAddedMessage nodeAddedMsg = new TcpDiscoveryNodeAddedMessage(locNodeId,
                     node, msg.discoveryData(), gridStartTime);
 
                 nodeAddedMsg.client(msg.client());
@@ -3393,7 +3393,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Message.
          * @throws org.apache.ignite.spi.IgniteSpiException Last failure if all attempts failed.
          */
-        private void trySendMessageDirectly(TcpDiscoveryNode node, GridTcpDiscoveryAbstractMessage msg)
+        private void trySendMessageDirectly(TcpDiscoveryNode node, TcpDiscoveryAbstractMessage msg)
             throws IgniteSpiException {
             if (node.isClient()) {
                 TcpDiscoveryNode routerNode = ring.node(node.clientRouterNodeId());
@@ -3432,7 +3432,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Client reconnect message.
          */
-        private void processClientReconnectMessage(GridTcpDiscoveryClientReconnectMessage msg) {
+        private void processClientReconnectMessage(TcpDiscoveryClientReconnectMessage msg) {
             boolean isLocalNodeRouter = locNodeId.equals(msg.routerNodeId());
 
             if (!msg.verified()) {
@@ -3454,7 +3454,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     node.aliveCheck(maxMissedClientHbs);
 
                     if (isLocalNodeCoordinator()) {
-                        Collection<GridTcpDiscoveryAbstractMessage> pending =
+                        Collection<TcpDiscoveryAbstractMessage> pending =
                             pendingMsgs.messages(msg.lastMessageId());
 
                         if (pending != null) {
@@ -3466,7 +3466,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 log.debug("Failing reconnecting client node because failed to restore pending " +
                                     "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
-                            processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                            processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 node.id(), node.order()));
                         }
                     }
@@ -3498,7 +3498,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *      and only then initiate failure.
          */
         @Deprecated
-        private void processNodeAddedMessage(GridTcpDiscoveryNodeAddedMessage msg) {
+        private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
             TcpDiscoveryNode node = msg.node();
@@ -3517,9 +3517,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    processNodeAddFinishedMessage(new GridTcpDiscoveryNodeAddFinishedMessage(locNodeId, node.id()));
+                    processNodeAddFinishedMessage(new TcpDiscoveryNodeAddFinishedMessage(locNodeId, node.id()));
 
-                    addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
                 }
@@ -3589,7 +3589,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     finally {
                         if (authFailed) {
                             try {
-                                trySendMessageDirectly(node, new GridTcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -3597,7 +3597,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
                             }
 
-                            addMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
+                            addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
                                 node.internalOrder()));
                         }
                     }
@@ -3699,7 +3699,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Node add finished message.
          */
-        private void processNodeAddFinishedMessage(GridTcpDiscoveryNodeAddFinishedMessage msg) {
+        private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
             assert msg != null;
 
             UUID nodeId = msg.nodeId();
@@ -3725,7 +3725,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
                 }
@@ -3822,7 +3822,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Node left message.
          */
-        private void processNodeLeftMessage(GridTcpDiscoveryNodeLeftMessage msg) {
+        private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
             assert msg != null;
 
             UUID leavingNodeId = msg.creatorNodeId();
@@ -3892,7 +3892,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
                 }
@@ -4006,7 +4006,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Node failed message.
          */
-        private void processNodeFailedMessage(GridTcpDiscoveryNodeFailedMessage msg) {
+        private void processNodeFailedMessage(TcpDiscoveryNodeFailedMessage msg) {
             assert msg != null;
 
             UUID sndId = msg.senderNodeId();
@@ -4067,7 +4067,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    addMessage(new GridTcpDiscoveryDiscardMessage(locNodeId, msg.id()));
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
                     return;
                 }
@@ -4144,7 +4144,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Status check message.
          */
-        private void processStatusCheckMessage(GridTcpDiscoveryStatusCheckMessage msg) {
+        private void processStatusCheckMessage(TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
             if (msg.failedNodeId() != null) {
@@ -4261,7 +4261,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param msg Heartbeat message.
          */
-        private void processHeartbeatMessage(GridTcpDiscoveryHeartbeatMessage msg) {
+        private void processHeartbeatMessage(TcpDiscoveryHeartbeatMessage msg) {
             assert msg != null;
 
             if (ring.node(msg.creatorNodeId()) == null) {
@@ -4339,7 +4339,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
                                 if (aliveCheck == 0 && isLocalNodeCoordinator()) {
-                                    processNodeFailedMessage(new GridTcpDiscoveryNodeFailedMessage(locNodeId,
+                                    processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                         clientNode.id(), clientNode.order()));
                                 }
                             }
@@ -4385,7 +4385,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Discard message.
          */
         @SuppressWarnings("StatementWithEmptyBody")
-        private void processDiscardMessage(GridTcpDiscoveryDiscardMessage msg) {
+        private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
             IgniteUuid msgId = msg.msgId();
@@ -4584,13 +4584,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     // Restore timeout.
                     sock.setSoTimeout(timeout);
 
-                    GridTcpDiscoveryAbstractMessage msg = readMessage(sock, in, netTimeout);
+                    TcpDiscoveryAbstractMessage msg = readMessage(sock, in, netTimeout);
 
                     // Ping.
-                    if (msg instanceof GridTcpDiscoveryPingRequest) {
-                        GridTcpDiscoveryPingRequest req = (GridTcpDiscoveryPingRequest)msg;
+                    if (msg instanceof TcpDiscoveryPingRequest) {
+                        TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
-                        GridTcpDiscoveryPingResponse res = new GridTcpDiscoveryPingResponse(locNodeId);
+                        TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
 
                         if (req.clientNodeId() != null)
                             res.clientExists(clientMsgWorkers.containsKey(req.clientNodeId()));
@@ -4601,7 +4601,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     }
 
                     // Handshake.
-                    GridTcpDiscoveryHandshakeRequest req = (GridTcpDiscoveryHandshakeRequest)msg;
+                    TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
 
                     UUID nodeId = req.creatorNodeId();
                     boolean client = req.client();
@@ -4609,8 +4609,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     this.nodeId = nodeId;
                     this.client = client;
 
-                    GridTcpDiscoveryHandshakeResponse res =
-                        new GridTcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+                    TcpDiscoveryHandshakeResponse res =
+                        new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
                     writeToSocket(sock, res);
 
@@ -4684,7 +4684,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 while (!isInterrupted()) {
                     try {
-                        GridTcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
+                        TcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
 
                         UUID destClientNodeId = msg.destinationClientNodeId();
 
@@ -4714,8 +4714,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (debugMode && recordable(msg))
                             debugLog("Message has been received: " + msg);
 
-                        if (msg instanceof GridTcpDiscoveryJoinRequestMessage) {
-                            GridTcpDiscoveryJoinRequestMessage req = (GridTcpDiscoveryJoinRequestMessage)msg;
+                        if (msg instanceof TcpDiscoveryJoinRequestMessage) {
+                            TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req);
@@ -4727,7 +4727,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     break;
                             }
                         }
-                        else if (msg instanceof GridTcpDiscoveryClientReconnectMessage) {
+                        else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
                             if (client) {
                                 TcpDiscoverySpiState state = spiStateCopy();
 
@@ -4745,7 +4745,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 }
                             }
                         }
-                        else if (msg instanceof GridTcpDiscoveryDuplicateIdMessage) {
+                        else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                             // Send receipt back.
                             writeToSocket(sock, RES_OK);
 
@@ -4774,7 +4774,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             continue;
                         }
-                        else if (msg instanceof GridTcpDiscoveryAuthFailedMessage) {
+                        else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
                             // Send receipt back.
                             writeToSocket(sock, RES_OK);
 
@@ -4803,7 +4803,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             continue;
                         }
-                        else if (msg instanceof GridTcpDiscoveryCheckFailedMessage) {
+                        else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                             // Send receipt back.
                             writeToSocket(sock, RES_OK);
 
@@ -4832,7 +4832,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             continue;
                         }
-                        else if (msg instanceof GridTcpDiscoveryLoopbackProblemMessage) {
+                        else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                             // Send receipt back.
                             writeToSocket(sock, RES_OK);
 
@@ -4951,7 +4951,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @throws IOException If IO failed.
          */
         @SuppressWarnings({"IfMayBeConditional"})
-        private boolean processJoinRequestMessage(GridTcpDiscoveryJoinRequestMessage msg) throws IOException {
+        private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg) throws IOException {
             assert msg != null;
             assert !msg.responded();
 
@@ -5089,9 +5089,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         /** {@inheritDoc} */
-        @Override void addMessage(GridTcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof GridTcpDiscoveryHeartbeatMessage) {
-                GridTcpDiscoveryHeartbeatMessage hbMsg = (GridTcpDiscoveryHeartbeatMessage)msg;
+        @Override void addMessage(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryHeartbeatMessage) {
+                TcpDiscoveryHeartbeatMessage hbMsg = (TcpDiscoveryHeartbeatMessage)msg;
 
                 if (hbMsg.creatorNodeId().equals(nodeId)) {
                     metrics = hbMsg.metrics().get(nodeId).metrics();
@@ -5106,7 +5106,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         /** {@inheritDoc} */
-        @Override protected void processMessage(GridTcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
             try {
                 assert msg.verified() : msg;
 

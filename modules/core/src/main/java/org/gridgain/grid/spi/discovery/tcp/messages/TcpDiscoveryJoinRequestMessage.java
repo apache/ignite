@@ -16,42 +16,67 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Message telling joining node that new topology already contain
- * different node with same ID.
+ * Initial message sent by a node that wants to enter topology.
+ * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstractMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node with duplicate ID. */
+    /** New node that wants to join the topology. */
     private TcpDiscoveryNode node;
+
+    /** Discovery data. */
+    private List<Object> discoData;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryDuplicateIdMessage() {
+    public TcpDiscoveryJoinRequestMessage() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param creatorNodeId Creator node ID.
-     * @param node Node with same ID.
+     * @param node New node that wants to join.
+     * @param discoData Discovery data.
      */
-    public GridTcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node) {
-        super(creatorNodeId);
-
-        assert node != null;
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, List<Object> discoData) {
+        super(node.id());
 
         this.node = node;
+        this.discoData = discoData;
     }
 
     /**
-     * @return Node with duplicate ID.
+     * Gets new node that wants to join the topology.
+     *
+     * @return Node that wants to join the topology.
      */
     public TcpDiscoveryNode node() {
         return node;
+    }
+
+    /**
+     * @return Discovery data.
+     */
+    public List<Object> discoveryData() {
+        return discoData;
+    }
+
+    /**
+     * @return {@code true} flag.
+     */
+    public boolean responded() {
+        return getFlag(RESPONDED_FLAG_POS);
+    }
+
+    /**
+     * @param responded Responded flag.
+     */
+    public void responded(boolean responded) {
+        setFlag(RESPONDED_FLAG_POS, responded);
     }
 
     /** {@inheritDoc} */
@@ -59,6 +84,7 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
         super.writeExternal(out);
 
         out.writeObject(node);
+        U.writeCollection(out, discoData);
     }
 
     /** {@inheritDoc} */
@@ -66,10 +92,11 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
         super.readExternal(in);
 
         node = (TcpDiscoveryNode)in.readObject();
+        discoData = U.readList(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryJoinRequestMessage.class, this, "super", super.toString());
     }
 }
