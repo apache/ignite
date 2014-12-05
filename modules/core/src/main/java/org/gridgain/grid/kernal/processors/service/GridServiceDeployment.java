@@ -27,13 +27,13 @@ public class GridServiceDeployment implements GridCacheInternal, Serializable {
     private UUID nodeId;
 
     /** Service configuration. */
-    private GridServiceConfiguration cfg;
+    private ManagedServiceConfiguration cfg;
 
     /**
      * @param nodeId Node ID.
      * @param cfg Service configuration.
      */
-    public GridServiceDeployment(UUID nodeId, GridServiceConfiguration cfg) {
+    public GridServiceDeployment(UUID nodeId, ManagedServiceConfiguration cfg) {
         this.nodeId = nodeId;
         this.cfg = cfg;
     }
@@ -48,7 +48,7 @@ public class GridServiceDeployment implements GridCacheInternal, Serializable {
     /**
      * @return Service configuration.
      */
-    public GridServiceConfiguration configuration() {
+    public ManagedServiceConfiguration configuration() {
         return cfg;
     }
 

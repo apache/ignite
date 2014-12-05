@@ -135,7 +135,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, org.apache.ignite.managed.GridService, int, int) deployMultiple(name, svc, 1, 1)} method.
+     * {@link #deployMultiple(String, org.apache.ignite.managed.ManagedService, int, int) deployMultiple(name, svc, 1, 1)} method.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -143,7 +143,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws GridException If failed to deploy service.
      */
-    public void deployClusterSingleton(String name, GridService svc) throws GridException;
+    public void deployClusterSingleton(String name, ManagedService svc) throws GridException;
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -152,7 +152,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * the service on every new node.
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, GridService, int, int) deployMultiple(name, svc, 0, 1)} method.
+     * {@link #deployMultiple(String, org.apache.ignite.managed.ManagedService, int, int) deployMultiple(name, svc, 0, 1)} method.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -160,7 +160,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws GridException If failed to deploy service.
      */
-    public void deployNodeSingleton(String name, GridService svc) throws GridException;
+    public void deployNodeSingleton(String name, ManagedService svc) throws GridException;
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -171,7 +171,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Note that in case of topology changes, due to network delays, there may be a temporary situation
      * when a service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(GridServiceConfiguration)} method
+     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.managed.ManagedServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
      *     GridServiceConfiguration cfg = new GridServiceConfiguration();
@@ -195,7 +195,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws GridException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName, Object affKey)
+    public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName, Object affKey)
         throws GridException;
 
     /**
@@ -209,7 +209,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(GridServiceConfiguration)} method
+     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.managed.ManagedServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
      *     GridServiceConfiguration cfg = new GridServiceConfiguration();
@@ -230,22 +230,22 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @throws GridException If failed to deploy service.
      */
-    public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt) throws GridException;
+    public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt) throws GridException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
      * configuration. GridGain will deploy a maximum amount of services equal to
-     * {@link GridServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
-     * making sure that there are no more than {@link GridServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * {@link org.apache.ignite.managed.ManagedServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
+     * making sure that there are no more than {@link org.apache.ignite.managed.ManagedServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
      * service instances running on each node. Whenever topology changes, GridGain will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
-     * If {@link GridServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
+     * If {@link org.apache.ignite.managed.ManagedServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
      * will deploy the service on the primary node for given affinity key. The affinity will be calculated
-     * on the cache with {@link GridServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * on the cache with {@link org.apache.ignite.managed.ManagedServiceConfiguration#getCacheName() cfg.getCacheName()} name.
      * <p>
-     * If {@link GridServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
+     * If {@link org.apache.ignite.managed.ManagedServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
      * GridGain will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
      * The node filter will be checked in addition to the underlying grid projection filter, or the
      * whole grid, if the underlying grid projection includes all grid nodes.
@@ -270,14 +270,14 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param cfg Service configuration.
      * @throws GridException If failed to deploy service.
      */
-    public void deploy(GridServiceConfiguration cfg) throws GridException;
+    public void deploy(ManagedServiceConfiguration cfg) throws GridException;
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
-     * then {@link GridService#cancel(GridServiceContext)} method will be called on it.
+     * then {@link org.apache.ignite.managed.ManagedService#cancel(org.apache.ignite.managed.ManagedServiceContext)} method will be called on it.
      * <p>
-     * Note that GridGain cannot guarantee that the service exits from {@link GridService#execute(GridServiceContext)}
-     * method whenever {@link GridService#cancel(GridServiceContext)} is called. It is up to the user to
+     * Note that GridGain cannot guarantee that the service exits from {@link org.apache.ignite.managed.ManagedService#execute(org.apache.ignite.managed.ManagedServiceContext)}
+     * method whenever {@link org.apache.ignite.managed.ManagedService#cancel(org.apache.ignite.managed.ManagedServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -304,7 +304,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @return Metadata about all deployed services.
      */
-    public Collection<GridServiceDescriptor> deployedServices();
+    public Collection<ManagedServiceDescriptor> deployedServices();
 
     /**
      * Gets deployed service with specified name.

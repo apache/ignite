@@ -51,7 +51,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private static final long RETRY_TIMEOUT = 1000;
 
     /** Local service instances. */
-    private final Map<String, Collection<GridServiceContextImpl>> locSvcs = new HashMap<>();
+    private final Map<String, Collection<ManagedServiceContextImpl>> locSvcs = new HashMap<>();
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap8<>();
@@ -135,12 +135,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 ctx.cache().context().deploy().ignoreOwnership(false);
         }
 
-        GridServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
+        ManagedServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
         if (cfgs != null) {
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-            for (GridServiceConfiguration c : ctx.config().getServiceConfiguration())
+            for (ManagedServiceConfiguration c : ctx.config().getServiceConfiguration())
                 futs.add(deploy(c));
 
             // Await for services to deploy.
@@ -177,21 +177,21 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             log.error("Failed to unsubscribe service assignment notifications.", e);
         }
 
-        Collection<GridServiceContextImpl> ctxs = new ArrayList<>();
+        Collection<ManagedServiceContextImpl> ctxs = new ArrayList<>();
 
         synchronized (locSvcs) {
-            for (Collection<GridServiceContextImpl> ctxs0 : locSvcs.values())
+            for (Collection<ManagedServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
         }
 
-        for (GridServiceContextImpl ctx : ctxs) {
+        for (ManagedServiceContextImpl ctx : ctxs) {
             ctx.setCancelled(true);
             ctx.service().cancel(ctx);
 
             ctx.executor().shutdownNow();
         }
 
-        for (GridServiceContextImpl ctx : ctxs) {
+        for (ManagedServiceContextImpl ctx : ctxs) {
             try {
                 if (log.isInfoEnabled() && !ctxs.isEmpty())
                     log.info("Shutting down distributed service [name=" + ctx.name() + ", execId8=" +
@@ -219,7 +219,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param c Service configuration.
      * @throws GridRuntimeException If validation failed.
      */
-    private void validate(GridServiceConfiguration c) throws GridRuntimeException {
+    private void validate(ManagedServiceConfiguration c) throws GridRuntimeException {
         IgniteConfiguration cfg = ctx.config();
 
         GridDeploymentMode depMode = cfg.getDeploymentMode();
@@ -253,7 +253,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public IgniteFuture<?> deployNodeSingleton(ClusterGroup prj, String name, GridService svc) {
+    public IgniteFuture<?> deployNodeSingleton(ClusterGroup prj, String name, ManagedService svc) {
         return deployMultiple(prj, name, svc, 0, 1);
     }
 
@@ -262,7 +262,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public IgniteFuture<?> deployClusterSingleton(ClusterGroup prj, String name, GridService svc) {
+    public IgniteFuture<?> deployClusterSingleton(ClusterGroup prj, String name, ManagedService svc) {
         return deployMultiple(prj, name, svc, 1, 1);
     }
 
@@ -273,9 +273,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param maxPerNodeCnt Max per-node count.
      * @return Future.
      */
-    public IgniteFuture<?> deployMultiple(ClusterGroup prj, String name, GridService svc, int totalCnt,
+    public IgniteFuture<?> deployMultiple(ClusterGroup prj, String name, ManagedService svc, int totalCnt,
         int maxPerNodeCnt) {
-        GridServiceConfiguration cfg = new GridServiceConfiguration();
+        ManagedServiceConfiguration cfg = new ManagedServiceConfiguration();
 
         cfg.setName(name);
         cfg.setService(svc);
@@ -293,10 +293,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param  affKey Affinity key.
      * @return Future.
      */
-    public IgniteFuture<?> deployKeyAffinitySingleton(String name, GridService svc, String cacheName, Object affKey) {
+    public IgniteFuture<?> deployKeyAffinitySingleton(String name, ManagedService svc, String cacheName, Object affKey) {
         A.notNull(affKey, "affKey");
 
-        GridServiceConfiguration cfg = new GridServiceConfiguration();
+        ManagedServiceConfiguration cfg = new ManagedServiceConfiguration();
 
         cfg.setName(name);
         cfg.setService(svc);
@@ -312,7 +312,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param cfg Service configuration.
      * @return Future for deployment.
      */
-    public IgniteFuture<?> deploy(GridServiceConfiguration cfg) {
+    public IgniteFuture<?> deploy(ManagedServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         validate(cfg);
@@ -460,8 +460,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * @return Collection of service descriptors.
      */
-    public Collection<GridServiceDescriptor> deployedServices() {
-        Collection<GridServiceDescriptor> descs = new ArrayList<>();
+    public Collection<ManagedServiceDescriptor> deployedServices() {
+        Collection<ManagedServiceDescriptor> descs = new ArrayList<>();
 
         for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
@@ -469,7 +469,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
-            GridServiceDescriptorImpl desc = new GridServiceDescriptorImpl(dep);
+            ManagedServiceDescriptorImpl desc = new ManagedServiceDescriptorImpl(dep);
 
             try {
                 GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagsOn(GridCacheFlag.GET_PRIMARY).
@@ -497,7 +497,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <T> T service(String name) {
-        Collection<GridServiceContextImpl> ctxs;
+        Collection<ManagedServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
             ctxs = locSvcs.get(name);
@@ -518,8 +518,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @return Service by specified service name.
      */
-    public GridServiceContextImpl serviceContext(String name) {
-        Collection<GridServiceContextImpl> ctxs;
+    public ManagedServiceContextImpl serviceContext(String name) {
+        Collection<ManagedServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
             ctxs = locSvcs.get(name);
@@ -549,7 +549,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         throws GridRuntimeException {
 
         if (hasLocalNode(prj)) {
-            GridServiceContextImpl ctx = serviceContext(name);
+            ManagedServiceContextImpl ctx = serviceContext(name);
 
             if (ctx != null) {
                 if (!svcItf.isAssignableFrom(ctx.service().getClass()))
@@ -583,7 +583,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <T> Collection<T> services(String name) {
-        Collection<GridServiceContextImpl> ctxs;
+        Collection<ManagedServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
              ctxs = locSvcs.get(name);
@@ -595,7 +595,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         synchronized (ctxs) {
             Collection<T> res = new ArrayList<>(ctxs.size());
 
-            for (GridServiceContextImpl ctx : ctxs)
+            for (ManagedServiceContextImpl ctx : ctxs)
                 res.add((T)ctx.service());
 
             return res;
@@ -610,7 +610,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @throws GridException If failed.
      */
     private void reassign(GridServiceDeployment dep, long topVer) throws GridException {
-        GridServiceConfiguration cfg = dep.configuration();
+        ManagedServiceConfiguration cfg = dep.configuration();
 
         int totalCnt = cfg.getTotalCount();
         int maxPerNodeCnt = cfg.getMaxPerNodeCount();
@@ -748,9 +748,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (assignCnt == null)
             assignCnt = 0;
 
-        GridService svc = assigns.service();
+        ManagedService svc = assigns.service();
 
-        Collection<GridServiceContextImpl> ctxs;
+        Collection<ManagedServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
             ctxs = locSvcs.get(svcName);
@@ -769,11 +769,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 int createCnt = assignCnt - ctxs.size();
 
                 for (int i = 0; i < createCnt; i++) {
-                    final GridService cp = copyAndInject(svc);
+                    final ManagedService cp = copyAndInject(svc);
 
                     final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
 
-                    final GridServiceContextImpl svcCtx = new GridServiceContextImpl(assigns.name(),
+                    final ManagedServiceContextImpl svcCtx = new ManagedServiceContextImpl(assigns.name(),
                         UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), cp, exe);
 
                     ctxs.add(svcCtx);
@@ -849,13 +849,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Copy of service.
      */
-    private GridService copyAndInject(GridService svc) {
+    private ManagedService copyAndInject(ManagedService svc) {
         IgniteMarshaller m = ctx.config().getMarshaller();
 
         try {
             byte[] bytes = m.marshal(svc);
 
-            GridService cp = m.unmarshal(bytes, svc.getClass().getClassLoader());
+            ManagedService cp = m.unmarshal(bytes, svc.getClass().getClassLoader());
 
             ctx.resource().inject(cp);
 
@@ -872,9 +872,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param ctxs Contexts to cancel.
      * @param cancelCnt Number of contexts to cancel.
      */
-    private void cancel(Iterable<GridServiceContextImpl> ctxs, int cancelCnt) {
-        for (Iterator<GridServiceContextImpl> it = ctxs.iterator(); it.hasNext();) {
-            GridServiceContextImpl ctx = it.next();
+    private void cancel(Iterable<ManagedServiceContextImpl> ctxs, int cancelCnt) {
+        for (Iterator<ManagedServiceContextImpl> it = ctxs.iterator(); it.hasNext();) {
+            ManagedServiceContextImpl ctx = it.next();
 
             // Flip cancelled flag.
             ctx.setCancelled(true);
@@ -940,7 +940,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                             svcName.set(name);
 
-                            Collection<GridServiceContextImpl> ctxs;
+                            Collection<ManagedServiceContextImpl> ctxs;
 
                             synchronized (locSvcs) {
                                 ctxs = locSvcs.remove(name);
@@ -1228,7 +1228,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                             svcName.set(name);
 
-                            Collection<GridServiceContextImpl> ctxs;
+                            Collection<ManagedServiceContextImpl> ctxs;
 
                             synchronized (locSvcs) {
                                 ctxs = locSvcs.remove(name);

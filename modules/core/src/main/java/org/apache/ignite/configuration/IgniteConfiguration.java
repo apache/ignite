@@ -526,7 +526,7 @@ public class IgniteConfiguration {
     private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
-    private GridServiceConfiguration[] svcCfgs;
+    private ManagedServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
@@ -3143,7 +3143,7 @@ public class IgniteConfiguration {
      *
      * @return Configurations for services to be deployed on the grid.
      */
-    public GridServiceConfiguration[] getServiceConfiguration() {
+    public ManagedServiceConfiguration[] getServiceConfiguration() {
         return svcCfgs;
     }
 
@@ -3152,7 +3152,7 @@ public class IgniteConfiguration {
      *
      * @param svcCfgs Configurations for services to be deployed on the grid.
      */
-    public void setServiceConfiguration(GridServiceConfiguration... svcCfgs) {
+    public void setServiceConfiguration(ManagedServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
     }
 

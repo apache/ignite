@@ -21,12 +21,12 @@ import java.util.concurrent.*;
 /**
  * Service context implementation.
  */
-public class GridServiceContextImpl implements GridServiceContext {
+public class ManagedServiceContextImpl implements ManagedServiceContext {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Null method. */
-    private static final Method NULL_METHOD = GridServiceContextImpl.class.getMethods()[0];
+    private static final Method NULL_METHOD = ManagedServiceContextImpl.class.getMethods()[0];
 
     /** Service name. */
     private final String name;
@@ -42,7 +42,7 @@ public class GridServiceContextImpl implements GridServiceContext {
 
     /** Service. */
     @GridToStringExclude
-    private final GridService svc;
+    private final ManagedService svc;
 
     /** Executor service. */
     @GridToStringExclude
@@ -63,8 +63,8 @@ public class GridServiceContextImpl implements GridServiceContext {
      * @param svc Service.
      * @param exe Executor service.
      */
-    GridServiceContextImpl(String name, UUID execId, String cacheName, Object affKey, GridService svc,
-        ExecutorService exe) {
+    ManagedServiceContextImpl(String name, UUID execId, String cacheName, Object affKey, ManagedService svc,
+                              ExecutorService exe) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
@@ -102,7 +102,7 @@ public class GridServiceContextImpl implements GridServiceContext {
     /**
      * @return Service instance.
      */
-    GridService service() {
+    ManagedService service() {
         return svc;
     }
 
@@ -143,6 +143,6 @@ public class GridServiceContextImpl implements GridServiceContext {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridServiceContextImpl.class, this);
+        return S.toString(ManagedServiceContextImpl.class, this);
     }
 }

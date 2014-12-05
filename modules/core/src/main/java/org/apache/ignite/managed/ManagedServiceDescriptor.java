@@ -20,7 +20,7 @@ import java.util.*;
  * <p>
  * Service descriptors can be retrieved by calling {@link org.apache.ignite.IgniteManaged#deployedServices()} method.
  */
-public interface GridServiceDescriptor extends Serializable {
+public interface ManagedServiceDescriptor extends Serializable {
     /**
      * Gets service name.
      *
@@ -33,7 +33,7 @@ public interface GridServiceDescriptor extends Serializable {
      *
      * @return Service class.
      */
-    public Class<? extends GridService> serviceClass();
+    public Class<? extends ManagedService> serviceClass();
 
     /**
      * Gets maximum allowed total number of deployed services in the grid, {@code 0} for unlimited.

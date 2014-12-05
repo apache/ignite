@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 
 /**
- * Wrapper for making {@link GridService} class proxies.
+ * Wrapper for making {@link org.apache.ignite.managed.ManagedService} class proxies.
  */
 class GridServiceProxy<T> implements Serializable {
     /** */
@@ -129,7 +129,7 @@ class GridServiceProxy<T> implements Serializable {
 
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
-                        GridServiceContextImpl svcCtx = ctx.service().serviceContext(name);
+                        ManagedServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
                         if (svcCtx != null)
                             return mtd.invoke(svcCtx.service(), args);
@@ -280,7 +280,7 @@ class GridServiceProxy<T> implements Serializable {
          * @return Map of number of service instances per node ID.
          */
         private Map<UUID, Integer> serviceTopology(String name) {
-            for (GridServiceDescriptor desc : ctx.service().deployedServices()) {
+            for (ManagedServiceDescriptor desc : ctx.service().deployedServices()) {
                 if (desc.name().equals(name))
                     return desc.topologySnapshot();
             }
@@ -334,7 +334,7 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            GridServiceContextImpl svcCtx = ((GridKernal) ignite).context().service().serviceContext(svcName);
+            ManagedServiceContextImpl svcCtx = ((GridKernal) ignite).context().service().serviceContext(svcName);
 
             if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);

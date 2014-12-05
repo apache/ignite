@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Grid service injector.
  */
-public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<GridService>> {
+public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<ManagedService>> {
     /** */
     private Ignite ignite;
 

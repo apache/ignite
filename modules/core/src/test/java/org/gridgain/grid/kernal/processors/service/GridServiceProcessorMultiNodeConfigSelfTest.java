@@ -38,10 +38,10 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     }
 
     /** {@inheritDoc} */
-    @Override protected GridServiceConfiguration[] services() {
-        GridServiceConfiguration[] arr = new GridServiceConfiguration[3];
+    @Override protected ManagedServiceConfiguration[] services() {
+        ManagedServiceConfiguration[] arr = new ManagedServiceConfiguration[3];
 
-        GridServiceConfiguration cfg = new GridServiceConfiguration();
+        ManagedServiceConfiguration cfg = new ManagedServiceConfiguration();
 
         cfg.setName(CLUSTER_SINGLE);
         cfg.setMaxPerNodeCount(1);
@@ -50,7 +50,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         arr[0] = cfg;
 
-        cfg = new GridServiceConfiguration();
+        cfg = new ManagedServiceConfiguration();
 
         cfg.setName(NODE_SINGLE);
         cfg.setMaxPerNodeCount(1);
@@ -58,7 +58,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         arr[1] = cfg;
 
-        cfg = new GridServiceConfiguration();
+        cfg = new ManagedServiceConfiguration();
 
         cfg.setName(AFFINITY);
         cfg.setCacheName(CACHE_NAME);

@@ -54,7 +54,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         c.setDiscoverySpi(discoSpi);
 
-        GridServiceConfiguration[] svcs = services();
+        ManagedServiceConfiguration[] svcs = services();
 
         if (svcs != null)
             c.setServiceConfiguration(svcs);
@@ -82,7 +82,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      *
      * @return Services configuration.
      */
-    protected GridServiceConfiguration[] services() {
+    protected ManagedServiceConfiguration[] services() {
         return null;
     }
 
@@ -470,7 +470,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param descs Descriptors.
      * @param cnt Expected count.
      */
-    protected void checkCount(String svcName, Iterable<GridServiceDescriptor> descs, int cnt) {
+    protected void checkCount(String svcName, Iterable<ManagedServiceDescriptor> descs, int cnt) {
         assertEquals(cnt, actualCount(svcName, descs));
     }
 
@@ -479,10 +479,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param descs Descriptors.
      * @return Services count.
      */
-    protected int actualCount(String svcName, Iterable<GridServiceDescriptor> descs) {
+    protected int actualCount(String svcName, Iterable<ManagedServiceDescriptor> descs) {
         int sum = 0;
 
-        for (GridServiceDescriptor d : descs) {
+        for (ManagedServiceDescriptor d : descs) {
             if (d.name().equals(svcName)) {
                 for (Integer i : d.topologySnapshot().values())
                     sum += i;
@@ -515,7 +515,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * Affinity service.
      */
-    protected static class AffinityService implements GridService {
+    protected static class AffinityService implements ManagedService {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -534,12 +534,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
+        @Override public void cancel(ManagedServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void init(GridServiceContext ctx) throws Exception {
+        @Override public void init(ManagedServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
 
             ClusterNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
@@ -549,7 +549,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) {
+        @Override public void execute(ManagedServiceContext ctx) {
             X.println("Executing affinity service for key: " + affKey);
         }
     }
@@ -557,7 +557,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * Counter service implementation.
      */
-    protected static class CounterServiceImpl implements CounterService, GridService {
+    protected static class CounterServiceImpl implements CounterService, ManagedService {
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -616,12 +616,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
+        @Override public void cancel(ManagedServiceContext ctx) {
             X.println("Stopping counter service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void init(GridServiceContext ctx) throws Exception {
+        @Override public void init(ManagedServiceContext ctx) throws Exception {
             X.println("Initializing counter service: " + ctx.name());
 
             key = ctx.name();
@@ -630,7 +630,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) throws Exception {
+        @Override public void execute(ManagedServiceContext ctx) throws Exception {
             X.println("Executing counter service: " + ctx.name());
         }
 

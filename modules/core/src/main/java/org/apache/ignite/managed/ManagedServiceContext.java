@@ -15,11 +15,11 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Service execution context. Execution context is provided into {@link GridService#execute(GridServiceContext)}
- * and {@link GridService#cancel(GridServiceContext)} methods and contains information about specific service
+ * Service execution context. Execution context is provided into {@link ManagedService#execute(ManagedServiceContext)}
+ * and {@link ManagedService#cancel(ManagedServiceContext)} methods and contains information about specific service
  * execution.
  */
-public interface GridServiceContext extends Serializable {
+public interface ManagedServiceContext extends Serializable {
     /**
      * Gets service name.
      *

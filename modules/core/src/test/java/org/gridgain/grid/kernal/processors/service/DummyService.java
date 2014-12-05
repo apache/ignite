@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Dummy service.
  */
-public class DummyService implements GridService {
+public class DummyService implements ManagedService {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,7 +38,7 @@ public class DummyService implements GridService {
     private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override public void cancel(GridServiceContext ctx) {
+    @Override public void cancel(ManagedServiceContext ctx) {
         AtomicInteger cntr = cancelled.get(ctx.name());
 
         if (cntr == null) {
@@ -59,7 +59,7 @@ public class DummyService implements GridService {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(GridServiceContext ctx) throws Exception {
+    @Override public void init(ManagedServiceContext ctx) throws Exception {
         AtomicInteger cntr = inited.get(ctx.name());
 
         if (cntr == null) {
@@ -75,7 +75,7 @@ public class DummyService implements GridService {
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(GridServiceContext ctx) {
+    @Override public void execute(ManagedServiceContext ctx) {
         AtomicInteger cntr = started.get(ctx.name());
 
         if (cntr == null) {

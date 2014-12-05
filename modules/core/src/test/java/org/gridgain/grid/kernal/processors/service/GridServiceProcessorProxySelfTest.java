@@ -186,7 +186,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             MapService<Integer, String> svc =  grid(i).managed().serviceProxy(name, MapService.class, false);
 
             // Make sure service is a proxy.
-            assertFalse(svc instanceof GridService);
+            assertFalse(svc instanceof ManagedService);
 
             svc.put(i, Integer.toString(i));
         }
@@ -208,7 +208,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             MapService<Integer, String> svc =  grid(i).managed().serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
-            assertTrue(svc instanceof GridService);
+            assertTrue(svc instanceof ManagedService);
 
             svc.put(i, Integer.toString(i));
         }
@@ -234,7 +234,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             serviceProxy(name, MapService.class, false);
 
         // Make sure service is a local instance.
-        assertFalse(svc instanceof GridService);
+        assertFalse(svc instanceof ManagedService);
 
         for (int i = 0; i < nodeCount(); i++)
             svc.put(i, Integer.toString(i));
@@ -246,7 +246,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
                 serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
-            assertFalse(map instanceof GridService);
+            assertFalse(map instanceof ManagedService);
 
             size += map.size();
         }
@@ -269,7 +269,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             serviceProxy(name, MapService.class, true);
 
         // Make sure service is a local instance.
-        assertFalse(svc instanceof GridService);
+        assertFalse(svc instanceof ManagedService);
 
         for (int i = 0; i < nodeCount(); i++)
             svc.put(i, Integer.toString(i));
@@ -281,7 +281,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
                 serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
-            assertFalse(map instanceof GridService);
+            assertFalse(map instanceof ManagedService);
 
             if (map.size() != 0)
                 size += map.size();
@@ -327,7 +327,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * Cache service implementation.
      */
-    protected static class MapServiceImpl<K, V> implements MapService<K, V>, GridService {
+    protected static class MapServiceImpl<K, V> implements MapService<K, V>, ManagedService {
         /** Underlying cache map. */
         private final Map<K, V> map = new ConcurrentHashMap<>();
 
@@ -351,17 +351,17 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
+        @Override public void cancel(ManagedServiceContext ctx) {
             X.println("Stopping cache service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void init(GridServiceContext ctx) throws Exception {
+        @Override public void init(ManagedServiceContext ctx) throws Exception {
             X.println("Initializing counter service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) throws Exception {
+        @Override public void execute(ManagedServiceContext ctx) throws Exception {
             X.println("Executing cache service: " + ctx.name());
         }
     }

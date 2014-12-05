@@ -102,7 +102,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceBasicInjector<IgniteLogger> logInjector;
 
     /** Services injector. */
-    private GridResourceBasicInjector<Collection<GridService>> srvcInjector;
+    private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
 
     /** Address resolver injector. */
     private GridResourceBasicInjector<GridAddressResolver> addrsRslvrInjector;
@@ -618,7 +618,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param svc Service to inject.
      * @throws GridException If failed.
      */
-    public void inject(GridService svc) throws GridException {
+    public void inject(ManagedService svc) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + svc);
 
@@ -647,7 +647,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @throws GridException Thrown in case of any errors.
      */
-    public void cleanup(GridService svc) throws GridException {
+    public void cleanup(ManagedService svc) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + svc);
 

@@ -33,7 +33,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     private final long topVer;
 
     /** Service configuration. */
-    private final GridServiceConfiguration cfg;
+    private final ManagedServiceConfiguration cfg;
 
     /** Assignments. */
     @GridToStringInclude
@@ -44,7 +44,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      * @param nodeId Node ID.
      * @param topVer Topology version.
      */
-    public GridServiceAssignments(GridServiceConfiguration cfg, UUID nodeId, long topVer) {
+    public GridServiceAssignments(ManagedServiceConfiguration cfg, UUID nodeId, long topVer) {
         this.cfg = cfg;
         this.nodeId = nodeId;
         this.topVer = topVer;
@@ -53,7 +53,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Configuration.
      */
-    public GridServiceConfiguration configuration() {
+    public ManagedServiceConfiguration configuration() {
         return cfg;
     }
 
@@ -67,7 +67,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Service.
      */
-    public GridService service() {
+    public ManagedService service() {
         return cfg.getService();
     }
 

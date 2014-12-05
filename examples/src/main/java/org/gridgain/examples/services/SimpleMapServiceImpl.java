@@ -17,7 +17,7 @@ import java.util.concurrent.*;
 /**
  * Simple service which loops infinitely and prints out a counter.
  */
-public class SimpleMapServiceImpl<K, V> implements GridService, SimpleMapService<K, V> {
+public class SimpleMapServiceImpl<K, V> implements ManagedService, SimpleMapService<K, V> {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -39,24 +39,25 @@ public class SimpleMapServiceImpl<K, V> implements GridService, SimpleMapService
         map.clear();
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return map.size();
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(GridServiceContext ctx) {
+    @Override public void cancel(ManagedServiceContext ctx) {
         System.out.println("Service was cancelled: " + ctx.name());
     }
 
     /** {@inheritDoc} */
-    @Override public void init(GridServiceContext ctx) throws Exception {
+    @Override public void init(ManagedServiceContext ctx) throws Exception {
         System.out.println("Service was initialized: " + ctx.name());
 
         map = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(GridServiceContext ctx) throws Exception {
+    @Override public void execute(ManagedServiceContext ctx) throws Exception {
         System.out.println("Executing distributed service: " + ctx.name());
     }
 }

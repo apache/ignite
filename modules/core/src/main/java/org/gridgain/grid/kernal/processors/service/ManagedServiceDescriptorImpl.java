@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Service descriptor.
  */
-public class GridServiceDescriptorImpl implements GridServiceDescriptor {
+public class ManagedServiceDescriptorImpl implements ManagedServiceDescriptor {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,7 +34,7 @@ public class GridServiceDescriptorImpl implements GridServiceDescriptor {
     /**
      * @param dep Deployment.
      */
-    public GridServiceDescriptorImpl(GridServiceDeployment dep) {
+    public ManagedServiceDescriptorImpl(GridServiceDeployment dep) {
         this.dep = dep;
     }
 
@@ -44,7 +44,7 @@ public class GridServiceDescriptorImpl implements GridServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<? extends GridService> serviceClass() {
+    @Override public Class<? extends ManagedService> serviceClass() {
         return dep.configuration().getService().getClass();
     }
 
@@ -88,6 +88,6 @@ public class GridServiceDescriptorImpl implements GridServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridServiceDescriptorImpl.class, this);
+        return S.toString(ManagedServiceDescriptorImpl.class, this);
     }
 }

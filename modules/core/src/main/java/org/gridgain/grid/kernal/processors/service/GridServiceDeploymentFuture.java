@@ -22,13 +22,13 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridServiceConfiguration cfg;
+    private final ManagedServiceConfiguration cfg;
 
     /**
      * @param ctx Context.
      * @param cfg Configuration.
      */
-    public GridServiceDeploymentFuture(GridKernalContext ctx, GridServiceConfiguration cfg) {
+    public GridServiceDeploymentFuture(GridKernalContext ctx, ManagedServiceConfiguration cfg) {
         super(ctx);
 
         this.cfg = cfg;
@@ -37,7 +37,7 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /**
      * @return Service configuration.
      */
-    GridServiceConfiguration configuration() {
+    ManagedServiceConfiguration configuration() {
         return cfg;
     }
 

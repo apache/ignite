@@ -71,7 +71,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
     private GridResourceBasicInjector<IgniteLogger> logInjector;
 
     /** Service injector. */
-    private GridResourceBasicInjector<Collection<GridService>> srvcInjector;
+    private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
 
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
@@ -194,7 +194,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
      *
      * @param srvcInjector Service injector.
      */
-    public void setSrvcInjector(GridResourceBasicInjector<Collection<GridService>> srvcInjector) {
+    public void setSrvcInjector(GridResourceBasicInjector<Collection<ManagedService>> srvcInjector) {
         this.srvcInjector = srvcInjector;
     }
 

@@ -58,7 +58,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployNodeSingleton(String name, GridService svc) throws GridException {
+    @Override public void deployNodeSingleton(String name, ManagedService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -73,7 +73,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployClusterSingleton(String name, GridService svc) throws GridException {
+    @Override public void deployClusterSingleton(String name, ManagedService svc) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -88,7 +88,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployMultiple(String name, GridService svc, int totalCnt, int maxPerNodeCnt)
+    @Override public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt)
         throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
@@ -104,7 +104,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployKeyAffinitySingleton(String name, GridService svc, @Nullable String cacheName,
+    @Override public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName,
         Object affKey) throws GridException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
@@ -121,7 +121,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deploy(GridServiceConfiguration cfg) throws GridException {
+    @Override public void deploy(ManagedServiceConfiguration cfg) throws GridException {
         A.notNull(cfg, "cfg");
 
         guard();
@@ -161,7 +161,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridServiceDescriptor> deployedServices() {
+    @Override public Collection<ManagedServiceDescriptor> deployedServices() {
         guard();
 
         try {

@@ -61,7 +61,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             @Override public Object call() throws Exception {
                 assertNotNull(svc);
-                assertTrue(svc instanceof GridService);
+                assertTrue(svc instanceof ManagedService);
 
                 svc.noop();
 
@@ -82,7 +82,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertFalse(svc instanceof GridService);
+                assertFalse(svc instanceof ManagedService);
 
                 svc.noop();
 
@@ -103,7 +103,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof GridService);
+                assertTrue(svc instanceof ManagedService);
 
                 svc.noop();
 
@@ -146,7 +146,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             private void service(DummyService svc) {
                 assertNotNull(svc);
 
-                assertTrue(svc instanceof GridService);
+                assertTrue(svc instanceof ManagedService);
 
                 this.svc = svc;
             }
@@ -171,7 +171,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertFalse(svc instanceof GridService);
+                assertFalse(svc instanceof ManagedService);
 
                 this.svc = svc;
             }
@@ -196,7 +196,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof GridService);
+                assertTrue(svc instanceof ManagedService);
 
                 this.svc = svc;
             }
@@ -274,7 +274,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * No-op test service.
      */
-    public static class DummyServiceImpl implements DummyService, GridService {
+    public static class DummyServiceImpl implements DummyService, ManagedService {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -284,17 +284,17 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(GridServiceContext ctx) {
+        @Override public void cancel(ManagedServiceContext ctx) {
             System.out.println("Cancelling service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void init(GridServiceContext ctx) throws Exception {
+        @Override public void init(ManagedServiceContext ctx) throws Exception {
             System.out.println("Initializing service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(GridServiceContext ctx) {
+        @Override public void execute(ManagedServiceContext ctx) {
             System.out.println("Executing service: " + ctx.name());
         }
     }

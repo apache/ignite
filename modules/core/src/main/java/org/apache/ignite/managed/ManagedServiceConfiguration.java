@@ -43,7 +43,7 @@ import java.io.*;
  * </pre>
  * The above configuration can also be specified in a Spring configuration file.
  */
-public class GridServiceConfiguration implements Serializable {
+public class ManagedServiceConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class GridServiceConfiguration implements Serializable {
 
     /** Service instance. */
     @GridToStringExclude
-    private GridService svc;
+    private ManagedService svc;
 
     /** Total count. */
     private int totalCnt;
@@ -99,7 +99,7 @@ public class GridServiceConfiguration implements Serializable {
      *
      * @return Service instance.
      */
-    public GridService getService() {
+    public ManagedService getService() {
         return svc;
     }
 
@@ -110,7 +110,7 @@ public class GridServiceConfiguration implements Serializable {
      *
      * @param svc Service instance.
      */
-    public void setService(GridService svc) {
+    public void setService(ManagedService svc) {
         this.svc = svc;
     }
 
@@ -232,7 +232,7 @@ public class GridServiceConfiguration implements Serializable {
         if (!equalsIgnoreNodeFilter(o))
             return false;
 
-        GridServiceConfiguration that = (GridServiceConfiguration)o;
+        ManagedServiceConfiguration that = (ManagedServiceConfiguration)o;
 
         if (nodeFilter != null && that.nodeFilter != null) {
             if (!nodeFilter.getClass().equals(that.nodeFilter.getClass()))
@@ -259,7 +259,7 @@ public class GridServiceConfiguration implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridServiceConfiguration that = (GridServiceConfiguration)o;
+        ManagedServiceConfiguration that = (ManagedServiceConfiguration)o;
 
         if (maxPerNodeCnt != that.maxPerNodeCnt)
             return false;
@@ -292,6 +292,6 @@ public class GridServiceConfiguration implements Serializable {
         String svcCls = svc == null ? "" : svc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
-        return S.toString(GridServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
+        return S.toString(ManagedServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
     }
 }
