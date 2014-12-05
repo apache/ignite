@@ -31,8 +31,8 @@ public class GridCacheStoreValueBytesNode {
      * @return Discovery SPI.
      * @throws Exception If failed.
      */
-    static GridTcpDiscoverySpi discovery() throws Exception {
-        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+    static TcpDiscoverySpi discovery() throws Exception {
+        TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
         disc.setLocalAddress("localhost");
 
@@ -41,7 +41,7 @@ public class GridCacheStoreValueBytesNode {
         Collection<String> addrs = new ArrayList<>();
 
         for (int i = 0; i < 10; i++)
-            addrs.add("localhost:" + (GridTcpDiscoverySpi.DFLT_PORT + i));
+            addrs.add("localhost:" + (TcpDiscoverySpi.DFLT_PORT + i));
 
         ipFinder.setAddresses(addrs);
 

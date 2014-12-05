@@ -131,7 +131,7 @@
             TCP discovery SPI (uses VM-shared IP-finder).
         -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
                 <!-- Override default IP-finder.-->
                 <property name="ipFinder">
                     <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">

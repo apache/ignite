@@ -74,7 +74,7 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfg);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

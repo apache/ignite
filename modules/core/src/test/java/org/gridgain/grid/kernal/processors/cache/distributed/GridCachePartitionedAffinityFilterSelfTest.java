@@ -72,7 +72,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);
 

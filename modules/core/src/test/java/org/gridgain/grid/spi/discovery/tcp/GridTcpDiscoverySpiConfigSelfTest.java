@@ -14,24 +14,24 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  *
  */
-@GridSpiTest(spi = GridTcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<GridTcpDiscoverySpi> {
+@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
+public class GridTcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpDiscoverySpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "ipFinder", null);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "ipFinderCleanFrequency", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "localPort", 1023);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "localPortRange", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "networkTimeout", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "socketTimeout", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "ackTimeout", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "maxAckTimeout", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "reconnectCount", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "heartbeatFrequency", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "threadPriority", -1);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "maxMissedHeartbeats", 0);
-        checkNegativeSpiProperty(new GridTcpDiscoverySpi(), "statisticsPrintFrequency", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "ipFinder", null);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "ipFinderCleanFrequency", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "localPort", 1023);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "localPortRange", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "networkTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "socketTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "ackTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxAckTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "reconnectCount", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "heartbeatFrequency", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "threadPriority", -1);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxMissedHeartbeats", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi(), "statisticsPrintFrequency", 0);
     }
 }

@@ -51,7 +51,7 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends GridCacheTxSin
 
         cc.setPreloadMode(NONE);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
         spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);

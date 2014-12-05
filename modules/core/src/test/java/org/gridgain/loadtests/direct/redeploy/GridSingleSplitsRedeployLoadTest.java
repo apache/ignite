@@ -46,7 +46,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
-        DiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        DiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         cfg.setDiscoverySpi(discoSpi);
 

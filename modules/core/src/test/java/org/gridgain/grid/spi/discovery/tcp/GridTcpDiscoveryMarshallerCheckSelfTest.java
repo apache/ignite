@@ -19,7 +19,7 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi}.
+ * Test for {@link TcpDiscoverySpi}.
  */
 public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest {
     /** */
@@ -35,7 +35,7 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

@@ -139,7 +139,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryStatu
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpDiscoverySpiMBean {
+public class TcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpDiscoverySpiMBean {
     /** Default local port range (value is <tt>100</tt>). */
     public static final int DFLT_PORT_RANGE = 100;
 
@@ -2160,7 +2160,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoverySpi.class, this);
+        return S.toString(TcpDiscoverySpi.class, this);
     }
 
     /**
@@ -2207,8 +2207,8 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
     /**
      * Thread that sends status check messages to next node if local node has not
      * been receiving heartbeats ({@link GridTcpDiscoveryHeartbeatMessage})
-     * for {@link GridTcpDiscoverySpi#getMaxMissedHeartbeats()} *
-     * {@link GridTcpDiscoverySpi#getHeartbeatFrequency()}.
+     * for {@link TcpDiscoverySpi#getMaxMissedHeartbeats()} *
+     * {@link TcpDiscoverySpi#getHeartbeatFrequency()}.
      */
     private class CheckStatusSender extends IgniteSpiThread {
         /**
@@ -2590,7 +2590,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             GridTcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(GridTcpDiscoverySpi.this.failedNodes);
+                failedNodes = U.arrayList(TcpDiscoverySpi.this.failedNodes);
 
                 state = spiState;
             }
@@ -2770,7 +2770,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                             boolean failure;
 
                             synchronized (mux) {
-                                failure = GridTcpDiscoverySpi.this.failedNodes.size() < failedNodes.size();
+                                failure = TcpDiscoverySpi.this.failedNodes.size() < failedNodes.size();
                             }
 
                             assert !forceSndPending || msg instanceof GridTcpDiscoveryNodeLeftMessage;
@@ -2933,7 +2933,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
             }
 
             synchronized (mux) {
-                failedNodes.removeAll(GridTcpDiscoverySpi.this.failedNodes);
+                failedNodes.removeAll(TcpDiscoverySpi.this.failedNodes);
             }
 
             if (!failedNodes.isEmpty()) {
@@ -2947,7 +2947,7 @@ public class GridTcpDiscoverySpi extends GridTcpDiscoverySpiAdapter implements G
                 }
 
                 synchronized (mux) {
-                    GridTcpDiscoverySpi.this.failedNodes.addAll(failedNodes);
+                    TcpDiscoverySpi.this.failedNodes.addAll(failedNodes);
                 }
 
                 for (GridTcpDiscoveryNode n : failedNodes)

@@ -42,7 +42,7 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         GridCacheConfiguration ccfg = new GridCacheConfiguration();
 

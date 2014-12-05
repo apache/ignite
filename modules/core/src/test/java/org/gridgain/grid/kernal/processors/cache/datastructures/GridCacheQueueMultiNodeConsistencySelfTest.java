@@ -60,7 +60,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);
 

@@ -115,7 +115,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setGridName("ggfs-grid");
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 
@@ -169,7 +169,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setGridName("ggfs-grid-secondary");
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

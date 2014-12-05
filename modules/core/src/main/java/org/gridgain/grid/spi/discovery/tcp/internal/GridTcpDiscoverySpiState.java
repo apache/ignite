@@ -9,10 +9,8 @@
 
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
-import org.gridgain.grid.spi.discovery.tcp.*;
-
 /**
- * State of local node {@link GridTcpDiscoverySpi}.
+ * State of local node {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
 public enum GridTcpDiscoverySpiState {
     /** */

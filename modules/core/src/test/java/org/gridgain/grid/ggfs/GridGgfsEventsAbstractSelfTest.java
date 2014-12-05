@@ -119,7 +119,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         cfg.setHadoopConfiguration(null);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

@@ -84,7 +84,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Performs test of {@code localHost} resource injection for {@link GridTcpDiscoverySpi}.
+     * Performs test of {@code localHost} resource injection for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
      *
      * @param cfgVal {@code true} if {@code localHost} should be set in configuration adapter.
      * @param spiVal {@code true} if {@code localHost} should be set in SPI
@@ -95,7 +95,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
         throws GridException {
         GridResourceProcessor proc = getResourceProcessor(cfgVal);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         if (spiVal)
             spi.setLocalAddress(SPI_LOCAL_ADDR_VALUE);

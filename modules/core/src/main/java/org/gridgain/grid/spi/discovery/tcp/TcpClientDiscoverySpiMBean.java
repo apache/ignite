@@ -16,9 +16,9 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
 import java.util.*;
 
 /**
- * Management bean for {@link GridTcpClientDiscoverySpi}.
+ * Management bean for {@link TcpClientDiscoverySpi}.
  */
-public interface GridTcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
+public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets disconnect check interval.
      *

@@ -23,8 +23,8 @@ import java.util.*;
 /**
  * Grid TCP discovery SPI start stop self test.
  */
-@GridSpiTest(spi = GridTcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridTcpDiscoverySpi> {
+@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
+public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTest<TcpDiscoverySpi> {
     /**
      * @return IP finder.
      */

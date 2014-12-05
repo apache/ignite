@@ -91,7 +91,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             cfg.setGridLogger(strLog);
         }
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

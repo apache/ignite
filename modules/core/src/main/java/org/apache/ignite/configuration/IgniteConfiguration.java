@@ -32,7 +32,6 @@ import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.eventstorage.*;
 import org.gridgain.grid.spi.eventstorage.memory.*;
 import org.gridgain.grid.spi.failover.*;
@@ -1775,7 +1774,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured discovery SPI implementation. If not provided,
-     * {@link GridTcpDiscoverySpi} will be used by default.
+     * {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi} will be used by default.
      *
      * @return Grid discovery SPI implementation or {@code null} to use default implementation.
      */

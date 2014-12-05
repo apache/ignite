@@ -10,7 +10,6 @@
 package org.gridgain.grid.spi.discovery.tcp.internal;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.messages.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,7 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Statistics for {@link GridTcpDiscoverySpi}.
+ * Statistics for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
 public class GridTcpDiscoveryStatistics {
     /** Join started timestamp. */

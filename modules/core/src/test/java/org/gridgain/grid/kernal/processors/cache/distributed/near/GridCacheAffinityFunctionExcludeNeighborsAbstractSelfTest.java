@@ -46,7 +46,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi() {
+        TcpDiscoverySpi spi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 

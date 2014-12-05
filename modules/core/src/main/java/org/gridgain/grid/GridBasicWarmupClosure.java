@@ -193,7 +193,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
             for (int i = 0; i < gridCnt; i++) {
                 IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
-                GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+                TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
                 discoSpi.setIpFinder(ipFinder);
 

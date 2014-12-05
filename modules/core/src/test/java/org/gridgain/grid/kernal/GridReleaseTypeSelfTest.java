@@ -44,7 +44,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         final int idx = cnt.getAndIncrement();
 
         // Override node attributes in discovery spi.
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi() {
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 

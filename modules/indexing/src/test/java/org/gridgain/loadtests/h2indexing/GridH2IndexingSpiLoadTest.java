@@ -96,7 +96,7 @@ public class GridH2IndexingSpiLoadTest {
 
         IgniteConfiguration c = new IgniteConfiguration();
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

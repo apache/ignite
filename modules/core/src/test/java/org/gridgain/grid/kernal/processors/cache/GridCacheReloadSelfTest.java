@@ -47,7 +47,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1");
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));

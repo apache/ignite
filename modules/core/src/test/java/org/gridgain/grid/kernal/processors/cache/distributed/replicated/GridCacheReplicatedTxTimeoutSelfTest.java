@@ -41,7 +41,7 @@ public class GridCacheReplicatedTxTimeoutSelfTest extends GridCacheTxTimeoutAbst
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

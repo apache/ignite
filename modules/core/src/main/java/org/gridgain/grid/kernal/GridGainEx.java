@@ -1670,10 +1670,10 @@ public class GridGainEx {
                 commSpi = new TcpCommunicationSpi();
 
             if (discoSpi == null)
-                discoSpi = new GridTcpDiscoverySpi();
+                discoSpi = new TcpDiscoverySpi();
 
-            if (discoSpi instanceof GridTcpDiscoverySpi) {
-                GridTcpDiscoverySpi tcpDisco = (GridTcpDiscoverySpi)discoSpi;
+            if (discoSpi instanceof TcpDiscoverySpi) {
+                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
 
                 if (tcpDisco.getIpFinder() == null)
                     tcpDisco.setIpFinder(new GridTcpDiscoveryMulticastIpFinder());
@@ -1849,7 +1849,7 @@ public class GridGainEx {
                 copies = new GridCacheConfiguration[1];
 
             // Always add utility cache.
-            copies[0] = utilitySystemCache(discoSpi instanceof GridTcpClientDiscoverySpi);
+            copies[0] = utilitySystemCache(discoSpi instanceof TcpClientDiscoverySpi);
 
             myCfg.setCacheConfiguration(copies);
 

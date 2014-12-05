@@ -48,7 +48,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
 
         cfg.setCacheConfiguration(ccfg);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

@@ -83,7 +83,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

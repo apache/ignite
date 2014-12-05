@@ -50,7 +50,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private IgniteConfiguration config() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

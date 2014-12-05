@@ -91,7 +91,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

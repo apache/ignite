@@ -60,7 +60,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

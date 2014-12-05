@@ -77,7 +77,7 @@ public class MemcacheRestExampleNodeStartup {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 

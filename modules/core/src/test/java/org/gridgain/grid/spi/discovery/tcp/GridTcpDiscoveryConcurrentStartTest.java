@@ -17,7 +17,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi}.
+ * Test for {@link TcpDiscoverySpi}.
  */
 public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
@@ -43,14 +43,14 @@ public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest 
 
             clientIpFinder.setAddresses(Arrays.asList(addr));
 
-            GridTcpClientDiscoverySpi discoSpi = new GridTcpClientDiscoverySpi();
+            TcpClientDiscoverySpi discoSpi = new TcpClientDiscoverySpi();
 
             discoSpi.setIpFinder(clientIpFinder);
 
             cfg.setDiscoverySpi(discoSpi);
         }
         else {
-            GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
             discoSpi.setIpFinder(ipFinder);
 

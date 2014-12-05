@@ -63,7 +63,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
         cfg.setCacheConfiguration();
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

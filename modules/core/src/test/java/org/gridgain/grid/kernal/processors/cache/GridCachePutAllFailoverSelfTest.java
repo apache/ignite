@@ -581,7 +581,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
 
-        GridTcpDiscoverySpi discoverySpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
         discoverySpi.setIpFinder(ipFinder);

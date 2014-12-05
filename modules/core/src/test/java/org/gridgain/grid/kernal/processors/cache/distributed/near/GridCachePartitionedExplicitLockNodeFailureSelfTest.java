@@ -44,7 +44,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

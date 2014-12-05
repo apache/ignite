@@ -18,14 +18,14 @@ import org.gridgain.testframework.junits.spi.*;
  * TCP discovery spi test.
  */
 @SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridSpiTest(spi = GridTcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiSelfTest extends GridAbstractDiscoverySelfTest<GridTcpDiscoverySpi> {
+@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
+public class GridTcpDiscoverySpiSelfTest extends GridAbstractDiscoverySelfTest<TcpDiscoverySpi> {
     /** */
     private GridTcpDiscoveryIpFinder ipFinder =  new GridTcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected DiscoverySpi getSpi(int idx) {
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setMetricsProvider(createMetricsProvider());
         spi.setIpFinder(ipFinder);

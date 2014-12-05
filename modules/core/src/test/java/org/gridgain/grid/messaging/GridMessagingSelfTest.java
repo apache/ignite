@@ -158,7 +158,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         ((IgniteOptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

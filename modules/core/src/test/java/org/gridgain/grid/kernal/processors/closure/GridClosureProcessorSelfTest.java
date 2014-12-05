@@ -53,7 +53,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

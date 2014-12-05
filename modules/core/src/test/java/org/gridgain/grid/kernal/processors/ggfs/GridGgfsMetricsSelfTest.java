@@ -130,7 +130,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setGridName("grid-" + idx);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
@@ -182,7 +182,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         cfg.setGridName("grid-secondary");
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

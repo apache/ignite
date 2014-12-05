@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Management bean for {@link GridTcpDiscoverySpi}.
+ * Management bean for {@link TcpDiscoverySpi}.
  */
 public interface GridTcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**

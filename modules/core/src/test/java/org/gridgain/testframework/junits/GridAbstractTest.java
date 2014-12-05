@@ -650,7 +650,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) {
         // TODO: GG-4048: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
-            if (cfg.getDiscoverySpi() instanceof GridTcpDiscoverySpi)
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
                 cfg.setLocalHost("127.0.0.1");
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
@@ -1046,7 +1046,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCommunicationSpi(commSpi);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         if (isDebug()) {
             discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);

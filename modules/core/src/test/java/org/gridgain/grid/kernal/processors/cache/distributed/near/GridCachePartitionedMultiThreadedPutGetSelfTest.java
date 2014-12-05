@@ -68,7 +68,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

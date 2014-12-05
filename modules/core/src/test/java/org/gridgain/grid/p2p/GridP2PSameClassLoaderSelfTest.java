@@ -55,7 +55,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(depMode);
 
-        ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
 
         cfg.setCacheConfiguration();
 

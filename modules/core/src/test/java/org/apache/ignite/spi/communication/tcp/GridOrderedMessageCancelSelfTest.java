@@ -63,7 +63,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new CommunicationSpi());
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

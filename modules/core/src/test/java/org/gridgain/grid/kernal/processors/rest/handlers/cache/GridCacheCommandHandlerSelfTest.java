@@ -41,7 +41,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         // Discovery config.
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

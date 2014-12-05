@@ -42,7 +42,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
         c.getTransactionsConfiguration().setDefaultTxTimeout(50);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

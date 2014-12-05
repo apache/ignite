@@ -43,7 +43,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
      * @return Discovery SPI;
      */
     private DiscoverySpi discoverySpi() {
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);
 

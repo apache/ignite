@@ -69,7 +69,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
         log.info("Grid start-stop test count: " + GRID_COUNT);
 
         for (int i = 0; i < GRID_COUNT; i++) {
-            GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+            TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
             disc.setIpFinder(IP_FINDER);
 

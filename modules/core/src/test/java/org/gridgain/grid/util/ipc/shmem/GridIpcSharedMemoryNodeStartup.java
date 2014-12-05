@@ -37,7 +37,7 @@ public class GridIpcSharedMemoryNodeStartup {
 
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

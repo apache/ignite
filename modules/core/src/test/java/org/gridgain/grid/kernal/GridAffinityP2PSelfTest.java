@@ -71,7 +71,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(ipFinder);

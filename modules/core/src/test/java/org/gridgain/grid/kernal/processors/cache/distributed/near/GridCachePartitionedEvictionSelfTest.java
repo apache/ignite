@@ -56,7 +56,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

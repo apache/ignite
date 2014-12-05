@@ -48,7 +48,7 @@ public class CacheNodeWithStoreStartup {
         cfg.setLocalHost("127.0.0.1");
 
         // Discovery SPI.
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryMulticastIpFinder();
 

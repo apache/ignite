@@ -91,7 +91,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         // Discovery.
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
         c.setDiscoverySpi(disco);

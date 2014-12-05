@@ -35,7 +35,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

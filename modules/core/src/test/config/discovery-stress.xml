@@ -39,7 +39,7 @@
         <property name="networkTimeout" value="10000"/>
 
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="networkTimeout" value="10000"/>
                 <property name="ackTimeout" value="10000"/>
                 <property name="reconnectCount" value="3"/>

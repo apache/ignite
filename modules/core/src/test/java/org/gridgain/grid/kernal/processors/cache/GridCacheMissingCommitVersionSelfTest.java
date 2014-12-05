@@ -48,7 +48,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         IgniteConfiguration cfg = super.getConfiguration();
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

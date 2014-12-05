@@ -114,7 +114,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
     protected IgniteConfiguration gridConfiguration() throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestGridName());
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);

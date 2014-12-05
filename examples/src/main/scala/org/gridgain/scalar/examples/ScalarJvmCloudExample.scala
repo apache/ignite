@@ -4,7 +4,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit._
 import javax.swing.{JComponent, JLabel, JOptionPane}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
+import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar.scalar
@@ -41,7 +41,7 @@ object ScalarJvmCloudExample {
 
                     // Configure in-VM TCP discovery so we don't
                     // interfere with other grids running on the same network.
-                    val discoSpi = new GridTcpDiscoverySpi
+                    val discoSpi = new TcpDiscoverySpi
 
                     discoSpi.setIpFinder(ipFinder)
 

@@ -23,9 +23,9 @@ public class GridSingleSplitsNewNodesMulticastLoadTest extends GridSingleSplitsN
     @Override protected DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg) {
         DiscoverySpi discoSpi = cfg.getDiscoverySpi();
 
-        assert discoSpi instanceof GridTcpDiscoverySpi: "Wrong default SPI implementation.";
+        assert discoSpi instanceof TcpDiscoverySpi : "Wrong default SPI implementation.";
 
-        ((GridTcpDiscoverySpi)discoSpi).setHeartbeatFrequency(getHeartbeatFrequency());
+        ((TcpDiscoverySpi)discoSpi).setHeartbeatFrequency(getHeartbeatFrequency());
 
         return discoSpi;
     }

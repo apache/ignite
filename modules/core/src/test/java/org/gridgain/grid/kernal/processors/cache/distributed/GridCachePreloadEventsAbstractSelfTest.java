@@ -40,7 +40,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 

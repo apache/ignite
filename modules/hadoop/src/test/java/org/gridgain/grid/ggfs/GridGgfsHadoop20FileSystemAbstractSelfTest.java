@@ -170,7 +170,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
 
             cfg.setGridName("grid_secondary");
 
-            GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
             discoSpi.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 
@@ -196,7 +196,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

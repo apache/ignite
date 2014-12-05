@@ -673,7 +673,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
-        ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
 
         cfg.setDeploymentMode(depMode);
 

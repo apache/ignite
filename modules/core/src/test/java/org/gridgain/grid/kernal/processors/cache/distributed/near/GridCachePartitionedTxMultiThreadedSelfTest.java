@@ -48,7 +48,7 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends GridCacheTxMult
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

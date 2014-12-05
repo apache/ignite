@@ -46,7 +46,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setStreamerConfiguration(streamerConfiguration());
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

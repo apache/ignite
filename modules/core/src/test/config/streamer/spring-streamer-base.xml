@@ -60,7 +60,7 @@
             <constructor-arg value="127.0.0.1"/>
         </bean>
 
-        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
             <property name="ackTimeout" value="5000"/>
             <property name="socketTimeout" value="5000"/>
             <property name="reconnectCount" value="5"/>
@@ -82,7 +82,7 @@
         <!-- Empty local host value. -->
         <bean id="localHost" class="java.lang.String"/>
 
-        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
             <property name="ipFinder">
                 <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                     <property name="addresses">

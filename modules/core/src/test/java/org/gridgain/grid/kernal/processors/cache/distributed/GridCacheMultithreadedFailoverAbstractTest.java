@@ -221,7 +221,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

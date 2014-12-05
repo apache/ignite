@@ -120,7 +120,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

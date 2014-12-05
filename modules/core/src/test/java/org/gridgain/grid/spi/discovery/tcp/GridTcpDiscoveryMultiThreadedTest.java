@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi}.
+ * Test for {@link TcpDiscoverySpi}.
  */
 public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
@@ -64,14 +64,14 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (client()) {
-            GridTcpClientDiscoverySpi spi = new GridTcpClientDiscoverySpi();
+            TcpClientDiscoverySpi spi = new TcpClientDiscoverySpi();
 
             spi.setIpFinder(ipFinder);
 
             cfg.setDiscoverySpi(spi);
         }
         else {
-            GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+            TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
             spi.setIpFinder(ipFinder);
 

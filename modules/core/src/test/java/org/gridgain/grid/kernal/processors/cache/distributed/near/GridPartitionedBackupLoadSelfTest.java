@@ -57,7 +57,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
      * @return Discovery SPI.
      */
     private DiscoverySpi discoverySpi() {
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);
 

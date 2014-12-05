@@ -124,7 +124,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

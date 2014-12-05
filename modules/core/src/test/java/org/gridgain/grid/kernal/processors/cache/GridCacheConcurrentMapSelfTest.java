@@ -41,7 +41,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setStartSize(4);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

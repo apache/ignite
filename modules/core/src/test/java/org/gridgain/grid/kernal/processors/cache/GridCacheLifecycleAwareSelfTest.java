@@ -241,7 +241,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
         GridCacheConfiguration ccfg = defaultCacheConfiguration();
 

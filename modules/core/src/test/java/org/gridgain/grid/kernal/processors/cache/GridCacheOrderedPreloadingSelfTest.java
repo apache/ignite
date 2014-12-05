@@ -52,7 +52,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
             cacheConfig(firstCacheMode, 1, FIRST_CACHE_NAME),
             cacheConfig(secondCacheMode, 2, SECOND_CACHE_NAME));
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

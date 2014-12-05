@@ -51,7 +51,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(cc1, cc2, cc3);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

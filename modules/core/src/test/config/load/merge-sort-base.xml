@@ -97,7 +97,7 @@
 
         <!-- Discovery SPI configuration. -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="networkTimeout" value="20000"/>
                 <property name="socketTimeout" value="5000"/>
                 <property name="ackTimeout" value="5000"/>

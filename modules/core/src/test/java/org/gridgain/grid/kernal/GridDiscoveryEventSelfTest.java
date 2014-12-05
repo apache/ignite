@@ -62,7 +62,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
         c.setDaemon(daemon);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

@@ -81,7 +81,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         //cacheCfg.setPreloadThreadPoolSize(1);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

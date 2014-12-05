@@ -54,7 +54,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

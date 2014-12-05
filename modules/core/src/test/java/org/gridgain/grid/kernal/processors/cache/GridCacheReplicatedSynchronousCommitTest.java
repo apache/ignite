@@ -73,7 +73,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         commSpis.add(commSpi);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

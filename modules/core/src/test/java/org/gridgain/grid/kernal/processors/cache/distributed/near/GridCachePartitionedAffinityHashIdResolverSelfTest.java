@@ -46,7 +46,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAffinity(aff);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi} and {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
+ * Test for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi} and {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
 public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */
@@ -60,7 +60,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
         ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         final int locPort;
         final int extPort;

@@ -15,11 +15,11 @@ import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.spi.*;
 
 /**
- * Random start stop test for {@link GridTcpDiscoverySpi}.
+ * Random start stop test for {@link TcpDiscoverySpi}.
  */
-@GridSpiTest(spi = GridTcpDiscoverySpi.class, group = "Discovery SPI")
+@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
 public class GridTcpDiscoverySpiRandomStartStopTest extends
-    GridAbstractDiscoveryRandomStartStopTest<GridTcpDiscoverySpi> {
+    GridAbstractDiscoveryRandomStartStopTest<TcpDiscoverySpi> {
     /** */
     private GridTcpDiscoveryIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
@@ -29,7 +29,7 @@ public class GridTcpDiscoverySpiRandomStartStopTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridTcpDiscoverySpi spi) throws Exception {
+    @Override protected void spiConfigure(TcpDiscoverySpi spi) throws Exception {
         super.spiConfigure(spi);
 
         spi.setIpFinder(ipFinder);

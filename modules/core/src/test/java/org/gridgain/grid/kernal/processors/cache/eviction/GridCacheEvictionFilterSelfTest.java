@@ -74,7 +74,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

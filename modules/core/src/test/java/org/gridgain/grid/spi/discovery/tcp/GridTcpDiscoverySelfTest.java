@@ -39,14 +39,14 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
 /**
- * Test for {@link GridTcpDiscoverySpi}.
+ * Test for {@link TcpDiscoverySpi}.
  */
 public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder(true);
 
     /** */
-    private Map<String, GridTcpDiscoverySpi> discoMap = new HashMap<>();
+    private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
 
     /** */
     private UUID nodeId;
@@ -63,14 +63,14 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi spi;
+        TcpDiscoverySpi spi;
 
         if (gridName.contains("FailBeforeNodeAddedSentSpi"))
             spi = new FailBeforeNodeAddedSentSpi();
         else if (gridName.contains("FailBeforeNodeLeftSentSpi"))
             spi = new FailBeforeNodeLeftSentSpi();
         else
-            spi = new GridTcpDiscoverySpi();
+            spi = new TcpDiscoverySpi();
 
         discoMap.put(gridName, spi);
 
@@ -200,7 +200,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             info("Nodes were started");
 
-            for (Map.Entry<String, GridTcpDiscoverySpi> e : discoMap.entrySet()) {
+            for (Map.Entry<String, TcpDiscoverySpi> e : discoMap.entrySet()) {
                 DiscoverySpi spi = e.getValue();
 
                 for (Ignite g : G.allGrids()) {
@@ -288,7 +288,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         discoMap.get(failedNode.name()).simulateNodeFailure();
 
-        GridTcpDiscoverySpi spi = discoMap.get(pingingNode.name());
+        TcpDiscoverySpi spi = discoMap.get(pingingNode.name());
 
         boolean res = spi.pingNode(failedNode.cluster().localNode().id());
 
@@ -701,7 +701,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 assertEquals(i + 1, g.cluster().nodes().size());
 
-                GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
+                TcpDiscoverySpi spi = (TcpDiscoverySpi)g.configuration().getDiscoverySpi();
 
                 GridTcpDiscoveryMulticastIpFinder ipFinder = (GridTcpDiscoveryMulticastIpFinder)spi.getIpFinder();
 
@@ -952,7 +952,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailBeforeNodeAddedSentSpi extends GridTcpDiscoverySpi {
+    private static class FailBeforeNodeAddedSentSpi extends TcpDiscoverySpi {
         /** */
         private int i;
 
@@ -970,7 +970,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailBeforeNodeLeftSentSpi extends GridTcpDiscoverySpi {
+    private static class FailBeforeNodeLeftSentSpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
             if (msg instanceof GridTcpDiscoveryNodeLeftMessage) {

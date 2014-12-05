@@ -62,7 +62,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 521));
         cc.setBackups(1);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);

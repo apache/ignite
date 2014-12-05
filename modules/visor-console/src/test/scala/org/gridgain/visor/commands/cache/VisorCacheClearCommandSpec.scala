@@ -16,7 +16,7 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.GridCacheAtomicityMode._
 import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
+import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 import org.gridgain.grid.{_}
 import org.gridgain.visor._
@@ -45,7 +45,7 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
         cfg.setLocalHost("127.0.0.1")
         cfg.setCacheConfiguration(cacheConfig(null), cacheConfig("cache"))
 
-        val discoSpi = new GridTcpDiscoverySpi()
+        val discoSpi = new TcpDiscoverySpi()
 
         discoSpi.setIpFinder(ipFinder)
 

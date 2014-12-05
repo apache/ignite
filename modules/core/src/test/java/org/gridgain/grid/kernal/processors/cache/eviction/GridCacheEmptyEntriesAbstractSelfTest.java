@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
 import org.gridgain.grid.cache.store.GridCacheStore;
 import org.gridgain.grid.cache.store.GridCacheStoreAdapter;
-import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi;
+import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.GridTcpDiscoveryIpFinder;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder;
 import org.gridgain.grid.util.typedef.*;
@@ -80,7 +80,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

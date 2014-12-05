@@ -64,7 +64,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         cfg.setLocalHost("127.0.0.1");
 
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
 

@@ -179,7 +179,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

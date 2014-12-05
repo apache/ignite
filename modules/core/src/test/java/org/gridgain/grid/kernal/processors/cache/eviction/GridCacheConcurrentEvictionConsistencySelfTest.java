@@ -74,7 +74,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

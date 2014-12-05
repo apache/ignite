@@ -99,7 +99,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             cacheCfgs[i] = cacheCfg;
         }
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

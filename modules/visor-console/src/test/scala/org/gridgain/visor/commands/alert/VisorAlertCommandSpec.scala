@@ -16,7 +16,7 @@ import java.util.regex.Pattern
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.spi.discovery.DiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi
+import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
@@ -44,7 +44,7 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg.setLifeCycleEmailNotification(false)
         cfg.setLocalHost("127.0.0.1")
 
-        val discoSpi: GridTcpDiscoverySpi = new GridTcpDiscoverySpi()
+        val discoSpi: TcpDiscoverySpi = new TcpDiscoverySpi()
 
         discoSpi.setIpFinder(ipFinder)
 

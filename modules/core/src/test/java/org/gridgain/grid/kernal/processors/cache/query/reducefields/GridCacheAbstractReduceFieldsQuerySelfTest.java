@@ -88,7 +88,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @return Discovery SPI.
      */
     private static DiscoverySpi discovery() {
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(IP_FINDER);
 

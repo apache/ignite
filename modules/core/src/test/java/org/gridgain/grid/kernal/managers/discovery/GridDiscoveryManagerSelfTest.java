@@ -40,7 +40,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 

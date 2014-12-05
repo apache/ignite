@@ -71,7 +71,7 @@ public class GridCacheQueryUserResourceSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private DiscoverySpi discoverySpi() throws Exception {
-        GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         spi.setIpFinder(IP_FINDER);

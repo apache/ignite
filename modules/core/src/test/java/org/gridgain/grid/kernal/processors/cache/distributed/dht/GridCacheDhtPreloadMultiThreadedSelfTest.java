@@ -167,7 +167,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         else
             cfg.setCacheConfiguration();
 
-        ((GridTcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }

@@ -69,7 +69,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

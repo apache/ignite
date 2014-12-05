@@ -245,7 +245,7 @@ public class GridSwapEvictAllBenchmark {
 
         cfg.setLocalHost("127.0.0.1");
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         GridTcpDiscoveryIpFinder finder = new GridTcpDiscoveryVmIpFinder(true);
 

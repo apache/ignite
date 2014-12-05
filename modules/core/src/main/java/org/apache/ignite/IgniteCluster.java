@@ -13,7 +13,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -72,7 +71,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Gets current topology version. In case of TCP discovery
-     * (see {@link GridTcpDiscoverySpi}) topology versions
+     * (see {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}) topology versions
      * are sequential - they start from {@code '1'} and get incremented every time whenever a
      * node joins or leaves. For other discovery SPIs topology versions may not be (and likely are
      * not) sequential.
@@ -89,7 +88,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link GridTcpDiscoverySpi}
+     *      topology history. Currently only {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
      *      supports topology history.
      */
     @Nullable public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;

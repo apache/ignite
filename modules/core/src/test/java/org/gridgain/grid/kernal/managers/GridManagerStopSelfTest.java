@@ -142,7 +142,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopDiscoveryManager() throws Exception {
-        DiscoverySpi spi = new GridTcpDiscoverySpi();
+        DiscoverySpi spi = new TcpDiscoverySpi();
 
         injectLogger(spi);
 

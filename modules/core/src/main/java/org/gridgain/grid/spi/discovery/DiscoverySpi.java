@@ -12,7 +12,6 @@ package org.gridgain.grid.spi.discovery;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -20,13 +19,13 @@ import java.util.*;
 /**
  * Grid discovery SPI allows to discover remote nodes in grid.
  * <p>
- * The default discovery SPI is {@link GridTcpDiscoverySpi}
+ * The default discovery SPI is {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
  * with default configuration which allows all nodes in local network
  * (with enabled multicast) to discover each other.
  * <p>
  * Gridgain provides the following {@code GridDeploymentSpi} implementation:
  * <ul>
- * <li>{@link GridTcpDiscoverySpi}</li>
+ * <li>{@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when

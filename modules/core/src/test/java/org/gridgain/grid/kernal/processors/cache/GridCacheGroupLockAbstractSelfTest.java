@@ -80,7 +80,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setCacheSanityCheckEnabled(sanityCheckEnabled());
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

@@ -43,7 +43,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
         // Test requires SHARED mode to test local deployment priority over p2p.
         cfg.setDeploymentMode(depMode);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

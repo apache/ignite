@@ -90,7 +90,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     @Override protected final IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration c = super.getConfiguration();
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

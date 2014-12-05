@@ -15,7 +15,7 @@ import org.gridgain.grid.spi.discovery.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi.*;
+import static org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi.*;
 
 /**
  * Tests for topology snapshots history.
@@ -30,7 +30,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TcpDiscoverySpi());
         cfg.setCacheConfiguration();
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
@@ -65,7 +65,7 @@ public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest 
         try {
             final Ignite g = startGrid();
 
-            GridTcpDiscoverySpi spi = (GridTcpDiscoverySpi)g.configuration().getDiscoverySpi();
+            TcpDiscoverySpi spi = (TcpDiscoverySpi)g.configuration().getDiscoverySpi();
 
             assertEquals(DFLT_TOP_HISTORY_SIZE, spi.getTopHistorySize());
 

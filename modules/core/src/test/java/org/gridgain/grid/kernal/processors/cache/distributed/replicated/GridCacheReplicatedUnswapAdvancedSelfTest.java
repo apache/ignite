@@ -43,7 +43,7 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheReplicatedUnswapAdvancedSelfTest.class.getName(),
             TestClass.class.getName());
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

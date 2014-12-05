@@ -80,7 +80,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         cCfg.setQueryIndexEnabled(false);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 

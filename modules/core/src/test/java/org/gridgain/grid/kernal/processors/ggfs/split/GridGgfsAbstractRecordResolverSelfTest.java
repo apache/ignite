@@ -74,7 +74,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
 
         cfg.setGridName("grid");
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

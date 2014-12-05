@@ -88,7 +88,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         c.setCacheConfiguration(cc);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

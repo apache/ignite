@@ -102,7 +102,7 @@ public class GridCacheSingleNodeLoadTest {
     private static void start() throws Exception {
         IgniteConfiguration c =  new IgniteConfiguration();
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
 

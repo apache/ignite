@@ -57,7 +57,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 

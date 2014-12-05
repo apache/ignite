@@ -139,7 +139,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         metaCfg.setQueryIndexEnabled(false);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 

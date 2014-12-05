@@ -64,7 +64,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

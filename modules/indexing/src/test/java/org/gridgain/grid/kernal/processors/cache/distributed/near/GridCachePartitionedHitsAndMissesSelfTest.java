@@ -50,7 +50,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setIndexingSpi(spi);
 
         // DiscoverySpi
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(disco);
 

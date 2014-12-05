@@ -42,7 +42,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration c = super.getConfiguration();
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

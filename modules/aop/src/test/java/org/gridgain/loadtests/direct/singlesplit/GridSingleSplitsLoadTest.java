@@ -41,7 +41,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi());
-        cfg.setDiscoverySpi(new GridTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
         IgniteLog4jLogger log = (IgniteLog4jLogger)cfg.getGridLogger().getLogger(null);
 

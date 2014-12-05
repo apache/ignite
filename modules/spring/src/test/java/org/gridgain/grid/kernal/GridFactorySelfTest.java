@@ -428,7 +428,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
                     cfg.setRestEnabled(false);
 
-                    cfg.setDiscoverySpi(new GridTcpDiscoverySpi() {
+                    cfg.setDiscoverySpi(new TcpDiscoverySpi() {
                         @Override public void spiStart(String gridName) throws IgniteSpiException {
                             throw new IgniteSpiException("This SPI will never start.");
                         }

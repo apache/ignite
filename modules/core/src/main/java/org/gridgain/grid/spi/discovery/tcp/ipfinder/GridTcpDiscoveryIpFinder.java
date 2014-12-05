@@ -10,17 +10,16 @@
 package org.gridgain.grid.spi.discovery.tcp.ipfinder;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 
 import java.net.*;
 import java.util.*;
 
 /**
- * IP finder interface for {@link GridTcpDiscoverySpi}.
+ * IP finder interface for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
 public interface GridTcpDiscoveryIpFinder {
     /**
-     * Callback invoked when SPI context is initialized after {@link GridTcpDiscoverySpi#spiStart(String)}
+     * Callback invoked when SPI context is initialized after {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi#spiStart(String)}
      * method is completed, SPI context can be stored for future access.
      *
      * @param spiCtx Spi context.

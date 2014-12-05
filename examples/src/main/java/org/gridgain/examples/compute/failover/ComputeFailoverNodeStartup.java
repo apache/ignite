@@ -55,7 +55,7 @@ public class ComputeFailoverNodeStartup {
         cfg.setCheckpointSpi(checkpointSpi);
 
         // Configure discovery SPI.
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 

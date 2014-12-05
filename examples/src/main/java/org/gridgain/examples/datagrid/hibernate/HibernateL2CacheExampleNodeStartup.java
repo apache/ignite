@@ -49,7 +49,7 @@ public class HibernateL2CacheExampleNodeStartup {
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 

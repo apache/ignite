@@ -71,7 +71,7 @@ public class GridStartupWithSpecifiedWorkDirectorySelfTest extends TestCase {
 
         assert ggHome0 == null;
 
-        GridTcpDiscoverySpi disc = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 

@@ -81,14 +81,14 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
 
         if (gridName.startsWith("server")) {
-            GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+            TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
             disco.setIpFinder(IP_FINDER);
 
             cfg.setDiscoverySpi(disco);
         }
         else if (gridName.startsWith("client")) {
-            GridTcpClientDiscoverySpi disco = new GridTcpClientDiscoverySpi();
+            TcpClientDiscoverySpi disco = new TcpClientDiscoverySpi();
 
             GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
 
@@ -468,8 +468,8 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private void resetClientIpFinder(int idx) throws Exception {
-        GridTcpClientDiscoverySpi disco =
-            (GridTcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi();
+        TcpClientDiscoverySpi disco =
+            (TcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi();
 
         GridTcpDiscoveryVmIpFinder ipFinder = (GridTcpDiscoveryVmIpFinder)disco.getIpFinder();
 
@@ -509,14 +509,14 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      */
     private void failServer(int idx) {
-        ((GridTcpDiscoverySpi)G.grid("server-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
+        ((TcpDiscoverySpi)G.grid("server-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
     }
 
     /**
      * @param idx Index.
      */
     private void failClient(int idx) {
-        ((GridTcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
+        ((TcpClientDiscoverySpi)G.grid("client-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
     }
 
     /**

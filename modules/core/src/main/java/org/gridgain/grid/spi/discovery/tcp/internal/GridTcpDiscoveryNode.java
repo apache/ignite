@@ -14,7 +14,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -28,7 +27,7 @@ import java.util.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
- * Node for {@link GridTcpDiscoverySpi}.
+ * Node for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  * <p>
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.

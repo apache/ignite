@@ -37,7 +37,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
  * Client discovery SPI implementation that uses TCP/IP for node discovery.
  * <p>
  * This discovery SPI requires at least on server node configured with
- * {@link GridTcpDiscoverySpi}. It will try to connect to random IP taken from
+ * {@link TcpDiscoverySpi}. It will try to connect to random IP taken from
  * {@link GridTcpDiscoveryIpFinder} which should point to one of these server
  * nodes and will maintain connection only with this node (will not enter the ring).
  * If this connection is broken, it will try to reconnect using addresses from
@@ -47,7 +47,7 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements GridTcpClientDiscoverySpiMBean {
+public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements TcpClientDiscoverySpiMBean {
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
@@ -220,7 +220,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
         if (hbFreq < 2000)
             U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
 
-        registerMBean(gridName, this, GridTcpClientDiscoverySpiMBean.class);
+        registerMBean(gridName, this, TcpClientDiscoverySpiMBean.class);
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -1160,7 +1160,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @return Latest topology snapshot.
          */
         private Collection<ClusterNode> updateTopologyHistory(long topVer) {
-            GridTcpClientDiscoverySpi.this.topVer = topVer;
+            TcpClientDiscoverySpi.this.topVer = topVer;
 
             Collection<ClusterNode> allNodes = allNodes();
 
@@ -1203,7 +1203,7 @@ public class GridTcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implem
          * @param top Topology snapshot.
          */
         private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
-            DiscoverySpiListener lsnr = GridTcpClientDiscoverySpi.this.lsnr;
+            DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {
                 if (log.isDebugEnabled())

@@ -59,7 +59,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         // Discovery.
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 

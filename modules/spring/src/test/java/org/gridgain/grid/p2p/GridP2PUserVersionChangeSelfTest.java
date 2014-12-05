@@ -78,7 +78,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         cfg.setDeploymentMode(depMode);
         cfg.setNetworkTimeout(10000);
 
-        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 

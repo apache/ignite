@@ -15,7 +15,6 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -200,11 +199,11 @@ public class GridTcpDiscoveryMulticastIpFinder extends GridTcpDiscoveryVmIpFinde
      * socket is bound to this interface. If local address is not set or is any local address then IP finder
      * creates multicast sockets for all found non-loopback addresses.
      * <p>
-     * If not provided then this property is initialized by the local address set in {@link GridTcpDiscoverySpi}
+     * If not provided then this property is initialized by the local address set in {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
      * configuration.
      *
      * @param locAddr Local host address.
-     * @see GridTcpDiscoverySpi#setLocalAddress(String)
+     * @see org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi#setLocalAddress(String)
      */
     @IgniteSpiConfiguration(optional = true)
     public void setLocalAddress(String locAddr) {

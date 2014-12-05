@@ -11,7 +11,6 @@ package org.gridgain.grid.spi.discovery.tcp.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -21,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Convenient way to represent topology for {@link GridTcpDiscoverySpi}
+ * Convenient way to represent topology for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
  */
 public class GridTcpDiscoveryNodesRing {
     /** Visible nodes filter. */

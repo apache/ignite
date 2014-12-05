@@ -299,8 +299,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     private void configureDiscovery(GridSpiTest spiTest) throws Exception {
         DiscoverySpi discoSpi = spiTest.discoverySpi().newInstance();
 
-        if (discoSpi instanceof GridTcpDiscoverySpi) {
-            GridTcpDiscoverySpi tcpDisco = (GridTcpDiscoverySpi)discoSpi;
+        if (discoSpi instanceof TcpDiscoverySpi) {
+            TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)discoSpi;
 
             tcpDisco.setIpFinder(new GridTcpDiscoveryVmIpFinder(true));
         }
@@ -391,8 +391,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         if (spi instanceof TcpCommunicationSpi)
             ((TcpCommunicationSpi)spi).setLocalPort(GridTestUtils.getNextCommPort(getClass()));
 
-        if (spi instanceof GridTcpDiscoverySpi) {
-            GridTcpDiscoveryIpFinder ipFinder = ((GridTcpDiscoverySpi)spi).getIpFinder();
+        if (spi instanceof TcpDiscoverySpi) {
+            GridTcpDiscoveryIpFinder ipFinder = ((TcpDiscoverySpi)spi).getIpFinder();
 
             if (ipFinder instanceof GridTcpDiscoveryMulticastIpFinder) {
                 String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());

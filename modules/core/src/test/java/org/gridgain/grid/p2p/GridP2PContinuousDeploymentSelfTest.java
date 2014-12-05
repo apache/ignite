@@ -52,7 +52,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
         else
             cfg.setCacheConfiguration(cacheConfiguration());
 
-        GridTcpDiscoverySpi disco = new GridTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
