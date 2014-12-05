@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * For example they could be used for customized multi-language marshalling by
  * converting binary object representation received from client to java object.
  */
-public interface GridClientMessageInterceptor {
+public interface ClientMessageInterceptor {
     /**
      * Intercepts received objects.
      *

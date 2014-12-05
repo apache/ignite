@@ -102,7 +102,7 @@ public class ClientConnectionConfiguration {
     private boolean restSvcShutdown = true;
 
     /** Client message interceptor. */
-    private GridClientMessageInterceptor clientMsgInterceptor;
+    private ClientMessageInterceptor clientMsgInterceptor;
 
     /**
      * Creates client connection configuration with all default values.
@@ -547,10 +547,10 @@ public class ClientConnectionConfiguration {
      * <p>
      * Default value is {@code null}.
      *
-     * @see GridClientMessageInterceptor
+     * @see org.gridgain.grid.ClientMessageInterceptor
      * @return Interceptor.
      */
-    @Nullable public GridClientMessageInterceptor getClientMessageInterceptor() {
+    @Nullable public ClientMessageInterceptor getClientMessageInterceptor() {
         return clientMsgInterceptor;
     }
 
@@ -564,7 +564,7 @@ public class ClientConnectionConfiguration {
      *
      * @param interceptor Interceptor.
      */
-    public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
+    public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {
         clientMsgInterceptor = interceptor;
     }
 }

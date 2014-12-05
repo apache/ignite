@@ -28,7 +28,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
     /**
      */
     private static class TestClientMessageInterceptor extends TestLifecycleAware
-        implements GridClientMessageInterceptor {
+        implements ClientMessageInterceptor {
         /**
          */
         TestClientMessageInterceptor() {

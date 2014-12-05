@@ -321,14 +321,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link GridClientMessageInterceptor}
+     * Applies {@link org.gridgain.grid.ClientMessageInterceptor}
      * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
      */
     private void interceptRequest(GridRestRequest req) {
-        GridClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
 
         if (interceptor == null)
             return;
@@ -368,7 +368,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link GridClientMessageInterceptor} from
+     * Applies {@link org.gridgain.grid.ClientMessageInterceptor} from
      * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
@@ -376,7 +376,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Request.
      */
     private void interceptResponse(GridRestResponse res, GridRestRequest req) {
-        GridClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {
@@ -420,7 +420,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param interceptor Interceptor to apply.
      * @return Intercepted object.
      */
-    private static Object interceptSendObject(Object obj, GridClientMessageInterceptor interceptor) {
+    private static Object interceptSendObject(Object obj, ClientMessageInterceptor interceptor) {
         if (obj instanceof Map) {
             Map<Object, Object> original = (Map<Object, Object>)obj;
 

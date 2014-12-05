@@ -508,7 +508,7 @@ public class IgniteConfiguration {
     private IgniteFsConfiguration[] ggfsCfg;
 
     /** Client message interceptor. */
-    private GridClientMessageInterceptor clientMsgInterceptor;
+    private ClientMessageInterceptor clientMsgInterceptor;
 
     /** Streamer configuration. */
     private GridStreamerConfiguration[] streamerCfg;
@@ -2953,12 +2953,12 @@ public class IgniteConfiguration {
      * <p>
      * Default value is {@code null}.
      *
-     * @see GridClientMessageInterceptor
+     * @see org.gridgain.grid.ClientMessageInterceptor
      * @return Interceptor.
      * @deprecated Use {@link ClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
     @Deprecated
-    public GridClientMessageInterceptor getClientMessageInterceptor() {
+    public ClientMessageInterceptor getClientMessageInterceptor() {
         return clientMsgInterceptor;
     }
 
@@ -2971,10 +2971,10 @@ public class IgniteConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(GridClientMessageInterceptor)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(org.gridgain.grid.ClientMessageInterceptor)}.
      */
     @Deprecated
-    public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
+    public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {
         clientMsgInterceptor = interceptor;
     }
 
