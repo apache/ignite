@@ -35,7 +35,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.ggfs.IgniteFsMode.*;
 
 /**
- * Tests for {@link GridGgfsTask}.
+ * Tests for {@link org.gridgain.grid.ggfs.mapreduce.IgniteFsTask}.
  */
 public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /** Predefined words dictionary. */
@@ -228,7 +228,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * Task.
      */
-    private static class Task extends GridGgfsTask<String, IgniteBiTuple<Long, Integer>> {
+    private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {

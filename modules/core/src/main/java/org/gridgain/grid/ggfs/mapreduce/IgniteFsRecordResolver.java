@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * GGFS record resolver. When {@link GridGgfsTask} is split into {@link IgniteFsJob}s each produced job will obtain
+ * GGFS record resolver. When {@link IgniteFsTask} is split into {@link IgniteFsJob}s each produced job will obtain
  * {@link IgniteFsFileRange} based on file data location. Record resolver is invoked in each job before actual
  * execution in order to adjust record boundaries in a way consistent with user data.
  * <p>
@@ -34,7 +34,7 @@ import java.io.*;
  *     <li>{@link GridGgfsNewLineRecordResolver}</li>
  * </ul>
  */
-public interface GridGgfsRecordResolver extends Serializable {
+public interface IgniteFsRecordResolver extends Serializable {
     /**
      * Adjusts record start offset and length.
      *

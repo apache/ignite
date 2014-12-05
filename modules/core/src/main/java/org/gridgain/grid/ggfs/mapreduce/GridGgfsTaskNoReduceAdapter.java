@@ -14,10 +14,10 @@ import org.apache.ignite.compute.*;
 import java.util.*;
 
 /**
- * Convenient {@link GridGgfsTask} adapter with empty reduce step. Use this adapter in case you are not interested in
+ * Convenient {@link IgniteFsTask} adapter with empty reduce step. Use this adapter in case you are not interested in
  * results returned by jobs.
  */
-public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends GridGgfsTask<T, R> {
+public abstract class GridGgfsTaskNoReduceAdapter<T, R> extends IgniteFsTask<T, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

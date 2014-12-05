@@ -269,7 +269,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
 
     /**
@@ -289,7 +289,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> R execute(GridGgfsTask<T, R> task, @Nullable GridGgfsRecordResolver rslvr,
+    public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws GridException;
 
@@ -305,8 +305,8 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
+    public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
+        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
 
     /**
      * Executes GGFS task with overridden maximum range length (see
@@ -324,8 +324,8 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws GridException If execution failed.
      */
-    public <T, R> R execute(Class<? extends GridGgfsTask<T, R>> taskCls,
-        @Nullable GridGgfsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
+    public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
+        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws GridException;
 
     /** {@inheritDoc} */

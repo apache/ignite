@@ -26,7 +26,7 @@ import java.util.*;
  * GGFS task which can be executed on the grid using one of {@code GridGgfs.execute()} methods. Essentially GGFS task
  * is regular {@link org.apache.ignite.compute.ComputeTask} with different map logic. Instead of implementing
  * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method to split task into jobs, you must implement
- * {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
+ * {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
  * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
@@ -67,7 +67,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public abstract class GridGgfsTask<T, R> extends ComputeTaskAdapter<GridGgfsTaskArgs<T>, R> {
+public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<GridGgfsTaskArgs<T>, R> {
     /** */
     private static final long serialVersionUID = 0L;
 

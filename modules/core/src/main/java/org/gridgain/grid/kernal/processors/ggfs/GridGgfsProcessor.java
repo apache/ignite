@@ -223,7 +223,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, GridGgfsRecordResolver recRslv) {
+        long start, long length, IgniteFsRecordResolver recRslv) {
         return new GridGgfsJobImpl(job, ggfsName, path, start, length, recRslv);
     }
 

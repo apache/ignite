@@ -29,7 +29,7 @@ public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
         throws GridException, IOException {
         in.seek(range.start());
 
-        return execute(ggfs, new GridGgfsRangeInputStream(in, range));
+        return execute(ggfs, new IgniteFsRangeInputStream(in, range));
     }
 
     /**
@@ -41,5 +41,5 @@ public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
      * @throws GridException If execution failed.
      * @throws IOException If IO exception encountered while working with stream.
      */
-    public abstract Object execute(IgniteFs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException;
+    public abstract Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws GridException, IOException;
 }

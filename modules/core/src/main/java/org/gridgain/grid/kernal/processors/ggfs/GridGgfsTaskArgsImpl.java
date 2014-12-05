@@ -30,7 +30,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
     private Collection<IgniteFsPath> paths;
 
     /** Record resolver. */
-    private GridGgfsRecordResolver recRslvr;
+    private IgniteFsRecordResolver recRslvr;
 
     /** Skip non existent files flag. */
     private boolean skipNonExistentFiles;
@@ -58,7 +58,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
      * @param maxRangeLen Maximum range length.
      * @param usrArg User argument.
      */
-    public GridGgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, GridGgfsRecordResolver recRslvr,
+    public GridGgfsTaskArgsImpl(String ggfsName, Collection<IgniteFsPath> paths, IgniteFsRecordResolver recRslvr,
         boolean skipNonExistentFiles, long maxRangeLen, T usrArg) {
         this.ggfsName = ggfsName;
         this.paths = paths;
@@ -79,7 +79,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsRecordResolver recordResolver() {
+    @Override public IgniteFsRecordResolver recordResolver() {
         return recRslvr;
     }
 
@@ -119,7 +119,7 @@ public class GridGgfsTaskArgsImpl<T> implements GridGgfsTaskArgs<T>,  Externaliz
         ggfsName = U.readString(in);
         paths = U.readCollection(in);
 
-        recRslvr = (GridGgfsRecordResolver)in.readObject();
+        recRslvr = (IgniteFsRecordResolver)in.readObject();
         skipNonExistentFiles = in.readBoolean();
         maxRangeLen = in.readLong();
         usrArg = (T)in.readObject();

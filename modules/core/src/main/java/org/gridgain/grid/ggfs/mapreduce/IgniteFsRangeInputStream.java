@@ -21,7 +21,7 @@ import java.io.*;
  * jobs which will be working only with the assigned range. You can also use it explicitly when
  * working with {@link IgniteFsJob} directly.
  */
-public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
+public final class IgniteFsRangeInputStream extends IgniteFsInputStream {
     /** Base input stream. */
     private final IgniteFsInputStream is;
 
@@ -42,7 +42,7 @@ public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
      * @param maxLen Maximum stream length.
      * @throws IOException In case of exception.
      */
-    public GridGgfsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
+    public IgniteFsRangeInputStream(IgniteFsInputStream is, long start, long maxLen) throws IOException {
         if (is == null)
             throw new IllegalArgumentException("Input stream cannot be null.");
 
@@ -77,7 +77,7 @@ public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
      * @param range File range.
      * @throws IOException In case of exception.
      */
-    public GridGgfsRangeInputStream(IgniteFsInputStream is, IgniteFsFileRange range) throws IOException {
+    public IgniteFsRangeInputStream(IgniteFsInputStream is, IgniteFsFileRange range) throws IOException {
         this(is, range.start(), range.length());
     }
 
@@ -184,6 +184,6 @@ public final class GridGgfsRangeInputStream extends IgniteFsInputStream {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridGgfsRangeInputStream.class, this);
+        return S.toString(IgniteFsRangeInputStream.class, this);
     }
 }

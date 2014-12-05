@@ -16,13 +16,13 @@ import java.util.*;
 /**
  * GGFS task arguments. When you initiate new GGFS task execution using one of {@code GridGgfs.execute(...)} methods,
  * all passed parameters are encapsulated in a single {@code GridGgfsTaskArgs} object. Later on this object is
- * passed to {@link GridGgfsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
+ * passed to {@link IgniteFsTask#createJob(org.gridgain.grid.ggfs.IgniteFsPath, IgniteFsFileRange, GridGgfsTaskArgs)} method.
  * <p>
  * Task arguments encapsulates the following data:
  * <ul>
  *     <li>GGFS name</li>
  *     <li>File paths passed to {@code GridGgfs.execute()} method</li>
- *     <li>{@link GridGgfsRecordResolver} for that task</li>
+ *     <li>{@link IgniteFsRecordResolver} for that task</li>
  *     <li>Flag indicating whether to skip non-existent file paths or throw an exception</li>
  *     <li>User-defined task argument</li>
  *     <li>Maximum file range length for that task (see {@link org.gridgain.grid.ggfs.IgniteFsConfiguration#getMaximumTaskRangeLength()})</li>
@@ -48,7 +48,7 @@ public interface GridGgfsTaskArgs<T> {
      *
      * @return Record resolver.
      */
-    public GridGgfsRecordResolver recordResolver();
+    public IgniteFsRecordResolver recordResolver();
 
     /**
      * Flag indicating whether to fail or simply skip non-existent files.

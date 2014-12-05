@@ -9,7 +9,6 @@
 
 package org.gridgain.grid.ggfs;
 
-import org.gridgain.grid.ggfs.mapreduce.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -762,7 +761,7 @@ public class IgniteFsConfiguration {
      * length is smaller than file block size. In this case maximum task range size will be overridden and set to file
      * block size.
      * <p>
-     * Note that this parameter is applied when task is split into jobs before {@link GridGgfsRecordResolver} is
+     * Note that this parameter is applied when task is split into jobs before {@link org.gridgain.grid.ggfs.mapreduce.IgniteFsRecordResolver} is
      * applied. Therefore, final file ranges being assigned to particular jobs could be greater than value of this
      * parameter depending on file data layout and selected resolver type.
      * <p>

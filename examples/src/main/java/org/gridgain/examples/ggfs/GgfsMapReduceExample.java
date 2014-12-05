@@ -20,7 +20,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows how to use {@link GridGgfsTask} to find lines matching particular pattern in the file in pretty
+ * Example that shows how to use {@link org.gridgain.grid.ggfs.mapreduce.IgniteFsTask} to find lines matching particular pattern in the file in pretty
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
@@ -119,7 +119,7 @@ public class GgfsMapReduceExample {
     /**
      * Grep task.
      */
-    private static class GrepTask extends GridGgfsTask<String, Collection<Line>> {
+    private static class GrepTask extends IgniteFsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
             GridGgfsTaskArgs<String> args) throws GridException {
@@ -166,7 +166,7 @@ public class GgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, GridGgfsRangeInputStream in) throws GridException, IOException {
+        @Override public Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws GridException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

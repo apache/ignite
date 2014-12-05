@@ -16,8 +16,8 @@ import org.gridgain.grid.ggfs.*;
 import java.io.*;
 
 /**
- * Defines executable unit for {@link GridGgfsTask}. Before this job is executed, it is assigned one of the
- * ranges provided by the {@link GridGgfsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
+ * Defines executable unit for {@link IgniteFsTask}. Before this job is executed, it is assigned one of the
+ * ranges provided by the {@link IgniteFsRecordResolver} passed to one of the {@code GridGgfs.execute(...)} methods.
  * <p>
  * {@link #execute(org.apache.ignite.IgniteFs, IgniteFsFileRange, org.gridgain.grid.ggfs.IgniteFsInputStream)} method is given {@link IgniteFsFileRange} this
  * job is expected to operate on, and already opened {@link org.gridgain.grid.ggfs.IgniteFsInputStream} for the file this range belongs to.
@@ -28,8 +28,8 @@ import java.io.*;
  * <p>
  * In majority of the cases, when you want to process only provided range, you should explicitly control amount
  * of returned data and stop at range end. You can also use {@link IgniteFsInputStreamJobAdapter}, which operates
- * on {@link GridGgfsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
- * {@link GridGgfsRangeInputStream}.
+ * on {@link IgniteFsRangeInputStream} bounded to range start and end, or manually wrap provided input stream with
+ * {@link IgniteFsRangeInputStream}.
  * <p>
  * You can inject any resources in concrete implementation, just as with regular {@link org.apache.ignite.compute.ComputeJob} implementations.
  */

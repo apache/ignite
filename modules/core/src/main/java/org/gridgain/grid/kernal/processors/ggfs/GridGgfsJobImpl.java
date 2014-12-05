@@ -42,7 +42,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
     private long len;
 
     /** Split resolver. */
-    private GridGgfsRecordResolver rslvr;
+    private IgniteFsRecordResolver rslvr;
 
     /** Injected grid. */
     @IgniteInstanceResource
@@ -61,7 +61,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
      * @param rslvr GGFS split resolver.
      */
     public GridGgfsJobImpl(IgniteFsJob job, String ggfsName, IgniteFsPath path, long start, long len,
-        GridGgfsRecordResolver rslvr) {
+        IgniteFsRecordResolver rslvr) {
         this.job = job;
         this.ggfsName = ggfsName;
         this.path = path;
