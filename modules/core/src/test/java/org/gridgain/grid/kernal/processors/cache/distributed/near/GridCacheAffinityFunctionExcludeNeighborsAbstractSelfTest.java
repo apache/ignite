@@ -118,10 +118,10 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
                 GridCacheAffinity<Object> aff = affinity(g);
 
-                List<GridTcpDiscoveryNode> top = new ArrayList<>();
+                List<TcpDiscoveryNode> top = new ArrayList<>();
 
                 for (ClusterNode node : g.cluster().nodes())
-                    top.add((GridTcpDiscoveryNode) node);
+                    top.add((TcpDiscoveryNode) node);
 
                 Collections.sort(top);
 

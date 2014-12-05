@@ -24,7 +24,7 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** Node with duplicate ID. */
-    private GridTcpDiscoveryNode node;
+    private TcpDiscoveryNode node;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -39,7 +39,7 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
      * @param creatorNodeId Creator node ID.
      * @param node Node with same ID.
      */
-    public GridTcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, GridTcpDiscoveryNode node) {
+    public GridTcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node) {
         super(creatorNodeId);
 
         assert node != null;
@@ -50,7 +50,7 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
     /**
      * @return Node with duplicate ID.
      */
-    public GridTcpDiscoveryNode node() {
+    public TcpDiscoveryNode node() {
         return node;
     }
 
@@ -65,7 +65,7 @@ public class GridTcpDiscoveryDuplicateIdMessage extends GridTcpDiscoveryAbstract
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        node = (GridTcpDiscoveryNode)in.readObject();
+        node = (TcpDiscoveryNode)in.readObject();
     }
 
     /** {@inheritDoc} */

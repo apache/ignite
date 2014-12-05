@@ -22,10 +22,10 @@ import java.util.concurrent.locks.*;
 /**
  * Convenient way to represent topology for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
  */
-public class GridTcpDiscoveryNodesRing {
+public class TcpDiscoveryNodesRing {
     /** Visible nodes filter. */
-    private static final IgnitePredicate<GridTcpDiscoveryNode> VISIBLE_NODES = new P1<GridTcpDiscoveryNode>() {
-        @Override public boolean apply(GridTcpDiscoveryNode node) {
+    private static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
+        @Override public boolean apply(TcpDiscoveryNode node) {
             return node.visible();
         }
     };
@@ -38,15 +38,15 @@ public class GridTcpDiscoveryNodesRing {
     };
 
     /** Local node. */
-    private GridTcpDiscoveryNode locNode;
+    private TcpDiscoveryNode locNode;
 
     /** All nodes in topology. */
     @GridToStringInclude
-    private NavigableSet<GridTcpDiscoveryNode> nodes = new TreeSet<>();
+    private NavigableSet<TcpDiscoveryNode> nodes = new TreeSet<>();
 
     /** All started nodes. */
     @GridToStringExclude
-    private Map<UUID, GridTcpDiscoveryNode> nodesMap = new HashMap<>();
+    private Map<UUID, TcpDiscoveryNode> nodesMap = new HashMap<>();
 
     /** Current topology version */
     private long topVer;
@@ -63,7 +63,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @param locNode Local node.
      */
-    public void localNode(GridTcpDiscoveryNode locNode) {
+    public void localNode(TcpDiscoveryNode locNode) {
         assert locNode != null;
 
         rwLock.writeLock().lock();
@@ -83,7 +83,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Collection of all nodes.
      */
-    public Collection<GridTcpDiscoveryNode> allNodes() {
+    public Collection<TcpDiscoveryNode> allNodes() {
         return nodes();
     }
 
@@ -92,7 +92,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Collection of visible nodes.
      */
-    public Collection<GridTcpDiscoveryNode> visibleNodes() {
+    public Collection<TcpDiscoveryNode> visibleNodes() {
         return nodes(VISIBLE_NODES);
     }
 
@@ -101,7 +101,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Collection of remote nodes in grid.
      */
-    public Collection<GridTcpDiscoveryNode> remoteNodes() {
+    public Collection<TcpDiscoveryNode> remoteNodes() {
         return nodes(F.remoteNodes(locNode.id()));
     }
 
@@ -110,14 +110,14 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Collection of visible remote nodes.
      */
-    public Collection<GridTcpDiscoveryNode> visibleRemoteNodes() {
+    public Collection<TcpDiscoveryNode> visibleRemoteNodes() {
         return nodes(VISIBLE_NODES, F.remoteNodes(locNode.id()));
     }
 
     /**
      * @return Client nodes.
      */
-    public Collection<GridTcpDiscoveryNode> clientNodes() {
+    public Collection<TcpDiscoveryNode> clientNodes() {
         return nodes(CLIENT_NODES);
     }
 
@@ -144,7 +144,7 @@ public class GridTcpDiscoveryNodesRing {
      * @param node Node to add.
      * @return {@code true} if such node was added and did not present previously in the topology.
      */
-    public boolean add(GridTcpDiscoveryNode node) {
+    public boolean add(TcpDiscoveryNode node) {
         assert node != null;
         assert node.internalOrder() > 0;
 
@@ -181,7 +181,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            GridTcpDiscoveryNode last = nodes.last();
+            TcpDiscoveryNode last = nodes.last();
 
             return last != null ? last.internalOrder() : -1;
         }
@@ -201,7 +201,7 @@ public class GridTcpDiscoveryNodesRing {
      * @param nodes List of remote nodes.
      * @param topVer Topology version.
      */
-    public void restoreTopology(Iterable<GridTcpDiscoveryNode> nodes, long topVer) {
+    public void restoreTopology(Iterable<TcpDiscoveryNode> nodes, long topVer) {
         assert !F.isEmpty(nodes);
         assert topVer > 0;
 
@@ -214,7 +214,7 @@ public class GridTcpDiscoveryNodesRing {
 
             boolean firstAdd = true;
 
-            for (GridTcpDiscoveryNode node : nodes) {
+            for (TcpDiscoveryNode node : nodes) {
                 if (nodesMap.containsKey(node.id()))
                     continue;
 
@@ -244,7 +244,7 @@ public class GridTcpDiscoveryNodesRing {
      * @param nodeId Node id to find.
      * @return Node with ID provided or {@code null} if not found.
      */
-    @Nullable public GridTcpDiscoveryNode node(UUID nodeId) {
+    @Nullable public TcpDiscoveryNode node(UUID nodeId) {
         assert nodeId != null;
 
         rwLock.readLock().lock();
@@ -263,14 +263,14 @@ public class GridTcpDiscoveryNodesRing {
      * @param nodeId ID of the node to remove.
      * @return {@code true} if node was removed.
      */
-    @Nullable public GridTcpDiscoveryNode removeNode(UUID nodeId) {
+    @Nullable public TcpDiscoveryNode removeNode(UUID nodeId) {
         assert nodeId != null;
         assert !locNode.id().equals(nodeId);
 
         rwLock.writeLock().lock();
 
         try {
-            GridTcpDiscoveryNode rmv = nodesMap.remove(nodeId);
+            TcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
             if (rmv != null) {
                 nodes = new TreeSet<>(nodes);
@@ -291,7 +291,7 @@ public class GridTcpDiscoveryNodesRing {
      * @param nodeIds IDs of the nodes to remove.
      * @return Collection of removed nodes.
      */
-    public Collection<GridTcpDiscoveryNode> removeNodes(Collection<UUID> nodeIds) {
+    public Collection<TcpDiscoveryNode> removeNodes(Collection<UUID> nodeIds) {
         assert !F.isEmpty(nodeIds);
 
         rwLock.writeLock().lock();
@@ -299,10 +299,10 @@ public class GridTcpDiscoveryNodesRing {
         try {
             boolean firstRmv = true;
 
-            Collection<GridTcpDiscoveryNode> res = null;
+            Collection<TcpDiscoveryNode> res = null;
 
             for (UUID id : nodeIds) {
-                GridTcpDiscoveryNode rmv = nodesMap.remove(id);
+                TcpDiscoveryNode rmv = nodesMap.remove(id);
 
                 if (rmv != null) {
                     if (firstRmv) {
@@ -319,7 +319,7 @@ public class GridTcpDiscoveryNodesRing {
                 }
             }
 
-            return res == null ? Collections.<GridTcpDiscoveryNode>emptyList() : res;
+            return res == null ? Collections.<TcpDiscoveryNode>emptyList() : res;
         }
         finally {
             rwLock.writeLock().unlock();
@@ -360,7 +360,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Coordinator node that gives versions to topology (node with the smallest order).
      */
-    @Nullable public GridTcpDiscoveryNode coordinator() {
+    @Nullable public TcpDiscoveryNode coordinator() {
         rwLock.readLock().lock();
 
         try {
@@ -382,11 +382,11 @@ public class GridTcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Coordinator node among remaining nodes or {@code null} if all nodes are excluded.
      */
-    @Nullable public GridTcpDiscoveryNode coordinator(@Nullable Collection<GridTcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (F.isEmpty(filtered))
                 return null;
@@ -403,7 +403,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Next node.
      */
-    @Nullable public GridTcpDiscoveryNode nextNode() {
+    @Nullable public TcpDiscoveryNode nextNode() {
         rwLock.readLock().lock();
 
         try {
@@ -427,21 +427,21 @@ public class GridTcpDiscoveryNodesRing {
      * @return Next node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public GridTcpDiscoveryNode nextNode(@Nullable Collection<GridTcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode);
 
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
 
-            Iterator<GridTcpDiscoveryNode> iter = filtered.iterator();
+            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 
             while (iter.hasNext()) {
-                GridTcpDiscoveryNode node = iter.next();
+                TcpDiscoveryNode node = iter.next();
 
                 if (locNode.equals(node))
                     break;
@@ -459,7 +459,7 @@ public class GridTcpDiscoveryNodesRing {
      *
      * @return Previous node.
      */
-    @Nullable public GridTcpDiscoveryNode previousNode() {
+    @Nullable public TcpDiscoveryNode previousNode() {
         rwLock.readLock().lock();
 
         try {
@@ -481,21 +481,21 @@ public class GridTcpDiscoveryNodesRing {
      * @return Previous node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public GridTcpDiscoveryNode previousNode(@Nullable Collection<GridTcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode);
 
         rwLock.readLock().lock();
 
         try {
-            Collection<GridTcpDiscoveryNode> filtered = serverNodes(excluded);
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
 
             if (filtered.size() < 2)
                 return null;
 
-            Iterator<GridTcpDiscoveryNode> iter = filtered.iterator();
+            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 
             while (iter.hasNext()) {
-                GridTcpDiscoveryNode node = iter.next();
+                TcpDiscoveryNode node = iter.next();
 
                 if (locNode.equals(node))
                     break;
@@ -575,7 +575,7 @@ public class GridTcpDiscoveryNodesRing {
 
         try {
             if (nodeOrder == 0) {
-                GridTcpDiscoveryNode last = nodes.last();
+                TcpDiscoveryNode last = nodes.last();
 
                 assert last != null;
 
@@ -593,11 +593,11 @@ public class GridTcpDiscoveryNodesRing {
      * @param p Filters.
      * @return Unmodifiable collection of nodes.
      */
-    private Collection<GridTcpDiscoveryNode> nodes(IgnitePredicate<? super GridTcpDiscoveryNode>... p) {
+    private Collection<TcpDiscoveryNode> nodes(IgnitePredicate<? super TcpDiscoveryNode>... p) {
         rwLock.readLock().lock();
 
         try {
-            List<GridTcpDiscoveryNode> list = U.arrayList(nodes, p);
+            List<TcpDiscoveryNode> list = U.arrayList(nodes, p);
 
             return Collections.unmodifiableCollection(list);
         }
@@ -612,11 +612,11 @@ public class GridTcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Collection of server nodes.
      */
-    private Collection<GridTcpDiscoveryNode> serverNodes(@Nullable final Collection<GridTcpDiscoveryNode> excluded) {
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
-        return F.view(nodes, new P1<GridTcpDiscoveryNode>() {
-            @Override public boolean apply(GridTcpDiscoveryNode node) {
+        return F.view(nodes, new P1<TcpDiscoveryNode>() {
+            @Override public boolean apply(TcpDiscoveryNode node) {
                 return !node.isClient() && (excludedEmpty || !excluded.contains(node));
             }
         });
@@ -627,7 +627,7 @@ public class GridTcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            return S.toString(GridTcpDiscoveryNodesRing.class, this);
+            return S.toString(TcpDiscoveryNodesRing.class, this);
         }
         finally {
             rwLock.readLock().unlock();

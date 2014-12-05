@@ -31,7 +31,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    private GridTcpDiscoveryNode node;
+    private TcpDiscoveryNode node;
 
     /** Pending messages from previous node. */
     private Collection<GridTcpDiscoveryAbstractMessage> msgs;
@@ -41,7 +41,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    private Collection<GridTcpDiscoveryNode> top;
+    private Collection<TcpDiscoveryNode> top;
 
     /** Topology snapshots history. */
     private Map<Long, Collection<ClusterNode>> topHist;
@@ -70,7 +70,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      * @param newNodeDiscoData New Node discovery data.
      * @param gridStartTime Start time of the first grid node.
      */
-    public GridTcpDiscoveryNodeAddedMessage(UUID creatorNodeId, GridTcpDiscoveryNode node,
+    public GridTcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
         List<Object> newNodeDiscoData, long gridStartTime) {
         super(creatorNodeId);
 
@@ -89,7 +89,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return New node.
      */
-    public GridTcpDiscoveryNode node() {
+    public TcpDiscoveryNode node() {
         return node;
     }
 
@@ -127,7 +127,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @return Current topology.
      */
-    @Nullable public Collection<GridTcpDiscoveryNode> topology() {
+    @Nullable public Collection<TcpDiscoveryNode> topology() {
         return top;
     }
 
@@ -136,7 +136,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
      *
      * @param top Current topology.
      */
-    public void topology(@Nullable Collection<GridTcpDiscoveryNode> top) {
+    public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top;
     }
 
@@ -221,7 +221,7 @@ public class GridTcpDiscoveryNodeAddedMessage extends GridTcpDiscoveryAbstractMe
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        node = (GridTcpDiscoveryNode)in.readObject();
+        node = (TcpDiscoveryNode)in.readObject();
         msgs = U.readCollection(in);
         discardMsgId = U.readGridUuid(in);
         top = U.readCollection(in);

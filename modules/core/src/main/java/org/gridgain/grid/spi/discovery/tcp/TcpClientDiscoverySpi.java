@@ -47,12 +47,12 @@ import static org.gridgain.grid.spi.discovery.tcp.messages.GridTcpDiscoveryHeart
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements TcpClientDiscoverySpiMBean {
+public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpClientDiscoverySpiMBean {
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
     /** Remote nodes. */
-    private final ConcurrentMap<UUID, GridTcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
 
     /** Socket. */
     private volatile Socket sock;
@@ -245,7 +245,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
             throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
         }
 
-        locNode = new GridTcpDiscoveryNode(
+        locNode = new TcpDiscoveryNode(
             locNodeId,
             addrs.get1(),
             addrs.get2(),
@@ -326,8 +326,8 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.view(U.<GridTcpDiscoveryNode, ClusterNode>arrayList(rmtNodes.values(), new P1<GridTcpDiscoveryNode>() {
-            @Override public boolean apply(GridTcpDiscoveryNode node) {
+        return F.view(U.<TcpDiscoveryNode, ClusterNode>arrayList(rmtNodes.values(), new P1<TcpDiscoveryNode>() {
+            @Override public boolean apply(TcpDiscoveryNode node) {
                 return node.visible();
             }
         }));
@@ -338,7 +338,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
         if (locNodeId.equals(nodeId))
             return locNode;
 
-        GridTcpDiscoveryNode node = rmtNodes.get(nodeId);
+        TcpDiscoveryNode node = rmtNodes.get(nodeId);
 
         return node != null && node.visible() ? node : null;
     }
@@ -350,7 +350,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
         if (nodeId.equals(locNodeId))
             return true;
 
-        GridTcpDiscoveryNode node = rmtNodes.get(nodeId);
+        TcpDiscoveryNode node = rmtNodes.get(nodeId);
 
         return node != null && node.visible();
     }
@@ -857,16 +857,16 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
             if (leaveLatch != null)
                 return;
 
-            GridTcpDiscoveryNode node = msg.node();
+            TcpDiscoveryNode node = msg.node();
 
             UUID newNodeId = node.id();
 
             if (locNodeId.equals(newNodeId)) {
                 if (joinLatch.getCount() > 0) {
-                    Collection<GridTcpDiscoveryNode> top = msg.topology();
+                    Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
-                        for (GridTcpDiscoveryNode n : top) {
+                        for (TcpDiscoveryNode n : top) {
                             if (n.order() > 0)
                                 n.visible(true);
 
@@ -934,7 +934,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
                         "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
-                GridTcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
+                TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
 
                 if (node == null) {
                     if (log.isDebugEnabled())
@@ -984,7 +984,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
                 if (leaveLatch != null)
                     return;
 
-                GridTcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
+                TcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
 
                 if (node == null) {
                     if (log.isDebugEnabled())
@@ -1016,7 +1016,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
                 return;
 
             if (!locNodeId.equals(msg.creatorNodeId())) {
-                GridTcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
+                TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
 
                 if (node == null) {
                     if (log.isDebugEnabled())
@@ -1142,7 +1142,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
             assert nodeId != null;
             assert metrics != null;
 
-            GridTcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
+            TcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
@@ -1186,7 +1186,7 @@ public class TcpClientDiscoverySpi extends GridTcpDiscoverySpiAdapter implements
         private Collection<ClusterNode> allNodes() {
             Collection<ClusterNode> allNodes = new TreeSet<>();
 
-            for (GridTcpDiscoveryNode node : rmtNodes.values()) {
+            for (TcpDiscoveryNode node : rmtNodes.values()) {
                 if (node.visible())
                     allNodes.add(node);
             }

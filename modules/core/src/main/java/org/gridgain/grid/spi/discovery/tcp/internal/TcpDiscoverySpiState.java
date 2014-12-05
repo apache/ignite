@@ -12,7 +12,7 @@ package org.gridgain.grid.spi.discovery.tcp.internal;
 /**
  * State of local node {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
-public enum GridTcpDiscoverySpiState {
+public enum TcpDiscoverySpiState {
     /** */
     DISCONNECTED,
 

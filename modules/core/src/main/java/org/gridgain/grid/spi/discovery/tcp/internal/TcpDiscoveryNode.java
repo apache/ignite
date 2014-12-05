@@ -32,8 +32,8 @@ import static org.gridgain.grid.kernal.GridNodeAttributes.*;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
-    Comparable<GridTcpDiscoveryNode>, Externalizable {
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
+    Comparable<TcpDiscoveryNode>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -101,7 +101,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
-    public GridTcpDiscoveryNode() {
+    public TcpDiscoveryNode() {
         // No-op.
     }
 
@@ -115,8 +115,8 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
      * @param metricsProvider Metrics provider.
      * @param ver Version.
      */
-    public GridTcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-        DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
+    public TcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
+                            DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -367,7 +367,7 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@Nullable GridTcpDiscoveryNode node) {
+    @Override public int compareTo(@Nullable TcpDiscoveryNode node) {
         if (node == null)
             return 1;
 
@@ -438,6 +438,6 @@ public class GridTcpDiscoveryNode extends GridMetadataAwareAdapter implements Cl
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryNode.class, this, "isClient", isClient());
+        return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient());
     }
 }

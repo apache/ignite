@@ -24,7 +24,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
     private static final long serialVersionUID = 0L;
 
     /** New node that wants to join the topology. */
-    private GridTcpDiscoveryNode node;
+    private TcpDiscoveryNode node;
 
     /** Discovery data. */
     private List<Object> discoData;
@@ -42,7 +42,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
      * @param node New node that wants to join.
      * @param discoData Discovery data.
      */
-    public GridTcpDiscoveryJoinRequestMessage(GridTcpDiscoveryNode node, List<Object> discoData) {
+    public GridTcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, List<Object> discoData) {
         super(node.id());
 
         this.node = node;
@@ -54,7 +54,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
      *
      * @return Node that wants to join the topology.
      */
-    public GridTcpDiscoveryNode node() {
+    public TcpDiscoveryNode node() {
         return node;
     }
 
@@ -91,7 +91,7 @@ public class GridTcpDiscoveryJoinRequestMessage extends GridTcpDiscoveryAbstract
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        node = (GridTcpDiscoveryNode)in.readObject();
+        node = (TcpDiscoveryNode)in.readObject();
         discoData = U.readList(in);
     }
 

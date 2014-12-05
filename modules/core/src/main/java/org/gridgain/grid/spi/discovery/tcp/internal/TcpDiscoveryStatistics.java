@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Statistics for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
  */
-public class GridTcpDiscoveryStatistics {
+public class TcpDiscoveryStatistics {
     /** Join started timestamp. */
     private long joinStartedTs;
 
@@ -634,6 +634,6 @@ public class GridTcpDiscoveryStatistics {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return S.toString(GridTcpDiscoveryStatistics.class, this);
+        return S.toString(TcpDiscoveryStatistics.class, this);
     }
 }

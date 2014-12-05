@@ -34,7 +34,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
     public static final int STATUS_RECON = 2;
 
     /** Creator node. */
-    private GridTcpDiscoveryNode creatorNode;
+    private TcpDiscoveryNode creatorNode;
 
     /** Failed node id. */
     private UUID failedNodeId;
@@ -55,7 +55,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
      * @param creatorNode Creator node.
      * @param failedNodeId Failed node id.
      */
-    public GridTcpDiscoveryStatusCheckMessage(GridTcpDiscoveryNode creatorNode, UUID failedNodeId) {
+    public GridTcpDiscoveryStatusCheckMessage(TcpDiscoveryNode creatorNode, UUID failedNodeId) {
         super(creatorNode.id());
 
         this.creatorNode = creatorNode;
@@ -67,7 +67,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
      *
      * @return Creator node.
      */
-    public GridTcpDiscoveryNode creatorNode() {
+    public TcpDiscoveryNode creatorNode() {
         return creatorNode;
     }
 
@@ -111,7 +111,7 @@ public class GridTcpDiscoveryStatusCheckMessage extends GridTcpDiscoveryAbstract
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        creatorNode = (GridTcpDiscoveryNode)in.readObject();
+        creatorNode = (TcpDiscoveryNode)in.readObject();
         failedNodeId = U.readUuid(in);
         status = in.readInt();
     }

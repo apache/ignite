@@ -98,7 +98,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
                 attrs.remove(createSpiAttributeName(ATTR_PORT));
 
-                ((GridTcpDiscoveryNode)node).setAttributes(attrs);
+                ((TcpDiscoveryNode)node).setAttributes(attrs);
 
                 return super.createTcpClient(node);
             }

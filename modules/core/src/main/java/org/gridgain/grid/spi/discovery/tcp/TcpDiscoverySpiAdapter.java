@@ -34,12 +34,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.spi.discovery.tcp.internal.GridTcpDiscoverySpiState.*;
+import static org.gridgain.grid.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
 
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
+abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
@@ -110,7 +110,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Di
     protected IgniteProductVersion locNodeVer;
 
     /** Local node. */
-    protected GridTcpDiscoveryNode locNode;
+    protected TcpDiscoveryNode locNode;
 
     /** Local host. */
     protected InetAddress locHost;
@@ -122,7 +122,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Di
     protected SocketTimeoutWorker sockTimeoutWorker;
 
     /** Discovery state. */
-    protected GridTcpDiscoverySpiState spiState = DISCONNECTED;
+    protected TcpDiscoverySpiState spiState = DISCONNECTED;
 
     /** Start time of the very first grid node. */
     protected volatile long gridStartTime;
@@ -131,7 +131,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Di
     protected final IgniteMarshaller marsh = new IgniteJdkMarshaller();
 
     /** Statistics. */
-    protected final GridTcpDiscoveryStatistics stats = new GridTcpDiscoveryStatistics();
+    protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local node ID. */
     @IgniteLocalNodeIdResource
@@ -991,7 +991,7 @@ abstract class GridTcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Di
             throws IOException, GridException {
             bout.reset();
 
-            GridTcpDiscoverySpiAdapter.this.writeToSocket(sock, msg, bout);
+            TcpDiscoverySpiAdapter.this.writeToSocket(sock, msg, bout);
         }
     }
 }

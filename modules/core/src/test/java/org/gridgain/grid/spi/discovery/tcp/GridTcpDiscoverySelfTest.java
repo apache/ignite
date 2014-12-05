@@ -175,7 +175,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, 4, "grid-starter");
 
-            Collection<GridTcpDiscoveryNode> nodes = discoMap.get(g1.name()).ring().allNodes();
+            Collection<TcpDiscoveryNode> nodes = discoMap.get(g1.name()).ring().allNodes();
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
@@ -314,7 +314,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
 
-                        GridTcpDiscoveryNode node = ((GridTcpDiscoveryNode)discoMap.get(g1.name()).
+                        TcpDiscoveryNode node = ((TcpDiscoveryNode)discoMap.get(g1.name()).
                             getNode(discoEvt.eventNode().id()));
 
                         assert node != null && node.visible();

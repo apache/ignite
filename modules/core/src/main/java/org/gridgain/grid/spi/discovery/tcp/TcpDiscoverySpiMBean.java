@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
-public interface GridTcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
+public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets delay between heartbeat messages sent by coordinator.
      *
