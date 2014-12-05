@@ -65,10 +65,10 @@ public class GridStealingLoadTest extends GridCommonAbstractTest {
         colSpi.setWaitJobsThreshold(0);
         colSpi.setMessageExpireTime(5000);
 
-        GridJobStealingFailoverSpi failSpi = new GridJobStealingFailoverSpi();
+        JobStealingFailoverSpi failSpi = new JobStealingFailoverSpi();
 
         // Verify defaults.
-        assert failSpi.getMaximumFailoverAttempts() == GridJobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
+        assert failSpi.getMaximumFailoverAttempts() == JobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
 
         DiscoverySpi discoSpi = new TcpDiscoverySpi();
 

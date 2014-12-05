@@ -626,7 +626,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * Test failover SPI for master node.
      */
     @IgniteSpiConsistencyChecked(optional = true)
-    private static class MasterFailoverSpi extends GridAlwaysFailoverSpi {
+    private static class MasterFailoverSpi extends AlwaysFailoverSpi {
         /** */
         private static final String FAILOVER_NUMBER_ATTR = "failover:number:attr";
 
@@ -648,7 +648,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+        @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
             failedOverJobs.add(ctx.getJobResult().getJobContext());
 
             // Clear failed nodes list - allow to failover on the same node.

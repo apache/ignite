@@ -13,15 +13,15 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridJobStealingFailoverSpi}.
+ * Management bean for {@link JobStealingFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
-public interface GridJobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
+public interface JobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
      * If job gets stolen and thief node exists then it is not considered as
      * failed job.
-     * If not specified, {@link GridJobStealingFailoverSpi#DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
+     * If not specified, {@link JobStealingFailoverSpi#DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */

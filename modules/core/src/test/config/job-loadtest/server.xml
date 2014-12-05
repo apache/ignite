@@ -36,7 +36,7 @@
         </property>
 
         <property name="failoverSpi">
-            <bean class="org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi">
+            <bean class="org.gridgain.grid.spi.failover.jobstealing.JobStealingFailoverSpi">
                 <property name="maximumFailoverAttempts" value="10"/>
             </bean>
         </property>

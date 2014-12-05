@@ -13,9 +13,9 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridNeverFailoverSpi}.
+ * Management bean for {@link NeverFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to never failover SPI configuration.")
-public interface GridNeverFailoverSpiMBean extends IgniteSpiManagementMBean {
+public interface NeverFailoverSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

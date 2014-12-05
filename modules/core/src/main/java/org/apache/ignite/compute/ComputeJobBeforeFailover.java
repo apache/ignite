@@ -9,13 +9,11 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.spi.failover.*;
-
 import java.lang.annotation.*;
 
 /**
  * This annotation allows to call a method right before job is submitted to
- * {@link GridFailoverSpi}. In this method job can re-create necessary state that was
+ * {@link org.gridgain.grid.spi.failover.FailoverSpi}. In this method job can re-create necessary state that was
  * cleared, for example, in method with {@link ComputeJobAfterSend} annotation.
  * <p>
  * This annotation can be applied to methods of {@link ComputeJob} instances only. It is

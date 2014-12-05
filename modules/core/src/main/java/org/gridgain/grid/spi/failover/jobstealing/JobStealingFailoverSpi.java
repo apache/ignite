@@ -15,7 +15,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.spi.failover.*;
-import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -39,7 +38,7 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * route the job to the node specified.
  * <p>
  * If failure is caused by a node crash, and not by <b>steal</b> request, then this
- * SPI behaves identically to {@link GridAlwaysFailoverSpi}, and tries to find the
+ * SPI behaves identically to {@link org.gridgain.grid.spi.failover.always.AlwaysFailoverSpi}, and tries to find the
  * next balanced node to fail-over a job to.
  * <p>
  * <h1 class="header">Configuration</h1>
@@ -77,12 +76,12 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridFailoverSpi
+ * @see org.gridgain.grid.spi.failover.FailoverSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi,
-    GridJobStealingFailoverSpiMBean {
+public class JobStealingFailoverSpi extends IgniteSpiAdapter implements FailoverSpi,
+    JobStealingFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
 
@@ -165,7 +164,7 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
         if (log.isDebugEnabled())
             log.debug(configInfo("maxFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, GridJobStealingFailoverSpiMBean.class);
+        registerMBean(gridName, this, JobStealingFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -183,7 +182,7 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+    @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;
 
@@ -339,6 +338,6 @@ public class GridJobStealingFailoverSpi extends IgniteSpiAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridJobStealingFailoverSpi.class, this);
+        return S.toString(JobStealingFailoverSpi.class, this);
     }
 }

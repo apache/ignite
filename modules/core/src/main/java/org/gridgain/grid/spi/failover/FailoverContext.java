@@ -19,7 +19,7 @@ import java.util.*;
  * This interface defines a set of operations available to failover SPI
  * one a given failed job.
  */
-public interface GridFailoverContext {
+public interface FailoverContext {
     /**
      * Gets current task session.
      *

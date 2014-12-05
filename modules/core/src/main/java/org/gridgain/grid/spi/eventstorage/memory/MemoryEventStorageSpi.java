@@ -24,7 +24,7 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * In-memory {@link GridEventStorageSpi} implementation. All events are
+ * In-memory {@link org.gridgain.grid.spi.eventstorage.EventStorageSpi} implementation. All events are
  * kept in the FIFO queue. If no configuration is provided a default expiration
  * {@link #DFLT_EXPIRE_AGE_MS} and default count {@link #DFLT_EXPIRE_COUNT} will
  * be used.
@@ -79,11 +79,11 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridEventStorageSpi
+ * @see org.gridgain.grid.spi.eventstorage.EventStorageSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridEventStorageSpi,
-    GridMemoryEventStorageSpiMBean {
+public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStorageSpi,
+    MemoryEventStorageSpiMBean {
     /** Default event time to live value in milliseconds (value is {@link Long#MAX_VALUE}). */
     public static final long DFLT_EXPIRE_AGE_MS = Long.MAX_VALUE;
 
@@ -139,7 +139,7 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
             log.debug(configInfo("expireCnt", expireCnt));
         }
 
-        registerMBean(gridName, this, GridMemoryEventStorageSpiMBean.class);
+        registerMBean(gridName, this, MemoryEventStorageSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -267,6 +267,6 @@ public class GridMemoryEventStorageSpi extends IgniteSpiAdapter implements GridE
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridMemoryEventStorageSpi.class, this);
+        return S.toString(MemoryEventStorageSpi.class, this);
     }
 }

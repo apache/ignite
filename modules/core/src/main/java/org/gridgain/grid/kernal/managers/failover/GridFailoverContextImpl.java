@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * GridFailoverContext implementation.
  */
-public class GridFailoverContextImpl implements GridFailoverContext {
+public class GridFailoverContextImpl implements FailoverContext {
     /** Grid task session. */
     private final GridTaskSessionImpl taskSes;
 

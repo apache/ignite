@@ -46,7 +46,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        GridMemoryEventStorageSpi evtStorageSpi = new GridMemoryEventStorageSpi();
+        MemoryEventStorageSpi evtStorageSpi = new MemoryEventStorageSpi();
 
         evtStorageSpi.setExpireCount(50_000);
 

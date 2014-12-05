@@ -40,7 +40,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 /**
  * Grid event storage SPI manager.
  */
-public class GridEventStorageManager extends GridManagerAdapter<GridEventStorageSpi> {
+public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
     /** */
     private static final int[] EMPTY = new int[0];
 

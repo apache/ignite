@@ -23,8 +23,8 @@ import java.util.*;
 /**
  * Job stealing failover SPI test for one node.
  */
-@GridSpiTest(spi = GridJobStealingFailoverSpi.class, group = "Failover SPI")
-public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTest<GridJobStealingFailoverSpi> {
+@GridSpiTest(spi = JobStealingFailoverSpi.class, group = "Failover SPI")
+public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTest<JobStealingFailoverSpi> {
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {
         GridSpiTestContext ctx = super.initSpiContext();

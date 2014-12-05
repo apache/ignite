@@ -16,7 +16,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Never-failover SPI start-stop test.
  */
-@GridSpiTest(spi = GridNeverFailoverSpi.class, group = "Failover SPI")
-public class GridNeverFailoverSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridFailoverSpi> {
+@GridSpiTest(spi = NeverFailoverSpi.class, group = "Failover SPI")
+public class GridNeverFailoverSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<FailoverSpi> {
     // No-op.
 }

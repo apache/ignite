@@ -13,13 +13,13 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridAlwaysFailoverSpi}.
+ * Management bean for {@link AlwaysFailoverSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to always failover SPI configuration.")
-public interface GridAlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
+public interface AlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
-     * If not specified, {@link GridAlwaysFailoverSpi#DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
+     * If not specified, {@link AlwaysFailoverSpi#DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */

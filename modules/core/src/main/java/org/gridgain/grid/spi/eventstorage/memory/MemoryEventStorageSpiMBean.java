@@ -13,7 +13,7 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridMemoryEventStorageSpi}.
+ * Management bean for {@link MemoryEventStorageSpi}.
  * Beside properties defined for every SPI bean this one gives access to:
  * <ul>
  * <li>Event expiration time (see {@link #getExpireAgeMs()})</li>
@@ -22,7 +22,7 @@ import org.apache.ignite.spi.*;
  * </ul>
  */
 @IgniteMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
-public interface GridMemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
+public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets event time-to-live value. Implementation must guarantee
      * that event would not be accessible if its lifetime exceeds this value.

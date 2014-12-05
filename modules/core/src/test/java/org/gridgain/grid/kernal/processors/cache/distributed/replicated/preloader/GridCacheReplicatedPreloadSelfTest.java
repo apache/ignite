@@ -75,7 +75,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setUserAttributes(F.asMap("EVEN", !gridName.endsWith("0") && !gridName.endsWith("2")));
 
-        GridMemoryEventStorageSpi spi = new GridMemoryEventStorageSpi();
+        MemoryEventStorageSpi spi = new MemoryEventStorageSpi();
 
         spi.setExpireCount(50_000);
 

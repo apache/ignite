@@ -11,9 +11,6 @@ package org.gridgain.grid.spi.failover;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.failover.always.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
-import org.gridgain.grid.spi.failover.never.*;
 
 import java.util.*;
 
@@ -34,9 +31,9 @@ import java.util.*;
  * <p>
  * GridGain comes with the following built-in failover SPI implementations:
  * <ul>
- *      <li>{@link GridNeverFailoverSpi}</li>
- *      <li>{@link GridAlwaysFailoverSpi}</li>
- *      <li>{@link GridJobStealingFailoverSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.failover.never.NeverFailoverSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.failover.always.AlwaysFailoverSpi}</li>
+ *      <li>{@link org.gridgain.grid.spi.failover.jobstealing.JobStealingFailoverSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
@@ -45,13 +42,13 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridFailoverSpi extends IgniteSpi {
+public interface FailoverSpi extends IgniteSpi {
     /**
      * This method is called when method {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} returns
      * value {@link org.apache.ignite.compute.ComputeJobResultPolicy#FAILOVER} policy indicating that the result of
      * job execution must be failed over. Implementation of this method should examine failover
      * context and choose one of the grid nodes from supplied {@code topology} to retry job execution
-     * on it. For best performance it is advised that {@link GridFailoverContext#getBalancedNode(List)}
+     * on it. For best performance it is advised that {@link FailoverContext#getBalancedNode(List)}
      * method is used to select node for execution of failed job.
      *
      * @param ctx Failover context.
@@ -59,5 +56,5 @@ public interface GridFailoverSpi extends IgniteSpi {
      * @return New node to route this job to or {@code null} if new node cannot be picked.
      *      If job failover fails (returns {@code null}) the whole task will be failed.
      */
-    public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top);
+    public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top);
 }

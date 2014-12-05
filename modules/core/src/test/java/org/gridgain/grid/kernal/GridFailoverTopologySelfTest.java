@@ -42,13 +42,13 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
 
         cfg.setNodeId(null);
 
-        cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
+        cfg.setFailoverSpi(new AlwaysFailoverSpi() {
             /** */
             @IgniteLocalNodeIdResource
             private UUID locNodeId;
 
             /** {@inheritDoc} */
-            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
+            @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> grid) {
                 if (grid.size() != 1) {
                     failed.set(true);
 

@@ -48,9 +48,9 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
+        cfg.setFailoverSpi(new AlwaysFailoverSpi() {
             /** {@inheritDoc} */
-            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> grid) {
+            @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> grid) {
                 ClusterNode failoverNode = super.failover(ctx, grid);
 
                 if (failoverNode != null)

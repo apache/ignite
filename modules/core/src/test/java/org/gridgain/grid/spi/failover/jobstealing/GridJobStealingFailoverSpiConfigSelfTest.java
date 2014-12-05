@@ -14,12 +14,12 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Job stealing failover SPI config test.
  */
-@GridSpiTest(spi = GridJobStealingFailoverSpi.class, group = "Collision SPI")
-public class GridJobStealingFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridJobStealingFailoverSpi> {
+@GridSpiTest(spi = JobStealingFailoverSpi.class, group = "Collision SPI")
+public class GridJobStealingFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<JobStealingFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridJobStealingFailoverSpi(), "maximumFailoverAttempts", -1);
+        checkNegativeSpiProperty(new JobStealingFailoverSpi(), "maximumFailoverAttempts", -1);
     }
 }

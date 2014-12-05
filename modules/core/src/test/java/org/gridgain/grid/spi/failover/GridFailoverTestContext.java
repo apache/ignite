@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Failover test context.
  */
-public class GridFailoverTestContext implements GridFailoverContext {
+public class GridFailoverTestContext implements FailoverContext {
     /** */
     private static final Random RAND = new Random();
 

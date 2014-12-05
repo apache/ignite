@@ -18,7 +18,6 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.spi.failover.jobstealing.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -55,7 +54,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <p>
  * <i>
  * Note that this SPI must always be used in conjunction with
- * {@link GridJobStealingFailoverSpi}.
+ * {@link org.gridgain.grid.spi.failover.jobstealing.JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
  * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()}
  * should be set to {@code 0} or greater value).

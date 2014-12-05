@@ -33,9 +33,7 @@ import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.spi.eventstorage.*;
-import org.gridgain.grid.spi.eventstorage.memory.*;
 import org.gridgain.grid.spi.failover.*;
-import org.gridgain.grid.spi.failover.always.*;
 import org.gridgain.grid.spi.indexing.*;
 import org.gridgain.grid.spi.loadbalancing.*;
 import org.gridgain.grid.spi.loadbalancing.roundrobin.*;
@@ -348,7 +346,7 @@ public class IgniteConfiguration {
     private CommunicationSpi commSpi;
 
     /** Event storage SPI. */
-    private GridEventStorageSpi evtSpi;
+    private EventStorageSpi evtSpi;
 
     /** Collision SPI. */
     private CollisionSpi colSpi;
@@ -366,7 +364,7 @@ public class IgniteConfiguration {
     private CheckpointSpi[] cpSpi;
 
     /** Failover SPI. */
-    private GridFailoverSpi[] failSpi;
+    private FailoverSpi[] failSpi;
 
     /** Load balancing SPI. */
     private GridLoadBalancingSpi[] loadBalancingSpi;
@@ -1754,21 +1752,21 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured event SPI implementation. If not provided,
-     * {@link GridMemoryEventStorageSpi} will be used.
+     * {@link org.gridgain.grid.spi.eventstorage.memory.MemoryEventStorageSpi} will be used.
      *
      * @return Grid event SPI implementation or {@code null} to use default implementation.
      */
-    public GridEventStorageSpi getEventStorageSpi() {
+    public EventStorageSpi getEventStorageSpi() {
         return evtSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridEventStorageSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.eventstorage.EventStorageSpi}.
      *
-     * @param evtSpi Fully configured instance of {@link GridEventStorageSpi}.
+     * @param evtSpi Fully configured instance of {@link org.gridgain.grid.spi.eventstorage.EventStorageSpi}.
      * @see IgniteConfiguration#getEventStorageSpi()
      */
-    public void setEventStorageSpi(GridEventStorageSpi evtSpi) {
+    public void setEventStorageSpi(EventStorageSpi evtSpi) {
         this.evtSpi = evtSpi;
     }
 
@@ -2055,22 +2053,22 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured failover SPI implementation. If not provided,
-     * {@link GridAlwaysFailoverSpi} will be used.
+     * {@link org.gridgain.grid.spi.failover.always.AlwaysFailoverSpi} will be used.
      *
      * @return Grid failover SPI implementation or {@code null} to use default implementation.
      */
-    public GridFailoverSpi[] getFailoverSpi() {
+    public FailoverSpi[] getFailoverSpi() {
         return failSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link GridFailoverSpi}.
+     * Sets fully configured instance of {@link org.gridgain.grid.spi.failover.FailoverSpi}.
      *
-     * @param failSpi Fully configured instance of {@link GridFailoverSpi} or
+     * @param failSpi Fully configured instance of {@link org.gridgain.grid.spi.failover.FailoverSpi} or
      *      {@code null} if no SPI provided.
      * @see IgniteConfiguration#getFailoverSpi()
      */
-    public void setFailoverSpi(GridFailoverSpi... failSpi) {
+    public void setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
     }
 

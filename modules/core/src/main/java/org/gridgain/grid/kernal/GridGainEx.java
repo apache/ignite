@@ -1465,13 +1465,13 @@ public class GridGainEx {
 
             CommunicationSpi commSpi = cfg.getCommunicationSpi();
             DiscoverySpi discoSpi = cfg.getDiscoverySpi();
-            GridEventStorageSpi evtSpi = cfg.getEventStorageSpi();
+            EventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             GridSecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             DeploymentSpi deploySpi = cfg.getDeploymentSpi();
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
-            GridFailoverSpi[] failSpi = cfg.getFailoverSpi();
+            FailoverSpi[] failSpi = cfg.getFailoverSpi();
             GridLoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             GridSwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
             GridIndexingSpi[] indexingSpi = cfg.getIndexingSpi();
@@ -1680,7 +1680,7 @@ public class GridGainEx {
             }
 
             if (evtSpi == null)
-                evtSpi = new GridMemoryEventStorageSpi();
+                evtSpi = new MemoryEventStorageSpi();
 
             if (colSpi == null)
                 colSpi = new NoopCollisionSpi();
@@ -1698,7 +1698,7 @@ public class GridGainEx {
                 cpSpi = new CheckpointSpi[] {new NoopCheckpointSpi()};
 
             if (failSpi == null)
-                failSpi = new GridFailoverSpi[] {new GridAlwaysFailoverSpi()};
+                failSpi = new FailoverSpi[] {new AlwaysFailoverSpi()};
 
             if (loadBalancingSpi == null)
                 loadBalancingSpi = new GridLoadBalancingSpi[] {new GridRoundRobinLoadBalancingSpi()};

@@ -455,7 +455,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * Test failover SPI that remembers the job contexts of failed jobs.
      */
-    private class GridTestFailoverSpi extends GridAlwaysFailoverSpi {
+    private class GridTestFailoverSpi extends AlwaysFailoverSpi {
         /** */
         private static final String FAILOVER_NUMBER_ATTR = "failover:number:attr";
 
@@ -479,7 +479,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+        @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
             List<ClusterNode> cp = null;
             if (master) {
                 failedOverJobs.add(ctx.getJobResult().getJobContext());

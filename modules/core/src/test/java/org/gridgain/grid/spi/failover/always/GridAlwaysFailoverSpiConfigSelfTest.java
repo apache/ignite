@@ -14,12 +14,12 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Always-failover SPI config test.
  */
-@GridSpiTest(spi = GridAlwaysFailoverSpi.class, group = "Collision SPI")
-public class GridAlwaysFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridAlwaysFailoverSpi> {
+@GridSpiTest(spi = AlwaysFailoverSpi.class, group = "Collision SPI")
+public class GridAlwaysFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<AlwaysFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridAlwaysFailoverSpi(), "maximumFailoverAttempts", -1);
+        checkNegativeSpiProperty(new AlwaysFailoverSpi(), "maximumFailoverAttempts", -1);
     }
 }

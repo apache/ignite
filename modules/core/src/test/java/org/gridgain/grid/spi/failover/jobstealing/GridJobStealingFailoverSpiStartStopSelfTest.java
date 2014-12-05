@@ -20,8 +20,8 @@ import java.util.*;
 /**
  * Job stealing failover SPI start-stop test.
  */
-@GridSpiTest(spi = GridJobStealingFailoverSpi.class, group = "Failover SPI")
-public class GridJobStealingFailoverSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridFailoverSpi> {
+@GridSpiTest(spi = JobStealingFailoverSpi.class, group = "Failover SPI")
+public class GridJobStealingFailoverSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<FailoverSpi> {
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {
         GridSpiTestContext ctx = super.initSpiContext();

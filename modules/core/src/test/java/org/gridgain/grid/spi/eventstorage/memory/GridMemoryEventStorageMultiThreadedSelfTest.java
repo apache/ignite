@@ -19,8 +19,8 @@ import java.util.concurrent.*;
 /**
  * Memory event storage load test.
  */
-@GridSpiTest(spi = GridMemoryEventStorageSpi.class, group = "EventStorage SPI")
-public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstractTest<GridMemoryEventStorageSpi> {
+@GridSpiTest(spi = MemoryEventStorageSpi.class, group = "EventStorage SPI")
+public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstractTest<MemoryEventStorageSpi> {
     /**
      * @throws Exception If test failed
      */

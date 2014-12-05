@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * This class provides failover SPI implementation that never fails over. This implementation
  * never fails over a failed job by always returning {@code null} out of
- * {@link GridFailoverSpi#failover(GridFailoverContext, List)} method.
+ * {@link org.gridgain.grid.spi.failover.FailoverSpi#failover(org.gridgain.grid.spi.failover.FailoverContext, List)} method.
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -49,10 +49,10 @@ import java.util.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridFailoverSpi
+ * @see org.gridgain.grid.spi.failover.FailoverSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridNeverFailoverSpiMBean {
+public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, NeverFailoverSpiMBean {
     /** Injected grid logger. */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -62,7 +62,7 @@ public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailov
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, GridNeverFailoverSpiMBean.class);
+        registerMBean(gridName, this, NeverFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -79,7 +79,7 @@ public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailov
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+    @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         U.warn(log, "Returning 'null' node for failed job (failover will not happen) [job=" +
             ctx.getJobResult().getJob() + ", task=" +  ctx.getTaskSession().getTaskName() +
             ", sessionId=" + ctx.getTaskSession().getId() + ']');
@@ -89,6 +89,6 @@ public class GridNeverFailoverSpi extends IgniteSpiAdapter implements GridFailov
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNeverFailoverSpi.class, this);
+        return S.toString(NeverFailoverSpi.class, this);
     }
 }

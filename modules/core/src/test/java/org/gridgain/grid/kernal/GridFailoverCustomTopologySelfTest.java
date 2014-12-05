@@ -46,9 +46,9 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         cfg.setNodeId(null);
 
-        cfg.setFailoverSpi(new GridAlwaysFailoverSpi() {
+        cfg.setFailoverSpi(new AlwaysFailoverSpi() {
             /** {@inheritDoc} */
-            @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+            @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
                 failCnt.incrementAndGet();
 
                 return super.failover(ctx, top);

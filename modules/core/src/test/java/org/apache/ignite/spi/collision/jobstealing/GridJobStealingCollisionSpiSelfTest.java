@@ -95,7 +95,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
      * @throws Exception If failed.
      */
     private void addSpiDependency(GridTestNode node) throws Exception {
-        node.addAttribute(U.spiAttribute(getSpi(), ATTR_SPI_CLASS), GridJobStealingFailoverSpi.class.getName());
+        node.addAttribute(U.spiAttribute(getSpi(), ATTR_SPI_CLASS), JobStealingFailoverSpi.class.getName());
     }
 
     /**

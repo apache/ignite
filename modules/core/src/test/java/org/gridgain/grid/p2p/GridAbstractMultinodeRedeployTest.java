@@ -40,7 +40,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
 
         cfg.setDeploymentMode(depMode);
 
-        cfg.setFailoverSpi(new GridNeverFailoverSpi());
+        cfg.setFailoverSpi(new NeverFailoverSpi());
 
         cfg.setNetworkTimeout(10000);
 

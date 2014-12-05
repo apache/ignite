@@ -85,7 +85,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
      * Test event storage spi that throws an exception on try to query local events.
      */
     @IgniteSpiMultipleInstancesSupport(true)
-    private static class GridTestRuntimeExceptionSpi extends IgniteSpiAdapter implements GridEventStorageSpi {
+    private static class GridTestRuntimeExceptionSpi extends IgniteSpiAdapter implements EventStorageSpi {
         /** {@inheritDoc} */
         @Override public void spiStart(String gridName) throws IgniteSpiException {
             startStopwatch();

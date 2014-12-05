@@ -37,7 +37,7 @@ import java.util.*;
  * to undefined behavior and explicitly not supported.
  * @see org.apache.ignite.events.IgniteEvent
  */
-public interface GridEventStorageSpi extends IgniteSpi {
+public interface EventStorageSpi extends IgniteSpi {
     /**
      * Queries locally-stored events only. Events could be filtered out
      * by given predicate filter.

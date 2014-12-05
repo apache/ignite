@@ -19,10 +19,10 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Tests for {@link GridMemoryEventStorageSpi}.
+ * Tests for {@link MemoryEventStorageSpi}.
  */
-@GridSpiTest(spi = GridMemoryEventStorageSpi.class, group = "Event Storage SPI")
-public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridMemoryEventStorageSpi> {
+@GridSpiTest(spi = MemoryEventStorageSpi.class, group = "Event Storage SPI")
+public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<MemoryEventStorageSpi> {
     /** */
     private static final int EXPIRE_CNT = 100;
 
@@ -46,7 +46,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
      * @throws Exception If failed.
      */
     public void testMemoryEventStorage() throws Exception {
-        GridMemoryEventStorageSpi spi = getSpi();
+        MemoryEventStorageSpi spi = getSpi();
 
         IgnitePredicate<IgniteEvent> filter = F.alwaysTrue();
 
@@ -93,7 +93,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<GridM
      */
     @SuppressWarnings({"NullableProblems"})
     public void testFilter() throws Exception {
-        GridMemoryEventStorageSpi spi = getSpi();
+        MemoryEventStorageSpi spi = getSpi();
 
         try {
             spi.clearAll();

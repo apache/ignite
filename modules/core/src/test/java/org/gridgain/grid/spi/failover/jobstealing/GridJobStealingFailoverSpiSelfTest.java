@@ -22,13 +22,13 @@ import java.util.*;
 
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
-import static org.gridgain.grid.spi.failover.jobstealing.GridJobStealingFailoverSpi.*;
+import static org.gridgain.grid.spi.failover.jobstealing.JobStealingFailoverSpi.*;
 
 /**
- * Self test for {@link GridJobStealingFailoverSpi} SPI.
+ * Self test for {@link JobStealingFailoverSpi} SPI.
  */
-@GridSpiTest(spi = GridJobStealingFailoverSpi.class, group = "Failover SPI")
-public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<GridJobStealingFailoverSpi> {
+@GridSpiTest(spi = JobStealingFailoverSpi.class, group = "Failover SPI")
+public class GridJobStealingFailoverSpiSelfTest extends GridSpiAbstractTest<JobStealingFailoverSpi> {
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {
         GridSpiTestContext ctx = super.initSpiContext();

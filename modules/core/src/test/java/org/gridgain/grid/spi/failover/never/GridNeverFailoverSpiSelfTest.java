@@ -19,8 +19,8 @@ import java.util.*;
 /**
  * Never failover SPI test.
  */
-@GridSpiTest(spi = GridNeverFailoverSpi.class, group = "Failover SPI")
-public class GridNeverFailoverSpiSelfTest extends GridSpiAbstractTest<GridNeverFailoverSpi> {
+@GridSpiTest(spi = NeverFailoverSpi.class, group = "Failover SPI")
+public class GridNeverFailoverSpiSelfTest extends GridSpiAbstractTest<NeverFailoverSpi> {
     /**
      * @throws Exception If failed.
      */

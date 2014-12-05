@@ -72,10 +72,10 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         colSpi.setActiveJobsThreshold(gridName.endsWith("1") ? 0 : 2);
         colSpi.setWaitJobsThreshold(0);
 
-        GridJobStealingFailoverSpi failSpi = new GridJobStealingFailoverSpi();
+        JobStealingFailoverSpi failSpi = new JobStealingFailoverSpi();
 
         // Verify defaults.
-        assert failSpi.getMaximumFailoverAttempts() == GridJobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
+        assert failSpi.getMaximumFailoverAttempts() == JobStealingFailoverSpi.DFLT_MAX_FAILOVER_ATTEMPTS;
 
         cfg.setCollisionSpi(colSpi);
         cfg.setFailoverSpi(failSpi);

@@ -14,13 +14,13 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Memory event storage SPI config test.
  */
-@GridSpiTest(spi = GridMemoryEventStorageSpi.class, group = "Event Storage SPI")
-public class GridMemoryEventStorageSpiConfigSelfTest extends GridSpiAbstractConfigTest<GridMemoryEventStorageSpi> {
+@GridSpiTest(spi = MemoryEventStorageSpi.class, group = "Event Storage SPI")
+public class GridMemoryEventStorageSpiConfigSelfTest extends GridSpiAbstractConfigTest<MemoryEventStorageSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridMemoryEventStorageSpi(), "expireCount", 0);
-        checkNegativeSpiProperty(new GridMemoryEventStorageSpi(), "expireAgeMs", 0);
+        checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireCount", 0);
+        checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireAgeMs", 0);
     }
 }

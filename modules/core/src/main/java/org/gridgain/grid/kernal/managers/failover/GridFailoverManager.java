@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Grid failover spi manager.
  */
-public class GridFailoverManager extends GridManagerAdapter<GridFailoverSpi> {
+public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
     /**
      * @param ctx Kernal context.
      */

@@ -70,11 +70,11 @@ import java.util.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see GridFailoverSpi
+ * @see org.gridgain.grid.spi.failover.FailoverSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailoverSpi, GridAlwaysFailoverSpiMBean {
+public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, AlwaysFailoverSpiMBean {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
 
@@ -134,7 +134,7 @@ public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailo
         if (log.isDebugEnabled())
             log.debug(configInfo("maximumFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, GridAlwaysFailoverSpiMBean.class);
+        registerMBean(gridName, this, AlwaysFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -152,7 +152,7 @@ public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailo
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClusterNode failover(GridFailoverContext ctx, List<ClusterNode> top) {
+    @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         assert ctx != null;
         assert top != null;
 
@@ -233,6 +233,6 @@ public class GridAlwaysFailoverSpi extends IgniteSpiAdapter implements GridFailo
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridAlwaysFailoverSpi.class, this);
+        return S.toString(AlwaysFailoverSpi.class, this);
     }
 }

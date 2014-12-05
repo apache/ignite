@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
 /**
  * Memory event storage SPI start-stop test.
  */
-@GridSpiTest(spi = GridMemoryEventStorageSpi.class, group = "Event Storage SPI")
-public class GridMemoryEventStorageSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridMemoryEventStorageSpi> {
+@GridSpiTest(spi = MemoryEventStorageSpi.class, group = "Event Storage SPI")
+public class GridMemoryEventStorageSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<MemoryEventStorageSpi> {
     // No-op.
 }

@@ -18,18 +18,18 @@ import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.spi.failover.always.GridAlwaysFailoverSpi.*;
+import static org.gridgain.grid.spi.failover.always.AlwaysFailoverSpi.*;
 
 /**
  * Always-failover SPI test.
  */
-@GridSpiTest(spi = GridAlwaysFailoverSpi.class, group = "Failover SPI")
-public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlwaysFailoverSpi> {
+@GridSpiTest(spi = AlwaysFailoverSpi.class, group = "Failover SPI")
+public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testSingleNode() throws Exception {
-        GridAlwaysFailoverSpi spi = getSpi();
+        AlwaysFailoverSpi spi = getSpi();
 
         List<ClusterNode> nodes = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
      */
     @SuppressWarnings("unchecked")
     public void testTwoNodes() throws Exception {
-        GridAlwaysFailoverSpi spi = getSpi();
+        AlwaysFailoverSpi spi = getSpi();
 
         List<ClusterNode> nodes = new ArrayList<>();
 
@@ -68,7 +68,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<GridAlway
      * @throws Exception If failed.
      */
     public void testMaxAttempts() throws Exception {
-        GridAlwaysFailoverSpi spi = getSpi();
+        AlwaysFailoverSpi spi = getSpi();
 
         spi.setMaximumFailoverAttempts(1);
 

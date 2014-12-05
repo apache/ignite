@@ -157,7 +157,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopEventStorageManager() throws Exception {
-        GridEventStorageSpi spi = new GridMemoryEventStorageSpi();
+        EventStorageSpi spi = new MemoryEventStorageSpi();
 
         injectLogger(spi);
 
@@ -172,7 +172,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopFailoverManager() throws Exception {
-        GridAlwaysFailoverSpi spi = new GridAlwaysFailoverSpi();
+        AlwaysFailoverSpi spi = new AlwaysFailoverSpi();
 
         injectLogger(spi);
 
