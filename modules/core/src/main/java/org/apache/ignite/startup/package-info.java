@@ -1,4 +1,4 @@
 /**
  * Contains GridGain runtime startup classes.
  */
-package org.gridgain.grid.startup;
+package org.apache.ignite.startup;

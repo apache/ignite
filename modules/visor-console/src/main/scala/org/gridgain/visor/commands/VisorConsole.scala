@@ -16,9 +16,9 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util
 import javax.swing.ImageIcon
+import org.apache.ignite.startup.cmdline.GridAboutDialog
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.grid.util.scala.impl
-import org.gridgain.grid.startup.cmdline.GridAboutDialog
 import org.gridgain.visor.visor
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer.Completer

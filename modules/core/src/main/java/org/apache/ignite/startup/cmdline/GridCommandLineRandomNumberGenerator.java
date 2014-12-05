@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.startup.cmdline;
+package org.apache.ignite.startup.cmdline;
 
 import java.util.*;
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.startup.cmdline;
 
+import org.apache.ignite.startup.cmdline.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 

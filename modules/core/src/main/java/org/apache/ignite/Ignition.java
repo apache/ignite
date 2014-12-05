@@ -12,7 +12,6 @@ package org.apache.ignite;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.startup.cmdline.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -26,7 +25,7 @@ import java.util.*;
  * often started and stopped by grid loaders. Grid loaders can be found in
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
- * <li>{@link GridCommandLineStartup}</li>
+ * <li>{@link org.apache.ignite.startup.cmdline.GridCommandLineStartup}</li>
  * <li>{@gglink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>

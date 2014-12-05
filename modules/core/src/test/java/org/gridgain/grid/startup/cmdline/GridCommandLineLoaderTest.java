@@ -10,6 +10,7 @@
 package org.gridgain.grid.startup.cmdline;
 
 import org.apache.ignite.*;
+import org.apache.ignite.startup.cmdline.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -54,6 +55,6 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
             }
         });
 
-        GridCommandLineStartup.main(new String[] {path});
+        GridCommandLineStartup.main(new String[]{path});
     }
 }
