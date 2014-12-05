@@ -15,8 +15,8 @@ import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
-import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.grid.{_}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._

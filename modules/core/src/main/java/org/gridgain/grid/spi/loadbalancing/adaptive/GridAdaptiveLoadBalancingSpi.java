@@ -70,7 +70,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * are exchanged, the more precise the metrics are. However, you should keep in mind that if
  * heartbeats are exchanged too often then it may create unnecessary traffic in the network.
  * Heartbeats (or metrics update frequency) can be configured via underlying
- * {@link org.gridgain.grid.spi.discovery.DiscoverySpi} used in your grid.
+ * {@link org.apache.ignite.spi.discovery.DiscoverySpi} used in your grid.
  * <p>
  * Here is an example of how probing can be implemented to use
  * number of active and waiting jobs as probing mechanism:

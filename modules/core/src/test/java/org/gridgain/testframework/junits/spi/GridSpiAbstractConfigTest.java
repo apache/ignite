@@ -10,7 +10,7 @@
 package org.gridgain.testframework.junits.spi;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.*;
+import org.apache.ignite.spi.discovery.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;

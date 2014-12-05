@@ -14,9 +14,9 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 

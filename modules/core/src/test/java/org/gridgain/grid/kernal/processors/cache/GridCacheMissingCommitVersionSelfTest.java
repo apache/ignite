@@ -12,8 +12,8 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 

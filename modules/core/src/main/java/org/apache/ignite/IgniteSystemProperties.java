@@ -47,7 +47,7 @@ public final class IgniteSystemProperties {
      * by discovery SPI. Use with care, as proper node ordering is required for
      * cache consistency. If set to {@code true}, then any discovery SPI can be used
      * with distributed cache, otherwise, only discovery SPIs that have annotation
-     * {@link org.gridgain.grid.spi.discovery.DiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
+     * {@link org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
      * be allowed.
      */
     public static final String GG_NO_DISCO_ORDER = "GRIDGAIN_NO_DISCO_ORDER";
@@ -386,7 +386,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
-     * Makes sense only for {@link org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
+     * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
      */
     public static final String GG_TCP_DISCOVERY_ADDRESSES = "GRIDGAIN_TCP_DISCOVERY_ADDRESSES";
 

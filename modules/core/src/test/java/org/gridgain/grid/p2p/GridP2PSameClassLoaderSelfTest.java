@@ -11,7 +11,7 @@ package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;
 

@@ -4,8 +4,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit._
 import javax.swing.{JComponent, JLabel, JOptionPane}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar.scalar
 

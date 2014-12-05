@@ -12,7 +12,7 @@ package org.gridgain.grid.spi;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -84,7 +84,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Performs test of {@code localHost} resource injection for {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}.
+     * Performs test of {@code localHost} resource injection for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
      *
      * @param cfgVal {@code true} if {@code localHost} should be set in configuration adapter.
      * @param spiVal {@code true} if {@code localHost} should be set in SPI

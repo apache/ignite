@@ -43,7 +43,7 @@
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
                         GridGain provides several options for automatic discovery that can be used
@@ -52,7 +52,7 @@
                     -->
                     <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
                     <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->

@@ -10,7 +10,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.spi.IgniteSpiException;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;

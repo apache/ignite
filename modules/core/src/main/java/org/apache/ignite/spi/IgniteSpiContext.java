@@ -29,46 +29,46 @@ import java.util.*;
 public interface IgniteSpiContext {
     /**
      * Gets a collection of remote grid nodes. Remote nodes are discovered via underlying
-     * {@link org.gridgain.grid.spi.discovery.DiscoverySpi} implementation used. Unlike {@link #nodes()},
+     * {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used. Unlike {@link #nodes()},
      * this method does not include local grid node.
      *
      * @return Collection of remote grid nodes.
      * @see #localNode()
      * @see #nodes()
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public Collection<ClusterNode> remoteNodes();
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying
-     * {@link org.gridgain.grid.spi.discovery.DiscoverySpi} implementation used. Unlike {@link #remoteNodes()},
+     * {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used. Unlike {@link #remoteNodes()},
      * this method does include local grid node.
      *
      * @return Collection of remote grid nodes.
      * @see #localNode()
      * @see #remoteNodes()
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public Collection<ClusterNode> nodes();
 
     /**
-     * Gets local grid node. Instance of local node is provided by underlying {@link org.gridgain.grid.spi.discovery.DiscoverySpi}
+     * Gets local grid node. Instance of local node is provided by underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi}
      * implementation used.
      *
      * @return Local grid node.
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public ClusterNode localNode();
 
     /**
      * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
-     * underlying {@link org.gridgain.grid.spi.discovery.DiscoverySpi} implementation used.
+     * underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
      *
      * @return Collection of all daemon nodes.
      * @see #localNode()
      * @see #remoteNodes()
      * @see #nodes()
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public Collection<ClusterNode> remoteDaemonNodes();
 
@@ -77,13 +77,13 @@ public interface IgniteSpiContext {
      *
      * @param nodeId ID of a node to get.
      * @return Node for a given ID or {@code null} is such not has not been discovered.
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     @Nullable public ClusterNode node(UUID nodeId);
 
     /**
      * Pings a remote node. The underlying communication is provided via
-     * {@link org.gridgain.grid.spi.discovery.DiscoverySpi#pingNode(UUID)} implementation.
+     * {@link org.apache.ignite.spi.discovery.DiscoverySpi#pingNode(UUID)} implementation.
      * <p>
      * Discovery SPIs usually have some latency in discovering failed nodes. Hence,
      * communication to remote nodes may fail at times if an attempt was made to
@@ -92,7 +92,7 @@ public interface IgniteSpiContext {
      *
      * @param nodeId ID of a node to ping.
      * @return {@code true} if node for a given ID is alive, {@code false} otherwise.
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public boolean pingNode(UUID nodeId);
 

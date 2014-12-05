@@ -208,9 +208,9 @@
             of one or more servers which will always be started first.
         -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--

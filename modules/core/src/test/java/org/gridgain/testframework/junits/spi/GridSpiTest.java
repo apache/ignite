@@ -10,8 +10,8 @@
 package org.gridgain.testframework.junits.spi;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 
 import java.lang.annotation.*;
 
@@ -42,7 +42,7 @@ public @interface GridSpiTest {
 
     /**
      * Optional discovery SPI property to specify which SPI to use for discovering other nodes.
-     * This property is ignored if the spi being tested is an implementation of {@link org.gridgain.grid.spi.discovery.DiscoverySpi} or
+     * This property is ignored if the spi being tested is an implementation of {@link org.apache.ignite.spi.discovery.DiscoverySpi} or
      * {@link #triggerDiscovery()} is set to {@code false}.
      */
     public Class<? extends DiscoverySpi> discoverySpi() default TcpDiscoverySpi.class;

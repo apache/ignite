@@ -60,7 +60,7 @@
             <constructor-arg value="127.0.0.1"/>
         </bean>
 
-        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+        <bean id="discoSpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
             <property name="ackTimeout" value="5000"/>
             <property name="socketTimeout" value="5000"/>
             <property name="reconnectCount" value="5"/>
@@ -68,7 +68,7 @@
             <property name="maxMissedHeartbeats" value="3"/>
 
             <property name="ipFinder">
-                <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                     <property name="addresses">
                         <list>
                             <value>127.0.0.1:47500</value>
@@ -82,9 +82,9 @@
         <!-- Empty local host value. -->
         <bean id="localHost" class="java.lang.String"/>
 
-        <bean id="discoSpi" class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+        <bean id="discoSpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
             <property name="ipFinder">
-                <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                     <property name="addresses">
                         <list>
                             <value>10.1.10.210</value>

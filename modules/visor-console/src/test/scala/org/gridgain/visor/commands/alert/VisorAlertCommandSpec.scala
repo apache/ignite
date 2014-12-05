@@ -15,9 +15,9 @@ import java.util.regex.Pattern
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.gridgain.grid.spi.discovery.DiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
+import org.apache.ignite.spi.discovery.DiscoverySpi
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.gridgain.visor._
 import org.gridgain.visor.commands.alert.VisorAlertCommand._
 

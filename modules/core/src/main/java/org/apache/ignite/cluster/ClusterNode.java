@@ -84,7 +84,7 @@ import java.util.*;
  * Grid node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
  * is often directly related to the heartbeat exchange between nodes. So if, for example,
- * default {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi} is used,
+ * default {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} is used,
  * the metrics data will be updated every {@code 2} seconds by default.
  * <p>
  * Grid node metrics provide information about other nodes that can frequently change,
@@ -144,7 +144,7 @@ public interface ClusterNode extends GridMetadataAware {
      * <p>
      * Node metrics are updated with some delay which is directly related to heartbeat
      * frequency. For example, when used with default
-     * {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshot for this node.
      */

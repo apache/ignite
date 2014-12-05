@@ -38,20 +38,20 @@ public interface PluginContext {
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying
-     * {@link org.gridgain.grid.spi.discovery.DiscoverySpi} implementation used.
+     * {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
      *
      * @return Collection of grid nodes.
      * @see #localNode()
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public Collection<ClusterNode> nodes();
 
     /**
-     * Gets local grid node. Instance of local node is provided by underlying {@link org.gridgain.grid.spi.discovery.DiscoverySpi}
+     * Gets local grid node. Instance of local node is provided by underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi}
      * implementation used.
      *
      * @return Local grid node.
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public ClusterNode localNode();
 

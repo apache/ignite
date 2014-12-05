@@ -31,7 +31,7 @@ import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.grid.spi.discovery.*;
+import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.spi.eventstorage.*;
 import org.gridgain.grid.spi.eventstorage.memory.*;
 import org.gridgain.grid.spi.failover.*;
@@ -1774,7 +1774,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured discovery SPI implementation. If not provided,
-     * {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi} will be used by default.
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} will be used by default.
      *
      * @return Grid discovery SPI implementation or {@code null} to use default implementation.
      */
@@ -1783,9 +1783,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instance of {@link org.gridgain.grid.spi.discovery.DiscoverySpi}.
+     * Sets fully configured instance of {@link org.apache.ignite.spi.discovery.DiscoverySpi}.
      *
-     * @param discoSpi Fully configured instance of {@link org.gridgain.grid.spi.discovery.DiscoverySpi}.
+     * @param discoSpi Fully configured instance of {@link org.apache.ignite.spi.discovery.DiscoverySpi}.
      * @see IgniteConfiguration#getDiscoverySpi()
      */
     public void setDiscoverySpi(DiscoverySpi discoSpi) {

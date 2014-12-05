@@ -15,7 +15,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.GridCacheTmLookup;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

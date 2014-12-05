@@ -11,7 +11,7 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.apache.ignite.spi.checkpoint.s3.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.*;
 
 /**
  * S3 integration tests.

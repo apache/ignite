@@ -15,7 +15,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.loadtest.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.gridgain.grid.spi.discovery.*;
+import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;

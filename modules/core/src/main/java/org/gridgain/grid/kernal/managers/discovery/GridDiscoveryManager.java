@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.security.*;
 import org.gridgain.grid.segmentation.*;
-import org.gridgain.grid.spi.discovery.*;
+import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -361,7 +361,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
              * @return {@code True} if specified component should collect data after all other components,
              *      {@code false} otherwise.
              * @deprecated We shouldn't rely on exact order and size of
-             *      {@link org.gridgain.grid.spi.discovery.DiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
+             *      {@link org.apache.ignite.spi.discovery.DiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
              *      compatibility (for example, if we will add new grid component in the middle of components startup
              *      routine). This method should be changed to return map (component id -> collected data)
              *      in the next major release.
@@ -1178,7 +1178,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets first grid node start time, see {@link org.gridgain.grid.spi.discovery.DiscoverySpi#getGridStartTime()}.
+     * Gets first grid node start time, see {@link org.apache.ignite.spi.discovery.DiscoverySpi#getGridStartTime()}.
      *
      * @return Start time of the first grid node.
      */

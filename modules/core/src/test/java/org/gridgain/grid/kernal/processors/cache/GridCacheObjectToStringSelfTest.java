@@ -16,9 +16,9 @@ import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

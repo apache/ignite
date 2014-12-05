@@ -24,9 +24,9 @@
         <property name="restEnabled" value="false" />
 
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="multicastGroup" value="228.111.111.222"/>
                         <property name="multicastPort" value="54522"/>
                     </bean>
@@ -41,9 +41,9 @@
         <property name="restEnabled" value="false" />
 
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="multicastGroup" value="228.111.111.222"/>
                         <property name="multicastPort" value="54522"/>
                     </bean>

@@ -11,11 +11,11 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.spi.discovery.tcp.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.jdbc.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.*;
-import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 /**
  * Test suite for all discovery spi implementations.

@@ -65,13 +65,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param nodeId ID of a node to ping.
      * @return {@code true} if node for a given ID is alive, {@code false} otherwise.
-     * @see org.gridgain.grid.spi.discovery.DiscoverySpi
+     * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public boolean pingNode(UUID nodeId);
 
     /**
      * Gets current topology version. In case of TCP discovery
-     * (see {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}) topology versions
+     * (see {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}) topology versions
      * are sequential - they start from {@code '1'} and get incremented every time whenever a
      * node joins or leaves. For other discovery SPIs topology versions may not be (and likely are
      * not) sequential.
@@ -88,7 +88,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi}
+     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
      *      supports topology history.
      */
     @Nullable public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;

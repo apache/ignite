@@ -12,7 +12,7 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
-import org.gridgain.grid.spi.discovery.*;
+import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.mbeans.*;

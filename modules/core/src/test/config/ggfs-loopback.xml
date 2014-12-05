@@ -146,10 +146,10 @@
             TCP discovery SPI (uses VM-shared IP-finder).
         -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.TcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <!-- Override default IP-finder.-->
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--

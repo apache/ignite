@@ -249,13 +249,13 @@
             TCP discovery SPI (uses VM-shared IP-finder).
         -->
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <!-- Make sure both servers (unsecured and SSL-protected) can start as independent grids. -->
                 <property name="localPort" value="48500"/>
 
                 <!-- Override default IP-finder.-->
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--
