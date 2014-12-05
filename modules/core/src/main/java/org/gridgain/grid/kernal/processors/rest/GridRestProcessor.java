@@ -322,7 +322,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link GridClientMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.GridClientConnectionConfiguration#getClientMessageInterceptor()}
+     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
@@ -369,7 +369,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link GridClientMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.GridClientConnectionConfiguration#getClientMessageInterceptor()}
+     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
@@ -659,7 +659,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * @return Client configuration.
      */
-    private GridClientConnectionConfiguration config() {
+    private ClientConnectionConfiguration config() {
         return ctx.config().getClientConnectionConfiguration();
     }
 

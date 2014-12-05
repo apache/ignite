@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * REST access configuration.
  */
-public class GridClientConnectionConfiguration {
+public class ClientConnectionConfiguration {
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
 
@@ -107,7 +107,7 @@ public class GridClientConnectionConfiguration {
     /**
      * Creates client connection configuration with all default values.
      */
-    public GridClientConnectionConfiguration() {
+    public ClientConnectionConfiguration() {
         // No-op.
     }
 
@@ -117,7 +117,7 @@ public class GridClientConnectionConfiguration {
      *
      * @param cfg Client configuration.
      */
-    public GridClientConnectionConfiguration(GridClientConnectionConfiguration cfg) {
+    public ClientConnectionConfiguration(ClientConnectionConfiguration cfg) {
         assert cfg != null;
 
         clientMsgInterceptor = cfg.getClientMessageInterceptor();

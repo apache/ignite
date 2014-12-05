@@ -145,7 +145,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestClientMessageInterceptor interceptor = new TestClientMessageInterceptor();
 
-        GridClientConnectionConfiguration clientCfg = new GridClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         clientCfg.setClientMessageInterceptor(interceptor);
 

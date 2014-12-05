@@ -532,7 +532,7 @@ public class IgniteConfiguration {
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private GridClientConnectionConfiguration clientCfg;
+    private ClientConnectionConfiguration clientCfg;
 
     /** Portable configuration. */
     private PortableConfiguration portableCfg;
@@ -2341,7 +2341,7 @@ public class IgniteConfiguration {
      * accessing GridGain APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestJettyPath(String)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestJettyPath(String)}.
      */
     @Deprecated
     public void setRestJettyPath(String jettyPath) {
@@ -2360,7 +2360,7 @@ public class IgniteConfiguration {
      * @return Path to {@code JETTY} XML configuration file.
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestJettyPath()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestJettyPath()}.
      */
     @Deprecated
     public String getRestJettyPath() {
@@ -2371,7 +2371,7 @@ public class IgniteConfiguration {
      * Sets flag indicating whether external {@code REST} access is enabled or not.
      *
      * @param restEnabled Flag indicating whether external {@code REST} access is enabled or not.
-     * @deprecated Use {@link GridClientConnectionConfiguration}.
+     * @deprecated Use {@link ClientConnectionConfiguration}.
      */
     @Deprecated
     public void setRestEnabled(boolean restEnabled) {
@@ -2385,7 +2385,7 @@ public class IgniteConfiguration {
      * @return Flag indicating whether external {@code REST} access is enabled or not.
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
-     * @deprecated Use {@link GridClientConnectionConfiguration}.
+     * @deprecated Use {@link ClientConnectionConfiguration}.
      */
     @Deprecated
     public boolean isRestEnabled() {
@@ -2403,7 +2403,7 @@ public class IgniteConfiguration {
      * locally-available IP addresses.
      *
      * @return TCP host.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpHost()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpHost()}.
      */
     @Deprecated
     public String getRestTcpHost() {
@@ -2414,7 +2414,7 @@ public class IgniteConfiguration {
      * Sets host for TCP binary protocol server.
      *
      * @param restTcpHost TCP host.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpHost(String)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpHost(String)}.
      */
     @Deprecated
     public void setRestTcpHost(String restTcpHost) {
@@ -2427,7 +2427,7 @@ public class IgniteConfiguration {
      * Default is {@link #DFLT_TCP_PORT}.
      *
      * @return TCP port.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpPort()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpPort()}.
      */
     @Deprecated
     public int getRestTcpPort() {
@@ -2438,7 +2438,7 @@ public class IgniteConfiguration {
      * Sets port for TCP binary protocol server.
      *
      * @param restTcpPort TCP port.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpPort(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpPort(int)}.
      */
     @Deprecated
     public void setRestTcpPort(int restTcpPort) {
@@ -2453,7 +2453,7 @@ public class IgniteConfiguration {
      * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
      *
      * @return Whether {@code TCP_NODELAY} option should be enabled.
-     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpNoDelay()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpNoDelay()}.
      */
     @Deprecated
     public boolean isRestTcpNoDelay() {
@@ -2465,7 +2465,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpNoDelay {@code True} if option should be enabled.
      * @see #isRestTcpNoDelay()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpNoDelay(boolean)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpNoDelay(boolean)}.
      */
     @Deprecated
     public void setRestTcpNoDelay(boolean restTcpNoDelay) {
@@ -2479,7 +2479,7 @@ public class IgniteConfiguration {
      * size).
      *
      * @return Whether direct buffer should be used.
-     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpDirectBuffer()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpDirectBuffer()}.
      */
     @Deprecated
     public boolean isRestTcpDirectBuffer() {
@@ -2491,7 +2491,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpDirectBuf {@code True} if option should be enabled.
      * @see #isRestTcpDirectBuffer()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpDirectBuffer(boolean)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpDirectBuffer(boolean)}.
      */
     @Deprecated
     public void setRestTcpDirectBuffer(boolean restTcpDirectBuf) {
@@ -2502,7 +2502,7 @@ public class IgniteConfiguration {
      * Gets REST TCP server send buffer size.
      *
      * @return REST TCP server send buffer size (0 for default).
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSendBufferSize()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendBufferSize()}.
      */
     @Deprecated
     public int getRestTcpSendBufferSize() {
@@ -2514,7 +2514,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpSndBufSize Send buffer size.
      * @see #getRestTcpSendBufferSize()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSendBufferSize(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendBufferSize(int)}.
      */
     @Deprecated
     public void setRestTcpSendBufferSize(int restTcpSndBufSize) {
@@ -2525,7 +2525,7 @@ public class IgniteConfiguration {
      * Gets REST TCP server receive buffer size.
      *
      * @return REST TCP server receive buffer size (0 for default).
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpReceiveBufferSize()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpReceiveBufferSize()}.
      */
     @Deprecated
     public int getRestTcpReceiveBufferSize() {
@@ -2537,7 +2537,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpRcvBufSize Receive buffer size.
      * @see #getRestTcpReceiveBufferSize()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpReceiveBufferSize(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpReceiveBufferSize(int)}.
      */
     @Deprecated
     public void setRestTcpReceiveBufferSize(int restTcpRcvBufSize) {
@@ -2549,7 +2549,7 @@ public class IgniteConfiguration {
      * block until the queue has enough capacity.
      *
      * @return REST TCP server send queue limit (0 for unlimited).
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSendQueueLimit()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendQueueLimit()}.
      */
     @Deprecated
     public int getRestTcpSendQueueLimit() {
@@ -2561,7 +2561,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpSndQueueLimit REST TCP server send queue limit (0 for unlimited).
      * @see #getRestTcpSendQueueLimit()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSendQueueLimit(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendQueueLimit(int)}.
      */
     @Deprecated
     public void setRestTcpSendQueueLimit(int restTcpSndQueueLimit) {
@@ -2573,7 +2573,7 @@ public class IgniteConfiguration {
      * may increase throughput, but also increases context switching.
      *
      * @return Number of selector threads for REST TCP server.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSelectorCount()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSelectorCount()}.
      */
     @Deprecated
     public int getRestTcpSelectorCount() {
@@ -2585,7 +2585,7 @@ public class IgniteConfiguration {
      *
      * @param restTcpSelectorCnt Number of selector threads for REST TCP server.
      * @see #getRestTcpSelectorCount()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSelectorCount(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSelectorCount(int)}.
      */
     @Deprecated
     public void setRestTcpSelectorCount(int restTcpSelectorCnt) {
@@ -2599,7 +2599,7 @@ public class IgniteConfiguration {
      * come within idle timeout, the connection is closed.
      *
      * @return Idle timeout in milliseconds.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestIdleTimeout()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestIdleTimeout()}.
      */
     @Deprecated
     public long getRestIdleTimeout() {
@@ -2611,7 +2611,7 @@ public class IgniteConfiguration {
      *
      * @param restIdleTimeout Idle timeout in milliseconds.
      * @see #getRestIdleTimeout()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestIdleTimeout(long)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestIdleTimeout(long)}.
      */
     @Deprecated
     public void setRestIdleTimeout(long restIdleTimeout) {
@@ -2625,7 +2625,7 @@ public class IgniteConfiguration {
      * should be provided, otherwise binary rest protocol will fail to start.
      *
      * @return {@code True} if SSL should be enabled.
-     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpSslEnabled()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslEnabled()}.
      */
     @Deprecated
     public boolean isRestTcpSslEnabled() {
@@ -2639,7 +2639,7 @@ public class IgniteConfiguration {
      * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param restTcpSslEnabled {@code True} if SSL should be enabled.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslEnabled(boolean)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslEnabled(boolean)}.
      */
     @Deprecated
     public void setRestTcpSslEnabled(boolean restTcpSslEnabled) {
@@ -2651,7 +2651,7 @@ public class IgniteConfiguration {
      * validity will be verified with trust manager.
      *
      * @return Whether or not client authentication is required.
-     * @deprecated Use {@link GridClientConnectionConfiguration#isRestTcpSslClientAuth()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslClientAuth()}.
      */
     @Deprecated
     public boolean isRestTcpSslClientAuth() {
@@ -2662,7 +2662,7 @@ public class IgniteConfiguration {
      * Sets flag indicating whether or not SSL client authentication is required.
      *
      * @param needClientAuth Whether or not client authentication is required.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslClientAuth(boolean)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslClientAuth(boolean)}.
      */
     @Deprecated
     public void setRestTcpSslClientAuth(boolean needClientAuth) {
@@ -2674,7 +2674,7 @@ public class IgniteConfiguration {
      *
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestTcpSslContextFactory()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSslContextFactory()}.
      */
     @Deprecated
     public GridSslContextFactory getRestTcpSslContextFactory() {
@@ -2687,7 +2687,7 @@ public class IgniteConfiguration {
      * {@link #setRestTcpSslEnabled(boolean)} is set to {@code true}.
      *
      * @param restTcpSslCtxFactory Instance of {@link GridSslContextFactory}
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestTcpSslContextFactory(GridSslContextFactory)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslContextFactory(GridSslContextFactory)}.
      */
     @Deprecated
     public void setRestTcpSslContextFactory(GridSslContextFactory restTcpSslCtxFactory) {
@@ -2698,7 +2698,7 @@ public class IgniteConfiguration {
      * Gets number of ports to try if configured port is already in use.
      *
      * @return Number of ports to try.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestPortRange()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestPortRange()}.
      */
     @Deprecated
     public int getRestPortRange() {
@@ -2709,7 +2709,7 @@ public class IgniteConfiguration {
      * Sets number of ports to try if configured one is in use.
      *
      * @param restPortRange Port range.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestPortRange(int)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestPortRange(int)}.
      */
     @Deprecated
     public void setRestPortRange(int restPortRange) {
@@ -2725,7 +2725,7 @@ public class IgniteConfiguration {
      * could not be detected and property is not specified, no restrictions applied.
      *
      * @return Array of folders that are allowed be read by remote clients.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestAccessibleFolders()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestAccessibleFolders()}.
      */
     @Deprecated
     public String[] getRestAccessibleFolders() {
@@ -2736,7 +2736,7 @@ public class IgniteConfiguration {
      * Sets array of folders accessible by REST processor for log reading command.
      *
      * @param restAccessibleFolders Array of folder paths.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestAccessibleFolders(String...)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestAccessibleFolders(String...)}.
      */
     @Deprecated
     public void setRestAccessibleFolders(String... restAccessibleFolders) {
@@ -2757,7 +2757,7 @@ public class IgniteConfiguration {
      *
      * @return Thread pool implementation to be used for processing of client
      *      messages.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestExecutorService()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestExecutorService()}.
      */
     @Deprecated
     public ExecutorService getRestExecutorService() {
@@ -2769,7 +2769,7 @@ public class IgniteConfiguration {
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
      * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
      */
     @Deprecated
     public void setRestExecutorService(ExecutorService restExecSvc) {
@@ -2781,7 +2781,7 @@ public class IgniteConfiguration {
      *
      * @param restSvcShutdown REST executor service shutdown flag.
      * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
      */
     @Deprecated
     public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
@@ -2796,7 +2796,7 @@ public class IgniteConfiguration {
      * or by GridGain.
      *
      * @return REST executor service shutdown flag.
-     * @deprecated Use {@link GridClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
      */
     @Deprecated
     public boolean getRestExecutorServiceShutdown() {
@@ -2873,7 +2873,7 @@ public class IgniteConfiguration {
      * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @param restSecretKey REST secret key.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setRestSecretKey(String)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setRestSecretKey(String)}.
      */
     @Deprecated
     public void setRestSecretKey(String restSecretKey) {
@@ -2886,7 +2886,7 @@ public class IgniteConfiguration {
      * @return Secret key.
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
      * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
-     * @deprecated Use {@link GridClientConnectionConfiguration#getRestSecretKey()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getRestSecretKey()}.
      */
     @Deprecated
     public String getRestSecretKey() {
@@ -2955,7 +2955,7 @@ public class IgniteConfiguration {
      *
      * @see GridClientMessageInterceptor
      * @return Interceptor.
-     * @deprecated Use {@link GridClientConnectionConfiguration#getClientMessageInterceptor()}.
+     * @deprecated Use {@link ClientConnectionConfiguration#getClientMessageInterceptor()}.
      */
     @Deprecated
     public GridClientMessageInterceptor getClientMessageInterceptor() {
@@ -2971,7 +2971,7 @@ public class IgniteConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
-     * @deprecated Use {@link GridClientConnectionConfiguration#setClientMessageInterceptor(GridClientMessageInterceptor)}.
+     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(GridClientMessageInterceptor)}.
      */
     @Deprecated
     public void setClientMessageInterceptor(GridClientMessageInterceptor interceptor) {
@@ -3113,14 +3113,14 @@ public class IgniteConfiguration {
     /**
      * @return Client connection configuration.
      */
-    public GridClientConnectionConfiguration getClientConnectionConfiguration() {
+    public ClientConnectionConfiguration getClientConnectionConfiguration() {
         return clientCfg;
     }
 
     /**
      * @param clientCfg Client connection configuration.
      */
-    public void setClientConnectionConfiguration(GridClientConnectionConfiguration clientCfg) {
+    public void setClientConnectionConfiguration(ClientConnectionConfiguration clientCfg) {
         this.clientCfg = clientCfg;
     }
 

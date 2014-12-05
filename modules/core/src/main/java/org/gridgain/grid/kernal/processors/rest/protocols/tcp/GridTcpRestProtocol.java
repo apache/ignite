@@ -146,7 +146,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
         assert hnd != null;
 
-        GridClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
+        ClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
 
         assert cfg != null;
 
@@ -251,7 +251,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, GridClientConnectionConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, ClientConnectionConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

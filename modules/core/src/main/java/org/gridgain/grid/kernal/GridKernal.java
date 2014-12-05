@@ -1463,7 +1463,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
 
-        GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+        ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
         if (clientCfg != null) {
             restExecSvcMBean = clientCfg.getRestExecutorService() != null ?

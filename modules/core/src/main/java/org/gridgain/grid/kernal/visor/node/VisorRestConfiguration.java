@@ -60,7 +60,7 @@ public class VisorRestConfiguration implements Serializable {
     public static VisorRestConfiguration from(IgniteConfiguration c) {
         VisorRestConfiguration cfg = new VisorRestConfiguration();
 
-        GridClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();
+        ClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();
 
         boolean restEnabled = clnCfg != null;
 

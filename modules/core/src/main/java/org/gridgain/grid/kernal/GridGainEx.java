@@ -1383,12 +1383,12 @@ public class GridGainEx {
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new GridTransactionsConfiguration(cfg.getTransactionsConfiguration()));
 
-            GridClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
             if (clientCfg == null) {
                 // If client config is not provided then create config copying values from GridConfiguration.
                 if (cfg.isRestEnabled()) {
-                    clientCfg = new GridClientConnectionConfiguration();
+                    clientCfg = new ClientConnectionConfiguration();
 
                     clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
                     clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
@@ -1412,7 +1412,7 @@ public class GridGainEx {
                 }
             }
             else
-                clientCfg = new GridClientConnectionConfiguration(clientCfg);
+                clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
             String ntfStr = IgniteSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);

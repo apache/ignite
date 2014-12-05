@@ -63,7 +63,7 @@ public class VisorExecutorServiceConfiguration implements Serializable {
         cfg.p2pExecutorService(compactClass(c.getPeerClassLoadingExecutorService()));
         cfg.p2pExecutorServiceShutdown(c.getSystemExecutorServiceShutdown());
 
-        GridClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
+        ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
 
         if (cc != null) {
             cfg.restExecutorService(compactClass(cc.getRestExecutorService()));

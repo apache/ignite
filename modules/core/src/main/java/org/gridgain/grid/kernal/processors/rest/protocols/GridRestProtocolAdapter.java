@@ -137,7 +137,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /**
      * @return Client configuration.
      */
-    protected GridClientConnectionConfiguration config() {
+    protected ClientConnectionConfiguration config() {
         return ctx.config().getClientConnectionConfiguration();
     }
 
