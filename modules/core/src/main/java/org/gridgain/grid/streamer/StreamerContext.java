@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * Streamer context. Provides access to streamer local store, configured windows and various methods
  * to run streamer queries.
  */
-public interface GridStreamerContext {
+public interface StreamerContext {
     /**
      * Gets instance of dynamic grid projection including all nodes on which this streamer is running.
      *
@@ -52,7 +52,7 @@ public interface GridStreamerContext {
     public <E> GridStreamerWindow<E> window(String winName);
 
     /**
-     * For context passed to {@link GridStreamerStage#run(GridStreamerContext, Collection)} this method will
+     * For context passed to {@link GridStreamerStage#run(StreamerContext, Collection)} this method will
      * return next stage name in execution pipeline. For context obtained from streamer object, this method will
      * return first stage name.
      *
@@ -69,7 +69,7 @@ public interface GridStreamerContext {
      * @return Result received from all streamers.
      * @throws GridException If query execution failed.
      */
-    public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo) throws GridException;
+    public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes
@@ -82,7 +82,7 @@ public interface GridStreamerContext {
      * @return Result received from all streamers.
      * @throws GridException If query execution failed.
      */
-    public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
+    public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException;
 
     /**
@@ -92,7 +92,7 @@ public interface GridStreamerContext {
      * @param clo Function to be executed on individual nodes.
      * @throws GridException If closure execution failed.
      */
-    public void broadcast(IgniteInClosure<GridStreamerContext> clo) throws GridException;
+    public void broadcast(IgniteInClosure<StreamerContext> clo) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on
@@ -103,7 +103,7 @@ public interface GridStreamerContext {
      *      which this streamer is running will be queried.
      * @throws GridException If closure execution failed.
      */
-    public void broadcast(IgniteInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
+    public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
 
     /**
      * Queries all streamer nodes deployed within grid. Given closure will be executed on each streamer node in
@@ -115,7 +115,7 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) throws GridException;
+    public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) throws GridException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on which
@@ -129,6 +129,6 @@ public interface GridStreamerContext {
      * @return Reducer result.
      * @throws GridException If query execution failed.
      */
-    public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
+    public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException;
 }

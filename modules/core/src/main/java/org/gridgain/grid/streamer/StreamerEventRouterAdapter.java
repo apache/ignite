@@ -18,9 +18,9 @@ import java.util.*;
 /**
  * Streamer adapter for event routers.
  */
-public abstract class GridStreamerEventRouterAdapter implements GridStreamerEventRouter {
+public abstract class StreamerEventRouterAdapter implements StreamerEventRouter {
     /** {@inheritDoc} */
-    @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Override public <T> Map<ClusterNode, Collection<T>> route(StreamerContext ctx, String stageName,
         Collection<T> evts) {
         if (evts.size() == 1) {
             ClusterNode route = route(ctx, stageName, F.first(evts));

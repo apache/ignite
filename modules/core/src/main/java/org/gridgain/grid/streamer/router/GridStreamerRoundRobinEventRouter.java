@@ -18,12 +18,12 @@ import java.util.concurrent.atomic.*;
 /**
  * Round robin router.
  */
-public class GridStreamerRoundRobinEventRouter extends GridStreamerEventRouterAdapter {
+public class GridStreamerRoundRobinEventRouter extends StreamerEventRouterAdapter {
     /** */
     private final AtomicLong lastOrder = new AtomicLong();
 
     /** {@inheritDoc} */
-    @Override public ClusterNode route(GridStreamerContext ctx, String stageName, Object evt) {
+    @Override public ClusterNode route(StreamerContext ctx, String stageName, Object evt) {
         Collection<ClusterNode> nodes = ctx.projection().nodes();
 
         int idx = (int)(lastOrder.getAndIncrement() % nodes.size());

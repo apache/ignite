@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  * via {@link CacheAffinityEvent#affinityKey()} method. If event does not implement
  * {@link CacheAffinityEvent} interface, then event will be routed always to local node.
  */
-public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRouterAdapter {
+public class GridStreamerCacheAffinityEventRouter extends StreamerEventRouterAdapter {
     /**
      * All events that implement this interface will be routed based on key affinity.
      */
@@ -46,7 +46,7 @@ public class GridStreamerCacheAffinityEventRouter extends GridStreamerEventRoute
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
         if (evt instanceof CacheAffinityEvent) {
             CacheAffinityEvent e = (CacheAffinityEvent)evt;
 

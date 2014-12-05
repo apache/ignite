@@ -21,7 +21,7 @@ import java.util.*;
  *
  * Note that for current active stages we use maximum active stages over last second.
  */
-public class GridStreamerMetricsHolder implements GridStreamerMetrics {
+public class StreamerMetricsHolder implements StreamerMetrics {
     /** Max active stages over last minute. */
     private GridAtomicInteger stageActiveMaxLastSec = new GridAtomicInteger();
 
@@ -105,7 +105,7 @@ public class GridStreamerMetricsHolder implements GridStreamerMetrics {
      * @param windowMetrics Array of window metrics holders.
      * @param execSvcCap Executor service capacity.
      */
-    public GridStreamerMetricsHolder(
+    public StreamerMetricsHolder(
         GridStreamerStageMetricsHolder[] stageMetrics,
         GridStreamerWindowMetricsHolder[] windowMetrics,
         int execSvcCap

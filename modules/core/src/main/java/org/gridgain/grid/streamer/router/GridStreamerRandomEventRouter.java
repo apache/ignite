@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Random router. Routes event to random node.
  */
-public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapter {
+public class GridStreamerRandomEventRouter extends StreamerEventRouterAdapter {
     /** Optional predicates to exclude nodes from routing. */
     private IgnitePredicate<ClusterNode>[] predicates;
 
@@ -56,7 +56,7 @@ public class GridStreamerRandomEventRouter extends GridStreamerEventRouterAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode route(GridStreamerContext ctx, String stageName, Object evt) {
+    @Override public ClusterNode route(StreamerContext ctx, String stageName, Object evt) {
         Collection<ClusterNode> nodes = F.view(ctx.projection().nodes(), predicates);
 
         if (F.isEmpty(nodes))

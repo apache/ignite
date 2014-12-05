@@ -21,7 +21,7 @@ import java.util.*;
  * is processed by one or more {@link org.gridgain.grid.streamer.GridStreamerStage}, a set of stages event passed through is called pipeline.
  * <p>
  * For each submitted group of events streamer determines one or more execution nodes that will process this
- * group of events. Execution nodes are determined by {@link org.gridgain.grid.streamer.GridStreamerEventRouter}. Execution nodes run stages
+ * group of events. Execution nodes are determined by {@link org.gridgain.grid.streamer.StreamerEventRouter}. Execution nodes run stages
  * with received events. After stage execution streamer gets an optional set of events that should be processed
  * further. The process is repeated until stage returns empty map. After stage returned empty map pipeline execution
  * for given group of events is finished.
@@ -30,14 +30,14 @@ import java.util.*;
  * any other group of events and will be passed to stage as is. Event processing order is not guaranteed, group that
  * was submitted second can be processed earlier then first submitted group.
  * <p>
- * If {@link org.gridgain.grid.streamer.GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
+ * If {@link org.gridgain.grid.streamer.StreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
  * by streamer and any occurred failure will be reported to failure listener on node on which failure happened. If
  * this configuration property is set to {@code true}, then streamer will cancel current pipeline execution in case
  * of failure and will try to execute pipeline from the beginning. If failover cannot be succeeded or maximum number
  * of failover attempts is exceeded, then listener will be notified on node which originated pipeline execution.
  *
  * @see org.gridgain.grid.streamer.GridStreamerStage
- * @see org.gridgain.grid.streamer.GridStreamerEventRouter
+ * @see org.gridgain.grid.streamer.StreamerEventRouter
  */
 public interface IgniteStreamer {
     /**
@@ -45,7 +45,7 @@ public interface IgniteStreamer {
      *
      * @return Streamer configuration.
      */
-    public GridStreamerConfiguration configuration();
+    public StreamerConfiguration configuration();
 
     /**
      * Gets streamer name.
@@ -98,30 +98,30 @@ public interface IgniteStreamer {
      *
      * @return Streamer context.
      */
-    public GridStreamerContext context();
+    public StreamerContext context();
 
     /**
      * Adds streamer failure listener. Listener will be notified on node on which failure occurred in case if
-     * {@link GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false} and on node which originated
+     * {@link org.gridgain.grid.streamer.StreamerConfiguration#isAtLeastOnce()} is set to {@code false} and on node which originated
      * pipeline execution otherwise.
      *
      * @param lsnr Listener to add.
      */
-    public void addStreamerFailureListener(GridStreamerFailureListener lsnr);
+    public void addStreamerFailureListener(StreamerFailureListener lsnr);
 
     /**
      * Removes streamer failure listener.
      *
      * @param lsnr Listener to remove.
      */
-    public void removeStreamerFailureListener(GridStreamerFailureListener lsnr);
+    public void removeStreamerFailureListener(StreamerFailureListener lsnr);
 
     /**
      * Gets current streamer metrics.
      *
      * @return Streamer metrics.
      */
-    public GridStreamerMetrics metrics();
+    public StreamerMetrics metrics();
 
     /**
      * Resets all configured streamer windows by calling {@link GridStreamerWindow#reset()} on each and

@@ -120,10 +120,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect streamers. */
     private void streamers(VisorNodeDataCollectorJobResult res) {
         try {
-            GridStreamerConfiguration[] cfgs = g.configuration().getStreamerConfiguration();
+            StreamerConfiguration[] cfgs = g.configuration().getStreamerConfiguration();
 
             if (cfgs != null) {
-                for (GridStreamerConfiguration cfg : cfgs)
+                for (StreamerConfiguration cfg : cfgs)
                     res.streamers().add(VisorStreamer.from(g.streamer(cfg.getName())));
             }
         }

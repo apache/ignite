@@ -58,7 +58,7 @@ public interface IgniteStreamerEx extends IgniteStreamer {
     /**
      * @return Streamer event router.
      */
-    public GridStreamerEventRouter eventRouter();
+    public StreamerEventRouter eventRouter();
 
     /**
      * Schedules batch executions either on local or on remote nodes.

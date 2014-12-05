@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * Streamer MBean interface.
  */
 @IgniteMBeanDescription("MBean that provides access to streamer description and metrics.")
-public interface GridStreamerMBean {
+public interface StreamerMBean {
     /**
      * Gets streamer name.
      *

@@ -112,7 +112,7 @@ public class StreamingCheckInExample {
             assert streamer != null;
 
             // Add a failure listener.
-            streamer.addStreamerFailureListener(new GridStreamerFailureListener() {
+            streamer.addStreamerFailureListener(new StreamerFailureListener() {
                 @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
                     System.err.println("Failure [stage=" + stageName + ", evts=" + evts + ", err=" + err.getMessage());
                 }
@@ -162,9 +162,9 @@ public class StreamingCheckInExample {
                     // Send reduce query to all streamers running on local and remote noes.
                     Map<String, Place> userPlaces = streamer.context().reduce(
                         // This closure will execute on remote nodes.
-                        new IgniteClosure<GridStreamerContext, Map<String, Place>>() {
+                        new IgniteClosure<StreamerContext, Map<String, Place>>() {
                             @Override public Map<String, Place> apply(
-                                GridStreamerContext ctx) {
+                                StreamerContext ctx) {
                                 GridStreamerWindow<LocationInfo> win =
                                     ctx.window(DetectPlacesStage.class.getSimpleName());
 
@@ -424,7 +424,7 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(
-            GridStreamerContext ctx, Collection<CheckInEvent> evts) throws GridException {
+            StreamerContext ctx, Collection<CheckInEvent> evts) throws GridException {
             GridStreamerWindow<CheckInEvent> win = ctx.window(name());
 
             assert win != null;
@@ -471,7 +471,7 @@ public class StreamingCheckInExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx,
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx,
             Collection<CheckInEvent> evts) throws GridException {
             GridStreamerWindow<LocationInfo> win = ctx.window(name());
 

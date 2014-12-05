@@ -160,10 +160,10 @@ public class StreamingPopularNumbersExample {
                     // running on local and remote nodes.
                     Collection<GridStreamerIndexEntry<Integer, Integer, Long>> col = streamer.context().reduce(
                         // This closure will execute on remote nodes.
-                        new IgniteClosure<GridStreamerContext,
+                        new IgniteClosure<StreamerContext,
                                                                             Collection<GridStreamerIndexEntry<Integer, Integer, Long>>>() {
                             @Override public Collection<GridStreamerIndexEntry<Integer, Integer, Long>> apply(
-                                GridStreamerContext ctx) {
+                                StreamerContext ctx) {
                                 GridStreamerIndex<Integer, Integer, Long> view = ctx.<Integer>window().index();
 
                                 return view.entries(-1 * POPULAR_NUMBERS_CNT);
@@ -200,7 +200,7 @@ public class StreamingPopularNumbersExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Integer> nums)
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> nums)
             throws GridException {
             GridStreamerWindow<Integer> win = ctx.window();
 

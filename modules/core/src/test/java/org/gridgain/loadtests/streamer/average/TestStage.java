@@ -26,7 +26,7 @@ class TestStage implements GridStreamerStage<Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Integer> evts)
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
         throws GridException {
         ConcurrentMap<String, TestAverage> loc = ctx.localSpace();
 

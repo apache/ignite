@@ -9,14 +9,12 @@
 
 package org.gridgain.grid.streamer;
 
-import org.jetbrains.annotations.*;
-
 import java.util.*;
 
 /**
  * Streamer metrics.
  */
-public interface GridStreamerMetrics {
+public interface StreamerMetrics {
     /**
      * Gets number of stages currently being executed in streamer pool.
      *

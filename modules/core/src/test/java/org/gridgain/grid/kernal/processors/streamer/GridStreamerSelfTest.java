@@ -51,7 +51,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     private Collection<GridStreamerStage> stages;
 
     /** Event router. */
-    private GridStreamerEventRouter router;
+    private StreamerEventRouter router;
 
     /** P2P enabled flag. */
     private boolean p2pEnabled;
@@ -81,8 +81,8 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Streamer configuration.
      */
-    private GridStreamerConfiguration streamerConfiguration() {
-        GridStreamerConfiguration cfg = new GridStreamerConfiguration();
+    private StreamerConfiguration streamerConfiguration() {
+        StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(atLeastOnce);
 
@@ -114,7 +114,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
                 return "name";
             }
 
-            @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection evts) {
+            @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
                 assert g != null;
                 assert log != null;
 
@@ -155,7 +155,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts)
                 throws GridException {
                 String nextStage = ctx.nextStageName();
@@ -214,18 +214,18 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             // Wait until all acks are received.
             GridTestUtils.retryAssert(log, 100, 50, new CA() {
                 @Override public void apply() {
-                    GridStreamerMetrics metrics = ignite0.streamer(null).metrics();
+                    StreamerMetrics metrics = ignite0.streamer(null).metrics();
 
                     assertEquals(0, metrics.currentActiveSessions());
                 }
             });
 
-            GridStreamerMetrics metrics = ignite0.streamer(null).metrics();
+            StreamerMetrics metrics = ignite0.streamer(null).metrics();
 
             assertTrue(metrics.maximumActiveSessions() > 0);
 
-            ignite0.streamer(null).context().query(new IgniteClosure<GridStreamerContext, Object>() {
-                @Override public Object apply(GridStreamerContext ctx) {
+            ignite0.streamer(null).context().query(new IgniteClosure<StreamerContext, Object>() {
+                @Override public Object apply(StreamerContext ctx) {
                     try {
                         U.sleep(1000);
                     }
@@ -265,7 +265,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 String nextStage = ctx.nextStageName();
 
@@ -325,7 +325,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 String nextStage = ctx.nextStageName();
 
@@ -385,7 +385,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 String nextStage = ctx.nextStageName();
 
@@ -411,7 +411,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch errLatch = new CountDownLatch(1);
 
-            grid(0).streamer(null).addStreamerFailureListener(new GridStreamerFailureListener() {
+            grid(0).streamer(null).addStreamerFailureListener(new StreamerFailureListener() {
                 @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
                     info("Expected failure: " + err.getMessage());
 
@@ -449,7 +449,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) throws GridException {
                 String nextStage = ctx.nextStageName();
 
@@ -530,7 +530,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 ConcurrentMap<String, AtomicInteger> space = ctx.localSpace();
 
@@ -605,12 +605,12 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             for (String s : stages)
                 assertEquals((Integer)sum, stagesSum.get(s));
 
-            GridStreamerContext streamerCtx = grid(0).streamer(null).context();
+            StreamerContext streamerCtx = grid(0).streamer(null).context();
 
             // Check query.
             for (final String s : stages) {
-                Collection<Integer> res = streamerCtx.query(new C1<GridStreamerContext, Integer>() {
-                    @Override public Integer apply(GridStreamerContext ctx) {
+                Collection<Integer> res = streamerCtx.query(new C1<StreamerContext, Integer>() {
+                    @Override public Integer apply(StreamerContext ctx) {
                         AtomicInteger cntr = ctx.<String, AtomicInteger>localSpace().get(s);
 
                         return cntr.get();
@@ -621,8 +621,8 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             }
 
             // Check broadcast.
-            streamerCtx.broadcast(new CI1<GridStreamerContext>() {
-                @Override public void apply(GridStreamerContext ctx) {
+            streamerCtx.broadcast(new CI1<StreamerContext>() {
+                @Override public void apply(StreamerContext ctx) {
                     int sum = 0;
 
                     ConcurrentMap<String, AtomicInteger> space = ctx.localSpace();
@@ -652,8 +652,8 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             // Check reduce.
             for (final String s : stages) {
                 Integer res = streamerCtx.reduce(
-                    new C1<GridStreamerContext, Integer>() {
-                        @Override public Integer apply(GridStreamerContext ctx) {
+                    new C1<StreamerContext, Integer>() {
+                        @Override public Integer apply(StreamerContext ctx) {
                             AtomicInteger cntr = ctx.<String, AtomicInteger>localSpace().get(s);
 
                             return cntr.get();
@@ -683,7 +683,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 return ctx.nextStageName() == null ? null : (Map)F.asMap(ctx.nextStageName(), F.asList(0));
             }
@@ -699,7 +699,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch errLatch = new CountDownLatch(errCnt);
 
-            grid(0).streamer(null).addStreamerFailureListener(new GridStreamerFailureListener() {
+            grid(0).streamer(null).addStreamerFailureListener(new StreamerFailureListener() {
                 @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
                     info("Expected failure: " + err.getMessage());
 
@@ -726,7 +726,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
     private void checkMetrics(Ignite ignite, String stage, int evtCnt, boolean pipeline) {
         IgniteStreamer streamer = ignite.streamer(null);
 
-        GridStreamerMetrics metrics = streamer.metrics();
+        StreamerMetrics metrics = streamer.metrics();
 
         assertEquals(evtCnt, metrics.stageTotalExecutionCount());
         assertEquals(0, metrics.stageWaitingExecutionCount());

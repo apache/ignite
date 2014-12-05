@@ -33,7 +33,7 @@ import java.util.*;
  * <li>{@link GridStreamerBoundedTimeBatchWindow}</li>
  * </ul>
  * <p>
- * Streamer window is configured via {@link GridStreamerConfiguration#getWindows()} method.
+ * Streamer window is configured via {@link StreamerConfiguration#getWindows()} method.
  */
 public interface GridStreamerWindow<E> extends Iterable<E> {
     /**

@@ -50,7 +50,7 @@ public class GridStreamerAttributes implements Externalizable {
     /**
      * @param cfg Streamer configuration.
      */
-    public GridStreamerAttributes(GridStreamerConfiguration cfg) {
+    public GridStreamerAttributes(StreamerConfiguration cfg) {
         atLeastOnce = cfg.isAtLeastOnce();
         maxConcurrentSes = cfg.getMaximumConcurrentSessions();
         maxFailoverAttempts = cfg.getMaximumFailoverAttempts();

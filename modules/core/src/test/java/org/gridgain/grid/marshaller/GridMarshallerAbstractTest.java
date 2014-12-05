@@ -112,18 +112,18 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Streamer configuration.
      */
-    private static GridStreamerConfiguration streamerConfiguration() {
+    private static StreamerConfiguration streamerConfiguration() {
         Collection<GridStreamerStage> stages = F.<GridStreamerStage>asList(new GridStreamerStage() {
             @Override public String name() {
                 return "name";
             }
 
-            @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection evts) {
+            @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
                 return null;
             }
         });
 
-        GridStreamerConfiguration cfg = new GridStreamerConfiguration();
+        StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(true);
         cfg.setWindows(F.asList((GridStreamerWindow)new GridStreamerUnboundedWindow()));

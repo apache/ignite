@@ -124,8 +124,8 @@ public class StreamingPriceBarsExample {
                 try {
                     Collection<Bar> bars = streamer.context().reduce(
                         // This closure will execute on remote nodes.
-                        new IgniteClosure<GridStreamerContext, Collection<Bar>>() {
-                            @Override public Collection<Bar> apply(GridStreamerContext ctx) {
+                        new IgniteClosure<StreamerContext, Collection<Bar>>() {
+                            @Override public Collection<Bar> apply(StreamerContext ctx) {
                                 Collection<Bar> values = ctx.<String, Bar>localSpace().values();
 
                                 Collection<Bar> res = new ArrayList<>(values.size());
@@ -371,7 +371,7 @@ public class StreamingPriceBarsExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Quote> quotes)
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Quote> quotes)
             throws GridException {
             GridStreamerWindow win = ctx.window("stage1");
 
@@ -412,7 +412,7 @@ public class StreamingPriceBarsExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Bar> bars)
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Bar> bars)
             throws GridException {
             ConcurrentMap<String, Bar> loc = ctx.localSpace();
 

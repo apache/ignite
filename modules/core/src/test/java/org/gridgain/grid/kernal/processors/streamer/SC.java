@@ -18,6 +18,6 @@ import java.util.*;
  * Typedef for generic closure.
  */
 abstract class SC
-    extends GridClosure3X<String, GridStreamerContext, Collection<Object>, Map<String, Collection<?>>> {
+    extends GridClosure3X<String, StreamerContext, Collection<Object>, Map<String, Collection<?>>> {
     // No-op.
 }

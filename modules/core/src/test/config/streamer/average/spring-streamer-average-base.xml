@@ -33,7 +33,7 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base.grid.cfg">
         <property name="streamerConfiguration">
             <list>
-                <bean class="org.gridgain.grid.streamer.GridStreamerConfiguration">
+                <bean class="org.gridgain.grid.streamer.StreamerConfiguration">
                     <property name="windows">
                         <bean class="org.gridgain.grid.streamer.window.GridStreamerBoundedSizeWindow">
                             <property name="maximumSize" value="500"/>

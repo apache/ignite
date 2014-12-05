@@ -19,7 +19,7 @@ import java.util.*;
  * Each time a group of events is submitted to streamer or returned to streamer by a stage, event
  * router will be used to select execution node for next stage.
  */
-public interface GridStreamerEventRouter {
+public interface StreamerEventRouter {
     /**
      * Selects a node for given event that should be processed by a stage with given name.
      *
@@ -30,7 +30,7 @@ public interface GridStreamerEventRouter {
      *      will be terminated. All running and ongoing stages for pipeline execution will be
      *      cancelled.
      */
-    @Nullable public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt);
+    @Nullable public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt);
 
     /**
      * Selects a node for given events that should be processed by a stage with given name.
@@ -42,6 +42,6 @@ public interface GridStreamerEventRouter {
      *      will be terminated. All running and ongoing stages for pipeline execution will be
      *      cancelled.
      */
-    @Nullable public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Nullable public <T> Map<ClusterNode, Collection<T>> route(StreamerContext ctx, String stageName,
         Collection<T> evts);
 }

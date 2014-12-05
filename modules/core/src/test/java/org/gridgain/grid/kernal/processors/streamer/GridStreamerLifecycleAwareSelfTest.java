@@ -20,12 +20,12 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link GridStreamerConfiguration}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link org.gridgain.grid.streamer.StreamerConfiguration}.
  */
 public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**
      */
-    private static class TestEventRouter extends TestLifecycleAware implements GridStreamerEventRouter {
+    private static class TestEventRouter extends TestLifecycleAware implements StreamerEventRouter {
         /**
          */
         TestEventRouter() {
@@ -33,12 +33,12 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+        @Nullable @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx,
+        @Nullable @Override public <T> Map<ClusterNode, Collection<T>> route(StreamerContext ctx,
             String stageName, Collection<T> evts) {
             return null;
         }
@@ -59,7 +59,7 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection evts) {
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
             return null;
         }
     }
@@ -177,7 +177,7 @@ public class GridStreamerLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridStreamerConfiguration streamerCfg = new GridStreamerConfiguration();
+        StreamerConfiguration streamerCfg = new StreamerConfiguration();
 
         TestEventRouter router = new TestEventRouter();
 

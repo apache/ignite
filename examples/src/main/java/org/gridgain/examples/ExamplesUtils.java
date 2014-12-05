@@ -80,7 +80,7 @@ public class ExamplesUtils {
      */
     public static boolean hasStreamer(Ignite ignite, String name) {
         if (ignite.configuration().getStreamerConfiguration() != null) {
-            for (GridStreamerConfiguration cfg : ignite.configuration().getStreamerConfiguration()) {
+            for (StreamerConfiguration cfg : ignite.configuration().getStreamerConfiguration()) {
                 if (name.equals(cfg.getName()))
                     return true;
             }

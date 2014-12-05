@@ -70,8 +70,8 @@ public class StreamingRunningAverageExample {
 
                         // Running average.
                         double avg = streamer.context().reduce(
-                            new IgniteClosure<GridStreamerContext, Average>() {
-                                @Override public Average apply(GridStreamerContext ctx) {
+                            new IgniteClosure<StreamerContext, Average>() {
+                                @Override public Average apply(StreamerContext ctx) {
                                     return ctx.<String, Average>localSpace().get("avg");
                                 }
                             },
@@ -148,7 +148,7 @@ public class StreamingRunningAverageExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Integer> evts)
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
             throws GridException {
             ConcurrentMap<String, Average> loc = ctx.localSpace();
 

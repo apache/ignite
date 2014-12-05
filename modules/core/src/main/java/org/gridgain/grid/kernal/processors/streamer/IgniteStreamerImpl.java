@@ -62,7 +62,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     private GridKernalContext ctx;
 
     /** */
-    private GridStreamerContext streamerCtx;
+    private StreamerContext streamerCtx;
 
     /** Read-write lock. */
     private GridSpinReadWriteLock lock;
@@ -71,7 +71,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     private boolean stopping;
 
     /** Streamer configuration. */
-    private GridStreamerConfiguration c;
+    private StreamerConfiguration c;
 
     /** Name. */
     private String name;
@@ -91,13 +91,13 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     private String firstStage;
 
     /** Router. */
-    private GridStreamerEventRouter router;
+    private StreamerEventRouter router;
 
     /** At least once. */
     private boolean atLeastOnce;
 
     /** Streamer metrics. */
-    private volatile GridStreamerMetricsHolder streamerMetrics;
+    private volatile StreamerMetricsHolder streamerMetrics;
 
     /** Topic. */
     private Object topic;
@@ -115,7 +115,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     private boolean dfltExecSvc;
 
     /** Failure listeners. */
-    private Collection<GridStreamerFailureListener> failureLsnrs = new ConcurrentLinkedQueue<>();
+    private Collection<StreamerFailureListener> failureLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Cancelled  */
     private Collection<IgniteUuid> cancelledFutIds =
@@ -144,7 +144,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param ctx Kernal context.
      * @param c Configuration.
      */
-    public IgniteStreamerImpl(GridKernalContext ctx, GridStreamerConfiguration c) {
+    public IgniteStreamerImpl(GridKernalContext ctx, StreamerConfiguration c) {
         this.ctx = ctx;
 
         log = ctx.log(IgniteStreamerImpl.class);
@@ -406,7 +406,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerConfiguration configuration() {
+    @Override public StreamerConfiguration configuration() {
         return c;
     }
 
@@ -454,23 +454,23 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerContext context() {
+    @Override public StreamerContext context() {
         return streamerCtx;
     }
 
     /** {@inheritDoc} */
-    @Override public void addStreamerFailureListener(GridStreamerFailureListener lsnr) {
+    @Override public void addStreamerFailureListener(StreamerFailureListener lsnr) {
         failureLsnrs.add(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public void removeStreamerFailureListener(GridStreamerFailureListener lsnr) {
+    @Override public void removeStreamerFailureListener(StreamerFailureListener lsnr) {
         failureLsnrs.remove(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerMetrics metrics() {
-        GridStreamerMetrics ret = new GridStreamerMetricsAdapter(streamerMetrics);
+    @Override public StreamerMetrics metrics() {
+        StreamerMetrics ret = new StreamerMetricsAdapter(streamerMetrics);
 
         streamerMetrics.sampleCurrentStages();
 
@@ -514,7 +514,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             idx++;
         }
 
-        streamerMetrics = new GridStreamerMetricsHolder(stageHolders, windowHolders, execSvcCap);
+        streamerMetrics = new StreamerMetricsHolder(stageHolders, windowHolders, execSvcCap);
     }
 
     /** {@inheritDoc} */
@@ -587,7 +587,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             evts);
 
         if (atLeastOnce && fut.rootExecution()) {
-            GridStreamerMetricsHolder metrics0 = streamerMetrics;
+            StreamerMetricsHolder metrics0 = streamerMetrics;
 
             metrics0.onSessionStarted();
 
@@ -654,7 +654,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStreamerEventRouter eventRouter() {
+    @Override public StreamerEventRouter eventRouter() {
         return router;
     }
 
@@ -723,7 +723,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             }
 
             // Capture metrics holders for batch execution.
-            GridStreamerMetricsHolder streamerMetrics0 = streamerMetrics;
+            StreamerMetricsHolder streamerMetrics0 = streamerMetrics;
 
             BatchWorker worker = new BatchWorker(batch, wrapper, streamerMetrics0);
 
@@ -904,7 +904,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param err Error cause.
      */
     private void notifyFailure(String stageName, Collection<Object> evts, Throwable err) {
-        for (GridStreamerFailureListener lsnr : failureLsnrs)
+        for (StreamerFailureListener lsnr : failureLsnrs)
             lsnr.onFailure(stageName, evts, err);
     }
 
@@ -1229,7 +1229,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private GridStreamerStageWrapper stageWrapper;
 
         /** Streamer metrics holder. */
-        private GridStreamerMetricsHolder streamerHolder;
+        private StreamerMetricsHolder streamerHolder;
 
         /** Schedule timestamp. */
         private long schedTs;
@@ -1247,7 +1247,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         private BatchWorker(
             GridStreamerExecutionBatch batch,
             GridStreamerStageWrapper stageWrapper,
-            GridStreamerMetricsHolder streamerHolder
+            StreamerMetricsHolder streamerHolder
         ) {
             super(ctx.gridName(), "streamer-batch-worker-" + batch.stageName(), log);
 
@@ -1283,7 +1283,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                         log.debug("Running streamer stage [stage=" + stageWrapper.name() +
                             ", futId=" + batch.futureId() + ']');
 
-                    GridStreamerContext ctxDelegate = new GridStreamerContextDelegate(context(),
+                    StreamerContext ctxDelegate = new GridStreamerContextDelegate(context(),
                         stageWrapper.nextStageName());
 
                     winLock.readLock();

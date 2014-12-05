@@ -16,7 +16,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link GridStreamerMetrics}.
+ * Data transfer object for {@link org.gridgain.grid.streamer.StreamerMetrics}.
  */
 public class VisorStreamerMetrics implements Serializable {
     /** */
@@ -77,7 +77,7 @@ public class VisorStreamerMetrics implements Serializable {
     public static VisorStreamerMetrics from(IgniteStreamer streamer) {
         assert streamer != null;
 
-        GridStreamerMetrics m = streamer.metrics();
+        StreamerMetrics m = streamer.metrics();
 
         int windowSz = 0;
 

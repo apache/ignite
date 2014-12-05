@@ -30,7 +30,7 @@ import java.util.*;
  * via {@link AffinityEvent#affinityKey()} method. If event does not implement
  * {@link AffinityEvent} interface, then event itself will be used to determine affinity.
  */
-public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdapter {
+public class GridStreamerAffinityEventRouter extends StreamerEventRouterAdapter {
     /** */
     public static final int REPLICA_CNT = 128;
 
@@ -56,7 +56,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
     private Collection<UUID> addedNodes = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
-    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
         return node(evt instanceof AffinityEvent ? ((AffinityEvent) evt).affinityKey() :
             evt, ctx);
     }
@@ -66,7 +66,7 @@ public class GridStreamerAffinityEventRouter extends GridStreamerEventRouterAdap
      * @param ctx Context.
      * @return Rich node.
      */
-    private ClusterNode node(Object obj, GridStreamerContext ctx) {
+    private ClusterNode node(Object obj, StreamerContext ctx) {
         while (true) {
             Collection<ClusterNode> nodes = ctx.projection().nodes();
 

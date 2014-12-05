@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Test router.
  */
-class GridTestStreamerEventRouter extends GridStreamerEventRouterAdapter {
+class GridTestStreamerEventRouter extends StreamerEventRouterAdapter {
     /** Route table. */
     private Map<String, UUID> routeTbl = new HashMap<>();
 
@@ -30,7 +30,7 @@ class GridTestStreamerEventRouter extends GridStreamerEventRouterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
         UUID nodeId = routeTbl.get(stageName);
 
         if (nodeId == null)

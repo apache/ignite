@@ -18,12 +18,12 @@ import java.util.*;
  * Streamer stage is a component that determines event processing flow. User logic related to
  * any particular event processing is implemented by streamer stage. A stage takes events as
  * an input and returns groups of events mapped to different stages as an output. Events for
- * every returned stage will be passed to {@link GridStreamerEventRouter} which will determine
+ * every returned stage will be passed to {@link StreamerEventRouter} which will determine
  * on which node the stage should be executed.
  * <p>
  * Generally, event stage execution graph if fully controlled by return values of
  * this method, while node execution graph is controlled by
- * {@link GridStreamerEventRouter#route(GridStreamerContext, String, Object)} method.
+ * {@link StreamerEventRouter#route(StreamerContext, String, Object)} method.
  */
 public interface GridStreamerStage<IN> {
     /**
@@ -36,18 +36,18 @@ public interface GridStreamerStage<IN> {
     /**
      * Stage execution routine. After the passed in events are processed, stage can emit
      * another set of events to be processed. The returned events can be mapped to different
-     * stages. Events for every returned stage will be passed to {@link GridStreamerEventRouter}
+     * stages. Events for every returned stage will be passed to {@link StreamerEventRouter}
      * which will determine on which node the stage should be executed.
      * <p>
      * Generally, event stage execution graph if fully controlled by return values of
      * this method, while node execution graph is controlled by
-     * {@link GridStreamerEventRouter#route(GridStreamerContext, String, Object)} method.
+     * {@link StreamerEventRouter#route(StreamerContext, String, Object)} method.
      *
      * @param ctx Streamer context.
      * @param evts Input events.
      * @return Map of stage name to collection of events.
      * @throws GridException If failed.
      */
-    @Nullable public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<IN> evts)
+    @Nullable public Map<String, Collection<?>> run(StreamerContext ctx, Collection<IN> evts)
         throws GridException;
 }

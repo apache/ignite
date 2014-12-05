@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Streamer metrics adapter.
  */
-public class GridStreamerMetricsAdapter implements GridStreamerMetrics {
+public class StreamerMetricsAdapter implements StreamerMetrics {
     /** */
     private int stageActiveExecCnt;
 
@@ -87,14 +87,14 @@ public class GridStreamerMetricsAdapter implements GridStreamerMetrics {
     /**
      * Empty constructor.
      */
-    public GridStreamerMetricsAdapter() {
+    public StreamerMetricsAdapter() {
         // No-op.
     }
 
     /**
      * @param metrics Metrics.
      */
-    public GridStreamerMetricsAdapter(GridStreamerMetrics metrics) {
+    public StreamerMetricsAdapter(StreamerMetrics metrics) {
         // Preserve alphabetic order for maintenance.
         curActiveSes = metrics.currentActiveSessions();
         execSvcCap = metrics.executorServiceCapacity();
@@ -259,6 +259,6 @@ public class GridStreamerMetricsAdapter implements GridStreamerMetrics {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerMetricsAdapter.class, this);
+        return S.toString(StreamerMetricsAdapter.class, this);
     }
 }

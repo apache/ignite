@@ -47,7 +47,7 @@ public class VisorStreamerConfiguration implements Serializable {
      * @param scfg Streamer configuration.
      * @return Data transfer object for streamer configuration properties.
      */
-    public static VisorStreamerConfiguration from(GridStreamerConfiguration scfg) {
+    public static VisorStreamerConfiguration from(StreamerConfiguration scfg) {
         VisorStreamerConfiguration cfg = new VisorStreamerConfiguration();
 
         cfg.name(scfg.getName());
@@ -66,13 +66,13 @@ public class VisorStreamerConfiguration implements Serializable {
      * @param streamers streamer configurations.
      * @return streamer configurations properties.
      */
-    public static Iterable<VisorStreamerConfiguration> list(GridStreamerConfiguration[] streamers) {
+    public static Iterable<VisorStreamerConfiguration> list(StreamerConfiguration[] streamers) {
         if (streamers == null)
             return Collections.emptyList();
 
         final Collection<VisorStreamerConfiguration> cfgs = new ArrayList<>(streamers.length);
 
-        for (GridStreamerConfiguration streamer : streamers)
+        for (StreamerConfiguration streamer : streamers)
             cfgs.add(from(streamer));
 
         return cfgs;

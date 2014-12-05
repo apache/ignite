@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Streamer context implementation.
  */
-public class GridStreamerContextImpl implements GridStreamerContext {
+public class GridStreamerContextImpl implements StreamerContext {
     /** Kernal context. */
     private GridKernalContext ctx;
 
@@ -47,7 +47,7 @@ public class GridStreamerContextImpl implements GridStreamerContext {
      * @param cfg Streamer configuration.
      * @param streamer Streamer impl.
      */
-    public GridStreamerContextImpl(GridKernalContext ctx, GridStreamerConfiguration cfg, IgniteStreamerEx streamer) {
+    public GridStreamerContextImpl(GridKernalContext ctx, StreamerConfiguration cfg, IgniteStreamerEx streamer) {
         assert ctx != null;
         assert cfg != null;
         assert streamer != null;
@@ -103,12 +103,12 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo) throws GridException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws GridException {
         return query(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException {
         ctx.gateway().readLock();
 
@@ -132,12 +132,12 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo) throws GridException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws GridException {
         broadcast(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes)
         throws GridException {
         ctx.gateway().readLock();
 
@@ -155,13 +155,13 @@ public class GridStreamerContextImpl implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
         throws GridException {
         return reduce(clo, rdc, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException {
         ctx.gateway().readLock();
 

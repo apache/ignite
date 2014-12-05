@@ -511,7 +511,7 @@ public class IgniteConfiguration {
     private ClientMessageInterceptor clientMsgInterceptor;
 
     /** Streamer configuration. */
-    private GridStreamerConfiguration[] streamerCfg;
+    private StreamerConfiguration[] streamerCfg;
 
     /** Data center receiver hub configuration. */
     private GridDrReceiverHubConfiguration drRcvHubCfg;
@@ -3001,7 +3001,7 @@ public class IgniteConfiguration {
      *
      * @return Streamers configurations.
      */
-    public GridStreamerConfiguration[] getStreamerConfiguration() {
+    public StreamerConfiguration[] getStreamerConfiguration() {
         return streamerCfg;
     }
 
@@ -3010,7 +3010,7 @@ public class IgniteConfiguration {
      *
      * @param streamerCfg Streamer configuration.
      */
-    public void setStreamerConfiguration(GridStreamerConfiguration... streamerCfg) {
+    public void setStreamerConfiguration(StreamerConfiguration... streamerCfg) {
         this.streamerCfg = streamerCfg;
     }
 

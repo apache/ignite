@@ -14,15 +14,15 @@ import java.util.*;
 /**
  * Streamer failure listener. Asynchronous callback passed to user in case of any failure determined by streamer.
  *
- * @see org.apache.ignite.IgniteStreamer#addStreamerFailureListener(GridStreamerFailureListener)
+ * @see org.apache.ignite.IgniteStreamer#addStreamerFailureListener(StreamerFailureListener)
  *
  */
-public interface GridStreamerFailureListener {
+public interface StreamerFailureListener {
     /**
      * Callback invoked when unrecoverable failure is detected by streamer.
      * <p>
-     * If {@link GridStreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then this callback
-     * will be invoked on node on which failure occurred. If {@link GridStreamerConfiguration#isAtLeastOnce()}
+     * If {@link StreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then this callback
+     * will be invoked on node on which failure occurred. If {@link StreamerConfiguration#isAtLeastOnce()}
      * is set to {@code true}, then this callback will be invoked on node on which
      * {@link org.apache.ignite.IgniteStreamer#addEvents(Collection)} or its variant was called. Callback will be called if maximum
      * number of failover attempts exceeded or failover cannot be performed (for example, if router

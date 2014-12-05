@@ -40,7 +40,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     private Collection<GridStreamerStage> stages;
 
     /** Event router. */
-    private GridStreamerEventRouter router;
+    private StreamerEventRouter router;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -62,8 +62,8 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
     /**
      * @return Streamer configuration.
      */
-    private GridStreamerConfiguration streamerConfiguration() {
-        GridStreamerConfiguration cfg = new GridStreamerConfiguration();
+    private StreamerConfiguration streamerConfiguration() {
+        StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setRouter(router);
 
@@ -90,7 +90,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) throws GridException {
                 assert evts.size() == 1;
 

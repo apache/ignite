@@ -21,9 +21,9 @@ import java.util.concurrent.*;
 /**
  * Context delegate allowing to override next stage name.
  */
-public class GridStreamerContextDelegate implements GridStreamerContext {
+public class GridStreamerContextDelegate implements StreamerContext {
     /** Context delegate. */
-    private GridStreamerContext delegate;
+    private StreamerContext delegate;
 
     /** Next stage name. */
     private String nextStageName;
@@ -32,7 +32,7 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
      * @param delegate Delegate object.
      * @param nextStageName Next stage name.
      */
-    public GridStreamerContextDelegate(GridStreamerContext delegate, @Nullable String nextStageName) {
+    public GridStreamerContextDelegate(StreamerContext delegate, @Nullable String nextStageName) {
         this.delegate = delegate;
         this.nextStageName = nextStageName;
     }
@@ -63,35 +63,35 @@ public class GridStreamerContextDelegate implements GridStreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo) throws GridException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws GridException {
         return delegate.query(clo);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<GridStreamerContext, R> clo, Collection<ClusterNode> nodes)
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
         throws GridException {
         return delegate.query(clo, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo) throws GridException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws GridException {
         delegate.broadcast(clo);
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<GridStreamerContext> clo, Collection<ClusterNode> nodes)
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes)
         throws GridException {
         delegate.broadcast(clo, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
         throws GridException {
         return delegate.reduce(clo, rdc);
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<GridStreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
         Collection<ClusterNode> nodes) throws GridException {
         return delegate.reduce(clo, rdc, nodes);
     }

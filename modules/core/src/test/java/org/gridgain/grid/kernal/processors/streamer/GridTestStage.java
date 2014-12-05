@@ -39,7 +39,7 @@ class GridTestStage implements GridStreamerStage<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(GridStreamerContext ctx, Collection<Object> evts)
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts)
         throws GridException {
         return stageClos.apply(name(), ctx, evts);
     }

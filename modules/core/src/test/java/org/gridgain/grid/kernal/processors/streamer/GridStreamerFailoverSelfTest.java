@@ -60,8 +60,8 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @return Streamer configuration.
      */
-    private GridStreamerConfiguration streamerConfiguration() {
-        GridStreamerConfiguration cfg = new GridStreamerConfiguration();
+    private StreamerConfiguration streamerConfiguration() {
+        StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(true);
 
@@ -77,7 +77,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
         SC pass = new SC() {
             @SuppressWarnings("unchecked")
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> objects) {
                 assert ctx.nextStageName() != null;
 
@@ -87,7 +87,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
         };
 
         SC put = new SC() {
-            @Override public Map<String, Collection<?>> applyx(String stageName, GridStreamerContext ctx,
+            @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts) {
                 ConcurrentMap<Object, AtomicInteger> cntrs = ctx.localSpace();
 
@@ -160,7 +160,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
 
             IgniteStreamer streamer = grid(0).streamer(null);
 
-            streamer.addStreamerFailureListener(new GridStreamerFailureListener() {
+            streamer.addStreamerFailureListener(new StreamerFailureListener() {
                 @Override public void onFailure(String stageName, Collection<Object> evts, Throwable err) {
                     info("Unable to failover events [stageName=" + stageName + ", err=" + err + ']');
 
@@ -206,7 +206,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * Test random router.
      */
-    private static class TestRandomRouter extends GridStreamerEventRouterAdapter {
+    private static class TestRandomRouter extends StreamerEventRouterAdapter {
         /** Source node ID. */
         private UUID srcNodeId;
 
@@ -214,7 +214,7 @@ public class GridStreamerFailoverSelfTest extends GridCommonAbstractTest {
         private UUID destNodeId;
 
         /** {@inheritDoc} */
-        @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+        @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
             if ("put".equals(stageName))
                 return ctx.projection().node(destNodeId);
 

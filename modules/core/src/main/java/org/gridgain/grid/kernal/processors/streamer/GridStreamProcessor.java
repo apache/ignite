@@ -66,7 +66,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
         for (IgniteStreamerImpl s : map.values()) {
             try {
                 mBeans.add(U.registerMBean(mBeanSrv, ctx.gridName(), U.maskName(s.name()), "Streamer",
-                    new GridStreamerMBeanAdapter(s), GridStreamerMBean.class));
+                    new StreamerMBeanAdapter(s), StreamerMBean.class));
 
                 if (log.isDebugEnabled())
                     log.debug("Registered MBean for streamer: " + s.name());
@@ -221,7 +221,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         super.start();
 
-        GridStreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();
+        StreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();
 
         if (F.isEmpty(cfg)) {
             map = Collections.emptyMap();
@@ -236,7 +236,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             mBeans = new ArrayList<>(len);
         }
 
-        for (GridStreamerConfiguration c : cfg) {
+        for (StreamerConfiguration c : cfg) {
             // Register streaming usage with license manager.
             GridLicenseUseRegistry.onUsage(STREAMING, getClass());
 
@@ -292,7 +292,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
         super.addAttributes(attrs);
 
-        GridStreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();
+        StreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();
 
         if (F.isEmpty(cfg))
             return;
@@ -301,7 +301,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         int i = 0;
 
-        for (GridStreamerConfiguration c : cfg)
+        for (StreamerConfiguration c : cfg)
             arr[i++] = new GridStreamerAttributes(c);
 
         attrs.put(ATTR_STREAMER, arr);

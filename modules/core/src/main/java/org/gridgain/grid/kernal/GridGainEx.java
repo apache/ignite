@@ -1646,13 +1646,13 @@ public class GridGainEx {
                 myCfg.setGgfsConfiguration(clone);
             }
 
-            GridStreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
+            StreamerConfiguration[] streamerCfgs = cfg.getStreamerConfiguration();
 
             if (streamerCfgs != null) {
-                GridStreamerConfiguration[] clone = streamerCfgs.clone();
+                StreamerConfiguration[] clone = streamerCfgs.clone();
 
                 for (int i = 0; i < streamerCfgs.length; i++)
-                    clone[i] = new GridStreamerConfiguration(streamerCfgs[i]);
+                    clone[i] = new StreamerConfiguration(streamerCfgs[i]);
 
                 myCfg.setStreamerConfiguration(clone);
             }

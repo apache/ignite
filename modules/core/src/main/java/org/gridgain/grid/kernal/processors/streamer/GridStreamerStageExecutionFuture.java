@@ -68,7 +68,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
 
     /** Metrics holder. */
     @GridToStringExclude
-    private GridStreamerMetricsHolder metricsHolder;
+    private StreamerMetricsHolder metricsHolder;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -143,7 +143,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
      *
      * @param metricsHolder Metrics holder.
      */
-    public void metrics(GridStreamerMetricsHolder metricsHolder) {
+    public void metrics(StreamerMetricsHolder metricsHolder) {
         assert metricsHolder != null;
         assert rootExecution();
 
@@ -180,7 +180,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
             // after map() is executed.
             streamer.onFutureMapped(this);
 
-            GridStreamerEventRouter evtRouter = streamer.eventRouter();
+            StreamerEventRouter evtRouter = streamer.eventRouter();
 
             Map<ClusterNode, Collection<Object>> routeMap = evtRouter.route(streamer.context(), stageName, evts);
 

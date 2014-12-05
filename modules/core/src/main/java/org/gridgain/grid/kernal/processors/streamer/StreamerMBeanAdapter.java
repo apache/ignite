@@ -15,14 +15,14 @@ import org.jetbrains.annotations.*;
 /**
  * Streamer MBean implementation.
  */
-public class GridStreamerMBeanAdapter implements GridStreamerMBean {
+public class StreamerMBeanAdapter implements StreamerMBean {
     /** Streamer. */
     private IgniteStreamerImpl streamer;
 
     /**
      * @param streamer Streamer.
      */
-    public GridStreamerMBeanAdapter(IgniteStreamerImpl streamer) {
+    public StreamerMBeanAdapter(IgniteStreamerImpl streamer) {
         this.streamer = streamer;
     }
 

@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Streamer configuration.
  */
-public class GridStreamerConfiguration {
+public class StreamerConfiguration {
     /** By default maximum number of concurrent sessions is unlimited. */
     public static final int DFLT_MAX_CONCURRENT_SESSIONS = -1;
 
@@ -33,7 +33,7 @@ public class GridStreamerConfiguration {
     private Collection<GridStreamerWindow> win;
 
     /** Router. */
-    private GridStreamerEventRouter router;
+    private StreamerEventRouter router;
 
     /** Stages. */
     @GridToStringInclude
@@ -57,14 +57,14 @@ public class GridStreamerConfiguration {
     /**
      *
      */
-    public GridStreamerConfiguration() {
+    public StreamerConfiguration() {
         // No-op.
     }
 
     /**
      * @param c Configuration to copy.
      */
-    public GridStreamerConfiguration(GridStreamerConfiguration c) {
+    public StreamerConfiguration(StreamerConfiguration c) {
         atLeastOnce = c.isAtLeastOnce();
         execSvc = c.getExecutorService();
         execSvcShutdown = c.isExecutorServiceShutdown();
@@ -100,7 +100,7 @@ public class GridStreamerConfiguration {
      * @return Event router, if {@code null} then events will be executed locally.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public GridStreamerEventRouter getRouter() {
+    @Nullable public StreamerEventRouter getRouter() {
         return router;
     }
 
@@ -109,7 +109,7 @@ public class GridStreamerConfiguration {
      *
      * @param router Router.
      */
-    public void setRouter(GridStreamerEventRouter router) {
+    public void setRouter(StreamerEventRouter router) {
         this.router = router;
     }
 
@@ -262,6 +262,6 @@ public class GridStreamerConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridStreamerConfiguration.class, this);
+        return S.toString(StreamerConfiguration.class, this);
     }
 }

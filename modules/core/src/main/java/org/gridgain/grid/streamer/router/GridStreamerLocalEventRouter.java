@@ -20,18 +20,18 @@ import java.util.*;
 /**
  * Local router. Always routes event to local node.
  */
-public class GridStreamerLocalEventRouter implements GridStreamerEventRouter {
+public class GridStreamerLocalEventRouter implements StreamerEventRouter {
     /** Grid instance. */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public <T> ClusterNode route(GridStreamerContext ctx, String stageName, T evt) {
+    @Override public <T> ClusterNode route(StreamerContext ctx, String stageName, T evt) {
         return ignite.cluster().localNode();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<ClusterNode, Collection<T>> route(GridStreamerContext ctx, String stageName,
+    @Override public <T> Map<ClusterNode, Collection<T>> route(StreamerContext ctx, String stageName,
         Collection<T> evts) {
         return F.asMap(ignite.cluster().localNode(), evts);
     }
