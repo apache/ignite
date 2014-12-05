@@ -11,7 +11,6 @@ package org.gridgain.testframework.junits.spi;
 
 import org.gridgain.grid.spi.*;
 import org.gridgain.grid.spi.discovery.*;
-import org.gridgain.testframework.junits.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -20,7 +19,7 @@ import java.lang.reflect.*;
  * Base class for SPI configuration tests.
  * @param <T> Type of tested SPI.
  */
-public abstract class GridSpiAbstractConfigTest<T extends GridSpi> extends GridSpiAbstractTest<T> {
+public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** Default constructor. */
     protected GridSpiAbstractConfigTest() {
         super(false);
@@ -34,7 +33,7 @@ public abstract class GridSpiAbstractConfigTest<T extends GridSpi> extends GridS
      * @param val An illegal value.
      * @throws Exception If check failed.
      */
-    protected void checkNegativeSpiProperty(GridSpi spi, String propName, @Nullable Object val) throws Exception {
+    protected void checkNegativeSpiProperty(IgniteSpi spi, String propName, @Nullable Object val) throws Exception {
         checkNegativeSpiProperty(spi, propName, val, true);
     }
 
@@ -47,7 +46,7 @@ public abstract class GridSpiAbstractConfigTest<T extends GridSpi> extends GridS
      * @param checkExMsg If {@code true} then additional info will be added to failure.
      * @throws Exception If check failed.
      */
-    protected void checkNegativeSpiProperty(GridSpi spi, String propName, Object val, boolean checkExMsg)
+    protected void checkNegativeSpiProperty(IgniteSpi spi, String propName, Object val, boolean checkExMsg)
         throws Exception {
         assert spi != null;
         assert propName != null;

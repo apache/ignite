@@ -32,7 +32,7 @@ import java.util.*;
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */
-public interface GridSpi {
+public interface IgniteSpi {
     /**
      * Gets SPI name.
      *

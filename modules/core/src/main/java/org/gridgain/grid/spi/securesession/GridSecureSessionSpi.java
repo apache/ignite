@@ -48,7 +48,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridSecureSessionSpi extends GridSpi {
+public interface GridSecureSessionSpi extends IgniteSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next secure session SPI
      * in the list will be checked.

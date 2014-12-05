@@ -33,7 +33,7 @@ import static org.apache.ignite.product.IgniteProductVersion.*;
  * @param <T> SPI implementation class.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public abstract class GridAbstractDiscoverySelfTest<T extends GridSpi> extends GridSpiAbstractTest<T> {
+public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final List<GridDiscoverySpi> spis = new ArrayList<>();
 

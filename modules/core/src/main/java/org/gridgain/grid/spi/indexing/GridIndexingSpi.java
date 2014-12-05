@@ -46,7 +46,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridIndexingSpi extends GridSpi {
+public interface GridIndexingSpi extends IgniteSpi {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *

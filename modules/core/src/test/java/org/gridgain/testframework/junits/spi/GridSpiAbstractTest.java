@@ -40,7 +40,7 @@ import static org.apache.ignite.product.IgniteProductVersion.*;
  * @param <T> SPI implementation class.
  */
 @SuppressWarnings({"JUnitTestCaseWithNonTrivialConstructors"})
-public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstractTest {
+public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstractTest {
     /** */
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
@@ -276,7 +276,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @param spi SPI to create attributes for.
      * @return Map of attributes.
      */
-    private Map<String, Serializable> initSpiClassAndVersionAttributes(GridSpi spi) {
+    private Map<String, Serializable> initSpiClassAndVersionAttributes(IgniteSpi spi) {
         Map<String, Serializable> attrs = new HashMap<>();
 
         attrs.put(U.spiAttribute(spi, GridNodeAttributes.ATTR_SPI_CLASS), spi.getClass().getName());
@@ -357,7 +357,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @throws IllegalAccessException If failed.
      * @throws InvocationTargetException If failed.
      */
-    private void configure(GridSpi spi) throws Exception {
+    private void configure(IgniteSpi spi) throws Exception {
         // Inject Configuration.
         for (Method m : getClass().getMethods()) {
             GridSpiTestConfig cfg = m.getAnnotation(GridSpiTestConfig.class);
@@ -410,7 +410,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @param spi SPI.
      * @throws Exception If failed.
      */
-    protected void spiStart(GridSpi spi) throws Exception {
+    protected void spiStart(IgniteSpi spi) throws Exception {
         U.setWorkDirectory(null, U.getGridGainHome());
 
         // Start SPI with unique grid name.
@@ -534,7 +534,7 @@ public abstract class GridSpiAbstractTest<T extends GridSpi> extends GridAbstrac
      * @param spi SPI.
      * @throws Exception If failed.
      */
-    protected void spiStop(GridSpi spi) throws Exception {
+    protected void spiStop(IgniteSpi spi) throws Exception {
         spi.spiStop();
 
         info("SPI stopped [spi=" + spi.getClass().getName() + ']');

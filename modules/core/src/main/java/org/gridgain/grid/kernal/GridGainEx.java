@@ -1245,7 +1245,7 @@ public class GridGainEx {
          * @param spi SPI implementation.
          * @throws GridException Thrown in case if multi-instance is not supported.
          */
-        private void ensureMultiInstanceSupport(GridSpi spi) throws GridException {
+        private void ensureMultiInstanceSupport(IgniteSpi spi) throws GridException {
             GridSpiMultipleInstancesSupport ann = U.getAnnotation(spi.getClass(),
                 GridSpiMultipleInstancesSupport.class);
 
@@ -1258,8 +1258,8 @@ public class GridGainEx {
          * @param spis SPI implementations.
          * @throws GridException Thrown in case if multi-instance is not supported.
          */
-        private void ensureMultiInstanceSupport(GridSpi[] spis) throws GridException {
-            for (GridSpi spi : spis)
+        private void ensureMultiInstanceSupport(IgniteSpi[] spis) throws GridException {
+            for (IgniteSpi spi : spis)
                 ensureMultiInstanceSupport(spi);
         }
 

@@ -5059,7 +5059,7 @@ public abstract class GridUtils {
      * @param attrName attribute name.
      * @return SPI attribute name.
      */
-    public static String spiAttribute(GridSpi spi, String attrName) {
+    public static String spiAttribute(IgniteSpi spi, String attrName) {
         assert spi != null;
         assert spi.getName() != null;
 

@@ -38,7 +38,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * This class provides convenient adapter for SPI implementations.
  */
-public abstract class GridSpiAdapter implements GridSpi, GridSpiManagementMBean {
+public abstract class GridSpiAdapter implements IgniteSpi, GridSpiManagementMBean {
     /** */
     private ObjectName spiMBean;
 

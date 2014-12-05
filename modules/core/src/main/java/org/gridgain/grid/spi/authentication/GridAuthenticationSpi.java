@@ -49,7 +49,7 @@ import org.gridgain.grid.spi.authentication.noop.*;
  * to undefined behavior and explicitly not supported.
  */
 @GridSpiConsistencyChecked(optional = false, checkDaemon = true)
-public interface GridAuthenticationSpi extends GridSpi {
+public interface GridAuthenticationSpi extends IgniteSpi {
     /**
      * Checks if given subject is supported by this SPI. If not, then next authentication SPI
      * in the list will be checked.

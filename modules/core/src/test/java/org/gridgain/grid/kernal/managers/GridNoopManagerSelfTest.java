@@ -36,12 +36,12 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Manager extends GridManagerAdapter<GridSpi> {
+    private static class Manager extends GridManagerAdapter<IgniteSpi> {
         /**
          * @param ctx  Kernal context.
          * @param spis Specific SPI instance.
          */
-        protected Manager(GridKernalContext ctx, GridSpi... spis) {
+        protected Manager(GridKernalContext ctx, IgniteSpi... spis) {
             super(ctx, spis);
         }
 
@@ -59,7 +59,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static interface TestSpi extends GridSpi {
+    private static interface TestSpi extends IgniteSpi {
         // No-op.
     }
 

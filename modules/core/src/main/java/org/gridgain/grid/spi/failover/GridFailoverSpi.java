@@ -45,7 +45,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridFailoverSpi extends GridSpi {
+public interface GridFailoverSpi extends IgniteSpi {
     /**
      * This method is called when method {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} returns
      * value {@link org.apache.ignite.compute.ComputeJobResultPolicy#FAILOVER} policy indicating that the result of

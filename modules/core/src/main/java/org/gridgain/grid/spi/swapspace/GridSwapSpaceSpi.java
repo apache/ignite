@@ -46,7 +46,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridSwapSpaceSpi extends GridSpi {
+public interface GridSwapSpaceSpi extends IgniteSpi {
     /**
      * Entirely clears data space with given name, if any.
      *

@@ -70,8 +70,8 @@ public class VisorSpisConfiguration implements Serializable {
      * @param spi SPI to collect information on.
      * @return Tuple where first component is SPI name and
      */
-    private static IgniteBiTuple<String, Map<String, Object>> collectSpiInfo(GridSpi spi) {
-        Class<? extends GridSpi> spiCls = spi.getClass();
+    private static IgniteBiTuple<String, Map<String, Object>> collectSpiInfo(IgniteSpi spi) {
+        Class<? extends IgniteSpi> spiCls = spi.getClass();
 
         HashMap<String, Object> res = new HashMap<>();
 
@@ -119,7 +119,7 @@ public class VisorSpisConfiguration implements Serializable {
         return new IgniteBiTuple<String, Map<String, Object>>(spi.getName(), res);
     }
 
-    private static IgniteBiTuple<String, Map<String, Object>>[] collectSpiInfo(GridSpi[] spis) {
+    private static IgniteBiTuple<String, Map<String, Object>>[] collectSpiInfo(IgniteSpi[] spis) {
         IgniteBiTuple[] res = new IgniteBiTuple[spis.length];
 
         for (int i = 0; i < spis.length; i++)

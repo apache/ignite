@@ -52,7 +52,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridCheckpointSpi extends GridSpi {
+public interface GridCheckpointSpi extends IgniteSpi {
     /**
      * Loads checkpoint from storage by its unique key.
      *

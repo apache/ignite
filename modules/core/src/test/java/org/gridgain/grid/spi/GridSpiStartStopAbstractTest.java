@@ -15,7 +15,7 @@ import org.gridgain.testframework.junits.spi.*;
  * Base SPI start-stop test class.
  * @param <T> SPI implementation class.
  */
-public abstract class GridSpiStartStopAbstractTest<T extends GridSpi> extends GridSpiAbstractTest<T> {
+public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     public static final int COUNT = 5;
 
@@ -60,7 +60,7 @@ public abstract class GridSpiStartStopAbstractTest<T extends GridSpi> extends Gr
      * @throws Exception If test failed.
      */
     public void testStop() throws Exception {
-        GridSpi spi = getSpiClass().newInstance();
+        IgniteSpi spi = getSpiClass().newInstance();
 
         getTestResources().inject(spi);
 

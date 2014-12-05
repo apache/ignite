@@ -69,7 +69,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @param target Target spi.
      * @throws GridException If injection failed.
      */
-    private void injectLogger(GridSpi target) throws GridException {
+    private void injectLogger(IgniteSpi target) throws GridException {
         ctx.resource().injectBasicResource(
             target,
             IgniteLoggerResource.class,

@@ -42,7 +42,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  * @param <T> SPI wrapped by this manager.
  *
  */
-public abstract class GridManagerAdapter<T extends GridSpi> implements GridManager {
+public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridManager {
     /** Kernal context. */
     @GridToStringExclude
     protected final GridKernalContext ctx;
@@ -158,7 +158,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
      * @param spi SPI whose internal objects need to be injected.
      * @throws GridException If injection failed.
      */
-    private void inject(GridSpi spi) throws GridException {
+    private void inject(IgniteSpi spi) throws GridException {
         if (spi instanceof GridSpiAdapter) {
             Collection<Object> injectables = ((GridSpiAdapter)spi).injectables();
 
@@ -172,7 +172,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
      * @param spi SPI whose internal objects need to be injected.
      * @throws GridException If injection failed.
      */
-    private void cleanup(GridSpi spi) throws GridException {
+    private void cleanup(IgniteSpi spi) throws GridException {
         if (spi instanceof GridSpiAdapter) {
             Collection<Object> injectables = ((GridSpiAdapter)spi).injectables();
 
@@ -263,7 +263,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
 
     /** {@inheritDoc} */
     @Override public final void onKernalStart() throws GridException {
-        for (final GridSpi spi : spis) {
+        for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new GridSpiContext() {
                     @Override public Collection<ClusterNode> remoteNodes() {
@@ -532,7 +532,7 @@ public abstract class GridManagerAdapter<T extends GridSpi> implements GridManag
     @Override public final void onKernalStop(boolean cancel) {
         onKernalStop0(cancel);
 
-        for (GridSpi spi : spis)
+        for (IgniteSpi spi : spis)
             spi.onContextDestroyed();
     }
 

@@ -103,7 +103,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridLoadBalancingSpi extends GridSpi {
+public interface GridLoadBalancingSpi extends IgniteSpi {
     /**
      * Gets balanced node for specified job within given task session.
      *

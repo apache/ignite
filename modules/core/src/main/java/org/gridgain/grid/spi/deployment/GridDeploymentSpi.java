@@ -50,7 +50,7 @@ import org.jetbrains.annotations.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDeploymentSpi extends GridSpi {
+public interface GridDeploymentSpi extends IgniteSpi {
     /**
      * Finds class loader for the given class.
      *

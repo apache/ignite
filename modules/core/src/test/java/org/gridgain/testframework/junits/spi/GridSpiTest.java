@@ -28,7 +28,7 @@ public @interface GridSpiTest {
     /**
      * Mandatory implementation class for SPI.
      */
-    public Class<? extends GridSpi> spi();
+    public Class<? extends IgniteSpi> spi();
 
     /**
      * Flag indicating whether SPI should be automatically started.

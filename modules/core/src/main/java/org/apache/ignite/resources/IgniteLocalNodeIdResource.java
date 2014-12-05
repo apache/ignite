@@ -9,8 +9,6 @@
 
 package org.apache.ignite.resources;
 
-import org.gridgain.grid.spi.*;
-
 import java.lang.annotation.*;
 import java.util.*;
 
@@ -22,7 +20,7 @@ import java.util.*;
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * <li>{@link GridSpi}</li>
+ * <li>{@link org.gridgain.grid.spi.IgniteSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>

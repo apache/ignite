@@ -506,7 +506,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param spi SPI implementation.
      * @throws GridException Throw in case of any errors.
      */
-    public void inject(GridSpi spi) throws GridException {
+    public void inject(IgniteSpi spi) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + spi);
 
@@ -535,7 +535,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param spi SPI implementation.
      * @throws GridException Thrown in case of any errors.
      */
-    public void cleanup(GridSpi spi) throws GridException {
+    public void cleanup(IgniteSpi spi) throws GridException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + spi);
 

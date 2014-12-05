@@ -35,7 +35,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface GridDiscoverySpi extends GridSpi {
+public interface GridDiscoverySpi extends IgniteSpi {
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
      *

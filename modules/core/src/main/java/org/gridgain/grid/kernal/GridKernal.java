@@ -1403,9 +1403,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param spiList Collection of SPIs to get attributes from.
      * @throws GridException Thrown if was unable to set up attribute.
      */
-    private void addAttributes(Map<String, Object> attrs, GridSpi... spiList) throws GridException {
-        for (GridSpi spi : spiList) {
-            Class<? extends GridSpi> spiCls = spi.getClass();
+    private void addAttributes(Map<String, Object> attrs, IgniteSpi... spiList) throws GridException {
+        for (IgniteSpi spi : spiList) {
+            Class<? extends IgniteSpi> spiCls = spi.getClass();
 
             add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
         }
