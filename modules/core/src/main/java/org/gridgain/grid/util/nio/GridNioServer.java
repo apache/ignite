@@ -11,8 +11,8 @@ package org.gridgain.grid.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.ssl.*;

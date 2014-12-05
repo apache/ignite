@@ -288,7 +288,7 @@
             All threads are pre-started and are available for use.
         -->
         <property name="executorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="10"/>
                 <constructor-arg type="int" value="10"/>
                 <constructor-arg type="long">
@@ -306,7 +306,7 @@
             Threads are not started unless used.
         -->
         <property name="systemExecutorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="10"/>
                 <constructor-arg type="int" value="10"/>
                 <constructor-arg type="long">
@@ -324,7 +324,7 @@
             Threads are not started unless used.
         -->
         <property name="peerClassLoadingExecutorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="2"/>
                 <constructor-arg type="int" value="2"/>
                 <constructor-arg type="long">

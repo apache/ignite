@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.thread;
 
+import org.apache.ignite.thread.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
 /**
- * Test for {@link IgniteThread}.
+ * Test for {@link org.apache.ignite.thread.IgniteThread}.
  */
 @GridCommonTest(group = "Utils")
 public class GridThreadTest extends GridCommonAbstractTest {

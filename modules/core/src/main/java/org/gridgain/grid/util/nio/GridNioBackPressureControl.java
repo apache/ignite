@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.thread.*;
+import org.apache.ignite.thread.*;
 
 /**
  * Utility class that allows to ignore back-pressure control for threads that are processing messages.

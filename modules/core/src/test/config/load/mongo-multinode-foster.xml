@@ -115,7 +115,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="executorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 2}"/>
                 <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 2}"/>
                 <constructor-arg type="long">

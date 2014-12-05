@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.thread;
 
+import org.apache.ignite.thread.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;

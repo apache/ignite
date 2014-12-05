@@ -57,7 +57,7 @@
 
         <!-- Disable pools -->
         <property name="executorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="long">
@@ -70,7 +70,7 @@
         </property>
 
         <property name="systemExecutorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="long">
@@ -83,7 +83,7 @@
         </property>
 
         <property name="peerClassLoadingExecutorService">
-            <bean class="org.gridgain.grid.thread.IgniteThreadPoolExecutor">
+            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="int" value="100"/>
                 <constructor-arg type="long">

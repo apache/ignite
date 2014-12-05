@@ -11,6 +11,7 @@
 
 package org.gridgain.visor
 
+import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.{IgniteState, Ignition}
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration

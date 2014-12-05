@@ -11,11 +11,11 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
-import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;

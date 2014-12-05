@@ -11,9 +11,9 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
-import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.*;
