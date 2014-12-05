@@ -21,14 +21,14 @@ import java.util.*;
 /**
  * Random router. Routes event to random node.
  */
-public class GridStreamerRandomEventRouter extends StreamerEventRouterAdapter {
+public class StreamerRandomEventRouter extends StreamerEventRouterAdapter {
     /** Optional predicates to exclude nodes from routing. */
     private IgnitePredicate<ClusterNode>[] predicates;
 
     /**
      * Empty constructor for spring.
      */
-    public GridStreamerRandomEventRouter() {
+    public StreamerRandomEventRouter() {
         this((IgnitePredicate<ClusterNode>[])null);
     }
 
@@ -37,7 +37,7 @@ public class GridStreamerRandomEventRouter extends StreamerEventRouterAdapter {
      *
      * @param predicates Node predicates.
      */
-    public GridStreamerRandomEventRouter(@Nullable IgnitePredicate<ClusterNode>... predicates) {
+    public StreamerRandomEventRouter(@Nullable IgnitePredicate<ClusterNode>... predicates) {
         this.predicates = predicates;
     }
 
@@ -47,7 +47,7 @@ public class GridStreamerRandomEventRouter extends StreamerEventRouterAdapter {
      * @param predicates Node predicates.
      */
     @SuppressWarnings("unchecked")
-    public GridStreamerRandomEventRouter(Collection<IgnitePredicate<ClusterNode>> predicates) {
+    public StreamerRandomEventRouter(Collection<IgnitePredicate<ClusterNode>> predicates) {
         if (!F.isEmpty(predicates)) {
             this.predicates = new IgnitePredicate[predicates.size()];
 

@@ -28,5 +28,5 @@
     <import resource="spring-streamer-average-base.xml"/>
 
     <!-- Local router configuration. -->
-    <bean id="router.cfg" class="org.gridgain.grid.streamer.router.GridStreamerRandomEventRouter"/>
+    <bean id="router.cfg" class="org.gridgain.grid.streamer.router.StreamerRandomEventRouter"/>
 </beans>

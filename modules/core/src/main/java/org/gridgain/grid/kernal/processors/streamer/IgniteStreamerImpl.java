@@ -265,7 +265,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         resetMetrics();
 
         if (router == null)
-            router = new GridStreamerLocalEventRouter();
+            router = new StreamerLocalEventRouter();
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -296,7 +296,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             ctx.resource().injectGeneric(s);
 
         if (router == null)
-            router = new GridStreamerLocalEventRouter();
+            router = new StreamerLocalEventRouter();
 
         ctx.resource().injectGeneric(router);
 

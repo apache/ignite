@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Round robin router.
  */
-public class GridStreamerRoundRobinEventRouter extends StreamerEventRouterAdapter {
+public class StreamerRoundRobinEventRouter extends StreamerEventRouterAdapter {
     /** */
     private final AtomicLong lastOrder = new AtomicLong();
 

@@ -204,7 +204,7 @@ public class StreamingPriceBarsExample {
     /**
      * Trade quote that is streamed into the system.
      */
-    private static class Quote implements GridStreamerAffinityEventRouter.AffinityEvent {
+    private static class Quote implements StreamerAffinityEventRouter.AffinityEvent {
         /** Instrument symbol. */
         private final String symbol;
 
@@ -248,7 +248,7 @@ public class StreamingPriceBarsExample {
     /**
      * The bar that is build by the streamer.
      */
-    private static class Bar implements GridStreamerAffinityEventRouter.AffinityEvent {
+    private static class Bar implements StreamerAffinityEventRouter.AffinityEvent {
         /** Instrument symbol. */
         private final String symbol;
 

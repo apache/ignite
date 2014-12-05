@@ -20,7 +20,7 @@ import java.util.*;
 /**
  * Local router. Always routes event to local node.
  */
-public class GridStreamerLocalEventRouter implements StreamerEventRouter {
+public class StreamerLocalEventRouter implements StreamerEventRouter {
     /** Grid instance. */
     @IgniteInstanceResource
     private Ignite ignite;

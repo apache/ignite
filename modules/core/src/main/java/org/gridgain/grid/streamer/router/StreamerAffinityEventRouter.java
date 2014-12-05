@@ -30,7 +30,7 @@ import java.util.*;
  * via {@link AffinityEvent#affinityKey()} method. If event does not implement
  * {@link AffinityEvent} interface, then event itself will be used to determine affinity.
  */
-public class GridStreamerAffinityEventRouter extends StreamerEventRouterAdapter {
+public class StreamerAffinityEventRouter extends StreamerEventRouterAdapter {
     /** */
     public static final int REPLICA_CNT = 128;
 

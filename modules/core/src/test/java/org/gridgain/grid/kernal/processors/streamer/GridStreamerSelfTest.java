@@ -521,7 +521,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testQuery() throws Exception {
         atLeastOnce = true;
-        router = new GridStreamerRandomEventRouter();
+        router = new StreamerRandomEventRouter();
         p2pEnabled = false;
 
         final int evtCnt = 1000;
@@ -674,7 +674,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testRandomRouterWithEmptyTopology() throws Exception {
         atLeastOnce = true;
-        router = new GridStreamerRandomEventRouter(new IgnitePredicate<ClusterNode>() {
+        router = new StreamerRandomEventRouter(new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
                 return false;
             }
