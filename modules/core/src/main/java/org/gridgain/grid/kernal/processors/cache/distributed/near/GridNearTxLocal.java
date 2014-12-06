@@ -621,6 +621,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             if (!isRollbackOnly()) {
                 invalidate = true;
 
+                systemInvalidate(true);
+
                 U.warn(log, "Set transaction invalidation flag to true due to error [tx=" + this + ", err=" + err + ']');
             }
         }

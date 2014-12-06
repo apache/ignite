@@ -426,6 +426,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             for (GridCacheTxEntry<K, V> e : writes) {
                 GridCacheTxEntry<K, V> txEntry = tx.entry(e.txKey());
 
+                assert txEntry != null : "Missing tx entry for key [tx=" + tx + ", key=" + e.txKey() + ']';
+
                 while (true) {
                     try {
                         GridCacheEntryEx<K, V> entry = txEntry.cached();
@@ -446,7 +448,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         else
                             val0 = entry.rawGet();
 
-                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
+                        if (val0 != null || valBytes0 != null)
+                            res.addOwnedValue(txEntry.txKey(), dhtVer, val0, valBytes0);
 
                         break;
                     }

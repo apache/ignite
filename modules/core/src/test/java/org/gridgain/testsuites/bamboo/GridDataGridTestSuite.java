@@ -59,7 +59,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
         //suite.addTestSuite(GridDataLoaderProcessorSelfTest.class); TODO GG-9141
-        //suite.addTestSuite(GridDataLoaderImplSelfTest.class); TODO GG-9141
+        suite.addTestSuite(GridDataLoaderImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
         suite.addTestSuite(GridCacheGlobalClearAllSelfTest.class);
@@ -68,20 +68,20 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheGetStoreErrorSelfTest.class);
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
-//        suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridCacheStopSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
-//        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
 //        suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
