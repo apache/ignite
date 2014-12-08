@@ -127,7 +127,7 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     private void populateCache() throws GridException {
-        GridCache<String, Object> cache = G.grid().cache(null);
+        GridCache<String, Object> cache = G.ignite().cache(null);
 
         cache.put("int", intValue());
         cache.put("string", "cacheString");
@@ -147,8 +147,8 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
      * @throws GridException If failed.
      */
     private void deployTasks() throws GridException {
-        G.grid().compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
-        G.grid().compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
+        G.ignite().compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
+        G.ignite().compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
     }
 
     /**

@@ -16,6 +16,10 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.ssl.*;
@@ -25,11 +29,6 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
-import org.gridgain.grid.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -779,7 +778,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             if (!(o instanceof GridDistributedLockRequest))
                 return;
 
-            GridKernal g = (GridKernal)G.grid(nodeId);
+            GridKernal g = (GridKernal)G.ignite(nodeId);
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 
