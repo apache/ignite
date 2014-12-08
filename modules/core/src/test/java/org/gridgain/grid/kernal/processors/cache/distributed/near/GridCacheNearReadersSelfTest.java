@@ -109,7 +109,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
      * @return Grid.
      */
     private Ignite grid(UUID nodeId) {
-        return G.grid(nodeId);
+        return G.ignite(nodeId);
     }
 
     /** @throws Exception If failed. */

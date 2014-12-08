@@ -59,7 +59,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCancelledJobs() throws Exception {
-        final Ignite ignite = G.grid(getTestGridName());
+        final Ignite ignite = G.ignite(getTestGridName());
 
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 

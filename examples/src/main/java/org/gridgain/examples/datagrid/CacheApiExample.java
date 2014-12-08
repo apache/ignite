@@ -61,7 +61,7 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        GridCache<Integer, String> cache = Ignition.grid().cache(CACHE_NAME);
+        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Put and return previous value.
         String v = cache.put(1, "1");
@@ -122,7 +122,7 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Local iterator examples.");
 
-        GridCache<Integer, String> cache = Ignition.grid().cache(CACHE_NAME);
+        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Iterate over whole cache.
         for (GridCacheEntry<Integer, String> e : cache)

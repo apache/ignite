@@ -72,7 +72,7 @@ public final class GridSingleExecutionTest {
         }
 
         try {
-            Ignite ignite = G.grid();
+            Ignite ignite = G.ignite();
 
             IgniteCompute comp = ignite.compute().enableAsync();
 

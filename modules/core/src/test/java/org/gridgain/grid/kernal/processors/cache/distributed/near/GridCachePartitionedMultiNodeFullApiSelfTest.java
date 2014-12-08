@@ -358,7 +358,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Node: " + node);
 
-        GridCache<String, Integer> cache = G.grid(node.id()).cache(null);
+        GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
         checkLockAsyncWithTimeoutEntry("key", cache);
     }
@@ -376,7 +376,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Node: " + node);
 
-        GridCache<String, Integer> cache = G.grid(node.id()).cache(null);
+        GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
         checkLockAsyncWithTimeoutEntry("key", cache);
     }
@@ -404,7 +404,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Node: " + node);
 
-        GridCache<String, Integer> cache = G.grid(node.id()).cache(null);
+        GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
         checkLockAsyncWithTimeoutEntry("key", cache);
     }

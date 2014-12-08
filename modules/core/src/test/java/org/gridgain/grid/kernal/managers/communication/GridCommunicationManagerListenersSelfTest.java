@@ -34,7 +34,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testDifferentListeners() {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         for (int i = 0; i < 2000; i++) {
             P2<UUID, Object> l = new P2<UUID, Object>() {
@@ -63,7 +63,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      */
     @SuppressWarnings({"deprecation"})
     public void testOneListener() {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -98,7 +98,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
             MessageListeningTask t = new MessageListeningTask();
 
             try {
-                G.grid(getTestGridName()).compute().execute(t.getClass(), null);
+                G.ignite(getTestGridName()).compute().execute(t.getClass(), null);
             }
             catch (GridException e) {
                 assert false : "Failed to execute task [iteration=" + i + ", err=" + e.getMessage() + ']';

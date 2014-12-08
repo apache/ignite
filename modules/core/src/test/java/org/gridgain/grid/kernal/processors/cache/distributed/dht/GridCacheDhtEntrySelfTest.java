@@ -130,7 +130,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Grid.
      */
     private Ignite grid(UUID nodeId) {
-        return G.grid(nodeId);
+        return G.ignite(nodeId);
     }
 
     /** @throws Exception If failed. */

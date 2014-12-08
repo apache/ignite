@@ -112,7 +112,7 @@ public final class CacheAtomicStampedExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicStamped<String, String> stamped = Ignition.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicStamped<String, String> stamped = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicStamped(stampedName, null, null, true);
 
                 System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');

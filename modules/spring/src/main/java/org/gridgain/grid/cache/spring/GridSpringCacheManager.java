@@ -210,7 +210,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         else if (cfg != null)
             ignite = Ignition.start(cfg);
         else
-            ignite = Ignition.grid(gridName);
+            ignite = Ignition.ignite(gridName);
     }
 
     /** {@inheritDoc} */
@@ -325,7 +325,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         /** {@inheritDoc} */
         @Override public void clear() {
             try {
-                Ignite ignite = cache.gridProjection().grid();
+                Ignite ignite = cache.gridProjection().ignite();
 
                 ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
             }

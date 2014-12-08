@@ -614,7 +614,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private void checkKeys(GridCache<Integer, String> cache, int cnt, Iterable<Ignite> grids) throws GridException {
         GridCacheAffinity<Integer> aff = affinity(cache);
 
-        Ignite ignite = cache.gridProjection().grid();
+        Ignite ignite = cache.gridProjection().ignite();
 
         ClusterNode loc = ignite.cluster().localNode();
 

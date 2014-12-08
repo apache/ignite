@@ -62,7 +62,7 @@ public class GridTestMain {
     private static void colocateJobs() throws Exception {
         X.println("Collocating jobs...");
 
-        Ignite g = G.grid();
+        Ignite g = G.ignite();
 
         final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
@@ -126,7 +126,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        final GridCache<GridTestKey, Long> cache = G.grid().cache("partitioned");
+        final GridCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
@@ -174,7 +174,7 @@ public class GridTestMain {
         ExecutorCompletionService<Object> execSvc =
             new ExecutorCompletionService<>(Executors.newFixedThreadPool(numThreads));
 
-        try (IgniteDataLoader<GridTestKey, Long> ldr = G.grid().dataLoader("partitioned")) {
+        try (IgniteDataLoader<GridTestKey, Long> ldr = G.ignite().dataLoader("partitioned")) {
             for (int i = 0; i < numThreads; i++) {
                 final int threadId = i;
 

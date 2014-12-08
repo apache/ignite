@@ -68,7 +68,7 @@ class ScalarGridPimp extends ScalarProjectionPimp[IgniteCluster] with ScalarTask
     def scheduleLocalCall[R](@Nullable s: Call[R], ptrn: String): SchedulerFuture[R] = {
         assert(ptrn != null)
 
-        value.grid().scheduler().scheduleLocal(toCallable(s), ptrn)
+        value.ignite().scheduler().scheduleLocal(toCallable(s), ptrn)
     }
 
     /**
@@ -82,6 +82,6 @@ class ScalarGridPimp extends ScalarProjectionPimp[IgniteCluster] with ScalarTask
     def scheduleLocalRun(@Nullable s: Run, ptrn: String): SchedulerFuture[_] = {
         assert(ptrn != null)
 
-        value.grid().scheduler().scheduleLocal(toRunnable(s), ptrn)
+        value.ignite().scheduler().scheduleLocal(toRunnable(s), ptrn)
     }
 }

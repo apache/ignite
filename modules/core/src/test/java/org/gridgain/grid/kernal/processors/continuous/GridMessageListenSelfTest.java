@@ -448,7 +448,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() + ']');
 
-            assertEquals(prj.grid().cluster().localNode().id(), nodeId);
+            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);
@@ -473,13 +473,13 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void receive(UUID nodeId, Object msg) throws Throwable {
-            assertNotNull(grid());
+            assertNotNull(ignite());
 
-            UUID locNodeId = grid().cluster().localNode().id();
+            UUID locNodeId = ignite().cluster().localNode().id();
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + locNodeId + ']');
 
-            assertEquals(prj.grid().cluster().localNode().id(), nodeId);
+            assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);
 
             nodes.add(locNodeId);

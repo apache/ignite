@@ -175,11 +175,11 @@ public class CacheQueueExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheQueue<String> queue = Ignition.grid().cache(cacheName).dataStructures().
+                GridCacheQueue<String> queue = Ignition.ignite().cache(cacheName).dataStructures().
                     queue(queueName, 0, false, true);
 
                 if (put) {
-                    UUID locId = Ignition.grid().cluster().localNode().id();
+                    UUID locId = Ignition.ignite().cluster().localNode().id();
 
                     for (int i = 0; i < RETRIES; i++) {
                         String item = locId + "_" + Integer.toString(i);

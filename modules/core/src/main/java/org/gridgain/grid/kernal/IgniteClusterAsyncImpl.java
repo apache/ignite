@@ -120,8 +120,8 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Ignite grid() {
-        return grid.grid();
+    @Override public Ignite ignite() {
+        return grid.ignite();
     }
 
     /** {@inheritDoc} */

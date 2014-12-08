@@ -90,12 +90,12 @@ public class CacheCountDownLatchExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheCountDownLatch latch = Ignition.grid().cache(cacheName).dataStructures().
+                GridCacheCountDownLatch latch = Ignition.ignite().cache(cacheName).dataStructures().
                     countDownLatch(latchName, 1, false, true);
 
                 int newCnt = latch.countDown();
 
-                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + Ignition.grid().cluster().localNode().id() + ']');
+                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + Ignition.ignite().cluster().localNode().id() + ']');
             }
             catch (GridException e) {
                 throw new RuntimeException(e);

@@ -152,8 +152,8 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode primaryNode = F.first(affNodes);
 
-            if (F.eq(primaryNode, cache1.gridProjection().grid().cluster().localNode()) &&
-                affNodes.contains(cache3.gridProjection().grid().cluster().localNode()))
+            if (F.eq(primaryNode, cache1.gridProjection().ignite().cluster().localNode()) &&
+                affNodes.contains(cache3.gridProjection().ignite().cluster().localNode()))
                 break;
 
             key++;

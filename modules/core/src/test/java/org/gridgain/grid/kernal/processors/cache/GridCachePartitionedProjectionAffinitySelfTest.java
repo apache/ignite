@@ -98,8 +98,8 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
             g1.cluster().forNodeIds(F.asList(g0.cluster().localNode().id(), g1.cluster().localNode().id()));
 
         for (int i = 0; i < 100; i++)
-            assertEquals(g0Pinned.grid().cluster().mapKeyToNode(null, i).id(),
-                g01Pinned.grid().cluster().mapKeyToNode(null, i).id());
+            assertEquals(g0Pinned.ignite().cluster().mapKeyToNode(null, i).id(),
+                g01Pinned.ignite().cluster().mapKeyToNode(null, i).id());
     }
 
     /** @throws Exception If failed. */

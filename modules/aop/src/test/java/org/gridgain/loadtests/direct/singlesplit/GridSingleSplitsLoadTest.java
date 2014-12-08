@@ -77,7 +77,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Ignite ignite = G.grid(getTestGridName());
+        final Ignite ignite = G.ignite(getTestGridName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 

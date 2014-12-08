@@ -333,7 +333,7 @@ public class Ignition {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid() throws GridIllegalStateException {
+    public static Ignite ignite() throws GridIllegalStateException {
         return GridGainEx.grid();
     }
 
@@ -358,7 +358,7 @@ public class Ignition {
      * @throws GridIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid(UUID locNodeId) throws GridIllegalStateException {
+    public static Ignite ignite(UUID locNodeId) throws GridIllegalStateException {
         return GridGainEx.grid(locNodeId);
     }
 
@@ -378,7 +378,7 @@ public class Ignition {
      * @throws GridIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid(@Nullable String name) throws GridIllegalStateException {
+    public static Ignite ignite(@Nullable String name) throws GridIllegalStateException {
         return GridGainEx.grid(name);
     }
 

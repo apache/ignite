@@ -166,9 +166,9 @@ public class CacheSetExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheSet<String> set = Ignition.grid().cache(cacheName).dataStructures().set(setName, false, true);
+                GridCacheSet<String> set = Ignition.ignite().cache(cacheName).dataStructures().set(setName, false, true);
 
-                UUID locId = Ignition.grid().cluster().localNode().id();
+                UUID locId = Ignition.ignite().cluster().localNode().id();
 
                 for (int i = 0; i < 5; i++) {
                     String item = locId + "_" + Integer.toString(i);

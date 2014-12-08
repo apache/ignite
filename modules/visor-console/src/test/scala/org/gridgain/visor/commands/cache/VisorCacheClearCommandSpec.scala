@@ -71,25 +71,25 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'cclear' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.grid("node-1").cache[Int, Int](null).lock(1, 0)
+        Ignition.ignite("node-1").cache[Int, Int](null).lock(1, 0)
 
         VisorCacheClearCommand().clear(Nil, None)
 
-        Ignition.grid("node-1").cache[Int, Int](null).unlock(1)
+        Ignition.ignite("node-1").cache[Int, Int](null).unlock(1)
 
         VisorCacheClearCommand().clear(Nil, None)
     }
 
     it should "show correct result for named cache" in {
-        Ignition.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.grid("node-1").cache[Int, Int]("cache").lock(1, 0)
+        Ignition.ignite("node-1").cache[Int, Int]("cache").lock(1, 0)
 
         visor.cache("-clear -c=cache")
 
-        Ignition.grid("node-1").cache[Int, Int]("cache").unlock(1)
+        Ignition.ignite("node-1").cache[Int, Int]("cache").unlock(1)
 
         visor.cache("-clear -c=cache")
     }

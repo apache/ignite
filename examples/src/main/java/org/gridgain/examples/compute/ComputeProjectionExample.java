@@ -79,7 +79,7 @@ public class ComputeProjectionExample {
             new IgniteRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.
-                    System.out.println(">>> Hello Node: " + prj.grid().cluster().localNode().id());
+                    System.out.println(">>> Hello Node: " + prj.ignite().cluster().localNode().id());
                 }
             }
         );

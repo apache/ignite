@@ -33,7 +33,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testExecute() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -57,7 +57,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testSubmit() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -94,7 +94,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of test failure.
      */
     public void testSubmitWithFutureTimeout() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -121,7 +121,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAll() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -152,7 +152,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAllWithTimeout() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -198,7 +198,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAny() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 
@@ -224,7 +224,7 @@ public class GridExecutorServiceTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("TooBroadScope")
     public void testInvokeAnyWithTimeout() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ExecutorService srvc = createExecutorService(ignite);
 

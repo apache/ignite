@@ -172,7 +172,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final Ignite grid() {
+    @Override public final Ignite ignite() {
         assert ctx != null;
 
         guard();

@@ -95,7 +95,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testGridifyLoad() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ignite.compute().localDeployTask(GridifyLoadTestTask.class, GridifyLoadTestTask.class.getClassLoader());
 

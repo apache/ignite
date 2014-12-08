@@ -44,7 +44,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     behavior of "A 'cache' visor command"
 
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.grid.cache[String, String]("partitioned")
+        val c = Ignition.ignite.cache[String, String]("partitioned")
 
         for (i <- 0 to 3) {
             val kv = "" + i
@@ -58,7 +58,7 @@ class VisorCacheCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAl
     }
 
     it should "run query and display information about caches" in {
-        val g = Ignition.grid
+        val g = Ignition.ignite
 
         val c = g.cache[Int, Foo]("replicated")
 

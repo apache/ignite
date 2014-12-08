@@ -737,7 +737,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<GridGgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((GridEx)G.grid(nodeId)).cachex(DATA_CACHE_NAME)
+        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((GridEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
             .<GridGgfsBlockKey, byte[]>cache();
     }
 

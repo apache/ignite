@@ -273,7 +273,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         assert n != null;
 
-        return G.grid(n.id());
+        return G.ignite(n.id());
     }
 
     /**
@@ -288,7 +288,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         return F.viewReadOnly(backups,
             new C1<ClusterNode, Ignite>() {
                 @Override public Ignite apply(ClusterNode node) {
-                    return G.grid(node.id());
+                    return G.ignite(node.id());
                 }
             });
     }
@@ -347,7 +347,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert ((Collection)n.meta("primary")).contains(key);
 
-            GridCache<Integer, String> dhtCache = dht(G.grid(n.id()));
+            GridCache<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
             String s = dhtCache.peek(key);
 

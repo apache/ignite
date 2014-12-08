@@ -36,7 +36,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         testState = 12345;
 

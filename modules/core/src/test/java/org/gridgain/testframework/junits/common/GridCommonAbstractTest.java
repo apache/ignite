@@ -88,7 +88,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K,V> cache) {
         return nearEnabled(cache) ? near(cache).dht() :
-            ((GridKernal)cache.gridProjection().grid()).<K, V>internalCache(cache.name()).context().dht();
+            ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
     }
 
     /**
@@ -129,7 +129,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code True} if near cache is enabled.
      */
     protected static <K, V> boolean nearEnabled(GridCacheProjection<K,V> cache) {
-        GridCacheConfiguration cfg = ((GridKernal)cache.gridProjection().grid()).
+        GridCacheConfiguration cfg = ((GridKernal)cache.gridProjection().ignite()).
             <K, V>internalCache(cache.name()).context().config();
 
         return isNearEnabled(cfg);
@@ -140,7 +140,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected static <K, V> GridNearCacheAdapter<K, V> near(GridCacheProjection<K,V> cache) {
-        return ((GridKernal)cache.gridProjection().grid()).<K, V>internalCache(cache.name()).context().near();
+        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
     }
 
     /**
@@ -148,7 +148,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected static <K, V> GridDhtColocatedCache<K, V> colocated(GridCacheProjection<K,V> cache) {
-        return ((GridKernal)cache.gridProjection().grid()).<K, V>internalCache(cache.name()).context().colocated();
+        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
     }
 
     /**
@@ -305,7 +305,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -355,7 +355,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -405,7 +405,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         throws GridException {
         List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = cache.gridProjection().grid().cluster().localNode();
+        ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
         GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
@@ -519,7 +519,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@link org.apache.ignite.IgniteCompute} for given projection.
      */
     protected IgniteCompute compute(ClusterGroup prj) {
-        return prj.grid().compute(prj);
+        return prj.ignite().compute(prj);
     }
 
     /**
@@ -527,7 +527,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteMessaging message(ClusterGroup prj) {
-        return prj.grid().message(prj);
+        return prj.ignite().message(prj);
     }
 
     /**
@@ -535,7 +535,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@link org.apache.ignite.IgniteMessaging} for given projection.
      */
     protected IgniteEvents events(ClusterGroup prj) {
-        return prj.grid().events(prj);
+        return prj.ignite().events(prj);
     }
 
     /**

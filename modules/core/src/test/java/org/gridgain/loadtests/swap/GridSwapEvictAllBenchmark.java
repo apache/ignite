@@ -145,7 +145,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        GridCache<Object, Object> cache = G.grid().cache(null);
+        GridCache<Object, Object> cache = G.ignite().cache(null);
 
         assert cache != null;
 

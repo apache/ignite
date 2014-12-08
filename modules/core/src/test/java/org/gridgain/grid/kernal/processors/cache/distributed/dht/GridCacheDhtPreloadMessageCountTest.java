@@ -119,7 +119,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
      * @param keyCnt Key count.
      */
     private void checkCache(GridCache<String, Integer> c, int keyCnt) {
-        Ignite g = c.gridProjection().grid();
+        Ignite g = c.gridProjection().ignite();
 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);

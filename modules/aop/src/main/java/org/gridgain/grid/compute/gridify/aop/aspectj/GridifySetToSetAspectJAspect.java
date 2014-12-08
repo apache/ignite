@@ -100,7 +100,7 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
         checkIsSplitToJobsAllowed(arg, ann);
 
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             return execute(ignite.compute(), joinPnt.getSignature().getDeclaringType(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());

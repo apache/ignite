@@ -69,7 +69,7 @@ public class GridCacheSingleNodeLoadTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                GridCache<Integer, Student> cache = G.grid().cache(null);
+                GridCache<Integer, Student> cache = G.ignite().cache(null);
 
                 assert cache != null;
 

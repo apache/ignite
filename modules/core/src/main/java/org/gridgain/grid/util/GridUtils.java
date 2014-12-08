@@ -7260,7 +7260,7 @@ public abstract class GridUtils {
     public static Collection<String> nodes2names(@Nullable Collection<? extends ClusterNode> nodes) {
         return F.viewReadOnly(nodes, new C1<ClusterNode, String>() {
             @Override public String apply(ClusterNode n) {
-                return G.grid(n.id()).name();
+                return G.ignite(n.id()).name();
             }
         });
     }

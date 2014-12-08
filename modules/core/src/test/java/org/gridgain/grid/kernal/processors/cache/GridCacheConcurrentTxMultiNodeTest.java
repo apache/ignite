@@ -64,7 +64,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.grid(n.id()).name();
+            String gridName = G.ignite(n.id()).name();
 
             return gridName != null && gridName.contains("server");
         }
@@ -73,7 +73,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.grid(n.id()).name();
+            String gridName = G.ignite(n.id()).name();
 
             return gridName != null && gridName.contains("client");
         }
@@ -195,7 +195,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     info("Affinity mapping [key=" + terminalId + ", nodeId=" + mappedId + ']');
 
                     for (int i = 1; i <= clientCnt; i++)
-                        clients.add(new Client(G.grid("client" + i), terminalId, srvrId));
+                        clients.add(new Client(G.ignite("client" + i), terminalId, srvrId));
 
                     info("Terminal ID: " + terminalId);
 

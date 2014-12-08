@@ -677,7 +677,7 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String gridName, boolean cancel) {
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             assert ignite != null : "GridGain returned null grid for name: " + gridName;
 
@@ -780,7 +780,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected GridEx grid(String name) {
-        return (GridEx)G.grid(name);
+        return (GridEx)G.ignite(name);
     }
 
     /**
@@ -790,7 +790,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected GridEx grid(int idx) {
-        return (GridEx)G.grid(getTestGridName(idx));
+        return (GridEx)G.ignite(getTestGridName(idx));
     }
 
     /**
@@ -799,7 +799,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid for given test.
      */
     protected GridEx grid() {
-        return (GridEx)G.grid(getTestGridName());
+        return (GridEx)G.ignite(getTestGridName());
     }
 
     /**
@@ -896,7 +896,7 @@ public abstract class GridAbstractTest extends TestCase {
         String gridName = getTestGridName(idx);
 
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             assert ignite != null : "GridGain returned null grid for name: " + gridName;
 

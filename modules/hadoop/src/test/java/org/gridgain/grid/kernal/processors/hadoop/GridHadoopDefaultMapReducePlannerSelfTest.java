@@ -1088,7 +1088,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Ignite grid() {
+        @Override public Ignite ignite() {
             return null;
         }
 

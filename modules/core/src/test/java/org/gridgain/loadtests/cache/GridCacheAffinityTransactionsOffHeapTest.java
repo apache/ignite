@@ -146,9 +146,9 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @return Cache.
      */
     private static GridCache<Object, Integer> cache(long key) {
-        UUID id = Ignition.grid("grid-0").cache(null).affinity().mapKeyToNode(key).id();
+        UUID id = Ignition.ignite("grid-0").cache(null).affinity().mapKeyToNode(key).id();
 
-        return Ignition.grid(id).cache(null);
+        return Ignition.ignite(id).cache(null);
     }
 
     /**

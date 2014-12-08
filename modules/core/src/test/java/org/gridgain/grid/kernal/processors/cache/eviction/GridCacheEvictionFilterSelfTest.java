@@ -221,7 +221,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
             i.incrementAndGet();
 
-            String grid = entry.projection().gridProjection().grid().name();
+            String grid = entry.projection().gridProjection().ignite().name();
 
             boolean ret = !(entry.peek() instanceof Integer);
 

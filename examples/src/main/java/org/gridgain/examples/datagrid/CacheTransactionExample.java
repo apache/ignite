@@ -79,7 +79,7 @@ public class CacheTransactionExample {
      */
     private static void deposit(int acctId, double amount) throws GridException {
         // Clone every object we get from cache, so we can freely update it.
-        GridCacheProjection<Integer, Account> cache = Ignition.grid().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        GridCacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
         try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct = cache.get(acctId);

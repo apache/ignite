@@ -56,7 +56,7 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
-        Ignite g = Ignition.grid();
+        Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
@@ -81,7 +81,7 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
 
-        Ignite g = Ignition.grid();
+        Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 

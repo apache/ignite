@@ -872,6 +872,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         error("Key: " + key);
         error("Partition: " + c.configuration().getAffinity().partition(key));
         error("Attempt: " + attempt);
-        error("Node: " + c.gridProjection().grid().cluster().localNode().id());
+        error("Node: " + c.gridProjection().ignite().cluster().localNode().id());
     }
 }

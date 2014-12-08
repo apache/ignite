@@ -46,7 +46,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @return Grid instance associated with this actor.
      */
-    protected final Ignite grid() {
+    protected final Ignite ignite() {
         assert ignite != null;
 
         return ignite;

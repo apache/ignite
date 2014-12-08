@@ -85,7 +85,7 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void populateDimensions() throws GridException {
-        GridCache<Integer, Object> cache = Ignition.grid().cache(REPLICATED_CACHE_NAME);
+        GridCache<Integer, Object> cache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
@@ -108,8 +108,8 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void populateFacts() throws GridException {
-        GridCache<Integer, Object> dimCache = Ignition.grid().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, Object> factCache = Ignition.grid().cache(PARTITIONED_CACHE_NAME);
+        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        GridCache<Integer, Object> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
@@ -132,7 +132,7 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void queryStorePurchases() throws GridException {
-        GridCache<Integer, FactPurchase> factCache = Ignition.grid().cache(PARTITIONED_CACHE_NAME);
+        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
@@ -156,8 +156,8 @@ public class CacheStarSchemaExample {
      * @throws GridException If failed.
      */
     private static void queryProductPurchases() throws GridException {
-        GridCache<Integer, Object> dimCache = Ignition.grid().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, FactPurchase> factCache = Ignition.grid().cache(PARTITIONED_CACHE_NAME);
+        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 

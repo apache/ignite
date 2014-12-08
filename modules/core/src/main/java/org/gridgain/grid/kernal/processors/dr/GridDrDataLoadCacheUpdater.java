@@ -33,7 +33,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
         throws GridException {
         String cacheName = cache0.name();
 
-        GridKernalContext ctx = ((GridKernal)cache0.gridProjection().grid()).context();
+        GridKernalContext ctx = ((GridKernal)cache0.gridProjection().ignite()).context();
         IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 

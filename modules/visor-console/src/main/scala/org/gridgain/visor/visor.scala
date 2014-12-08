@@ -1598,7 +1598,7 @@ object visor extends VisorTag {
 
         grid =
             try
-                Ignition.grid(startedGridName).asInstanceOf[GridEx]
+                Ignition.ignite(startedGridName).asInstanceOf[GridEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null

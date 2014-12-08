@@ -231,8 +231,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         G.start(path);
 
-        assert G.grid("grid-factory-test-1") != null;
-        assert G.grid("grid-factory-test-2") != null;
+        assert G.ignite("grid-factory-test-1") != null;
+        assert G.ignite("grid-factory-test-2") != null;
 
         synchronized (mux) {
             assert gridState1.get() == STARTED :
@@ -282,7 +282,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             assert G.allGrids().size() == 1;
 
-            assert G.grid() != null;
+            assert G.ignite() != null;
         }
         finally {
             G.stopAll(true);
@@ -320,7 +320,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             assert G.allGrids().size() == 1;
 
-            assert G.grid("TEST_NAME") != null;
+            assert G.ignite("TEST_NAME") != null;
         }
         finally {
             G.stopAll(true);
@@ -692,7 +692,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             if (exec)
                 // Execute any grid method.
-                G.grid(gridName).events().localQuery(F.<IgniteEvent>alwaysTrue());
+                G.ignite(gridName).events().localQuery(F.<IgniteEvent>alwaysTrue());
         }
 
         /**

@@ -436,7 +436,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws GridException {
                 IgniteCompute comp = compute(prj).enableAsync();
 
-                GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();
+                GridCacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
 
                 ClusterNode node = F.first(prj.nodes());
 
@@ -455,7 +455,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws GridException {
                 IgniteCompute comp = compute(prj).enableAsync();
 
-                GridCacheAffinity<Object> aff = prj.grid().cache(null).affinity();
+                GridCacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
 
                 ClusterNode node = F.first(prj.nodes());
 

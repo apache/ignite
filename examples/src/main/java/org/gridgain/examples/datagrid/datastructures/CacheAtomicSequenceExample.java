@@ -89,7 +89,7 @@ public final class CacheAtomicSequenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicSequence seq = Ignition.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicSequence seq = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicSequence(seqName, 0, true);
 
                 for (int i = 0; i < RETRIES; i++)

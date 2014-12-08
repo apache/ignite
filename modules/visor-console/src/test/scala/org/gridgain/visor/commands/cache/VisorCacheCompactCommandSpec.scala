@@ -69,17 +69,17 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     behavior of "An 'ccompact' visor command"
 
     it should "show correct result for default cache" in {
-        Ignition.grid("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.grid("node-1").cache[Int, Int](null).clear(1)
+        Ignition.ignite("node-1").cache[Int, Int](null).clear(1)
 
         VisorCacheCompactCommand().compact(Nil, None)
     }
 
     it should "show correct result for named cache" in {
-        Ignition.grid("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.grid("node-1").cache[Int, Int]("cache").clear(1)
+        Ignition.ignite("node-1").cache[Int, Int]("cache").clear(1)
 
         visor.cache("-compact -c=cache")
     }

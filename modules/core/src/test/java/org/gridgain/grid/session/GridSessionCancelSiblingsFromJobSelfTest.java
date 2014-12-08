@@ -122,7 +122,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
      * @throws GridException If failed.
      */
     private void checkTask(int num) throws InterruptedException, GridException {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 

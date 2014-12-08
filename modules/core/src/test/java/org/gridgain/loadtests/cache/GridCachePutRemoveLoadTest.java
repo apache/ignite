@@ -122,7 +122,7 @@ public class GridCachePutRemoveLoadTest {
             G.start(cfg);
         }
 
-        Ignite g = G.grid("g0");
+        Ignite g = G.ignite("g0");
 
         assert g != null;
 

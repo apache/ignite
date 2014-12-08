@@ -269,7 +269,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    Ignite ignite = G.grid(nodeName(0));
+                    Ignite ignite = G.ignite(nodeName(0));
 
                     GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
@@ -498,7 +498,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
-            GridCache<Integer, Integer> cache = G.grid(nodeName(i)).cache(CACHE_NAME);
+            GridCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;
 
@@ -583,7 +583,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                 for (int i = 0; i < dataNodes(); i++) {
                     GridCacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
 
-                    UUID nodeId = G.grid(nodeName(i)).cluster().localNode().id();
+                    UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 
                     if (!F.eq(cacheEntry.get(), expVals.get(key)))
                         log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + cacheEntry.get() +

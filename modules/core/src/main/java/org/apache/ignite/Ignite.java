@@ -25,26 +25,25 @@ import java.util.concurrent.*;
 
 /**
  * Main entry-point for all GridGain APIs.
- * You can obtain an instance of {@code Grid} through {@link Ignition#grid()},
- * or for named grids you can use {@link Ignition#grid(String)}. Note that you
+ * You can obtain an instance of {@code Grid} through {@link Ignition#ignite()},
+ * or for named grids you can use {@link Ignition#ignite(String)}. Note that you
  * can have multiple instances of {@code Grid} running in the same VM by giving
  * each instance a different name.
  * <p>
- * Note that {@code Grid} extends {@link org.apache.ignite.cluster.ClusterGroup} which means that it provides grid projection
+ * Note that {@code Grid} extends {@link ClusterGroup} which means that it provides grid projection
  * functionality over the whole grid (instead os a subgroup of nodes).
  * <p>
- * In addition to {@link org.apache.ignite.cluster.ClusterGroup} functionality, from here you can get the following:
+ * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
  * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
- * <li>{@link GridDr} - functionality for WAN-based Data Center Replication of in-memory cache.</li>
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
- * <li>{@link org.apache.ignite.product.IgniteProduct} - functionality for licence management and update and product related information.</li>
- * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
- * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link org.apache.ignite.cluster.ClusterGroup}).</li>
+ * <li>{@link IgniteProduct} - functionality for licence management and update and product related information.</li>
+ * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {

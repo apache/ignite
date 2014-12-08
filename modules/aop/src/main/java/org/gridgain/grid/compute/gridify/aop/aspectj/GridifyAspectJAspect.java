@@ -77,7 +77,7 @@ public class GridifyAspectJAspect {
         }
 
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             // If task class was specified.
             if (!ann.taskClass().equals(GridifyDefaultTask.class)) {

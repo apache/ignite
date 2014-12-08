@@ -75,7 +75,7 @@ public class GridifySpringAspect implements MethodInterceptor {
                 "Gridify.taskClass(), but not both: " + ann);
 
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             if (!ann.taskClass().equals(GridifyDefaultTask.class))
                 return ignite.compute().withTimeout(ann.timeout()).execute(

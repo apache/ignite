@@ -106,7 +106,7 @@ public final class CacheAtomicReferenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicReference<String> ref = Ignition.grid().cache(cacheName).dataStructures().
+                GridCacheAtomicReference<String> ref = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicReference(refName, null, true);
 
                 System.out.println("Atomic reference value is " + ref.get() + '.');

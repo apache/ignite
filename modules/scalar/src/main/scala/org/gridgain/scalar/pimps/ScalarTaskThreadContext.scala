@@ -30,11 +30,11 @@ trait ScalarTaskThreadContext[T <: ClusterGroup] extends ScalarConversions { thi
      * @param taskName Name of the task.
      */
     def withName$(@Nullable taskName: String): T =
-        value.grid().compute(value).withName(taskName).asInstanceOf[T]
+        value.ignite().compute(value).withName(taskName).asInstanceOf[T]
 
     /**
      * Properly typed version of `GridCompute#withNoFailover()` method.
      */
     def withNoFailover$(): T =
-        value.grid().compute(value).withNoFailover().asInstanceOf[T]
+        value.ignite().compute(value).withNoFailover().asInstanceOf[T]
 }

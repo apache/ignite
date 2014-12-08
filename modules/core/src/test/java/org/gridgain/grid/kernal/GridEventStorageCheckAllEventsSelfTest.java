@@ -43,7 +43,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = G.grid(getTestGridName());
+        ignite = G.ignite(getTestGridName());
 
         long tstamp = startTimestamp();
 

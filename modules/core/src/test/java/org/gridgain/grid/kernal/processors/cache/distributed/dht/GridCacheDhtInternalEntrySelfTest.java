@@ -213,6 +213,6 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Grid.
      */
     private Ignite grid(ClusterNode node) {
-        return G.grid(node.id());
+        return G.ignite(node.id());
     }
 }

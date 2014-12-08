@@ -248,7 +248,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
         boolean sync = isSync(c);
 
-        Ignite ignite = c.gridProjection().grid();
+        Ignite ignite = c.gridProjection().ignite();
 
         for (int i = 0; i < cnt; i++) {
             if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {

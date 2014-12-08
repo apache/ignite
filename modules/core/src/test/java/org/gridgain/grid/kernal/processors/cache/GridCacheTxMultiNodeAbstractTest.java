@@ -118,7 +118,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @return DHT entry.
      */
     @Nullable private static GridCacheEntryEx<Object, Integer> dhtEntry(UUID nodeId, Object key) {
-        Ignite g = G.grid(nodeId);
+        Ignite g = G.ignite(nodeId);
 
         GridDhtCacheAdapter<Object, Integer> dht =
             ((GridKernal)g).<Object, Integer>internalCache().context().near().dht();
@@ -132,7 +132,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @return Near entry.
      */
     @Nullable private static GridCacheEntryEx<Object, Integer> nearEntry(UUID nodeId, Object key) {
-        Ignite g = G.grid(nodeId);
+        Ignite g = G.ignite(nodeId);
 
         GridNearCacheAdapter<Object, Integer> near = ((GridKernal)g).<Object, Integer>internalCache().context().near();
 

@@ -79,7 +79,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testCancel() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ignite.compute().localDeployTask(GridCancelTestTask.class, U.detectClassLoader(GridCancelTestTask.class));
 

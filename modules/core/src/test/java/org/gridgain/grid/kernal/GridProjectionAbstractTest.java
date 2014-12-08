@@ -162,7 +162,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testProjection() throws Exception {
         assert prj != null;
 
-        assert prj.grid() != null;
+        assert prj.ignite() != null;
         assert prj.predicate() != null;
 
         int size = projectionSize();
@@ -265,7 +265,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             }
 
             for (ClusterNode node : prj.nodes()) {
-                g = G.grid(node.id());
+                g = G.ignite(node.id());
 
                 g.events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
                     @Override public boolean apply(IgniteEvent evt) {
@@ -561,7 +561,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void executorService(AtomicInteger cnt) throws Exception {
         cnt.set(0);
 
-        ExecutorService execSrvc = prj.grid().executorService(prj);
+        ExecutorService execSrvc = prj.ignite().executorService(prj);
 
         Future<String> fut = execSrvc.submit(new TestCallable<String>() {
             @Override public String call() throws Exception {

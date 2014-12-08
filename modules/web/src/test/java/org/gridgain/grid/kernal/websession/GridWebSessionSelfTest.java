@@ -78,7 +78,7 @@ public class GridWebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                GridCache<String, HttpSession> cache = G.grid().cache(getCacheName());
+                GridCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
                 assertNotNull(cache);
 

@@ -139,7 +139,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
 
-        final Ignite txIgniteNode = G.grid(txNode.id());
+        final Ignite txIgniteNode = G.ignite(txNode.id());
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -166,7 +166,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
         info("Stopping originating node " + txNode);
 
-        G.stop(G.grid(txNode.id()).name(), true);
+        G.stop(G.ignite(txNode.id()).name(), true);
 
         info("Stopped grid, waiting for transactions to complete.");
 
@@ -197,7 +197,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
             assertFalse(e.getValue().isEmpty());
 
             for (ClusterNode node : e.getValue()) {
-                compute(G.grid(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;

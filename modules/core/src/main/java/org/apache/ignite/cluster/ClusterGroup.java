@@ -55,7 +55,7 @@ public interface ClusterGroup {
      *
      * @return Grid instance.
      */
-    public Ignite grid();
+    public Ignite ignite();
 
     /**
      * Creates a grid projection over a given set of nodes.

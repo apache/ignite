@@ -616,8 +616,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             checkEntry(grid(i), nearKey, 1, false, expReaders);
         }
 
-        GridCache<Integer, Integer> primaryCache = G.grid(
-            (String)aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME)).cache(null);
+        GridCache<Integer, Integer> primaryCache = G.ignite(
+            (String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME)).cache(null);
 
         delay();
 
@@ -663,7 +663,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             checkEntry(grid(i), nearKey, null, i == 0);
 
-        Ignite primaryNode = G.grid((String)aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
+        Ignite primaryNode = G.ignite((String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
 
         delay();
 

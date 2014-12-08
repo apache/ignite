@@ -74,7 +74,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testSetAttribute() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 

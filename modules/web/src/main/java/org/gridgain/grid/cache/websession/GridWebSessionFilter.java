@@ -183,7 +183,7 @@ public class GridWebSessionFilter implements Filter {
             throw new GridRuntimeException("Maximum number of retries parameter is invalid: " + retriesStr, e);
         }
 
-        Ignite webSesIgnite = G.grid(gridName);
+        Ignite webSesIgnite = G.ignite(gridName);
 
         if (webSesIgnite == null)
             throw new GridRuntimeException("Grid for web sessions caching is not started (is it configured?): " +

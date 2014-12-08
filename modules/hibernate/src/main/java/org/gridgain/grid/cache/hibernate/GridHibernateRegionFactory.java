@@ -88,7 +88,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
         String gridName = props.getProperty(GRID_NAME_PROPERTY);
 
         if (gridName != null)
-            ignite = G.grid(gridName);
+            ignite = G.ignite(gridName);
         else {
             String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
 

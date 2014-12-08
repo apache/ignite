@@ -55,11 +55,11 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
             String key = "1";
             Integer val = Integer.valueOf(key);
 
-            Ignite primary = G.grid(cache(0).affinity().mapKeyToNode(key).id());
+            Ignite primary = G.ignite(cache(0).affinity().mapKeyToNode(key).id());
 
             Collection<ClusterNode> affNodes = cache(0).affinity().mapKeyToPrimaryAndBackups(key);
 
-            Ignite near = G.grid(F.first(F.view(grid(0).nodes(), F.notIn(affNodes))).id());
+            Ignite near = G.ignite(F.first(F.view(grid(0).nodes(), F.notIn(affNodes))).id());
 
             assert primary != null;
             assert near != null;

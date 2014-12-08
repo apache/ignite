@@ -139,7 +139,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
 
                 synchronized (GridServletContextListenerStartup.class) {
                     try {
-                        ignite = G.grid(cfg.getGridName());
+                        ignite = G.ignite(cfg.getGridName());
                     }
                     catch (GridIllegalStateException ignored) {
                         ignite = GridGainEx.start(new IgniteConfiguration(cfg), rsrcCtx);

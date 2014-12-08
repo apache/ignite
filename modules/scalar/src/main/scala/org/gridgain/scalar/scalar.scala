@@ -261,7 +261,7 @@ object scalar extends ScalarConversions {
      * typed instance that cannot be used.
      */
     @inline def cache$[K, V]: Option[GridCache[K, V]] =
-        Option(Ignition.grid.cache[K, V](null))
+        Option(Ignition.ignite.cache[K, V](null))
 
     /**
      * Gets named cache from default grid.
@@ -269,7 +269,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable cacheName: String): Option[GridCache[K, V]] =
-        Option(Ignition.grid.cache(cacheName))
+        Option(Ignition.ignite.cache(cacheName))
 
     /**
      * Gets named cache from specified grid.
@@ -303,7 +303,7 @@ object scalar extends ScalarConversions {
     /**
      * Gets default grid instance.
      */
-    @inline def grid$: Ignite = Ignition.grid
+    @inline def grid$: Ignite = Ignition.ignite
 
     /**
      * Gets node ID as ID8 string.
@@ -317,7 +317,7 @@ object scalar extends ScalarConversions {
      */
     @inline def grid$(@Nullable name: String): Option[Ignite] =
         try {
-            Option(Ignition.grid(name))
+            Option(Ignition.ignite(name))
         }
         catch {
             case _: IllegalStateException => None
@@ -332,7 +332,7 @@ object scalar extends ScalarConversions {
         assert(locNodeId != null)
 
         try {
-            Option(Ignition.grid(locNodeId))
+            Option(Ignition.ignite(locNodeId))
         }
         catch {
             case _: IllegalStateException => None

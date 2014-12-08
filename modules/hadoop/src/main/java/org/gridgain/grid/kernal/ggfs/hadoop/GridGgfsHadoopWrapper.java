@@ -330,7 +330,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
 
             if (endpoint.grid() == null) {
                 try {
-                    Ignite ignite = G.grid();
+                    Ignite ignite = G.ignite();
 
                     ggfs = (GridGgfsEx) ignite.fileSystem(endpoint.ggfs());
                 }

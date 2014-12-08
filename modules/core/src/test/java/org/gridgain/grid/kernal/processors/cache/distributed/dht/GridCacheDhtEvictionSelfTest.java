@@ -129,7 +129,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Grid for the given node.
      */
     private Ignite grid(ClusterNode node) {
-        return G.grid(node.id());
+        return G.ignite(node.id());
     }
 
     /**

@@ -214,7 +214,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         Collection<String> names = new ArrayList<>(nodeIds.size());
 
         for (UUID nodeId : nodeIds)
-            names.add(G.grid(nodeId).name());
+            names.add(G.ignite(nodeId).name());
 
         return names;
     }
@@ -246,7 +246,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assert first != null;
 
-        final Ignite pri = G.grid(first.id());
+        final Ignite pri = G.ignite(first.id());
 
         List<Ignite> nears = grids(gridCnt, pri);
 
@@ -495,8 +495,8 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         for (Map.Entry<String, Integer> e : cntrs.entrySet())
             assertEquals("Counter check failed on grid [grid=" + e.getKey() +
-                ", dhtEntry=" + dht(G.grid(e.getKey())).peekEx(CNTR_KEY) +
-                ", nearEntry=" + near(G.grid(e.getKey())).peekExx(CNTR_KEY) + ']',
+                ", dhtEntry=" + dht(G.ignite(e.getKey())).peekEx(CNTR_KEY) +
+                ", nearEntry=" + near(G.ignite(e.getKey())).peekExx(CNTR_KEY) + ']',
                 exp, e.getValue().intValue());
 
         X.println("*** ");
@@ -541,7 +541,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertEquals(1 + backups, affNodes.size());
 
-        Ignite pri = G.grid(F.first(affNodes).id());
+        Ignite pri = G.ignite(F.first(affNodes).id());
 
         // Initialize.
         pri.cache(null).put(CNTR_KEY, 0);

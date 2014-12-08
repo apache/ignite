@@ -836,7 +836,7 @@ public final class GridTestUtils {
      * @return Cache context.
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(GridCacheProjection<K, V> cache) {
-        return ((GridKernal)cache.gridProjection().grid()).<K, V>internalCache().context();
+        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
     /**

@@ -52,7 +52,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTaskMap() throws Exception {
-        Ignite ignite = G.grid(getTestGridName());
+        Ignite ignite = G.ignite(getTestGridName());
 
         info("Executing sync mapped task.");
 

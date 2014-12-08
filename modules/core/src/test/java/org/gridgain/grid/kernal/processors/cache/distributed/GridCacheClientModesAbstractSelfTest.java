@@ -174,7 +174,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected GridCache<Object, Object> nearOnlyCache() {
         assert nearOnlyGridName != null;
 
-        return G.grid(nearOnlyGridName).cache(null);
+        return G.ignite(nearOnlyGridName).cache(null);
     }
 
     /**

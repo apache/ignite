@@ -63,7 +63,7 @@ public class EventsExample {
         System.out.println();
         System.out.println(">>> Local event listener example.");
 
-        Ignite g = Ignition.grid();
+        Ignite g = Ignition.ignite();
 
         IgnitePredicate<IgniteTaskEvent> lsnr = new IgnitePredicate<IgniteTaskEvent>() {
             @Override public boolean apply(IgniteTaskEvent evt) {
@@ -116,7 +116,7 @@ public class EventsExample {
             }
         };
 
-        Ignite g = Ignition.grid();
+        Ignite g = Ignition.ignite();
 
         // Register event listeners on all nodes to listen for task events.
         g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);

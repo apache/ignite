@@ -423,7 +423,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         final Long d = delta;
 
-        return ((GridKernal)cache.gridProjection().grid()).context().closure().callLocalSafe(new Callable<Object>() {
+        return ((GridKernal)cache.gridProjection().ignite()).context().closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return l.addAndGet(decr ? -d : d);
             }

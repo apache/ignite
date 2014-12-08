@@ -69,7 +69,7 @@ public final class CacheAffinityExample {
      * @throws GridException If failed.
      */
     private static void visitUsingAffinityRun() throws GridException {
-        Ignite g = Ignition.grid();
+        Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
@@ -97,7 +97,7 @@ public final class CacheAffinityExample {
      * @throws GridException If failed.
      */
     private static void visitUsingMapKeysToNodes() throws GridException {
-        final Ignite g = Ignition.grid();
+        final Ignite g = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 

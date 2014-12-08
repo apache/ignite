@@ -103,7 +103,7 @@ public final class MessagingExample {
             try {
                 // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
                 // So, need to get projection for sender node through entire grid.
-                prj.grid().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
+                prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
             catch (GridException e) {
                 e.printStackTrace();
@@ -119,7 +119,7 @@ public final class MessagingExample {
             try {
                 // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
                 // So, need to get projection for sender node through entire grid.
-                prj.grid().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
+                prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
             }
             catch (GridException e) {
                 e.printStackTrace();

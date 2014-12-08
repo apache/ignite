@@ -231,7 +231,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -319,7 +319,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             // Fail the node in the middle of transaction.
             info(">>> Stopping primary node " + primaryNode);
 
-            G.stop(G.grid(primaryNode.id()).name(), true);
+            G.stop(G.ignite(primaryNode.id()).name(), true);
 
             info(">>> Stopped originating node, finishing transaction: " + primaryNode.id());
 
@@ -362,7 +362,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.grid(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;

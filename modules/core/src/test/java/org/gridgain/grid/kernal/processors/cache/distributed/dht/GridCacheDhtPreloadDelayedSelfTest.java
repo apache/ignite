@@ -304,7 +304,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                             Collection<UUID> nodeIds = U.nodeIds(nodes);
 
                             assert nodeIds.contains(nodeId) : "Invalid affinity mapping [nodeId=" + nodeId +
-                                ", part=" + p + ", state=" + state + ", grid=" + G.grid(nodeId).name() +
+                                ", part=" + p + ", state=" + state + ", grid=" + G.ignite(nodeId).name() +
                                 ", affNames=" + U.nodes2names(nodes) + ", affIds=" + nodeIds + ']';
                         }
                     }
@@ -389,7 +389,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param keyCnt Key count.
      */
     private void checkCache(GridCache<String, Integer> c, int keyCnt) {
-        Ignite g = c.gridProjection().grid();
+        Ignite g = c.gridProjection().ignite();
 
         for (int i = 0; i < keyCnt; i++) {
             String key = Integer.toString(i);

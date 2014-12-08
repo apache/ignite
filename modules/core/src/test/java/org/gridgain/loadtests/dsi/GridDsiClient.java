@@ -195,7 +195,7 @@ public class GridDsiClient implements Callable {
             Thread timer = null;
 
             try {
-                g = Ignition.grid("dsi");
+                g = Ignition.ignite("dsi");
 
                 int noThreads = Integer.parseInt(args[0]);
 

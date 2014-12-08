@@ -95,7 +95,7 @@ public class GridifySetToSetSpringAspect extends GridifySetToSetAbstractAspect i
         checkIsSplitToJobsAllowed(arg, ann);
 
         try {
-            Ignite ignite = G.grid(gridName);
+            Ignite ignite = G.ignite(gridName);
 
             return execute(ignite.compute(), invoc.getMethod().getDeclaringClass(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());

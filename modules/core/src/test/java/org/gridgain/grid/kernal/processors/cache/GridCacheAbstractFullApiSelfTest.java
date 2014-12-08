@@ -3359,7 +3359,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (node == null)
                 throw new GridException("Failed to map key.");
 
-            GridCache<String, Integer> cache = G.grid(node.id()).cache(null);
+            GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
             final GridCacheEntry<String, Integer> e = cache.entry("key");
 
