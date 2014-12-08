@@ -1,1 +1,0 @@
-Miglayout is licensed under "New BSD License" see http://opensource.org/licenses/BSD-3-Clause.
