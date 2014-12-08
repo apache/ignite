@@ -95,6 +95,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
+        boolean invalidate,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
@@ -109,14 +110,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             concurrency,
             isolation,
             timeout,
+            invalidate,
             /*TODO explicit lock???*/false,
             txSize,
             grpLockKey,
             partLock,
             subjId,
             taskNameHash);
-
-        assert ctx != null;
     }
 
     /** {@inheritDoc} */

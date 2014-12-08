@@ -88,6 +88,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
+        boolean invalidate,
         boolean explicitLock,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
@@ -95,8 +96,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, txSize, grpLockKey, partLock,
-            subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, txSize, grpLockKey,
+            partLock, subjId, taskNameHash);
 
         assert cctx != null;
 

@@ -74,6 +74,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
         );
     }
 
+    /**
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param timeout Transaction timeout.
+     * @param txSize Expected transaction size.
+     * @return Transaction.
+     */
     private GridCacheTx txStart0(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
         long timeout, int txSize) {
         GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
@@ -94,6 +101,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             concurrency,
             isolation,
             timeout,
+            false,
             txSize,
             /** group lock keys */null,
             /** partition lock */false

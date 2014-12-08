@@ -119,8 +119,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiGetSelfTest.class));
 //        suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOneNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearMultiNodeSelfTest.class));
