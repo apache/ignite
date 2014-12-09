@@ -46,10 +46,10 @@ public enum GridComponentType {
         "gridgain-spring"
     ),
 
-    /** H2 indexing SPI. */
-    H2_INDEXING(
-        "org.apache.ignite.spi.indexing.NoopIndexingSpi",
-        "org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi",
+    /** Indexing. */
+    INDEXING(
+        null,
+        "org.gridgain.grid.kernal.processors.query.h2.GridH2Indexing",
         "gridgain-indexing"
     ),
 

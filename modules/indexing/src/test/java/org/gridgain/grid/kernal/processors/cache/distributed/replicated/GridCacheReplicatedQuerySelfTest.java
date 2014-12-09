@@ -13,18 +13,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 import org.springframework.util.*;
@@ -239,7 +237,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @return {@code qryIters} of {@link GridCacheQueryManager}.
      */
     private ConcurrentMap<UUID,
-        Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<CacheKey, CacheValue>>>>>
+        Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>
         distributedQueryManagerQueryItersMap(Ignite g) {
         GridCacheContext ctx = ((GridKernal)g).internalCache().context();
 
@@ -248,7 +246,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         qryItersField.setAccessible(true);
 
         return (ConcurrentMap<UUID,
-            Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<CacheKey, CacheValue>>>>>)
+            Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>)
             ReflectionUtils.getField(qryItersField, ctx.queries());
     }
 
@@ -397,7 +395,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             assertEquals(0, (int)fut.next().getKey());
 
             final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
-                IndexingKeyValueRow<Integer, Integer>>>>> map =
+                IgniteBiTuple<Integer, Integer>>>>> map =
                 U.field(((GridKernal)grid(0)).internalCache().context().queries(), "qryIters");
 
             // fut.nextX() does not guarantee the request has completed on remote node
@@ -408,13 +406,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
                 }
             }, getTestTimeout()));
 
-            Map<Long, GridFutureAdapter<GridCloseableIterator<IndexingKeyValueRow<Integer, Integer>>>> futs =
+            Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<Integer, Integer>>>> futs =
                 map.get(g.cluster().localNode().id());
 
             assertEquals(1, futs.size());
 
-            IgniteSpiCloseableIterator<IndexingKeyValueRow<Integer, Integer>> iter =
-                U.field(((IgniteFuture)F.first(futs.values()).get()).get(), "iter");
+            GridCloseableIterator<IgniteBiTuple<Integer, Integer>> iter =
+                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteFuture)F.first(futs.values()).get()).get();
 
             ResultSet rs = U.field(iter, "data");
 

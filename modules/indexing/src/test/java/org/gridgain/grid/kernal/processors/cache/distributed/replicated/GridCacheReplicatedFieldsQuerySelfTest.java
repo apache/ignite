@@ -13,12 +13,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -27,8 +27,8 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Tests for fields queries.
@@ -51,7 +51,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
         hasCache = true;
 
         try {
-            final Map<UUID, Map<Long, GridFutureAdapter<IndexingFieldsResult>>> map =
+            final Map<UUID, Map<Long, GridFutureAdapter<GridQueryFieldsResult>>> map =
                 U.field(((GridKernal)grid(0)).internalCache().context().queries(), "fieldsQryRes");
 
             // Ensure that iterators map empty.
@@ -82,7 +82,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
                 }
             }, getTestTimeout()));
 
-            Map<Long, GridFutureAdapter<IndexingFieldsResult>> futs = map.get(g.cluster().localNode().id());
+            Map<Long, GridFutureAdapter<GridQueryFieldsResult>> futs = map.get(g.cluster().localNode().id());
 
             assertEquals(1, futs.size());
 

@@ -15,11 +15,11 @@ import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.cache.query.GridCacheQueryFuture;
 import org.gridgain.grid.kernal.GridKernal;
 import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.task.GridInternal;
 import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
 import org.gridgain.grid.kernal.visor.*;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.indexing.IndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -220,7 +220,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     List<Object> firstRow = (List<Object>)fut.next();
 
-                    List<IndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                    List<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                     if (meta == null)
                         return new IgniteBiTuple<Exception, VisorQueryResultEx>(
@@ -229,7 +229,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         VisorQueryField[] names = new VisorQueryField[meta.size()];
 
                         for (int i = 0; i < meta.size(); i++) {
-                            IndexingFieldMetadata col = meta.get(i);
+                            GridQueryFieldMetadata col = meta.get(i);
 
                             names[i] = new VisorQueryField(col.typeName(), col.fieldName());
                         }

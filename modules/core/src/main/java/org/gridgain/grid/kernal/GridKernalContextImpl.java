@@ -45,6 +45,7 @@ import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
@@ -138,6 +139,10 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
      * Processors.
      * ==========
      */
+
+    /** */
+    @GridToStringInclude
+    private GridQueryProcessor qryProc;
 
     /** */
     @GridToStringInclude
@@ -438,6 +443,8 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
             interopProc = (GridInteropProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
             pluginProc = (IgnitePluginProcessor)comp;
+        else if (comp instanceof GridQueryProcessor)
+            qryProc = (GridQueryProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -687,6 +694,11 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
     /** {@inheritDoc} */
     @Override public GridInteropProcessor interop() {
         return interopProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryProcessor query() {
+        return qryProc;
     }
 
     /** {@inheritDoc} */

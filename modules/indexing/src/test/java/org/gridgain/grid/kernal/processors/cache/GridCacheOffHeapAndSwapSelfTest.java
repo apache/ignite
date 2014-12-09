@@ -12,15 +12,15 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -28,12 +28,12 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests off heap storage when both offheaped and swapped entries exists.
@@ -113,13 +113,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        GridH2IndexingSpi indexingSpi = new GridH2IndexingSpi();
-
-        indexingSpi.setDefaultIndexPrimitiveKey(true);
-        indexingSpi.setDefaultIndexPrimitiveValue(true);
-
-        cfg.setIndexingSpi(indexingSpi);
-
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
@@ -134,6 +127,13 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         cacheCfg.setEvictionPolicy(null);
+
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+        qcfg.setIndexPrimitiveValue(true);
+
+        cacheCfg.setQueryConfiguration(qcfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

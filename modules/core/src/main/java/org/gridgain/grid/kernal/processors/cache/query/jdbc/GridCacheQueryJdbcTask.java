@@ -16,12 +16,12 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -199,7 +199,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
-                Collection<IndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                Collection<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
@@ -220,7 +220,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (IndexingFieldMetadata desc : meta) {
+                for (GridQueryFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());

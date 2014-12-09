@@ -1382,6 +1382,7 @@ public class GridGainEx {
             myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new GridTransactionsConfiguration(cfg.getTransactionsConfiguration()));
+            myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
@@ -1474,7 +1475,7 @@ public class GridGainEx {
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            IndexingSpi[] indexingSpi = cfg.getIndexingSpi();
+            GridIndexingSpi indexingSpi = cfg.getIndexingSpi();
 
             execSvc = cfg.getExecutorService();
             sysExecSvc = cfg.getSystemExecutorService();
@@ -1722,7 +1723,7 @@ public class GridGainEx {
             }
 
             if (indexingSpi == null)
-                indexingSpi = new IndexingSpi[] {(IndexingSpi)H2_INDEXING.createOptional()};
+                indexingSpi = new GridNoopIndexingSpi();
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);

@@ -34,4 +34,11 @@ public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
      * @return Created query.
      */
     public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
+
+    /**
+     * Creates SPI query.
+     *
+     * @return Query.
+     */
+    public <R> GridCacheQuery<R> createSpiQuery();
 }

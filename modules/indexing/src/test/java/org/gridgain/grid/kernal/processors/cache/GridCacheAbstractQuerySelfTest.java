@@ -14,17 +14,16 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
-import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -38,13 +37,13 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.junit.Assert.*;
 
 /**
@@ -97,12 +96,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setDiscoverySpi(disco);
 
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
+        GridQueryConfiguration idxCfg = new GridQueryConfiguration();
 
-        indexing.setDefaultIndexPrimitiveKey(true);
-        indexing.setIndexCustomFunctionClasses(SqlFunctions.class);
+        idxCfg.setIndexCustomFunctionClasses(SqlFunctions.class);
 
-        c.setIndexingSpi(indexing);
+        c.setQueryConfiguration(idxCfg);
 
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());
@@ -125,6 +123,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);
+
+            GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+            qcfg.setIndexPrimitiveKey(true);
+            qcfg.setIndexFixedTyping(true);
+
+            cc.setQueryConfiguration(qcfg);
 
             // Explicitly set number of backups equal to number of grids.
             if (cacheMode() == GridCacheMode.PARTITIONED)
@@ -1618,7 +1623,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                     assertNull(qe.continuousQueryFilter());
                     assertArrayEquals(new Integer[] { 10 }, qe.arguments());
 
-                    List<?> row = qe.row();
+                    List<?> row = (List<?>)qe.row();
 
                     map.put((Integer)row.get(0), (String)row.get(1));
 

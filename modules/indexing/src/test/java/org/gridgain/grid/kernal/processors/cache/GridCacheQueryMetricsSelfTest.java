@@ -10,12 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -56,16 +55,16 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        GridH2IndexingSpi indexingSpi = new GridH2IndexingSpi();
-
-        indexingSpi.setDefaultIndexPrimitiveKey(true);
-
-        cfg.setIndexingSpi(indexingSpi);
-
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+
+        cacheCfg.setQueryConfiguration(qcfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

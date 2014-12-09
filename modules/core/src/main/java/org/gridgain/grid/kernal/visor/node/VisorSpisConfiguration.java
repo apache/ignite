@@ -315,7 +315,7 @@ public class VisorSpisConfiguration implements Serializable {
     /**
      * @param indexingSpis New indexing SPIs.
      */
-    public void indexingSpis(IgniteBiTuple<String, Map<String, Object>>[] indexingSpis) {
+    public void indexingSpis(IgniteBiTuple<String, Map<String, Object>>... indexingSpis) {
         this.indexingSpis = indexingSpis;
     }
 

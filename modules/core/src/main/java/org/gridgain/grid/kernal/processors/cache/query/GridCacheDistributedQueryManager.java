@@ -12,11 +12,11 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -432,8 +432,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<IndexingFieldMetadata> metadata,
-        @Nullable Collection<List<IndexingEntity<?>>> entities,
+        @Nullable List<GridQueryFieldMetadata> metadata,
+        @Nullable Collection<?> entities,
         @Nullable Collection<?> data,
         boolean finished, @Nullable Throwable e) {
         assert qryInfo != null;

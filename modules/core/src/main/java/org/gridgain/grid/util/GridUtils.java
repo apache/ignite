@@ -967,6 +967,26 @@ public abstract class GridUtils {
     /**
      * Creates new instance of a class only if it has an empty constructor (can be non-public).
      *
+     * @param cls Class name.
+     * @return Instance.
+     * @throws GridException If failed.
+     */
+    @Nullable public static <T> T newInstance(String cls) throws GridException {
+        Class<?> cls0;
+
+        try {
+            cls0 = Class.forName(cls);
+        }
+        catch (Exception e) {
+            throw new GridException(e);
+        }
+
+        return (T)newInstance(cls0);
+    }
+
+    /**
+     * Creates new instance of a class only if it has an empty constructor (can be non-public).
+     *
      * @param cls Class to instantiate.
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
      * @throws GridException If failed.

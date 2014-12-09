@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
@@ -29,7 +29,7 @@ public class GridCacheDistributedFieldsQueryFuture
     private static final long serialVersionUID = 0L;
 
     /** Meta data future. */
-    private final GridFutureAdapter<List<IndexingFieldMetadata>> metaFut;
+    private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -61,7 +61,7 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<IndexingFieldMetadata> metaData,
+    public void onPage(@Nullable UUID nodeId, @Nullable List<GridQueryFieldMetadata> metaData,
         @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err, boolean finished) {
         if (!metaFut.isDone() && metaData != null)
             metaFut.onDone(metaData);
@@ -86,7 +86,7 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<List<IndexingFieldMetadata>> metadata() {
+    @Override public IgniteFuture<List<GridQueryFieldMetadata>> metadata() {
         return metaFut;
     }
 

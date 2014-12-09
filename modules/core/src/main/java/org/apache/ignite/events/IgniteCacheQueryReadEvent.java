@@ -101,7 +101,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
 
     /** Result row. */
     @GridToStringInclude
-    private final List<?> row;
+    private final Object row;
 
     /**
      * @param node Node where event was fired.
@@ -133,7 +133,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
         @Nullable K key,
         @Nullable V val,
         @Nullable V oldVal,
-        @Nullable List<?> row) {
+        @Nullable Object row) {
         super(node, msg, type);
 
         assert qryType != null;
@@ -276,7 +276,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
      *
      * @return Result row.
      */
-    @Nullable public List<?> row() {
+    @Nullable public Object row() {
         return row;
     }
 

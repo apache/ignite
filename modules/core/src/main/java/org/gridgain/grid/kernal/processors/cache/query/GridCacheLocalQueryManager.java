@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -45,8 +45,8 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     /** {@inheritDoc} */
     @Override protected boolean onFieldsPageReady(boolean loc,
         GridCacheQueryInfo qryInfo,
-        @Nullable List<IndexingFieldMetadata> metaData,
-        @Nullable Collection<List<IndexingEntity<?>>> entities,
+        @Nullable List<GridQueryFieldMetadata> metaData,
+        @Nullable Collection<?> entities,
         @Nullable Collection<?> data,
         boolean finished,
         @Nullable Throwable e) {

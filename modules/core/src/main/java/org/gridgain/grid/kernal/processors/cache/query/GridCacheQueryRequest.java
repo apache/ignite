@@ -205,8 +205,8 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         int taskHash
     ) {
         assert type != null || fields;
-        assert clause != null || (type == SCAN || type == SET);
-        assert clsName != null || fields || type == SCAN || type == SET;
+        assert clause != null || (type == SCAN || type == SET || type == SPI);
+        assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
 
         this.cacheId = cacheId;
         this.id = id;
