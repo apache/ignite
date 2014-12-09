@@ -21,7 +21,7 @@ import java.lang.annotation.*;
  * <p>
  * Example:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     &#64;GridComputeJobAfterSend
  *     public void onJobAfterSend() {

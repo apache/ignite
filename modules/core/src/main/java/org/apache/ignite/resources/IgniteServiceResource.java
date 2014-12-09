@@ -17,7 +17,7 @@ import java.lang.annotation.*;
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *      ...
  *      // Inject single instance of 'myService'. If there is
  *      // more than one, first deployed instance will be picked.
@@ -28,7 +28,7 @@ import java.lang.annotation.*;
  * </pre>
  * or attach the same annotations to methods:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private MyService svc;
  *     ...

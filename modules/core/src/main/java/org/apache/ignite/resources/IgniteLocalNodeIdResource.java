@@ -27,7 +27,7 @@ import java.util.*;
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;GridLocalNodeIdResource
  *      private UUID nodeId;
@@ -36,7 +36,7 @@ import java.util.*;
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private UUID nodeId;
  *     ...

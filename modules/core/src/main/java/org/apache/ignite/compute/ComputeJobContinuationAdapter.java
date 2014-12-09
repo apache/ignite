@@ -35,7 +35,7 @@ import org.jetbrains.annotations.*;
  *     private int multiplier = 3;
  *
  *     &#64;Override
- *     protected Collection&lt;? extends GridComputeJob&gt; split(int gridSize, final String arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, final String arg) throws GridException {
  *         List&lt;GridComputeJobAdapter&lt;String&gt;&gt; jobs = new ArrayList&lt;GridComputeJobAdapter&lt;String&gt;&gt;(gridSize);
  *
  *         for (int i = 0; i < gridSize; i++) {
