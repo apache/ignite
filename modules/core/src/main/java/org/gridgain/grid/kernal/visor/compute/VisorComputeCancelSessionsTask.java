@@ -30,11 +30,11 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
 
     /** {@inheritDoc} */
     @Override protected VisorComputeCancelSessionsJob job(Map<UUID, Set<IgniteUuid>> arg) {
-        return new VisorComputeCancelSessionsJob(arg);
+        return new VisorComputeCancelSessionsJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws GridException {
         // No-op, just awaiting all jobs done.
         return null;
     }
@@ -48,9 +48,10 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
 
         /**
          * @param arg Map with task sessions IDs to cancel.
+         * @param debug Debug flag.
          */
-        private VisorComputeCancelSessionsJob(Map<UUID, Set<IgniteUuid>> arg) {
-            super(arg);
+        private VisorComputeCancelSessionsJob(Map<UUID, Set<IgniteUuid>> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

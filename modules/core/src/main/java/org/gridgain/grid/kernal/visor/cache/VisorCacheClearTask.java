@@ -28,7 +28,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
 
     /** {@inheritDoc} */
     @Override protected VisorCachesClearJob job(Set<String> arg) {
-        return new VisorCachesClearJob(arg);
+        return new VisorCachesClearJob(arg, debug);
     }
 
     /**
@@ -42,9 +42,10 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
          * Create job.
          *
          * @param arg Cache names to clear.
+         * @param debug Debug flag.
          */
-        private VisorCachesClearJob(Set<String> arg) {
-            super(arg);
+        private VisorCachesClearJob(Set<String> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

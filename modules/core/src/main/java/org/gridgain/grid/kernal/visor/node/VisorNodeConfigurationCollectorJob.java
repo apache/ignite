@@ -12,9 +12,10 @@ public class VisorNodeConfigurationCollectorJob extends VisorJob<Void, VisorGrid
 
     /**
      * @param arg Formal job argument.
+     * @param debug Debug flag.
      */
-    public VisorNodeConfigurationCollectorJob(Void arg) {
-        super(arg);
+    public VisorNodeConfigurationCollectorJob(Void arg, boolean debug) {
+        super(arg, debug);
     }
 
     /** {@inheritDoc} */

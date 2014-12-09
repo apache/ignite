@@ -33,9 +33,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      * Create job with given argument.
      *
      * @param arg Job argument.
+     * @param debug Debug flag.
      */
-    public VisorNodeDataCollectorJob(VisorNodeDataCollectorTaskArg arg) {
-        super(arg);
+    public VisorNodeDataCollectorJob(VisorNodeDataCollectorTaskArg arg, boolean debug) {
+        super(arg, debug);
     }
 
     /** Collect events. */

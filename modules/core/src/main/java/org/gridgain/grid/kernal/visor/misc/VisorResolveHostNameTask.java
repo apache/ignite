@@ -29,7 +29,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
     /** {@inheritDoc} */
     @Override protected VisorResolveHostNameJob job(Void arg) {
-        return new VisorResolveHostNameJob(arg);
+        return new VisorResolveHostNameJob(arg, debug);
     }
 
     /**
@@ -43,9 +43,10 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
          * Create job.
          *
          * @param arg List of IP address for resolve.
+         * @param debug Debug flag.
          */
-        private VisorResolveHostNameJob(Void arg) {
-            super(arg);
+        private VisorResolveHostNameJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

@@ -24,7 +24,7 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorComputeResetMetricsJob job(Void arg) {
-        return new VisorComputeResetMetricsJob(arg);
+        return new VisorComputeResetMetricsJob(arg, debug);
     }
 
     /**
@@ -36,9 +36,10 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
 
         /**
          * @param arg Formal job argument.
+         * @param debug Debug flag.
          */
-        private VisorComputeResetMetricsJob(Void arg) {
-            super(arg);
+        private VisorComputeResetMetricsJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

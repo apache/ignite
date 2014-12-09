@@ -32,7 +32,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
 
     /** {@inheritDoc} */
     @Override protected VisorFileBlockJob job(VisorFileBlockArg arg) {
-        return new VisorFileBlockJob(arg);
+        return new VisorFileBlockJob(arg, debug);
     }
 
     /**
@@ -84,9 +84,10 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
 
         /**
          * @param arg Descriptor of file block to read.
+         * @param debug Debug flag.
          */
-        private VisorFileBlockJob(VisorFileBlockArg arg) {
-            super(arg);
+        private VisorFileBlockJob(VisorFileBlockArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

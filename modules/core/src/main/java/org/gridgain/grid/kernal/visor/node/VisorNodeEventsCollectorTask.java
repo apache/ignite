@@ -38,11 +38,11 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override protected VisorEventsCollectJob job(VisorNodeEventsCollectorTaskArg arg) {
-        return new VisorEventsCollectJob(arg);
+        return new VisorEventsCollectJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<? extends VisorGridEvent> reduce(
+    @Override protected Iterable<? extends VisorGridEvent> reduce0(
         List<ComputeJobResult> results) throws GridException {
 
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
@@ -177,9 +177,10 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * Create job with specified argument.
          *
          * @param arg Job argument.
+         * @param debug Debug flag.
          */
-        private VisorEventsCollectJob(VisorNodeEventsCollectorTaskArg arg) {
-            super(arg);
+        private VisorEventsCollectJob(VisorNodeEventsCollectorTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /**

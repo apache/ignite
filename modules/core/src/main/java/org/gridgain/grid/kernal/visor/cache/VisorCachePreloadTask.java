@@ -28,7 +28,7 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorCachesPreloadJob job(Set<String> arg) {
-        return new VisorCachesPreloadJob(arg);
+        return new VisorCachesPreloadJob(arg, debug);
     }
 
     /**
@@ -40,9 +40,10 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
 
         /**
          * @param arg Caches names.
+         * @param debug Debug flag.
          */
-        private VisorCachesPreloadJob(Set<String> arg) {
-            super(arg);
+        private VisorCachesPreloadJob(Set<String> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

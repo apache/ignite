@@ -29,7 +29,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
 
     /** {@inheritDoc} */
     @Override protected VisorCachesSwapBackupsJob job(Set<String> names) {
-        return new VisorCachesSwapBackupsJob(names);
+        return new VisorCachesSwapBackupsJob(names, debug);
     }
 
     /**
@@ -44,9 +44,10 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
          * Create job with specified argument.
          *
          * @param names Job argument.
+         * @param debug Debug flag.
          */
-        private VisorCachesSwapBackupsJob(Set<String> names) {
-            super(names);
+        private VisorCachesSwapBackupsJob(Set<String> names, boolean debug) {
+            super(names, debug);
         }
 
         /** {@inheritDoc} */

@@ -29,7 +29,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
 
     /** {@inheritDoc} */
     @Override protected VisorQueryNextPageJob job(IgniteBiTuple<String, Integer> arg) {
-        return new VisorQueryNextPageJob(arg);
+        return new VisorQueryNextPageJob(arg, debug);
     }
 
     /**
@@ -43,9 +43,10 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
          * Create job with specified argument.
          *
          * @param arg Job argument.
+         * @param debug Debug flag.
          */
-        private VisorQueryNextPageJob(IgniteBiTuple<String, Integer> arg) {
-            super(arg);
+        private VisorQueryNextPageJob(IgniteBiTuple<String, Integer> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

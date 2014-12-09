@@ -28,7 +28,7 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 
@@ -41,9 +41,10 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
 
         /**
          * @param arg Formal job argument.
+         * @param debug Debug flag.
          */
-        private VisorNodesRestartJob(Void arg) {
-            super(arg);
+        private VisorNodesRestartJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -65,6 +66,6 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorNodesRestartJob job(Void arg) {
-        return new VisorNodesRestartJob(arg);
+        return new VisorNodesRestartJob(arg, debug);
     }
 }

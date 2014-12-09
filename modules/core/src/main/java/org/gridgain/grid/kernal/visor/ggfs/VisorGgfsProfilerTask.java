@@ -141,9 +141,14 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
             TYPE_CLOSE_OUT
         );
 
-        /** Create job with given argument. */
-        private VisorGgfsProfilerJob(String arg) {
-            super(arg);
+        /**
+         * Create job with given argument.
+         *
+         * @param arg GGFS name.
+         * @param debug Debug flag.
+         */
+        private VisorGgfsProfilerJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -486,6 +491,6 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
 
     /** {@inheritDoc} */
     @Override protected VisorGgfsProfilerJob job(String arg) {
-        return new VisorGgfsProfilerJob(arg);
+        return new VisorGgfsProfilerJob(arg, debug);
     }
 }
