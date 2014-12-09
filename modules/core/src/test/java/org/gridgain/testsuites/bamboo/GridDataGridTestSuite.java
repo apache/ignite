@@ -95,8 +95,6 @@ public class GridDataGridTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicProjectionSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalBasicStoreNoBatchSelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicBasicStoreNoBatchSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalGetAndTransformStoreSelfTest.class);
@@ -118,7 +116,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiGetSelfTest.class));
-//        suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOneNodeSelfTest.class));
@@ -132,7 +130,6 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityClientSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedProjectionAffinitySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicOpSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedBasicStoreNoBatchSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedGetAndTransformStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class));
@@ -213,7 +210,6 @@ public class GridDataGridTestSuite extends TestSuite {
         // Replicated cache.
         suite.addTestSuite(GridCacheReplicatedBasicApiTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicOpSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedBasicStoreNoBatchSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicGetAndTransformStoreSelfTest.class);
