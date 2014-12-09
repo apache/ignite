@@ -43,6 +43,9 @@ public class GridCacheFailoverTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO GG-9150
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
+        //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
+        //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
+
         return suite;
     }
 }
