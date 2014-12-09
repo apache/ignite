@@ -226,7 +226,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Primary node for key [id=" + grid(idx).mapKeyToNode(null, KEY) + ", key=" + KEY + ']');
+        info("Nodes for key [id=" + grid(idx).cache(null).affinity().mapKeyToPrimaryAndBackups(KEY) +
+            ", key=" + KEY + ']');
 
         GridCache<Integer, String> cache = cache(idx);
 
@@ -267,13 +268,16 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         for (int i = 0; !locked && i < 3; i++) {
             locked = checkCache.lock(KEY, -1);
 
-            if (!locked)
+            if (!locked) {
+                info("Still not locked...");
+
                 U.sleep(1500);
+            }
             else
                 break;
         }
 
-        assert locked;
+        assert locked : "Failed to lock entry: " + e;
 
         checkCache.unlockAll(F.asList(KEY));
 

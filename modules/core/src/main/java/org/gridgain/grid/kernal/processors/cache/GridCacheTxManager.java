@@ -1398,6 +1398,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (owner != null) {
             GridCacheTxAdapter<K, V> tx = tx(owner.version());
 
+            if (tx == null)
+                tx = nearTx(owner.version());
+
             if (tx != null) {
                 if (!tx.local()) {
                     if (log.isDebugEnabled())
