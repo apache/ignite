@@ -275,8 +275,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(GridCacheWriteBehindTestSuite.suite());
 
         // Transform.
-//        suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedTransformWriteThroughSingleUpdateSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
         suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         suite.addTestSuite(GridCacheEntryVersionSelfTest.class);

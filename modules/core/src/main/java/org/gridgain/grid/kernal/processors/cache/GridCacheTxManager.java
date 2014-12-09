@@ -995,7 +995,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return If transaction was not already present in completed set.
      */
     public boolean addCommittedTx(GridCacheVersion xidVer, @Nullable GridCacheVersion nearXidVer) {
-        assert !rolledbackVers.contains(xidVer);
+        assert !rolledbackVers.contains(xidVer) : "Version was rolled back: " + xidVer;
 
         if (nearXidVer != null)
             xidVer = new CommittedVersion(xidVer, nearXidVer);

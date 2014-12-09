@@ -966,7 +966,7 @@ public class GridCacheTxHandler<K, V> {
 
             res.invalidPartitions(tx.invalidPartitions());
 
-            if (tx.empty()) {
+            if (tx.empty() && req.last()) {
                 tx.rollback();
 
                 return null;
