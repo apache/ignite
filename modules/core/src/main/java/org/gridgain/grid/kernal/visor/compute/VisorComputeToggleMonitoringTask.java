@@ -33,7 +33,7 @@ public class VisorComputeToggleMonitoringTask extends
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws GridException {
         Collection<Boolean> toggles = new HashSet<>();
 
         for (ComputeJobResult res: results)
@@ -41,6 +41,11 @@ public class VisorComputeToggleMonitoringTask extends
 
         // If all nodes return same result.
         return toggles.size() == 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VisorComputeToggleMonitoringJob job(IgniteBiTuple<String, Boolean> arg) {
+        return new VisorComputeToggleMonitoringJob(arg, debug);
     }
 
     /**
@@ -52,9 +57,10 @@ public class VisorComputeToggleMonitoringTask extends
 
         /**
          * @param arg Visor ID key and monitoring state flag.
+         * @param debug Debug flag.
          */
-        private VisorComputeToggleMonitoringJob(IgniteBiTuple<String, Boolean> arg) {
-            super(arg);
+        private VisorComputeToggleMonitoringJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -94,10 +100,5 @@ public class VisorComputeToggleMonitoringTask extends
         @Override public String toString() {
             return S.toString(VisorComputeToggleMonitoringJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorComputeToggleMonitoringJob job(IgniteBiTuple<String, Boolean> arg) {
-        return new VisorComputeToggleMonitoringJob(arg);
     }
 }

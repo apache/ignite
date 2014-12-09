@@ -32,6 +32,7 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.nio.charset.*;
 import java.nio.file.*;
+import java.text.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -100,6 +101,14 @@ public class VisorTaskUtils {
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
             return Long.compare(f2.lastModified(), f1.lastModified());
+        }
+    };
+
+    /** Debug date format. */
+    private static final ThreadLocal<SimpleDateFormat> DEBUG_DATE_FMT = new ThreadLocal<SimpleDateFormat>() {
+        /** {@inheritDoc} */
+        @Override protected SimpleDateFormat initialValue() {
+            return new SimpleDateFormat("HH:mm:ss,SSS");
         }
     };
 
@@ -216,6 +225,12 @@ public class VisorTaskUtils {
         return U.compact(obj.getClass().getName());
     }
 
+    /**
+     * Compact class names.
+     *
+     * @param obj Object for compact.
+     * @return Compacted string.
+     */
     @Nullable public static String compactClass(Object obj) {
         if (obj == null)
             return null;
@@ -623,5 +638,113 @@ public class VisorTaskUtils {
             return ((GridCacheFifoEvictionPolicyMBean)policy).getMaxSize();
 
         return null;
+    }
+
+    /**
+     * Pretty-formatting for duration.
+     *
+     * @param ms Millisecond to format.
+     * @return Formatted presentation.
+     */
+    private static String formatDuration(long ms) {
+        assert ms >= 0;
+
+        if (ms == 0)
+            return "< 1 ms";
+
+        SB sb = new SB();
+
+        long dd = ms / 1440000; // 1440 mins = 60 mins * 24 hours
+
+        if (dd > 0)
+            sb.a(dd).a(dd == 1 ? " day " : " days ");
+
+        ms %= 1440000;
+
+        long hh = ms / 60000;
+
+        if (hh > 0)
+            sb.a(hh).a(hh == 1 ? " hour " : " hours ");
+
+        long min = ms / 60000;
+
+        if (min > 0)
+            sb.a(min).a(min == 1 ? " min " : " mins ");
+
+        ms %= 60000;
+
+        if (ms > 0)
+            sb.a(ms).a(" ms ");
+
+        return sb.toString().trim();
+    }
+
+    /**
+     *
+     * @param log Logger.
+     * @param time Time.
+     * @param msg Message.
+     */
+    private static void log0(@Nullable IgniteLogger log, long time, String msg) {
+        if (log != null) {
+            if (log.isDebugEnabled())
+                log.debug(msg);
+            else
+                log.warning(msg);
+        }
+        else
+            X.println("[" + DEBUG_DATE_FMT.get().format(time) + "]" +
+                String.format("%30s %s", "<" + Thread.currentThread().getName() + ">", msg));
+    }
+
+    /**
+     * Log start.
+     *
+     * @param log Logger.
+     * @param clazz Class.
+     * @param start Start time.
+     */
+    public static void logStart(@Nullable IgniteLogger log, Class<?> clazz, long start) {
+        log0(log, start, "[" + clazz.getSimpleName() + "]: STARTED");
+    }
+
+    /**
+     * Log finished.
+     *
+     * @param log Logger.
+     * @param clazz Class.
+     * @param start Start time.
+     */
+    public static void logFinish(@Nullable IgniteLogger log, Class<?> clazz, long start) {
+        final long end = U.currentTimeMillis();
+
+        log0(log, end, String.format("[%s]: FINISHED, duration: %s", clazz.getSimpleName(), formatDuration(end - start)));
+    }
+
+    /**
+     * Log task mapped.
+     *
+     * @param log Logger.
+     * @param clazz Task class.
+     * @param nodes Mapped nodes.
+     */
+    public static void logMapped(@Nullable IgniteLogger log, Class<?> clazz, Collection<ClusterNode> nodes) {
+        log0(log, U.currentTimeMillis(),
+            String.format("[%s]: MAPPED: %s", clazz.getSimpleName(), U.toShortString(nodes)));
+    }
+
+    /**
+     * Log message.
+     *
+     * @param log Logger.
+     * @param clazz class.
+     * @param start start time.
+     */
+    public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
+        final long end = U.currentTimeMillis();
+
+        log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
+
+        return end;
     }
 }

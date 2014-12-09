@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;GridExecutorServiceResource
  *      private ExecutorService execSvc;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private ExecutorService execSvc;
  *     ...

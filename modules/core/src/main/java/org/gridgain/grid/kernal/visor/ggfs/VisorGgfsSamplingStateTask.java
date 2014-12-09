@@ -35,9 +35,10 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
          * Create job with given argument.
          *
          * @param arg Job argument.
+         * @param debug Debug flag.
          */
-        public VisorGgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg) {
-            super(arg);
+        public VisorGgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -60,6 +61,6 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
 
     /** {@inheritDoc} */
     @Override protected VisorGgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
-        return new VisorGgfsSamplingStateJob(arg);
+        return new VisorGgfsSamplingStateJob(arg, debug);
     }
 }

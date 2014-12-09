@@ -33,7 +33,7 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
 
     /** {@inheritDoc} */
     @Override protected VisorLatestTextFilesJob job(IgniteBiTuple<String, String> arg) {
-        return new VisorLatestTextFilesJob(arg);
+        return new VisorLatestTextFilesJob(arg, debug);
     }
 
     /**
@@ -45,9 +45,10 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
 
         /**
          * @param arg Folder and regexp.
+         * @param debug Debug flag.
          */
-        private VisorLatestTextFilesJob(IgniteBiTuple<String, String> arg) {
-            super(arg);
+        private VisorLatestTextFilesJob(IgniteBiTuple<String, String> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

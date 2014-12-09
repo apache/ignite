@@ -31,7 +31,7 @@ import org.gridgain.testframework.junits.common.*;
  *
  * 1. The JVM is started with following parameters for enable AspectJ online weaving
  *      (replace ${GRIDGAIN_HOME} to you $GRIDGAIN_HOME):
- *      -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar
+ *      -javaagent:${GRIDGAIN_HOME}/libs/optional/gridgain-aop/aspectjweaver-1.7.2.jar
  *
  * 2. Classpath should contains the ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj folder.
  */

@@ -40,9 +40,10 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
          * Create job with given argument.
          *
          * @param arg Job argument.
+         * @param debug Debug flag.
          */
-        private VisorGgfsProfilerClearJob(String arg) {
-            super(arg);
+        private VisorGgfsProfilerClearJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
@@ -98,6 +99,6 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
 
     /** {@inheritDoc} */
     @Override protected VisorGgfsProfilerClearJob job(String arg) {
-        return new VisorGgfsProfilerClearJob(arg);
+        return new VisorGgfsProfilerClearJob(arg, debug);
     }
 }

@@ -29,7 +29,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, I
 
     /** {@inheritDoc} */
     @Override protected VisorPortableCollectMetadataJob job(Long lastUpdate) {
-        return new VisorPortableCollectMetadataJob(lastUpdate);
+        return new VisorPortableCollectMetadataJob(lastUpdate, debug);
     }
 
     /** Job that collect portables metadata on node. */
@@ -37,9 +37,14 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, I
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
-        private VisorPortableCollectMetadataJob(Long lastUpdate) {
-            super(lastUpdate);
+        /**
+         * Create job with given argument.
+         *
+         * @param lastUpdate Time data was collected last time.
+         * @param debug Debug flag.
+         */
+        private VisorPortableCollectMetadataJob(Long lastUpdate, boolean debug) {
+            super(lastUpdate, debug);
         }
 
         /** {@inheritDoc} */

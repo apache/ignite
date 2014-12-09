@@ -30,16 +30,15 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
 
     /** {@inheritDoc} */
     @Override protected VisorPingJob job(UUID arg) {
-        return new VisorPingJob(arg);
+        return new VisorPingJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridTuple3<Boolean, Long, Long> reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) throws GridException {
         try {
-            return super.reduce(results);
-        } catch (ClusterGroupEmptyException ignored) {
-            return new GridTuple3<>(false, -1L, -1L);
-        } catch (ClusterTopologyException ignored) {
+            return super.reduce0(results);
+        }
+        catch (ClusterTopologyException ignored) {
             return new GridTuple3<>(false, -1L, -1L);
         }
     }
@@ -53,9 +52,10 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
 
         /**
          * @param arg Node ID to ping.
+         * @param debug Debug flag.
          */
-        protected VisorPingJob(UUID arg) {
-            super(arg);
+        protected VisorPingJob(UUID arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

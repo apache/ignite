@@ -22,6 +22,6 @@ public class VisorNodeConfigurationCollectorTask extends VisorOneNodeTask<Void, 
 
     /** {@inheritDoc} */
     @Override protected VisorNodeConfigurationCollectorJob job(Void arg) {
-        return new VisorNodeConfigurationCollectorJob(arg);
+        return new VisorNodeConfigurationCollectorJob(arg, debug);
     }
 }

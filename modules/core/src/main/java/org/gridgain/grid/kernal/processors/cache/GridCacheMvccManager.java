@@ -63,6 +63,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     @GridToStringExclude
     private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
 
+    /** Near locked keys. Need separate map because mvcc manager is shared between caches. */
+    @GridToStringExclude
+    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> nearLocked = newMap();
+
     /** Active futures mapped by version ID. */
     @GridToStringExclude
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheFuture<?>>> futs = newMap();
@@ -135,12 +139,18 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         /** {@inheritDoc} */
         @Override public void onLocked(GridDistributedCacheEntry<K, V> entry) {
-            locked.put(entry.txKey(), entry);
+            if (entry.isNear())
+                nearLocked.put(entry.txKey(), entry);
+            else
+                locked.put(entry.txKey(), entry);
         }
 
         /** {@inheritDoc} */
         @Override public void onFreed(GridDistributedCacheEntry<K, V> entry) {
-            locked.remove(entry.txKey());
+            if (entry.isNear())
+                nearLocked.remove(entry.txKey());
+            else
+                locked.remove(entry.txKey());
         }
     };
 
@@ -155,7 +165,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
-            for (GridDistributedCacheEntry<K, V> entry : locked.values()) {
+            for (GridDistributedCacheEntry<K, V> entry : locked()) {
                 try {
                     entry.removeExplicitNodeLocks(discoEvt.eventNode().id());
                 }
@@ -508,6 +518,13 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     }
 
     /**
+     * @return Collection of all locked entries.
+     */
+    private Collection<GridDistributedCacheEntry<K, V>> locked() {
+        return F.concat(false, locked.values(), nearLocked.values());
+    }
+
+    /**
      * This method has poor performance, so use with care. It is currently only used by {@code DGC}.
      *
      * @return Remote candidates.
@@ -515,7 +532,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     public Collection<GridCacheMvccCandidate<K>> remoteCandidates() {
         Collection<GridCacheMvccCandidate<K>> rmtCands = new LinkedList<>();
 
-        for (GridDistributedCacheEntry<K, V> entry : locked.values()) {
+        for (GridDistributedCacheEntry<K, V> entry : locked()) {
             rmtCands.addAll(entry.remoteMvccSnapshot());
         }
 
@@ -530,7 +547,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     public Collection<GridCacheMvccCandidate<K>> localCandidates() {
         Collection<GridCacheMvccCandidate<K>> locCands = new LinkedList<>();
 
-        for (GridDistributedCacheEntry<K, V> entry : locked.values()) {
+        for (GridDistributedCacheEntry<K, V> entry : locked()) {
             try {
                 locCands.addAll(entry.localCandidates());
             }
@@ -955,8 +972,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         final FinishLockFuture finishFut = new FinishLockFuture(
             keyFilter == null ?
-                locked.values() :
-                F.view(locked.values(),
+                locked() :
+                F.view(locked(),
                     new P1<GridDistributedCacheEntry<K, V>>() {
                         @Override public boolean apply(GridDistributedCacheEntry<K, V> e) {
                             return F.isAll(e.key(), keyFilter);

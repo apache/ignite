@@ -15,7 +15,10 @@ import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 import java.util.*;
 
@@ -29,8 +32,14 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     @IgniteInstanceResource
     protected GridEx g;
 
+    /** Debug flag. */
+    protected boolean debug;
+
     /** Task argument. */
     protected A taskArg;
+
+    /** Task start time. */
+    protected long start;
 
     /**
      * @param arg Task arg.
@@ -43,16 +52,32 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         @Nullable VisorTaskArgument<A> arg) throws GridException {
         assert arg != null;
 
-        Collection<UUID> nodeIds = arg.nodes();
+        start = U.currentTimeMillis();
+
+        debug = arg.debug();
+
         taskArg = arg.argument();
 
-        Map<ComputeJob, ClusterNode> map = new GridLeanMap<>(nodeIds.size());
+        if (debug)
+            logStart(g.log(), getClass(), start);
 
-        for (ClusterNode node : subgrid)
-            if (nodeIds.contains(node.id()))
-                map.put(job(taskArg), node);
+        Collection<UUID> nodeIds = arg.nodes();
 
-        return map;
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
+
+        try {
+            taskArg = arg.argument();
+
+            for (ClusterNode node : subgrid)
+                if (nodeIds.contains(node.id()))
+                    map.put(job(taskArg), node);
+
+            return map;
+        }
+        finally {
+            if (debug)
+                logMapped(g.log(), getClass(), map.values());
+        }
     }
 
     /** {@inheritDoc} */
@@ -60,5 +85,19 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         List<ComputeJobResult> rcvd) throws GridException {
         // All Visor tasks should handle exceptions in reduce method.
         return ComputeJobResultPolicy.WAIT;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws GridException;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public final R reduce(List<ComputeJobResult> results) throws GridException {
+        try {
+            return reduce0(results);
+        }
+        finally {
+            if (debug)
+                logFinish(g.log(), getClass(), start);
+        }
     }
 }

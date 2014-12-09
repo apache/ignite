@@ -757,6 +757,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.timeout(),
+                                    req.isInvalidate(),
                                     false,
                                     req.txSize(),
                                     req.groupLockKey(),

@@ -68,7 +68,7 @@
         <exclude within="com.tangosol..*"/>
 
         <!-- Apache libs. -->
-        <exclude within="org.apache..*"/>
+        <!--<exclude within="org.apache..*"/>-->
 
         <!-- Javassist libs. -->
         <exclude within="javassist..*"/>
@@ -214,7 +214,7 @@
         <exclude within="com.tangosol..*"/>
 
         <!-- Apache libs. -->
-        <exclude within="org.apache..*"/>
+        <!--<exclude within="org.apache..*"/>-->
 
         <!-- Javassist libs. -->
         <exclude within="javassist..*"/>

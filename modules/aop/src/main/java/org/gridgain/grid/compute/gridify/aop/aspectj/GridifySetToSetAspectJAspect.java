@@ -43,7 +43,7 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
      * @throws Throwable If execution failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "CatchGenericClass"})
-    @Around("execution(@org.gridgain.grid.compute.gridify.GridifySetToSet * *(..)) && !cflow(call(* org.gridgain.grid.compute.GridComputeJob.*(..)))")
+    @Around("execution(@org.apache.ignite.compute.gridify.GridifySetToSet * *(..)) && !cflow(call(* org.apache.ignite.compute.ComputeJob.*(..)))")
     public Object gridify(ProceedingJoinPoint joinPnt) throws Throwable {
         Method mtd = ((MethodSignature) joinPnt.getSignature()).getMethod();
 

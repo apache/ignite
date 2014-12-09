@@ -48,11 +48,11 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
     /** {@inheritDoc} */
     @Override protected VisorNodeDataCollectorJob job(VisorNodeDataCollectorTaskArg arg) {
-        return new VisorNodeDataCollectorJob(arg);
+        return new VisorNodeDataCollectorJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public VisorNodeDataCollectorTaskResult reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) throws GridException {
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 

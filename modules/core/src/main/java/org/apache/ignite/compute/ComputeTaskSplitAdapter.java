@@ -27,7 +27,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
- *     protected Collection&lt;? extends GridComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {

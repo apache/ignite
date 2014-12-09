@@ -21,7 +21,7 @@ import java.util.*;
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
     /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected R reduce0(List<ComputeJobResult> results) throws GridException {
         assert results.size() == 1;
 
         ComputeJobResult res = F.first(results);

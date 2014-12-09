@@ -95,8 +95,6 @@ public class GridDataGridTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicProjectionSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalBasicStoreNoBatchSelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicBasicStoreNoBatchSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
 //        suite.addTestSuite(GridCacheLocalGetAndTransformStoreSelfTest.class);
@@ -118,9 +116,9 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiGetSelfTest.class));
-//        suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOneNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearMultiNodeSelfTest.class));
@@ -132,9 +130,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheRendezvousAffinityClientSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedProjectionAffinitySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicOpSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedBasicStoreNoBatchSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedGetAndTransformStoreSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedGetAndTransformStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedBasicStoreMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest.class));
@@ -143,8 +140,8 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedMultiNodeLockSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMultiThreadedPutGetSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedNodeFailureSelfTest.class));
-//        suite.addTest(new TestSuite(GridCachePartitionedExplicitLockNodeFailureSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedNodeFailureSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedExplicitLockNodeFailureSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedRefreshAheadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedTxSingleThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedTxSingleThreadedSelfTest.class));
@@ -168,8 +165,6 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAffinityFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
-        //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
-        //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
         suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
@@ -207,13 +202,12 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalSelfTest.class);
-//        suite.addTestSuite(GridCacheValueConsistencyTransactionalNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyTransactionalNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueBytesPreloadingSelfTest.class);
 
         // Replicated cache.
         suite.addTestSuite(GridCacheReplicatedBasicApiTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicOpSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedBasicStoreNoBatchSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicGetAndTransformStoreSelfTest.class);
@@ -267,16 +261,15 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTest(GridCacheNearOnlySelfTestSuite.suite());
 
         // Test cache with daemon nodes.
-//        suite.addTestSuite(GridCacheDaemonNodeLocalSelfTest.class);
-//        suite.addTestSuite(GridCacheDaemonNodePartitionedSelfTest.class);
-//        suite.addTestSuite(GridCacheDaemonNodeReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheDaemonNodeLocalSelfTest.class);
+        suite.addTestSuite(GridCacheDaemonNodePartitionedSelfTest.class);
+        suite.addTestSuite(GridCacheDaemonNodeReplicatedSelfTest.class);
 
         // Write-behind.
         suite.addTest(GridCacheWriteBehindTestSuite.suite());
 
         // Transform.
-//        suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedTransformWriteThroughSingleUpdateSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest.class);
         suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         suite.addTestSuite(GridCacheEntryVersionSelfTest.class);

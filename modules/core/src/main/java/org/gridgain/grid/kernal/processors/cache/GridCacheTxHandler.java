@@ -252,6 +252,7 @@ public class GridCacheTxHandler<K, V> {
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
+                req.isInvalidate(),
                 false,
                 req.txSize(),
                 req.groupLockKey(),
@@ -502,6 +503,7 @@ public class GridCacheTxHandler<K, V> {
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
+                            req.isInvalidate(),
                             req.explicitLock(),
                             req.txSize(),
                             req.groupLockKey(),
@@ -964,7 +966,7 @@ public class GridCacheTxHandler<K, V> {
 
             res.invalidPartitions(tx.invalidPartitions());
 
-            if (tx.empty()) {
+            if (tx.empty() && req.last()) {
                 tx.rollback();
 
                 return null;

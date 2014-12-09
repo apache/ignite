@@ -101,13 +101,13 @@ import java.util.*;
  *    private GridComputeTaskSession taskSes;
  *
  *    &#64;Override
- *    protected Collection&lt;? extends GridComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
  *        ...
  *        // Set low task priority (note that attribute name is used by the SPI
  *        // and should not be changed).
  *        taskSes.setAttribute("grid.task.priority", 5);
  *
- *        Collection&lt;GridComputeJob&gt; jobs = new ArrayList&lt;GridComputeJob&gt;(SPLIT_COUNT);
+ *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
  *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
@@ -127,13 +127,13 @@ import java.util.*;
  *    private GridComputeTaskSession taskSes;
  *
  *    &#64;Override
- *    protected Collection&lt;? extends GridComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
  *        ...
  *        // Set high task priority (note that attribute name is used by the SPI
  *        // and should not be changed).
  *        taskSes.setAttribute("grid.task.priority", 10);
  *
- *        Collection&lt;GridComputeJob&gt; jobs = new ArrayList&lt;GridComputeJob&gt;(SPLIT_COUNT);
+ *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
  *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {

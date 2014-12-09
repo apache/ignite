@@ -409,12 +409,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         assert !Thread.holdsLock(mux);
 
         // Check if we have package name on list of P2P loaded.
-        // GridComputeJob must be always loaded locally to avoid
+        // ComputeJob must be always loaded locally to avoid
         // any possible class casting issues.
         Class<?> cls = null;
 
         try {
-            if (!"org.gridgain.grid.GridComputeJob".equals(name)) {
+            if (!"org.apache.ignite.compute.ComputeJob".equals(name)) {
                 if (isLocallyExcluded(name))
                     // P2P loaded class.
                     cls = p2pLoadClass(name, true);

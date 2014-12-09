@@ -39,7 +39,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
     /** {@inheritDoc} */
     @Override protected VisorQueryJob job(VisorQueryArg arg) {
-        return new VisorQueryJob(arg);
+        return new VisorQueryJob(arg, debug);
     }
 
     /**
@@ -168,9 +168,10 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * Create job with specified argument.
          *
          * @param arg Job argument.
+         * @param debug Debug flag.
          */
-        protected VisorQueryJob(VisorQueryArg arg) {
-            super(arg);
+        protected VisorQueryJob(VisorQueryArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

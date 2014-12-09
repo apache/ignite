@@ -25,7 +25,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
@@ -219,6 +218,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
+        boolean invalidate,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
@@ -235,6 +235,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
+        this.invalidate = invalidate;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
@@ -324,17 +325,6 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      */
     protected final void awaitSignal() throws InterruptedException {
         cond.await();
-    }
-
-    /**
-     * Waits for signal.
-     *
-     * @param ms Time to wait.
-     * @return {@code True} if signal occurred.
-     * @throws InterruptedException If interrupted.
-     */
-    protected final boolean awaitSignal(long ms) throws InterruptedException {
-        return cond.await(ms, TimeUnit.MILLISECONDS);
     }
 
     /**

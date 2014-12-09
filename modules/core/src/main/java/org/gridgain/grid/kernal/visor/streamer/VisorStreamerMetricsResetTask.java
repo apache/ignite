@@ -27,7 +27,7 @@ public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void
 
     /** {@inheritDoc} */
     @Override protected VisorStreamerMetricsResetJob job(String arg) {
-        return new VisorStreamerMetricsResetJob(arg);
+        return new VisorStreamerMetricsResetJob(arg, debug);
     }
 
     /**
@@ -39,9 +39,10 @@ public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void
 
         /**
          * @param arg Streamer name.
+         * @param debug Debug flag.
          */
-        private VisorStreamerMetricsResetJob(String arg) {
-            super(arg);
+        private VisorStreamerMetricsResetJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
