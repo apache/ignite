@@ -86,8 +86,17 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             for (GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName)))
-                    res.caches().add(VisorCache.from(g, cache, arg.sample()));
+                if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName))) {
+                    long start0 = U.currentTimeMillis();
+
+                    try {
+                        res.caches().add(VisorCache.from(g, cache, arg.sample()));
+                    }
+                    finally {
+                        if (debug)
+                            log(g.log(), "Collected cache: " + cache.name(), getClass(), start0);
+                    }
+                }
             }
         }
         catch (Throwable cachesEx) {
@@ -101,16 +110,24 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             GridGgfsProcessorAdapter ggfsProc = ((GridKernal)g).context().ggfs();
 
             for (IgniteFs ggfs : ggfsProc.ggfss()) {
-                Collection<GridIpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                long start0 = U.currentTimeMillis();
 
-                if (endPoints != null) {
-                    for (GridIpcServerEndpoint ep : endPoints)
-                        if (ep.isManagement())
-                            res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), g.name(),
-                                ep.getHost(), ep.getPort()));
+                try {
+                    Collection<GridIpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+
+                    if (endPoints != null) {
+                        for (GridIpcServerEndpoint ep : endPoints)
+                            if (ep.isManagement())
+                                res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), g.name(),
+                                    ep.getHost(), ep.getPort()));
+                    }
+
+                    res.ggfss().add(VisorGgfs.from(ggfs));
                 }
-
-                res.ggfss().add(VisorGgfs.from(ggfs));
+                finally {
+                    if (debug)
+                        log(g.log(), "Collected GGFS: " + ggfs.name(), getClass(), start0);
+                }
             }
         }
         catch (Throwable ggfssEx) {
@@ -124,8 +141,17 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
             StreamerConfiguration[] cfgs = g.configuration().getStreamerConfiguration();
 
             if (cfgs != null) {
-                for (StreamerConfiguration cfg : cfgs)
-                    res.streamers().add(VisorStreamer.from(g.streamer(cfg.getName())));
+                for (StreamerConfiguration cfg : cfgs) {
+                    long start0 = U.currentTimeMillis();
+
+                    try {
+                        res.streamers().add(VisorStreamer.from(g.streamer(cfg.getName())));
+                    }
+                    finally {
+                        if (debug)
+                            log(g.log(), "Collected streamer: " + cfg.getName(), getClass(), start0);
+                    }
+                }
             }
         }
         catch (Throwable streamersEx) {
@@ -144,13 +170,27 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
         res.topologyVersion(g.topologyVersion());
 
+        long start0 = U.currentTimeMillis();
+
         events(res, arg);
+
+        if (debug)
+            start0 = log(g.log(), "Collected events", getClass(), start0);
 
         caches(res, arg);
 
+        if (debug)
+            start0 = log(g.log(), "Collected caches", getClass(), start0);
+
         ggfs(res);
 
+        if (debug)
+            start0 = log(g.log(), "Collected ggfs", getClass(), start0);
+
         streamers(res);
+
+        if (debug)
+            log(g.log(), "Collected streamers", getClass(), start0);
 
         return res;
     }
