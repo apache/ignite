@@ -28,7 +28,7 @@ public interface GridNioFuture<R> {
      *
      * @return Operation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws GridException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
@@ -42,8 +42,8 @@ public interface GridNioFuture<R> {
      * @param timeout The maximum time to wait in milliseconds.
      * @return Operation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws GridException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
@@ -57,8 +57,8 @@ public interface GridNioFuture<R> {
      * @param unit The time unit of the {@code timeout} argument.
      * @return Operation result.
      * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws GridException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
@@ -104,4 +104,9 @@ public interface GridNioFuture<R> {
      * @return {@code True} if future was created in thread that was processing message.
      */
     public boolean messageThread();
+
+    /**
+     * @return {@code True} if skip recovery for this operation.
+     */
+    public boolean skipRecovery();
 }

@@ -310,7 +310,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     @Override protected void onContextDestroyed0() {
         super.onContextDestroyed0();
 
-        ipFinder.onSpiContextDestroyed();
+        if (ipFinder != null)
+            ipFinder.onSpiContextDestroyed();
     }
 
     /** {@inheritDoc} */

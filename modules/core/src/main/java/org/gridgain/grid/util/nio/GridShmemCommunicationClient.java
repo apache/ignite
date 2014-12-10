@@ -103,7 +103,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
         throws GridException {
         if (closed())
             throw new GridException("Communication client was closed: " + this);
@@ -120,6 +120,8 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         }
 
         markUsed();
+
+        return false;
     }
 
     /** {@inheritDoc} */

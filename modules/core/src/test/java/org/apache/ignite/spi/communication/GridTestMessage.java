@@ -86,14 +86,23 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        throw new UnsupportedOperationException();
+        GridTestMessage msg = new GridTestMessage();
+
+        clone0(msg);
+
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-        // No-op.
+        GridTestMessage _clone = (GridTestMessage)_msg;
+
+        _clone.srcNodeId = srcNodeId;
+        _clone.msgId = msgId;
+        _clone.resId = resId;
+        _clone.payload = payload;
     }
 
     /** {@inheritDoc} */

@@ -87,8 +87,9 @@ public interface GridCommunicationClient {
      * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
      * @param msg Message to send.
      * @throws GridException If failed.
+     * @return {@code True} if should try to resend message.
      */
-    void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg) throws GridException;
+    boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg) throws GridException;
 
     /**
      * @param timeout Timeout.

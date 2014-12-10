@@ -368,5 +368,15 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         @Override public boolean readsPaused() {
             return false;
         }
+
+        /** {@inheritDoc} */
+        @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+            return null;
+        }
     }
 }

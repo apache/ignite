@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
@@ -23,27 +24,24 @@ import java.util.*;
  * Grid client for NIO server.
  */
 public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClient {
-    /** Socket. */
+    /** Session. */
     private final GridNioSession ses;
 
-    /**
-     * Constructor for test purposes only.
-     */
-    public GridTcpNioCommunicationClient() {
-        super(null);
-
-        ses = null;
-    }
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * @param ses Session.
+     * @param log Logger.
      */
-    public GridTcpNioCommunicationClient(GridNioSession ses) {
+    public GridTcpNioCommunicationClient(GridNioSession ses, IgniteLogger log) {
         super(null);
 
         assert ses != null;
+        assert log != null;
 
         this.ses = ses;
+        this.log = log;
     }
 
     /**
@@ -98,13 +96,10 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
         throws GridException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
-
-        if (closed())
-            throw new GridException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -113,9 +108,23 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
+
+                return true;
+            }
+            catch (GridException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
+
+                if (e.getCause() instanceof IOException)
+                    return true;
+                else
+                    throw new GridException("Failed to send message [client=" + this + ']', e);
             }
         }
+
+        return false;
     }
 
     /**

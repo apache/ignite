@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.*;
 import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -49,9 +51,16 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Read buffer. */
     private ByteBuffer readBuf;
 
+    /** Recovery data. */
+    private GridNioRecoveryDescriptor recovery;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Creates session instance.
      *
+     * @param log Logger.
      * @param selectorIdx Selector index for this session.
      * @param filterChain Filter chain that will handle requests.
      * @param locAddr Local address.
@@ -62,6 +71,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param readBuf Read buffer.
      */
     GridSelectorNioSessionImpl(
+        IgniteLogger log,
         int selectorIdx,
         GridNioFilterChain filterChain,
         InetSocketAddress locAddr,
@@ -78,6 +88,10 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert locAddr != null : "GridSelectorNioSessionImpl should have local socket address.";
         assert rmtAddr != null : "GridSelectorNioSessionImpl should have remote socket address.";
+
+        assert log != null;
+
+        this.log = log;
 
         this.selectorIdx = selectorIdx;
 
@@ -136,6 +150,22 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
+     * Adds write future at the front of the queue without acquiring back pressure semaphore.
+     *
+     * @param writeFut Write request.
+     * @return Updated size of the queue.
+     */
+    int offerSystemFuture(GridNioFuture<?> writeFut) {
+        writeFut.messageThread(true);
+
+        boolean res = queue.offerFirst(writeFut);
+
+        assert res : "Future was not added to queue";
+
+        return queueSize.incrementAndGet();
+    }
+
+    /**
      * Adds write future to the pending list and returns the size of the queue.
      * <p>
      * Note that separate counter for the queue size is needed because in case of concurrent
@@ -161,6 +191,21 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
+     * @param futs Futures to resend.
+     */
+    void resend(Collection<GridNioFuture<?>> futs) {
+        assert queue.isEmpty() : queue.size();
+
+        boolean add = queue.addAll(futs);
+
+        assert add;
+
+        boolean set = queueSize.compareAndSet(0, futs.size());
+
+        assert set;
+    }
+
+    /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
     @Nullable GridNioFuture<?> pollFuture() {
@@ -171,9 +216,35 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             if (sem != null && !last.messageThread())
                 sem.release();
+
+            if (recovery != null) {
+                if (!recovery.add(last)) {
+                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                        "[remoteAddr=" + remoteAddress() +
+                        ", queueLimit=" + recovery.queueLimit() + ']');
+
+                    if (log.isDebugEnabled())
+                        log.debug("Unacknowledged messages queue size overflow, will attempt to reconnect " +
+                            "[remoteAddr=" + remoteAddress() +
+                            ", queueSize=" + recovery.messagesFutures().size() +
+                            ", queueLimit=" + recovery.queueLimit() + ']');
+
+                    close();
+                }
+            }
         }
 
         return last;
+    }
+
+    /**
+     * @param fut Future.
+     * @return {@code True} if future was removed from queue.
+     */
+    boolean removeFuture(GridNioFuture<?> fut) {
+        assert closed();
+
+        return queue.removeLastOccurrence(fut);
     }
 
     /**
@@ -183,6 +254,32 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      */
     int writeQueueSize() {
         return queueSize.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+        assert recoveryDesc != null;
+
+        recovery = recoveryDesc;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+        return recovery;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T addMeta(int key, @Nullable T val) {
+        if (val instanceof GridNioRecoveryDescriptor) {
+            recovery = (GridNioRecoveryDescriptor)val;
+
+            if (!accepted())
+                recovery.connected();
+
+            return null;
+        }
+        else
+            return super.addMeta(key, val);
     }
 
     /** {@inheritDoc} */

@@ -29,9 +29,6 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
     /** */
-    private boolean tcpNoDelay;
-
-    /** */
     private final boolean useShmem;
 
     /**
@@ -50,9 +47,16 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);
-        spi.setTcpNoDelay(tcpNoDelay);
+        spi.setTcpNoDelay(tcpNoDelay());
 
         return spi;
+    }
+
+    /**
+     * @return Value of property '{@link TcpCommunicationSpi#isTcpNoDelay()}'.
+     */
+    protected boolean tcpNoDelay() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -68,19 +72,10 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         for (CommunicationSpi spi : spis.values()) {
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
-            assert clients.size() == 2;
+            assertEquals(2, clients.size());
 
             clients.put(UUID.randomUUID(), F.first(clients.values()));
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTcpNoDelay() throws Exception {
-        tcpNoDelay = true;
-
-        super.testSendToManyNodes();
     }
 
     /** {@inheritDoc} */
@@ -91,7 +86,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 10 && !clients.isEmpty(); i++) {
-                U.warn(log, "Check failed for SPI: " + spi);
+                info("Check failed for SPI [grid=" + GridTestUtils.getFieldValue(spi, "gridName") +
+                    ", spi=" + spi + ']');
 
                 U.sleep(1000);
             }

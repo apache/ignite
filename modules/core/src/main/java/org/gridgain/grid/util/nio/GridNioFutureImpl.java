@@ -118,7 +118,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timeout reached before computation completed.
+     * @throws IgniteFutureTimeoutException If timeout reached before computation completed.
      * @throws GridException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, GridException {
@@ -304,6 +304,11 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
 
         // Always signal after setting final done status.
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipRecovery() {
+        return false;
     }
 
     /** {@inheritDoc} */

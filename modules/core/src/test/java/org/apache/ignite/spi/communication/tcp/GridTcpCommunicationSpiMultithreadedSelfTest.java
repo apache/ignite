@@ -9,26 +9,26 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.spi.*;
 import org.jdk8.backport.*;
 
-import javax.management.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -60,9 +60,6 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     /** Initialized nodes */
     private static final List<ClusterNode> nodes = new ArrayList<>();
 
-    /** */
-    private static final ObjectName mBeanName;
-
     /** Flag indicating if listener should reject messages. */
     private static boolean reject;
 
@@ -72,13 +69,6 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                 return new GridTestMessage();
             }
         }, GridTestMessage.DIRECT_TYPE);
-
-        try {
-            mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
-        }
-        catch (MalformedObjectNameException e) {
-            throw new GridRuntimeException(e);
-        }
     }
 
     /**
@@ -168,8 +158,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
 
-        final ConcurrentMap<UUID, ConcurrentLinkedDeque8<GridTestMessage>> msgs =
-            new ConcurrentHashMap<>();
+        final ConcurrentMap<UUID, ConcurrentLinkedDeque8<GridTestMessage>> msgs = new ConcurrentHashMap<>();
 
         final int iterationCnt = 5000;
 
@@ -331,6 +320,28 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         run.set(false);
 
         fut2.get();
+
+        // Wait when all messages are acknowledged to do not break next tests' logic.
+        for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
+            GridNioServer srv = U.field(spi, "nioSrvr");
+
+            Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
+
+            for (GridNioSession ses : sessions) {
+                final GridNioRecoveryDescriptor snd = ses.recoveryDescriptor();
+
+                if (snd != null) {
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return snd.messagesFutures().isEmpty();
+                        }
+                    }, 10_000);
+
+                    assertEquals("Unexpected messages: " + snd.messagesFutures(), 0,
+                        snd.messagesFutures().size());
+                }
+            }
+        }
     }
 
     /**
@@ -415,6 +426,8 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        U.setWorkDirectory(null, U.getGridGainHome());
+
         spis.clear();
         nodes.clear();
         spiRsrcs.clear();
@@ -425,9 +438,13 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<GridTcpCommunicationMessageAdapter> spi = newCommunicationSpi();
 
-            GridTestResources rsrcs = new GridTestResources(getMBeanServer(i));
+            GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
+
+            GridTestResources rsrcs = new GridTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
+
+            node.order(i);
 
             GridSpiTestContext ctx = initSpiContext();
 
@@ -448,6 +465,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
             info("Lsnrs: " + lsnrs);
 
             node.setAttributes(spi.getNodeAttributes());
+            node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
             nodes.add(node);
 
@@ -491,39 +509,18 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
         }
     }
 
-    /**
-     * @param idx Node index.
-     * @return Configured MBean server.
-     * @throws Exception If failed.
-     */
-    private MBeanServer getMBeanServer(int idx) throws Exception {
-        HttpAdaptor mbeanAdaptor = new HttpAdaptor();
-
-        MBeanServer mbeanSrv = MBeanServerFactory.createMBeanServer();
-
-        mbeanAdaptor.setPort(
-            Integer.valueOf(GridTestProperties.getProperty("comm.mbeanserver.selftest.baseport")) + idx);
-
-        mbeanSrv.registerMBean(mbeanAdaptor, mBeanName);
-
-        mbeanAdaptor.start();
-
-        return mbeanSrv;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
+            spi.onContextDestroyed();
+
             spi.setListener(null);
 
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs) {
+        for (GridTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
-
-            rsrcs.getMBeanServer().unregisterMBean(mBeanName);
-        }
 
         lsnrs.clear();
         spiRsrcs.clear();

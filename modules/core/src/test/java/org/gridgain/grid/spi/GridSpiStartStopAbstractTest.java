@@ -65,6 +65,8 @@ public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends 
 
         getTestResources().inject(spi);
 
+        spi.onContextDestroyed();
+
         spi.spiStop();
     }
 }

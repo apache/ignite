@@ -12,9 +12,9 @@ package org.apache.ignite.spi.communication.tcp;
 /**
  *
  */
-public class GridTcpCommunicationSpiMultithreadedShmemTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
-    /** */
-    public GridTcpCommunicationSpiMultithreadedShmemTest() {
-        super(false);
+public class GridTcpCommunicationSpiTcpNoDelayOffSelfTest extends GridTcpCommunicationSpiTcpSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean tcpNoDelay() {
+        return false;
     }
 }

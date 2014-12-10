@@ -146,4 +146,14 @@ public interface GridNioSession {
      * @return {@code True} if reads are paused.
      */
     public boolean readsPaused();
+
+    /**
+     * @param recoveryDesc Recovery descriptor.
+     */
+    public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc);
+
+    /**
+     * @return Recovery descriptor if recovery is supported, {@code null otherwise.}
+     */
+    @Nullable public GridNioRecoveryDescriptor recoveryDescriptor();
 }

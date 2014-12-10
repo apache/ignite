@@ -120,6 +120,8 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         GridIoManager mgr = new GridIoManager(ctx);
 
+        mgr.onKernalStop(true);
+
         mgr.stop(false);
     }
 

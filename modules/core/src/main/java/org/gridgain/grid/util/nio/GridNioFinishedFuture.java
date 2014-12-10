@@ -99,4 +99,9 @@ public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     @Override public boolean messageThread() {
         return msgThread;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipRecovery() {
+        return true;
+    }
 }

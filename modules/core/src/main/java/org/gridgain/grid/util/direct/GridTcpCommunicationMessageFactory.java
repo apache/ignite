@@ -282,8 +282,14 @@ public class GridTcpCommunicationMessageFactory {
      * @return New message.
      */
     public static GridTcpCommunicationMessageAdapter create(byte type) {
-        return type == TcpCommunicationSpi.NODE_ID_MSG_TYPE ? new TcpCommunicationSpi.NodeIdMessage() :
-            create0(type);
+        if (type == TcpCommunicationSpi.NODE_ID_MSG_TYPE)
+            return new TcpCommunicationSpi.NodeIdMessage();
+        else if (type == TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE)
+            return new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+        else if (type == TcpCommunicationSpi.HANDSHAKE_MSG_TYPE)
+            return new TcpCommunicationSpi.HandshakeMessage();
+        else
+            return create0(type);
     }
 
     /**

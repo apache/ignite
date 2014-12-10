@@ -182,7 +182,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
         throws GridException {
         if (closed())
             throw new GridException("Client was closed: " + this);
@@ -199,6 +199,8 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         }
 
         markUsed();
+
+        return false;
     }
 
     /**

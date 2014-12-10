@@ -18,6 +18,6 @@ import org.gridgain.testframework.junits.spi.*;
 public class GridTcpCommunicationSpiShmemSelfTest extends GridTcpCommunicationSpiAbstractTest {
     /** */
     public GridTcpCommunicationSpiShmemSelfTest() {
-        super(true);
+        super(false);
     }
 }
