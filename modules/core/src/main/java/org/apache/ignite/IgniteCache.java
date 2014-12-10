@@ -170,7 +170,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public Lock lock(K key) throws CacheException;
 
-    public Lock lockAll(Set<K> keys) throws CacheException;
+    public Lock lockAll(Set<? extends K> keys) throws CacheException;
 
     /**
      * Checks if any node owns a lock for this key.
@@ -241,7 +241,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Peeked value.
      * @throws NullPointerException If key is {@code null}.
      */
-    @Nullable public V localPeek(K key, GridCachePeekMode... peekModes);
+    @Nullable public V localPeek(K key, CachePeekMode... peekModes);
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage

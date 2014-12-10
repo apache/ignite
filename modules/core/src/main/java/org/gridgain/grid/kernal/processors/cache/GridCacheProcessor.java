@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
@@ -1573,6 +1574,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
         return cache;
+    }
+
+    /**
+     * @param name Cache name.
+     * @param <K> type of keys.
+     * @param <V> type of values.
+     * @return Cache instance for given name.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> IgniteCache<K, V> publicJCache(@Nullable String name) {
+        if (log.isDebugEnabled())
+            log.debug("Getting public cache for name: " + name);
+
+        if (sysCaches.contains(name))
+            throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
+
+        GridCacheAdapter<K, V> cache = (GridCacheAdapter<K, V>)caches.get(name);
+
+        if (cache == null)
+            throw new IllegalArgumentException("Cache is not configured: " + name);
+
+        return new IgniteCacheProxy<>(cache);
     }
 
     /**
