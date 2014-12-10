@@ -23,7 +23,7 @@ public class GridFtpDeploymentTest extends GridUriDeploymentAbstractSelfTest {
      * @throws Exception  If failed.
      */
     public void testDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
         checkTask("GridUriDeploymentTestWithNameTask3");
     }
 

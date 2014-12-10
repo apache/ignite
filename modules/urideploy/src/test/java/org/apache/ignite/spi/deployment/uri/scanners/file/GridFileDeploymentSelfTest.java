@@ -33,7 +33,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testDeploymentFromFolder() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
         checkTask("GridUriDeploymentTestWithNameTask0");
     }
 
@@ -43,7 +43,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testDeploymentFromFile() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
         checkTask("GridUriDeploymentTestWithNameTask3");
     }
 
@@ -60,7 +60,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testNoDescriptorDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask4");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask4");
         checkTask("GridUriDeploymentTestWithNameTask4");
     }
 
@@ -75,10 +75,10 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testBadDeployment() throws Exception {
-        checkNoTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentAbstractTestTask");
-        checkNoTask("org.gridgain.grid.spi.deployment.uri.tasks.GridInnerTestTask");
-        checkNoTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentInterfaceTestTask");
-        checkNoTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentNonePublicTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentAbstractTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridInnerTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentInterfaceTestTask");
+        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentNonePublicTestTask");
     }
 
     /**
@@ -95,7 +95,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testDependenceDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask1");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask1");
     }
 
     /**
@@ -112,7 +112,7 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testNoDescriptorDependenceDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask2");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask2");
     }
 
     /**
@@ -130,12 +130,12 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testSignedDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask5");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask5");
         checkTask("GridUriDeploymentTestWithNameTask5");
 
-        assert getSpi().findResource("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask6") == null :
+        assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask6") == null :
             "Task from GAR with invalid signature should not be deployed.";
-        assert getSpi().findResource("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestWithNameTask6")
+        assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestWithNameTask6")
             == null : "Task from GAR with invalid signature should not be deployed.";
     }
 }
