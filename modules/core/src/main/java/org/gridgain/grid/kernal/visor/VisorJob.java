@@ -14,7 +14,10 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Base class for Visor jobs.
@@ -23,23 +26,39 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
     protected GridEx g;
 
-    @IgniteLoggerResource
-    protected IgniteLogger log;
+    /** Job start time. */
+    protected long start;
+
+    /** Debug flag. */
+    protected boolean debug;
 
     /**
      * Create job with specified argument.
      *
      * @param arg Job argument.
      */
-    protected VisorJob(@Nullable A arg) {
+    protected VisorJob(@Nullable A arg, boolean debug) {
         super(arg);
+
+        this.debug = debug;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object execute() throws GridException {
+        start = U.currentTimeMillis();
+
         A arg = argument(0);
 
-        return run(arg);
+        try {
+            if (debug)
+                logStart(g.log(), getClass(), start);
+
+            return run(arg);
+        }
+        finally {
+            if (debug)
+                logFinish(g.log(), getClass(), start);
+        }
     }
 
     /**

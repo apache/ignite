@@ -52,6 +52,8 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -59,6 +61,7 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
 /**
  * Adapter for different cache implementations.
  */
+@SuppressWarnings("unchecked")
 public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
     /** */
@@ -3158,6 +3161,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             concurrency,
             isolation,
             timeout,
+            false,
             txSize,
             /** group lock keys */null,
             /** partition lock */false
@@ -3213,6 +3217,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             concurrency,
             isolation,
             timeout,
+            ctx.hasFlag(INVALIDATE),
             txSize,
             grpLockKey,
             partLock
@@ -3688,6 +3693,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 PESSIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
+                ctx.hasFlag(INVALIDATE),
                 0,
                 /** group lock keys */null,
                 /** partition lock */false
@@ -3757,6 +3763,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 PESSIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
+                ctx.hasFlag(INVALIDATE),
                 0,
                 null,
                 false);

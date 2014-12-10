@@ -25,7 +25,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorCacheResetMetricsJob job(String arg) {
-        return new VisorCacheResetMetricsJob(arg);
+        return new VisorCacheResetMetricsJob(arg, debug);
     }
 
     /**
@@ -37,9 +37,10 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
 
         /**
          * @param arg Cache name to reset metrics for.
+         * @param debug Debug flag.
          */
-        private VisorCacheResetMetricsJob(String arg) {
-            super(arg);
+        private VisorCacheResetMetricsJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

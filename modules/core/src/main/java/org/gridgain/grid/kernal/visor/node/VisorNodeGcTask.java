@@ -24,18 +24,18 @@ import java.util.*;
  * Task to run gc on nodes.
  */
 @GridInternal
-public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, IgniteBiTuple<Long, Long>>,
+public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBiTuple<Long, Long>>,
     IgniteBiTuple<Long, Long>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorGcJob job(Boolean arg) {
-        return new VisorGcJob(arg);
+    @Override protected VisorGcJob job(Void arg) {
+        return new VisorGcJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, IgniteBiTuple<Long, Long>> reduce(List<ComputeJobResult> results)
+    @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results)
         throws GridException {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
@@ -49,17 +49,22 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Boolean, Map<UUID, Ignit
     }
 
     /** Job that perform GC on node. */
-    private static class VisorGcJob extends VisorJob<Boolean, IgniteBiTuple<Long, Long>> {
+    private static class VisorGcJob extends VisorJob<Void, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
-        private VisorGcJob(Boolean arg) {
-            super(arg);
+        /**
+         * Create job with given argument.
+         *
+         * @param arg Formal task argument.
+         * @param debug Debug flag.
+         */
+        private VisorGcJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Long, Long> run(Boolean arg) throws GridException {
+        @Override protected IgniteBiTuple<Long, Long> run(Void arg) throws GridException {
             ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);

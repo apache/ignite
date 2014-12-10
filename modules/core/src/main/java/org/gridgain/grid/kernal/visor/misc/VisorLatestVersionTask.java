@@ -24,7 +24,7 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
 
     /** {@inheritDoc} */
     @Override protected VisorLatestVersionJob job(Void arg) {
-        return new VisorLatestVersionJob(arg);
+        return new VisorLatestVersionJob(arg, debug);
     }
 
     /**
@@ -36,9 +36,10 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
 
         /**
          * @param arg Formal job argument.
+         * @param debug Debug flag.
          */
-        private VisorLatestVersionJob(Void arg) {
-            super(arg);
+        private VisorLatestVersionJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

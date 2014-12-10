@@ -483,7 +483,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
                 res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultClass("1");
 
             if (res != 10)
-                fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=1]");
+                fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=10]");
         }
         finally {
             stopGrid();

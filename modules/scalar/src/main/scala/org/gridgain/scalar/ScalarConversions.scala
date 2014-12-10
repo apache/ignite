@@ -403,7 +403,7 @@ trait ScalarConversions {
         ScalarCacheProjectionPimp[K, V](impl)
 
     /**
-     * Implicit converter from Scala function to `GridComputeJob`.
+     * Implicit converter from Scala function to `ComputeJob`.
      *
      * @param f Scala function to convert.
      */

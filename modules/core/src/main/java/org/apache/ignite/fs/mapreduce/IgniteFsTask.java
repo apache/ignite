@@ -29,7 +29,7 @@ import java.util.*;
  * {@link IgniteFsTask#createJob(org.apache.ignite.fs.IgniteFsPath, IgniteFsFileRange, IgniteFsTaskArgs)} method.
  * <p>
  * Each file participating in GGFS task is split into {@link IgniteFsFileRange}s first. Normally range is a number of
- * consequent bytes located on a single node (see {@code GridGgfsGroupDataBlocksKeyMapper}). In case maximum range size
+ * consequent bytes located on a single node (see {@code IgniteFsGroupDataBlocksKeyMapper}). In case maximum range size
  * is provided (either through {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} or {@code GridGgfs.execute()}
  * argument), then ranges could be further divided into smaller chunks.
  * <p>

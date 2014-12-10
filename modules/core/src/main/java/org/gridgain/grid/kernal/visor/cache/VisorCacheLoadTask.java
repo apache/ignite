@@ -30,7 +30,7 @@ public class VisorCacheLoadTask extends
 
     /** {@inheritDoc} */
     @Override protected VisorCachesLoadJob job(GridTuple3<Set<String>, Long, Object[]> arg) {
-        return new VisorCachesLoadJob(arg);
+        return new VisorCachesLoadJob(arg, debug);
     }
 
     /** Job that load caches. */
@@ -41,9 +41,10 @@ public class VisorCacheLoadTask extends
 
         /**
          * @param arg Cache names, ttl and loader arguments.
+         * @param debug Debug flag.
          */
-        private VisorCachesLoadJob(GridTuple3<Set<String>, Long, Object[]> arg) {
-            super(arg);
+        private VisorCachesLoadJob(GridTuple3<Set<String>, Long, Object[]> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

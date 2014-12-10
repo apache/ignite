@@ -153,7 +153,7 @@ import java.util.*;
  *     GridComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends GridComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
+ *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
  *         Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
  *
  *         // In more complex cases, you can actually do
@@ -192,7 +192,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
- *     protected Collection&lt;? extends GridComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {

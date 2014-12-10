@@ -34,11 +34,11 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
     /** {@inheritDoc} */
     @Override protected VisorCacheMetricsJob job(IgniteBiTuple<Boolean, String> arg) {
-        return new VisorCacheMetricsJob(arg);
+        return new VisorCacheMetricsJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Iterable<VisorCacheAggregatedMetrics> reduce(List<ComputeJobResult> results)
+    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results)
         throws GridException {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = new HashMap<>();
 
@@ -121,9 +121,10 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
          * Create job with given argument.
          *
          * @param arg Whether to collect metrics for all caches or for specified cache name only.
+         * @param debug Debug flag.
          */
-        private VisorCacheMetricsJob(IgniteBiTuple<Boolean, String> arg) {
-            super(arg);
+        private VisorCacheMetricsJob(IgniteBiTuple<Boolean, String> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

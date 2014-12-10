@@ -27,7 +27,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
      */
     public void testTaskCorrect() throws Exception {
         proceedTest("correct.gar", "gridgain.xml",
-            "org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
+            "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
     }
 
     /**

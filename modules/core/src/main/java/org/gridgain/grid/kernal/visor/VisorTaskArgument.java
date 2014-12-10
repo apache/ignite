@@ -25,27 +25,33 @@ public class VisorTaskArgument<A> implements Serializable {
     /** Task argument. */
     private final A arg;
 
+    /** Debug flag. */
+    private final boolean debug;
+
     /**
      * Create Visor task argument.
      *
      * @param nodes Node IDs task should be mapped to.
      * @param arg Task argument.
+     * @param debug Debug flag.
      */
-    public VisorTaskArgument(Collection<UUID> nodes, A arg) {
+    public VisorTaskArgument(Collection<UUID> nodes, A arg, boolean debug) {
         assert nodes != null;
         assert !nodes.isEmpty();
 
         this.nodes = nodes;
         this.arg = arg;
+        this.debug = debug;
     }
 
     /**
      * Create Visor task argument with nodes, but without actual argument.
      *
      * @param nodes Node IDs task should be mapped to.
+     * @param debug Debug flag.
      */
-    public VisorTaskArgument(Collection<UUID> nodes) {
-        this(nodes, null);
+    public VisorTaskArgument(Collection<UUID> nodes, boolean debug) {
+        this(nodes, null, debug);
     }
 
     /**
@@ -53,18 +59,20 @@ public class VisorTaskArgument<A> implements Serializable {
      *
      * @param node Node ID task should be mapped to.
      * @param arg Task argument.
+     * @param debug Debug flag.
      */
-    public VisorTaskArgument(UUID node, A arg) {
-        this(Collections.singleton(node), arg);
+    public VisorTaskArgument(UUID node, A arg, boolean debug) {
+        this(Collections.singleton(node), arg, debug);
     }
 
     /**
      * Create Visor task argument with nodes, but without actual argument.
      *
      * @param node Node ID task should be mapped to.
+     * @param debug Debug flag.
      */
-    public VisorTaskArgument(UUID node) {
-        this(node, null);
+    public VisorTaskArgument(UUID node, boolean debug) {
+        this(node, null, debug);
     }
 
     /**
@@ -79,5 +87,12 @@ public class VisorTaskArgument<A> implements Serializable {
      */
     public A argument() {
         return arg;
+    }
+
+    /**
+     * @return Debug flag.
+     */
+    public boolean debug() {
+        return debug;
     }
 }

@@ -26,7 +26,7 @@ import java.lang.annotation.*;
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;GridNameResource
  *      private String name;
@@ -35,7 +35,7 @@ import java.lang.annotation.*;
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private String gridName;
  *     ...

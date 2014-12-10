@@ -23,7 +23,7 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
      * @throws Exception If failed.
      */
     public void testDeployment() throws Exception {
-        checkTask("org.gridgain.grid.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
+        checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
     }
 
     /**

@@ -29,11 +29,11 @@ public class VisorNodeStopTask extends VisorMultiNodeTask<Void, Void, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorNodesStopJob job(Void arg) {
-        return new VisorNodesStopJob(arg);
+        return new VisorNodesStopJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 
@@ -46,9 +46,10 @@ public class VisorNodeStopTask extends VisorMultiNodeTask<Void, Void, Void> {
 
         /**
          * @param arg Formal job argument.
+         * @param debug Debug flag.
          */
-        private VisorNodesStopJob(Void arg) {
-            super(arg);
+        private VisorNodesStopJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

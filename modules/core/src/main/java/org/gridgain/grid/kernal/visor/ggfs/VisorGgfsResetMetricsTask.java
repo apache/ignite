@@ -26,7 +26,7 @@ public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
 
     /** {@inheritDoc} */
     @Override protected VisorGgfsResetMetricsJob job(Set<String> arg) {
-        return new VisorGgfsResetMetricsJob(arg);
+        return new VisorGgfsResetMetricsJob(arg, debug);
     }
 
     /**
@@ -38,9 +38,10 @@ public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
 
         /**
          * @param arg GGFS names.
+         * @param debug Debug flag.
          */
-        private VisorGgfsResetMetricsJob(Set<String> arg) {
-            super(arg);
+        private VisorGgfsResetMetricsJob(Set<String> arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

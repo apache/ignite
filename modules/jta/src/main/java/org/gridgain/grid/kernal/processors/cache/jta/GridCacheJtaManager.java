@@ -69,6 +69,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                                 tCfg.getDefaultTxConcurrency(),
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
+                                false,
                                 0,
                                 /** group lock keys */null,
                                 /** partition lock */false

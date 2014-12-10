@@ -364,6 +364,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
+        boolean invalidate,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
@@ -378,6 +379,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             concurrency,
             isolation,
             timeout,
+            invalidate,
             txSize,
             grpLockKey,
             partLock,
@@ -993,7 +995,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return If transaction was not already present in completed set.
      */
     public boolean addCommittedTx(GridCacheVersion xidVer, @Nullable GridCacheVersion nearXidVer) {
-        assert !rolledbackVers.contains(xidVer);
+        assert !rolledbackVers.contains(xidVer) : "Version was rolled back: " + xidVer;
 
         if (nearXidVer != null)
             xidVer = new CommittedVersion(xidVer, nearXidVer);
@@ -1395,6 +1397,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         // We only care about acquired locks.
         if (owner != null) {
             GridCacheTxAdapter<K, V> tx = tx(owner.version());
+
+            if (tx == null)
+                tx = nearTx(owner.version());
 
             if (tx != null) {
                 if (!tx.local()) {

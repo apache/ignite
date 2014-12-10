@@ -45,13 +45,12 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
     /** {@inheritDoc} */
     @Override protected VisorLogSearchJob job(VisorLogSearchArg arg) {
-        return new VisorLogSearchJob(arg);
+        return new VisorLogSearchJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
-            Iterable<VisorLogSearchResult>> reduce(List<ComputeJobResult> results) throws GridException {
-
+    @Nullable @Override protected IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
+            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) throws GridException {
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
         Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
@@ -117,9 +116,10 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
         /**
          * @param arg Search descriptor.
+         * @param debug Debug flag.
          */
-        private VisorLogSearchJob(VisorLogSearchArg arg) {
-            super(arg);
+        private VisorLogSearchJob(VisorLogSearchArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /**

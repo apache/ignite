@@ -344,7 +344,15 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
                 if (locPart == null && !top.owners(p).contains(loc))
                     res.addMissed(k);
 
-                GridCacheEntryEx<K, V> entry = cctx.dht().peekEx(k);
+                GridCacheEntryEx<K, V> entry;
+
+                if (cctx.isSwapOrOffheapEnabled()) {
+                    entry = cctx.dht().entryEx(k, true);
+
+                    entry.unswap();
+                }
+                else
+                    entry = cctx.dht().peekEx(k);
 
                 // If entry is null, then local partition may have left
                 // after the message was received. In that case, we are

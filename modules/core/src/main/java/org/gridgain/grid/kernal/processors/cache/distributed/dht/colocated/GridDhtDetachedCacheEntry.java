@@ -55,6 +55,11 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws GridException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void value(@Nullable V val, @Nullable byte[] valBytes) {
         this.val = val;
         this.valBytes = valBytes;

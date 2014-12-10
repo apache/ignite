@@ -29,7 +29,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
 
     /** {@inheritDoc} */
     @Override protected VisorCacheMetadataJob job(String arg) {
-        return new VisorCacheMetadataJob(arg);
+        return new VisorCacheMetadataJob(arg, debug);
     }
 
     /**
@@ -41,9 +41,10 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
 
         /**
          * @param arg Cache name to take metadata.
+         * @param debug Debug flag.
          */
-        private VisorCacheMetadataJob(String arg) {
-            super(arg);
+        private VisorCacheMetadataJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

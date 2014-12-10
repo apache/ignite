@@ -70,7 +70,7 @@ import java.util.*;
  * <h2 class="header">Injection Example</h2>
  * GridMarshaller can be injected in users task, job or SPI as following:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     &#64;GridMarshallerResource
  *     private GridMarshaller marshaller;
@@ -79,7 +79,7 @@ import java.util.*;
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private GridMarshaller marshaller;
  *     ...

@@ -28,11 +28,11 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorAckJob job(String arg) {
-        return new VisorAckJob(arg);
+        return new VisorAckJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws GridException {
         return null;
     }
 
@@ -47,9 +47,10 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
          * Create job with given argument.
          *
          * @param arg Message to ack in node console.
+         * @param debug Debug flag.
          */
-        private VisorAckJob(String arg) {
-            super(arg);
+        private VisorAckJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

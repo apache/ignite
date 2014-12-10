@@ -59,7 +59,7 @@ import java.lang.annotation.*;
  * <h1 class="header">Examples</h1>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;GridUserResource
  *      private transient MyUserResource rsrc;
@@ -68,7 +68,7 @@ import java.lang.annotation.*;
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements GridComputeJob {
+ * public class MyGridJob implements ComputeJob {
  *     ...
  *     private transient MyUserResource rsrc;
  *     ...

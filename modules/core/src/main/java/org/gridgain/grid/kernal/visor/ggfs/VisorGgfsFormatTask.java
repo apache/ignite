@@ -24,7 +24,7 @@ public class VisorGgfsFormatTask extends VisorOneNodeTask<String, Void> {
 
     /** {@inheritDoc} */
     @Override protected VisorGgfsFormatJob job(String arg) {
-        return new VisorGgfsFormatJob(arg);
+        return new VisorGgfsFormatJob(arg, debug);
     }
 
     /**
@@ -36,9 +36,10 @@ public class VisorGgfsFormatTask extends VisorOneNodeTask<String, Void> {
 
         /**
          * @param arg GGFS name to format.
+         * @param debug Debug flag.
          */
-        private VisorGgfsFormatJob(String arg) {
-            super(arg);
+        private VisorGgfsFormatJob(String arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

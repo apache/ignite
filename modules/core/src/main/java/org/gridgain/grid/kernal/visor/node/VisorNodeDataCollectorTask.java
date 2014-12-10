@@ -19,6 +19,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
+
 /**
  * Collects current Grid state mostly topology and metrics.
  */
@@ -29,30 +31,30 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) throws GridException {
+    @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
+        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) throws GridException {
         assert arg != null;
 
-        taskArg = arg.argument();
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
-        Collection<ClusterNode> nodes = g.nodes();
+        try {
+            for (ClusterNode node : subgrid)
+                map.put(job(taskArg), node);
 
-        Map<ComputeJob, ClusterNode> map = U.newHashMap(nodes.size());
-
-        // Collect data from ALL nodes.
-        for (ClusterNode node : nodes)
-            map.put(job(taskArg), node);
-
-        return map;
+            return map;
+        }
+        finally {
+            logMapped(g.log(), getClass(), map.values());
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected VisorNodeDataCollectorJob job(VisorNodeDataCollectorTaskArg arg) {
-        return new VisorNodeDataCollectorJob(arg);
+        return new VisorNodeDataCollectorJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public VisorNodeDataCollectorTaskResult reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) throws GridException {
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 

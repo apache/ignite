@@ -27,7 +27,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
 
     /** {@inheritDoc} */
     @Override protected VisorDumpThreadJob job(Void arg) {
-        return new VisorDumpThreadJob(arg);
+        return new VisorDumpThreadJob(arg, debug);
     }
 
     /**
@@ -39,9 +39,10 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
 
         /**
          * @param arg Formal job argument.
+         * @param debug Debug flag.
          */
-        private VisorDumpThreadJob(Void arg) {
-            super(arg);
+        private VisorDumpThreadJob(Void arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */

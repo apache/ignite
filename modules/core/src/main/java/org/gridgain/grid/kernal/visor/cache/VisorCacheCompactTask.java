@@ -28,7 +28,7 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
 
     /** {@inheritDoc} */
     @Override protected VisorCachesCompactJob job(Set<String> names) {
-        return new VisorCachesCompactJob(names);
+        return new VisorCachesCompactJob(names, debug);
     }
 
     /** Job that compact caches on node. */
@@ -36,9 +36,14 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Create job with given argument. */
-        private VisorCachesCompactJob(Set<String> names) {
-            super(names);
+        /**
+         * Create job with given argument.
+         *
+         * @param names Cache names to compact.
+         * @param debug Debug flag.
+         */
+        private VisorCachesCompactJob(Set<String> names, boolean debug) {
+            super(names, debug);
         }
 
         /** {@inheritDoc} */
