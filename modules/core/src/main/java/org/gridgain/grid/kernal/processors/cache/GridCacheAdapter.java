@@ -15,6 +15,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
@@ -25,13 +26,11 @@ import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -48,12 +47,11 @@ import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -617,8 +615,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof PortableObject)
-                        v = ((PortableObject)v).deserialize();
+                    if (ctx.portableEnabled())
+                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
 
                     return F.t(ctx.cloneOnFlag(v));
                 }
@@ -632,8 +630,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (peek != null) {
                     V v = peek.get();
 
-                    if (ctx.portableEnabled() && !ctx.keepPortable() && v instanceof PortableObject)
-                        v = ((PortableObject)v).deserialize();
+                    if (ctx.portableEnabled())
+                        v = (V)ctx.unwrapPortableIfNeeded(v, ctx.keepPortable());
 
                     return F.t(ctx.cloneOnFlag(v));
                 }
@@ -1739,8 +1737,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     if (key == null)
                         continue;
 
-                    K key0 = null;
-
                     while (true) {
                         GridCacheEntryEx<K, V> entry;
 
@@ -1749,12 +1745,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                             cached = null;
                         }
-                        else {
-                            if (key0 == null)
-                                key0 = ctx.portableEnabled() ? (K)ctx.marshalToPortable(key) : key;
-
-                            entry = entryEx(key0);
-                        }
+                        else
+                            entry = entryEx(key);
 
                         try {
                             V val = entry.innerGet(null,
@@ -3452,8 +3444,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         V val = unswapped.value();
 
-        if (ctx.portableEnabled() && deserializePortable && val instanceof PortableObject)
-            return (V)((PortableObject)val).deserialize();
+        if (ctx.portableEnabled())
+            return (V)ctx.unwrapPortableIfNeeded(val, !deserializePortable);
         else
             return ctx.cloneOnFlag(val);
     }
@@ -4462,6 +4454,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         boolean deserializePortable, @Nullable IgnitePredicate<GridCacheEntry<K, V>> filter) {
         String taskName = ctx.kernalContext().job().currentTaskName();
+
+        if (ctx.portableEnabled() && !F.isEmpty(keys)) {
+            keys = F.viewReadOnly(keys, new C1<K, K>() {
+                @Override public K apply(K k) {
+                    return (K)ctx.marshalToPortable(k);
+                }
+            });
+        }
 
         return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/false, null, null, taskName,
             deserializePortable, filter);

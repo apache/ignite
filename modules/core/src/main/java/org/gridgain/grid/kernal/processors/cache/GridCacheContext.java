@@ -1602,34 +1602,31 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (col instanceof ArrayList)
             return unwrapPortables((ArrayList<Object>)col);
 
-        int idx = 0;
+        Collection<Object> col0 = new ArrayList<>(col.size());
 
-        for (Object obj : col) {
-            Object unwrapped = unwrapPortable(obj);
+        for (Object obj : col)
+            col0.add(unwrapPortable(obj));
 
-            if (obj != unwrapped) {
-                Collection<Object> unwrappedCol = new ArrayList<>(col.size());
+        return col0;
+    }
 
-                int idx0 = 0;
+    /**
+     * Unwraps map.
+     *
+     * @param map Map to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped collection.
+     */
+    public Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
+            return map;
 
-                for (Object obj0 : col) {
-                    if (idx0 < idx)
-                        unwrappedCol.add(obj0);
-                    else if (idx == idx0)
-                        unwrappedCol.add(unwrapped);
-                    else
-                        unwrappedCol.add(unwrapPortable(obj0));
+        Map<Object, Object> map0 = U.newHashMap(map.size());
 
-                    idx0++;
-                }
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapPortable(e.getKey()), unwrapPortable(e.getValue()));
 
-                return unwrappedCol;
-            }
-
-            idx++;
-        }
-
-        return col;
+        return map0;
     }
 
     /**
@@ -1662,7 +1659,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        if (keepPortable || !config().isPortableEnabled())
+        assert !portableEnabled() || o == null || U.isPortableOrCollectionType(o.getClass());
+
+        if (o == null)
+            return null;
+
+        if (keepPortable || !portableEnabled())
             return o;
 
         return unwrapPortable(o);
@@ -1699,6 +1701,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         else {
             if (o instanceof Collection)
                 return unwrapPortablesIfNeeded((Collection<Object>)o, false);
+            else if (o instanceof Map)
+                return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
             else if (o instanceof PortableObject)
                 return ((PortableObject)o).deserialize();
         }

@@ -299,11 +299,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        IgniteConfiguration cfg = ctx.config();
+        IgniteDeploymentMode depMode = c.getDeploymentMode();
 
-        IgniteDeploymentMode depMode = cfg.getDeploymentMode();
-
-        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+        if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !CU.isSystemCache(cc.getName()))
             throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
@@ -399,6 +397,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
+
+        if (cc.isPortableEnabled() && !ctx.isEnterprise())
+            throw new GridException("Portable mode for cache is supported only in Enterprise edition " +
+                "(set 'portableEnabled' property to 'false') [cacheName=" + cc.getName() + ']');
     }
 
     /**

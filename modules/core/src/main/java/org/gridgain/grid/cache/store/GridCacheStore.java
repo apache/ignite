@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.store;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
@@ -57,12 +58,12 @@ import java.util.Date;
  * </pre>
  * <h1 class="header">Working With Portable Objects</h1>
  * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
- * {@code true}), all portable keys and values are converted to instances of {@link org.apache.ignite.portables.PortableObject}.
+ * {@code true}), all portable keys and values are converted to instances of {@link PortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
  * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
  * signature should be the following:
- * <pre>
+ * <pre name="code" class="java">
  * public class PortableCacheStore implements GridCacheStore&lt;Integer, GridPortableObject&gt; {
  *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws GridException {
  *         ...
@@ -71,7 +72,23 @@ import java.util.Date;
  *     ...
  * }
  * </pre>
- * Note that only portable classes are converted to {@link org.apache.ignite.portables.PortableObject} format. Following
+ * This behavior can be overridden by setting {@link GridCacheConfiguration#setKeepPortableInStore(boolean)}
+ * flag value to {@code false}. In this case, GridGain will deserialize keys and values stored in portable
+ * format before they are passed to cache store, so that you can use the following cache store signature instead:
+ * <pre name="code" class="java">
+ * public class ObjectsCacheStore implements GridCacheStore&lt;Integer, Person&gt; {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, Person val) throws GridException {
+ *         ...
+ *     }
+ *
+ *     ...
+ * }
+ * </pre>
+ * Note that while this can simplify store implementation in some cases, it will cause performance degradation
+ * due to additional serializations and deserializations of portable objects. You will also need to have key
+ * and value classes on all nodes since portables will be deserialized when store is invoked.
+ * <p>
+ * Note that only portable classes are converted to {@link PortableObject} format. Following
  * types are stored in cache without changes and therefore should not affect cache store signature:
  * <ul>
  *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>

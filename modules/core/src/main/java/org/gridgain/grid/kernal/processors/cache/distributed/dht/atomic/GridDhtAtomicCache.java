@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -21,7 +21,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -743,8 +742,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 success = false;
                             }
                             else {
-                                if (ctx.portableEnabled() && deserializePortable && v instanceof PortableObject)
-                                    v = ((PortableObject)v).deserialize();
+                                if (ctx.portableEnabled() && deserializePortable) {
+                                    key = (K)ctx.unwrapPortableIfNeeded(key, false);
+                                    v = (V)ctx.unwrapPortableIfNeeded(v, false);
+                                }
 
                                 locVals.put(key, v);
                             }

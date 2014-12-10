@@ -13,11 +13,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.portables.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -42,9 +41,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     /** Started grid counter. */
     private static int cnt;
 
-    /** Flag indicating should be cache configured with portables or not.  */
-    private static boolean portables;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -53,15 +49,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-
-        if (portables) {
-            PortableConfiguration portableCfg = new PortableConfiguration();
-
-            portableCfg.setTypeConfigurations(Arrays.asList(
-                new PortableTypeConfiguration(TestObject.class.getName())));
-
-            cfg.setPortableConfiguration(portableCfg);
-        }
 
         // Forth node goes without cache.
         if (cnt < 4)
@@ -128,7 +115,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     public void testAddDataFromMap() throws Exception {
         try {
             cnt = 0;
-            portables = false;
 
             startGrids(2);
 
@@ -170,71 +156,10 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Data loader should correctly load portable entries from HashMap in case of grids with more than one node
-     *  and with GridOptimizedMarshaller that requires serializable.
+     * Gets cache configuration.
      *
-     * @throws Exception If failed.
+     * @return Cache configuration.
      */
-    public void testAddPortableDataFromMap() throws Exception {
-        try {
-            cnt = 0;
-            portables = true;
-
-            startGrids(2);
-
-            Ignite g0 = grid(0);
-
-            IgniteMarshaller marsh = g0.configuration().getMarshaller();
-
-            if (marsh instanceof IgniteOptimizedMarshaller)
-                assertTrue(((IgniteOptimizedMarshaller)marsh).isRequireSerializable());
-            else
-                fail("Expected GridOptimizedMarshaller, but found: " + marsh.getClass().getName());
-
-            IgniteDataLoader<Integer, TestObject> dataLdr = g0.dataLoader(null);
-
-            Map<Integer, TestObject> map = U.newHashMap(KEYS_COUNT);
-
-            for (int i = 0; i < KEYS_COUNT; i ++)
-                map.put(i, new TestObject(i));
-
-            dataLdr.addData(map);
-
-            dataLdr.close();
-
-            Random rnd = new Random();
-
-            GridCache<Integer, TestObject> c = g0.cache(null);
-
-            for (int i = 0; i < 100; i ++) {
-                Integer k = rnd.nextInt(KEYS_COUNT);
-
-                TestObject v = c.get(k);
-
-                assertEquals(k, v.val());
-            }
-
-            GridCacheProjection<Integer, TestObject> c2 = c.keepPortable();
-
-            for (int i = 0; i < 100; i ++) {
-                Integer k = rnd.nextInt(KEYS_COUNT);
-
-                TestObject v = c2.get(k);
-
-                assertEquals(k, v.val());
-            }
-
-        }
-        finally {
-            G.stopAll(true);
-        }
-    }
-
-        /**
-         * Gets cache configuration.
-         *
-         * @return Cache configuration.
-         */
     private GridCacheConfiguration cacheConfiguration() {
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -242,16 +167,13 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (portables)
-            cacheCfg.setPortableEnabled(true);
-
         return cacheCfg;
     }
 
     /**
      *
      */
-    private static class TestObject implements PortableMarshalAware, Serializable {
+    private static class TestObject implements Serializable {
         /** */
         private int val;
 
@@ -280,16 +202,6 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return obj instanceof TestObject && ((TestObject)obj).val == val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
-            writer.writeInt("val", val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            val = reader.readInt("val");
         }
     }
 }

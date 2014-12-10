@@ -17,6 +17,13 @@ import org.gridgain.grid.kernal.*;
  */
 public interface GridInteropAware {
     /**
+     * Sets configuration parameters.
+     *
+     * @param params Configuration parameters.
+     */
+    public void configure(Object... params);
+
+    /**
      * Initializes interop-aware component.
      *
      * @param ctx Context.

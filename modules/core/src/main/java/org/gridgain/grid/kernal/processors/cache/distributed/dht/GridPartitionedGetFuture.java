@@ -12,16 +12,15 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -416,8 +415,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                     colocated.removeIfObsolete(key);
                             }
                             else {
-                                if (cctx.portableEnabled() && deserializePortable && v instanceof PortableObject)
-                                    v = ((PortableObject)v).deserialize();
+                                if (cctx.portableEnabled())
+                                    v = (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable);
 
                                 locVals.put(key, v);
 
@@ -497,12 +496,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 for (GridCacheEntryInfo<K, V> info : infos) {
                     info.unmarshalValue(cctx, cctx.deploy().globalLoader());
 
+                    K key = info.key();
                     V val = info.value();
 
-                    if (cctx.portableEnabled() && deserializePortable && val instanceof PortableObject)
-                        val = ((PortableObject)val).deserialize();
+                    if (cctx.portableEnabled()) {
+                        key = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable);
+                        val = (V)cctx.unwrapPortableIfNeeded(val, !deserializePortable);
+                    }
 
-                    map.put(info.key(), val);
+                    map.put(key, val);
                 }
 
                 return map;

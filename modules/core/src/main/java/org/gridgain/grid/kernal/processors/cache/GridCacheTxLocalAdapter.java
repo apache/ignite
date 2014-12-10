@@ -1051,8 +1051,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         if (val != null) {
                             V val0 = val;
 
-                            if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
-                                val0 = ((PortableObject)val).deserialize();
+                            if (cacheCtx.portableEnabled())
+                                val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
                             map.put(key, val0);
                         }
@@ -1090,8 +1090,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                     V val0 = val;
 
-                                    if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
-                                        val0 = ((PortableObject)val).deserialize();
+                                    if (cacheCtx.portableEnabled())
+                                        val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
                                     map.put(key, val0);
                                 }
@@ -1156,8 +1156,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             if (val != null) {
                                 V val0 = val;
 
-                                if (cacheCtx.portableEnabled() && deserializePortable && val instanceof PortableObject)
-                                    val0 = ((PortableObject)val).deserialize();
+                                if (cacheCtx.portableEnabled())
+                                    val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
                                 map.put(key, val0);
                             }
@@ -1510,9 +1510,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 val = clos.apply(val);
                                         }
 
-                                        if (cacheCtx.portableEnabled() && deserializePortable &&
-                                            val instanceof PortableObject)
-                                            val = ((PortableObject)val).deserialize();
+                                        if (cacheCtx.portableEnabled())
+                                            val = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
                                         retMap.put(key, val);
                                     }
