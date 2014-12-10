@@ -14,7 +14,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -48,8 +47,8 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<A> arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
+        throws GridException {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -61,13 +60,24 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         if (debug)
             logStart(g.log(), getClass(), start);
 
+        return map0(subgrid, arg);
+    }
+
+    /**
+     * Actual map logic.
+     *
+     * @param arg Task execution argument.
+     * @param subgrid Nodes available for this task execution.
+     * @return Map of grid jobs assigned to subgrid node.
+     * @throws GridException If mapping could not complete successfully.
+     */
+    protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
+        throws GridException {
         Collection<UUID> nodeIds = arg.nodes();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 
         try {
-            taskArg = arg.argument();
-
             for (ClusterNode node : subgrid)
                 if (nodeIds.contains(node.id()))
                     map.put(job(taskArg), node);
@@ -75,8 +85,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
             return map;
         }
         finally {
-            if (debug)
-                logMapped(g.log(), getClass(), map.values());
+            logMapped(g.log(), getClass(), map.values());
         }
     }
 
@@ -87,7 +96,13 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         return ComputeJobResultPolicy.WAIT;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Actual reduce logic.
+     *
+     * @param results Job results.
+     * @return Task result.
+     * @throws GridException If reduction or results caused an error.
+     */
     @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws GridException;
 
     /** {@inheritDoc} */
