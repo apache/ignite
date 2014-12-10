@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -414,6 +415,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
+            clearSwap();
+
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
@@ -448,6 +451,8 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
+            clearSwap();
+
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
@@ -463,6 +468,33 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         }
 
         return false;
+    }
+
+    /**
+     * Clears swap entries for evicted partition.
+     */
+    private void clearSwap() {
+        assert state() == EVICTED;
+
+        try {
+            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> it = cctx.swap().iterator(id, false);
+
+            if (it != null) {
+                // We can safely remove these values because no entries will be created for evicted partition.
+                while (it.hasNext()) {
+                    Map.Entry<byte[], GridCacheSwapEntry<V>> entry = it.next();
+
+                    byte[] keyBytes = entry.getKey();
+
+                    K key = cctx.marshaller().unmarshal(keyBytes, cctx.deploy().globalLoader());
+
+                    cctx.swap().remove(key, keyBytes);
+                }
+            }
+        }
+        catch (GridException e) {
+            U.error(log, "Failed to clear swap for evicted partition: " + this, e);
+        }
     }
 
     /**
