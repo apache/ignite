@@ -2926,6 +2926,11 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> GridCache<K, V> jcache(@Nullable String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridCache<?, ?>> caches() {
         guard();
 

@@ -11,6 +11,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.fs.IgniteFsConfiguration;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
@@ -205,9 +206,9 @@ public interface Ignite extends AutoCloseable {
      * @param <V> Value type.
      * @param name Cache name.
      * @return Cache instance for given name.
-     * @see org.apache.ignite.fs.IgniteFsConfiguration
-     * @see org.apache.ignite.fs.IgniteFsConfiguration#getDataCacheName()
-     * @see org.apache.ignite.fs.IgniteFsConfiguration#getMetaCacheName()
+     * @see IgniteFsConfiguration
+     * @see IgniteFsConfiguration#getDataCacheName()
+     * @see IgniteFsConfiguration#getMetaCacheName()
      */
     public <K, V> GridCache<K, V> cache(@Nullable String name);
 
@@ -215,12 +216,21 @@ public interface Ignite extends AutoCloseable {
      * Gets all configured caches.
      * Caches that are used as GGFS meta and data caches will not be returned in resulting collection.
      *
-     * @see org.apache.ignite.fs.IgniteFsConfiguration
-     * @see org.apache.ignite.fs.IgniteFsConfiguration#getDataCacheName()
-     * @see org.apache.ignite.fs.IgniteFsConfiguration#getMetaCacheName()
+     * @see IgniteFsConfiguration
+     * @see IgniteFsConfiguration#getDataCacheName()
+     * @see IgniteFsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
     public Collection<GridCache<?, ?>> caches();
+
+    /**
+     * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
+     * implementation of {@code JCache (JSR 107)} specification.
+     *
+     * @param name Cache name.
+     * @return Instance of the cache for the specified name.
+     */
+    public <K, V> GridCache<K, V> jcache(@Nullable String name);
 
     /**
      * Gets grid transactions facade.
