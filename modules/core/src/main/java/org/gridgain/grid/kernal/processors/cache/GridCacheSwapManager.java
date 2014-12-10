@@ -580,7 +580,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(GridCacheMapEntry<K, V> entry, boolean locked) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry, boolean locked) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -592,7 +592,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value address.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> readOffheapPointer(GridCacheMapEntry<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readOffheapPointer(GridCacheEntryEx<K, V> entry) throws GridException {
         if (!offheapEnabled)
             return null;
 
@@ -631,7 +631,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws GridException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> readAndRemove(GridCacheMapEntry<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readAndRemove(GridCacheEntryEx<K, V> entry) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -651,7 +651,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         final GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
-        ArrayList<K> keysList = new ArrayList<>(keys);
+        Collection<K> keysList = new ArrayList<>(keys);
         final Collection<GridCacheBatchSwapEntry<K, V>> res = new ArrayList<>(keys.size());
 
         // First try removing from offheap.
@@ -831,7 +831,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param keyBytes Key bytes.
      * @throws GridException If failed.
      */
-    void remove(final K key, byte[] keyBytes) throws GridException {
+    public void remove(final K key, byte[] keyBytes) throws GridException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
@@ -1089,10 +1089,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             @Override protected boolean onHasNext() {
                 return !done;
-            }
-
-            @Override protected void onRemove() {
-                throw new UnsupportedOperationException();
             }
 
             @Override protected void onClose() throws GridException {

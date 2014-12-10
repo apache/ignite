@@ -238,6 +238,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         // Get entry info after candidate is added.
                         if (req.needPreloadKey(i)) {
+                            entry.unswap();
+
                             GridCacheEntryInfo<K, V> info = entry.info();
 
                             if (info != null && !info.isNew() && !info.isDeleted())

@@ -141,10 +141,10 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
     }
 
     /**
-     * Creates test-purposed GridGgfsConfiguration.
+     * Creates test-purposed IgniteFsConfiguration.
      *
      * @param endpointCfg Optional REST endpoint configuration.
-     * @return test-purposed GridGgfsConfiguration.
+     * @return test-purposed IgniteFsConfiguration.
      */
     protected IgniteFsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
         IgniteFsConfiguration ggfsConfiguration = new IgniteFsConfiguration();
