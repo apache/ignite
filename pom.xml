@@ -1093,22 +1093,24 @@
                                             </fileset>
                                         </copy>
 
-                                        <taskdef name="doctask"
-                                                 classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+                                        <!-- todo IGNITE-40 Uncomment javadoc checking. -->
 
-                                        <doctask css="dotted" dir="target/javadoc/core">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
-                                        </doctask>
+                                        <!--<taskdef name="doctask"-->
+                                                 <!--classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>-->
 
-                                        <doctask css="dotted" dir="target/javadoc/client">
-                                            <include name="**/*.html"/>
-                                            <exclude name="overview-frame.html"/>
-                                            <exclude name="allclasses-frame.html"/>
-                                            <exclude name="**/class-use/*"/>
-                                        </doctask>
+                                        <!--<doctask css="dotted" dir="target/javadoc/core">-->
+                                            <!--<include name="**/*.html"/>-->
+                                            <!--<exclude name="overview-frame.html"/>-->
+                                            <!--<exclude name="allclasses-frame.html"/>-->
+                                            <!--<exclude name="**/class-use/*"/>-->
+                                        <!--</doctask>-->
+
+                                        <!--<doctask css="dotted" dir="target/javadoc/client">-->
+                                            <!--<include name="**/*.html"/>-->
+                                            <!--<exclude name="overview-frame.html"/>-->
+                                            <!--<exclude name="allclasses-frame.html"/>-->
+                                            <!--<exclude name="**/class-use/*"/>-->
+                                        <!--</doctask>-->
                                     </target>
                                 </configuration>
                             </execution>
