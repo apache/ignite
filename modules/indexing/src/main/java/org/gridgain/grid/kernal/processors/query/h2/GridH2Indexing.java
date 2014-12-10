@@ -1928,7 +1928,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             catch (ClassCastException e) {
                 throw new GridException("Failed to convert key to SQL type. " +
                     "Please make sure that you always store each value type with the same key type or disable " +
-                    "'defaultIndexFixedTyping' property on GridH2IndexingSpi.", e);
+                    "'defaultIndexFixedTyping' property.", e);
             }
         }
 

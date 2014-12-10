@@ -25,7 +25,7 @@ import java.util.*;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  *
- *  * Here is a Java example on how to configure grid with {@code GridH2IndexingSpi}.
+ * Here is a Java example on how to configure SPI.
  * <pre name="code" class="java">
  * GridIndexingSpi spi = new MyIndexingSpi();
  *
@@ -37,7 +37,7 @@ import java.util.*;
  * // Starts grid.
  * G.start(cfg);
  * </pre>
- * Here is an example of how to configure {@code GridH2IndexingSpi} from Spring XML configuration file.
+ * Here is an example of how to configure SPI from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name=&quot;indexingSpi&quot;&gt;
  *     &lt;bean class=&quot;com.example.MyIndexingSpi&quot;&gt;

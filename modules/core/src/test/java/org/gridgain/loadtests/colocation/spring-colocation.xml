@@ -45,19 +45,6 @@
 
         <property name="marshalLocalJobs" value="false"/>
 
-        <!--
-            Allow indexing SPI to index primitive values.
-        -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <!-- Index primitives. -->
-                    <property name="defaultIndexPrimitiveKey" value="false"/>
-                    <property name="defaultIndexFixedTyping" value="true"/>
-                </bean>
-            </list>
-        </property>
-
         <property name="collisionSpi">
             <bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">
                 <property name="parallelJobsNumber"><util:constant static-field="java.lang.Integer.MAX_VALUE"/></property>

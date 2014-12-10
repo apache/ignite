@@ -9,12 +9,14 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.apache.ignite.configuration.*;
+
 import java.lang.annotation.*;
 
 /**
  * Annotates public static methods in classes to be used in SQL queries as custom functions.
  * Annotated class must be registered in H2 indexing SPI using following method
- * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(java.lang.Class[])}.
+ * {@link GridQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
  * <p>
  * Example usage:
  * <pre name="code" class="java">

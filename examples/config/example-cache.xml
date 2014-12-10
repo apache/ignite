@@ -191,15 +191,6 @@
                 </property>
             </bean>
         </property>
-
-        <!-- Allow indexing SPI to index primitive values (required for CachePopularNumbersExample). -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <property name="defaultIndexPrimitiveKey" value="true"/>
-                </bean>
-            </list>
-        </property>
     </bean>
 
     <!-- Template for all example cache configurations. -->
@@ -215,5 +206,13 @@
 
         <!-- Set to true to enable indexing for query examples, default value is false. -->
         <property name="queryIndexEnabled" value="true"/>
+
+        <!-- Allow to index primitive values. -->
+        <property name="queryConfiguration">
+            <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                <!-- Index primitives. -->
+                <property name="indexPrimitiveKey" value="true"/>
+            </bean>
+        </property>
     </bean>
 </beans>

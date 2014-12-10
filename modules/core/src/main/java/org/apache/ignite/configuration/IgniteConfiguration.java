@@ -2161,13 +2161,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured indexing SPI implementations. If not provided,
-     * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} will be used.
-     * <p>
-     * Note that user can provide one or multiple instances of this SPI (and select later which one
-     * is used in a particular context).
+     * Should return fully configured indexing SPI implementations.
      *
-     * @return Indexing SPI implementation or <tt>null</tt> to use default implementation.
+     * @return Indexing SPI implementation.
      */
     public GridIndexingSpi getIndexingSpi() {
         return indexingSpi;
