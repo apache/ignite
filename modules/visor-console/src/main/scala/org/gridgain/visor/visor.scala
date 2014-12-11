@@ -758,7 +758,7 @@ object visor extends VisorTag {
             for (i <- 0 until Int.MaxValue if mem.putIfAbsent(prefix + i, s) == null)
                 return prefix + i
 
-            throw new GridRuntimeException("No more memory.")
+            throw new IgniteException("No more memory.")
         }
     }
 
@@ -791,7 +791,7 @@ object visor extends VisorTag {
         for (i <- 0 until Int.MaxValue if mem.putIfAbsent(prefix + i, s) == null)
             return prefix + i
 
-        throw new GridRuntimeException("No more memory.")
+        throw new IgniteException("No more memory.")
     }
 
     /**

@@ -11,12 +11,10 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.Ignite
 import org.gridgain.scalar._
 import scalar._
 import org.apache.ignite._
-import org.gridgain.grid._
-import cache._
+import org.gridgain.grid.cache._
 import GridCacheMode._
 import affinity._
 import java.util._

@@ -9,7 +9,6 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
