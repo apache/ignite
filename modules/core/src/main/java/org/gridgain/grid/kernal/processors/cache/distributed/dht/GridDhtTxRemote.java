@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -243,9 +243,9 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     /**
      * @param entry Write entry.
      * @param ldr Class loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws GridException {
+    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();

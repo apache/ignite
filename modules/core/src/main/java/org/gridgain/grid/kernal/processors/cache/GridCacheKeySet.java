@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -80,8 +81,8 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
         try {
             e.removex();
         }
-        catch (GridException ex) {
-            throw new GridRuntimeException(ex);
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
         }
 
         return true;

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -20,7 +21,7 @@ public class GridHadoopStartup {
     /**
      * @param args Arguments.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         G.start("config/hadoop/default-config.xml");
     }
 

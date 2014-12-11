@@ -429,8 +429,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
         }
-        catch (GridException e) {
-            onDone(new GridException("Failed to get topology snapshot for update operation: " + this, e));
+        catch (IgniteCheckedException e) {
+            onDone(new IgniteCheckedException("Failed to get topology snapshot for update operation: " + this, e));
 
             return;
         }
@@ -746,7 +746,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
                     onDone(new GridCacheReturn<V>(null, true));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onDone(addFailedKeys(req.keys(), e));
             }
         }
@@ -777,7 +777,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
                     cctx.io().send(req.nodeId(), req);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     addFailedKeys(req.keys(), e);
 
                     removeMapping(req.nodeId());
@@ -821,7 +821,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param err Error cause.
      * @return Root {@link GridCachePartialUpdateException}.
      */
-    private synchronized GridException addFailedKeys(Collection<K> failedKeys, Throwable err) {
+    private synchronized IgniteCheckedException addFailedKeys(Collection<K> failedKeys, Throwable err) {
         GridCachePartialUpdateException err0 = this.err;
 
         if (err0 == null)

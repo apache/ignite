@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.visor.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -20,8 +20,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 import static org.gridgain.grid.kernal.visor.compute.VisorComputeMonitoringHolder.*;
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task to run gc on nodes.
@@ -33,7 +33,7 @@ public class VisorComputeToggleMonitoringTask extends
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
         Collection<Boolean> toggles = new HashSet<>();
 
         for (ComputeJobResult res: results)
@@ -64,7 +64,7 @@ public class VisorComputeToggleMonitoringTask extends
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) throws GridException {
+        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
             if (checkExplicitTaskMonitoring(g))
                 return true;
             else {

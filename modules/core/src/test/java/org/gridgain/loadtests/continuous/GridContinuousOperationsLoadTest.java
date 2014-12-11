@@ -74,14 +74,14 @@ public class GridContinuousOperationsLoadTest {
             final GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)
-                throw new GridException("Cache is not configured: " + cacheName);
+                throw new IgniteCheckedException("Cache is not configured: " + cacheName);
 
             // Continuous query manager, used to monitor queue size.
             final GridCacheContinuousQueryManager contQryMgr =
                 ((GridCacheAdapter)((GridCacheProxyImpl)cache).cache()).context().continuousQueries();
 
             if (contQryMgr == null)
-                throw new GridException("Could not access GridCacheContinuousQueryManager");
+                throw new IgniteCheckedException("Could not access GridCacheContinuousQueryManager");
 
             final AtomicBoolean stop = new AtomicBoolean(); // Stop flag.
             final AtomicLong cbCntr = new AtomicLong();     // Callback counter.

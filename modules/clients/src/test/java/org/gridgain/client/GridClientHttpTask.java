@@ -10,8 +10,8 @@
 package org.gridgain.client;
 
 import net.sf.json.*;
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ public class GridClientHttpTask extends ComputeTaskSplitAdapter<String, Integer>
     private final GridClientTcpTask delegate = new GridClientTcpTask();
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
         JSON json = JSONSerializer.toJSON(arg);
 
         List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
@@ -37,12 +37,12 @@ public class GridClientHttpTask extends ComputeTaskSplitAdapter<String, Integer>
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return delegate.reduce(results);
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         if (res.getException() != null)
             return FAILOVER;
 

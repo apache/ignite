@@ -51,9 +51,9 @@ public interface GridHadoopJobInfo extends Serializable {
      * @param jobId Job ID.
      * @param log Logger.
      * @return Job.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws GridException;
+    GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException;
 
     /**
      * @return Number of reducers configured for job.

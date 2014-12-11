@@ -86,9 +86,9 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
                 assert false : "Job was not interrupted.";
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(InterruptedException.class))
-                    throw new GridException("Test run has been interrupted.", e);
+                    throw new IgniteCheckedException("Test run has been interrupted.", e);
 
                 info("Caught expected exception: " + e.getMessage());
             }
@@ -122,7 +122,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static final class GridCancelledJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             X.println("Executing job.");
 
             try {
@@ -133,10 +133,10 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
                     Thread.sleep(1000);
                 }
                 catch (InterruptedException e1) {
-                    throw new GridException("Unexpected exception: ", e1);
+                    throw new IgniteCheckedException("Unexpected exception: ", e1);
                 }
 
-                throw new GridException("Job got interrupted while waiting for cancellation.");
+                throw new IgniteCheckedException("Job got interrupted while waiting for cancellation.");
             }
             finally {
                 X.println("Finished job.");

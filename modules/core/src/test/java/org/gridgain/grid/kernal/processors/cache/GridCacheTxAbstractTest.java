@@ -241,7 +241,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
                 try {
                     tx.rollback();
                 }
-                catch (GridException ex) {
+                catch (IgniteCheckedException ex) {
                     error("Failed to rollback optimistic failure: " + tx, ex);
 
                     throw ex;
@@ -279,7 +279,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
     /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
     protected void checkRollback(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
         throws Exception {
@@ -290,7 +290,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
      * @param map Map to check.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
     protected void checkRollback(ConcurrentMap<Integer, String> map, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation) throws Exception {
@@ -393,7 +393,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
     /**
      * Checks integrity of all caches after tests.
      *
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     protected void finalChecks() throws Exception {

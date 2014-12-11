@@ -32,9 +32,9 @@ public class ComputeFailoverExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
@@ -119,7 +119,7 @@ public class ComputeFailoverExample {
 
                 return sum;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
             }
         }

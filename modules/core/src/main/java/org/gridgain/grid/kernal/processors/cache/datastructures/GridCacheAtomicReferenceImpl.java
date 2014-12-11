@@ -64,7 +64,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
             if (ref == null)
-                throw new GridException("Failed to find atomic reference with given name: " + name);
+                throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
 
             return ref.get();
         }
@@ -108,21 +108,21 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     }
 
     /** {@inheritDoc} */
-    @Override public T get() throws GridException {
+    @Override public T get() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(getCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void set(T val) throws GridException {
+    @Override public void set(T val) throws IgniteCheckedException {
         checkRemoved();
 
         CU.outTx(internalSet(val), ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, T newVal) throws GridException {
+    @Override public boolean compareAndSet(T expVal, T newVal) throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
@@ -192,7 +192,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
-                        throw new GridException("Failed to find atomic reference with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
 
                     ref.set(val);
 
@@ -231,7 +231,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
-                        throw new GridException("Failed to find atomic reference with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
 
                     if (!expValPred.apply(ref.get())) {
                         tx.setRollbackOnly();
@@ -263,9 +263,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /**
      * Check removed status.
      *
-     * @throws GridException If removed.
+     * @throws IgniteCheckedException If removed.
      */
-    private void checkRemoved() throws GridException {
+    private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
             throw new GridCacheDataStructureRemovedException("Atomic reference was removed from cache: " + name);
     }
@@ -297,7 +297,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
             return t.get1().dataStructures().atomicReference(t.get2(), null, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {

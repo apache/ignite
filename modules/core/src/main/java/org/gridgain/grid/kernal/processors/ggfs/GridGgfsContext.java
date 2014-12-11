@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.util.typedef.*;
@@ -56,7 +56,7 @@ public class GridGgfsContext {
      * @param dataMgr Data manager.
      * @param srvMgr Server manager.
      * @param fragmentizerMgr Fragmentizer manager.
-     * @throws GridException If GGFs context instantiation is failed.
+     * @throws IgniteCheckedException If GGFs context instantiation is failed.
      */
     public GridGgfsContext(
         GridKernalContext ctx,
@@ -65,7 +65,7 @@ public class GridGgfsContext {
         GridGgfsDataManager dataMgr,
         GridGgfsServerManager srvMgr,
         GridGgfsFragmentizerManager fragmentizerMgr
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         this.ctx = ctx;
         this.cfg = cfg;
 
@@ -138,10 +138,10 @@ public class GridGgfsContext {
      * @param topic Topic.
      * @param msg Message.
      * @param plc Policy.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void send(UUID nodeId, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 
@@ -153,10 +153,10 @@ public class GridGgfsContext {
      * @param topic Topic.
      * @param msg Message.
      * @param plc Policy.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void send(ClusterNode node, Object topic, GridGgfsCommunicationMessage msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(node.id()))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -35,9 +35,9 @@ public interface GridRestProtocol {
      * Starts protocol.
      *
      * @param hnd Command handler.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void start(GridRestProtocolHandler hnd) throws GridException;
+    public abstract void start(GridRestProtocolHandler hnd) throws IgniteCheckedException;
 
     /**
      * Grid start callback.

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -48,7 +48,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCacheSqlMetadata run(String cacheName) throws GridException {
+        @Override protected GridCacheSqlMetadata run(String cacheName) throws IgniteCheckedException {
             GridCache<Object, Object> cache = g.cachex(cacheName);
 
             if (cache != null) {
@@ -57,7 +57,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
                 return F.first(queries.sqlMetadata());
             }
 
-            throw new GridException("Cache not found: " + escapeName(cacheName));
+            throw new IgniteCheckedException("Cache not found: " + escapeName(cacheName));
         }
 
         /** {@inheritDoc} */

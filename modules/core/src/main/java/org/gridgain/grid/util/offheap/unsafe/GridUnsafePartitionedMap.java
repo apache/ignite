@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
@@ -268,12 +269,12 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 try {
                     advance();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace(); // Should never happen.
                 }
             }
 
-            private void advance() throws GridException {
+            private void advance() throws IgniteCheckedException {
                 curIt = null;
 
                 while (p < parts) {
@@ -288,7 +289,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 curIt = null;
             }
 
-            @Override protected IgniteBiTuple<byte[], byte[]> onNext() throws GridException {
+            @Override protected IgniteBiTuple<byte[], byte[]> onNext() throws IgniteCheckedException {
                 if (curIt == null)
                     throw new NoSuchElementException();
 
@@ -311,7 +312,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 throw new UnsupportedOperationException();
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 if (curIt != null)
                     curIt.close();
             }
@@ -331,12 +332,12 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 try {
                     advance();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace(); // Should never happen.
                 }
             }
 
-            private void advance() throws GridException {
+            private void advance() throws IgniteCheckedException {
                 curIt = null;
 
                 while (p < parts) {
@@ -351,7 +352,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 curIt = null;
             }
 
-            @Override protected T onNext() throws GridException {
+            @Override protected T onNext() throws IgniteCheckedException {
                 if (curIt == null)
                     throw new NoSuchElementException();
 
@@ -374,7 +375,7 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
                 throw new UnsupportedOperationException();
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 if (curIt != null)
                     curIt.close();
             }

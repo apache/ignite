@@ -145,7 +145,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         customInjector = new GridResourceCustomInjector(log, ioc);
 
         customInjector.setExecutorInjector(execInjector);
@@ -199,10 +199,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param dep Deployment.
      * @param target Target object.
      * @param annCls Annotation class.
-     * @throws GridException If failed to execute annotated methods.
+     * @throws IgniteCheckedException If failed to execute annotated methods.
      */
     public void invokeAnnotated(GridDeployment dep, Object target, Class<? extends Annotation> annCls)
-        throws GridException {
+        throws IgniteCheckedException {
         if (target != null) {
             Collection<Method> mtds = getMethodsWithAnnotation(dep, target.getClass(), annCls);
 
@@ -214,7 +214,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                         mtd.invoke(target);
                     }
                     catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
-                        throw new GridException("Failed to invoke annotated method [job=" + target + ", mtd=" + mtd +
+                        throw new IgniteCheckedException("Failed to invoke annotated method [job=" + target + ", mtd=" + mtd +
                             ", ann=" + annCls + ']', e);
                     }
                 }
@@ -228,9 +228,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param dep Deployment.
      * @param depCls Deployed class.
      * @param target Target instance to inject into.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void inject(GridDeployment dep, Class<?> depCls, Object target) throws GridException {
+    public void inject(GridDeployment dep, Class<?> depCls, Object target) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + target);
 
@@ -259,9 +259,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      *
      * @param obj Object.
      * @param cacheName Cache name to inject.
-     * @throws GridException If failed to inject.
+     * @throws IgniteCheckedException If failed to inject.
      */
-    public void injectCacheName(Object obj, String cacheName) throws GridException {
+    public void injectCacheName(Object obj, String cacheName) throws IgniteCheckedException {
         assert obj != null;
 
         if (log.isDebugEnabled())
@@ -275,9 +275,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object to inject.
-     * @throws GridException If failed to inject.
+     * @throws IgniteCheckedException If failed to inject.
      */
-    public void injectGeneric(Object obj) throws GridException {
+    public void injectGeneric(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
         if (log.isDebugEnabled())
@@ -303,9 +303,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void cleanupGeneric(Object obj) throws GridException {
+    public void cleanupGeneric(Object obj) throws IgniteCheckedException {
         if (obj != null) {
             if (log.isDebugEnabled())
                 log.debug("Cleaning up resources: " + obj);
@@ -337,10 +337,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param job Grid job to inject resources to.
      * @param ses Current task session.
      * @param jobCtx Job context.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void inject(GridDeployment dep, Class<?> taskCls, ComputeJob job, ComputeTaskSession ses,
-        GridJobContextImpl jobCtx) throws GridException {
+        GridJobContextImpl jobCtx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + job);
 
@@ -365,10 +365,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param job Job.
      * @param ses Session.
      * @param jobCtx Job context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void injectToJob(GridDeployment dep, Class<?> taskCls, Object job, ComputeTaskSession ses,
-        GridJobContextImpl jobCtx) throws GridException {
+        GridJobContextImpl jobCtx) throws IgniteCheckedException {
         Class<? extends Annotation>[] filtered = ioc.filter(dep, job, JOB_INJECTIONS);
 
         if (filtered.length > 0) {
@@ -432,10 +432,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param ses Grid task session.
      * @param balancer Load balancer.
      * @param mapper Continuous task mapper.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void inject(GridDeployment dep, ComputeTask<?, ?> task, GridTaskSessionImpl ses,
-        ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws GridException {
+        ComputeLoadBalancer balancer, ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + task);
 
@@ -504,9 +504,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * Injects held resources into given SPI implementation.
      *
      * @param spi SPI implementation.
-     * @throws GridException Throw in case of any errors.
+     * @throws IgniteCheckedException Throw in case of any errors.
      */
-    public void inject(IgniteSpi spi) throws GridException {
+    public void inject(IgniteSpi spi) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + spi);
 
@@ -533,9 +533,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * method injects {@code null}s into SPI implementation.
      *
      * @param spi SPI implementation.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void cleanup(IgniteSpi spi) throws GridException {
+    public void cleanup(IgniteSpi spi) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + spi);
 
@@ -560,9 +560,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * Injects held resources into given lifecycle bean.
      *
      * @param lifecycleBean Lifecycle bean.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void inject(LifecycleBean lifecycleBean) throws GridException {
+    public void inject(LifecycleBean lifecycleBean) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + lifecycleBean);
 
@@ -589,9 +589,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * method injects {@code null}s into lifecycle bean.
      *
      * @param lifecycleBean Lifecycle bean.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void cleanup(LifecycleBean lifecycleBean) throws GridException {
+    public void cleanup(LifecycleBean lifecycleBean) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + lifecycleBean);
 
@@ -617,9 +617,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * Injects resources into service.
      *
      * @param svc Service to inject.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void inject(ManagedService svc) throws GridException {
+    public void inject(ManagedService svc) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + svc);
 
@@ -646,9 +646,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * method injects {@code null}s into service bean.
      *
      * @param svc Service.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void cleanup(ManagedService svc) throws GridException {
+    public void cleanup(ManagedService svc) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + svc);
 
@@ -680,10 +680,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param rsrc Resource to inject.
      * @param dep Deployment.
      * @param depCls Deployed class.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
     public void injectBasicResource(Object target, Class<? extends Annotation> annCls, Object rsrc,
-        GridDeployment dep, Class<?> depCls) throws GridException {
+        GridDeployment dep, Class<?> depCls) throws IgniteCheckedException {
         // Safety.
         assert !(rsrc instanceof GridResourceInjector) : "Invalid injection.";
 
@@ -699,10 +699,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param target Target object.
      * @param annCls Setter annotation.
      * @param rsrc Resource to inject.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
     public void injectBasicResource(Object target, Class<? extends Annotation> annCls, Object rsrc)
-        throws GridException {
+        throws IgniteCheckedException {
         // Safety.
         assert !(rsrc instanceof GridResourceInjector) : "Invalid injection.";
 
@@ -762,9 +762,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      *
      * @param target Target object.
      * @return Original object wrapped by proxy.
-     * @throws GridException If unwrap failed.
+     * @throws IgniteCheckedException If unwrap failed.
      */
-    private Object unwrapTarget(Object target) throws GridException {
+    private Object unwrapTarget(Object target) throws IgniteCheckedException {
         return rsrcCtx != null ? rsrcCtx.unwrapTarget(target) : target;
     }
 

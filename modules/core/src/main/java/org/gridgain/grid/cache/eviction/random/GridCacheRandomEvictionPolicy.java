@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.eviction.random;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -96,7 +97,7 @@ public class GridCacheRandomEvictionPolicy<K, V> implements GridCacheEvictionPol
         try {
             return entry.peek(F.asList(GLOBAL)) == null;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(null, e.getMessage(), e);
 
             assert false : "Should never happen: " + e;

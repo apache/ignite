@@ -8,9 +8,9 @@
  */
 package org.gridgain.grid.gridify;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -23,14 +23,14 @@ public class GridTestGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument
     public static final String TASK_NAME = "org.gridgain.grid.gridify.GridTestGridifyTask";
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
         assert arg.getMethodParameters().length == 1;
 
         return Collections.singletonList(new GridTestGridifyJob((String)arg.getMethodParameters()[0]));
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() == 1;
 
         return results.get(0).getData();

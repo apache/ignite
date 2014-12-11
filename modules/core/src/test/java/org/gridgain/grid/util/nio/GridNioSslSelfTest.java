@@ -8,9 +8,9 @@
  */
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.nio.ssl.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import javax.net.ssl.*;
@@ -30,12 +30,12 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected Socket createSocket() throws GridException {
+    @Override protected Socket createSocket() throws IgniteCheckedException {
         try {
             return sslCtx.getSocketFactory().createSocket();
         }
         catch (Exception e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
 /**
@@ -57,7 +57,7 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
         try {
             return cctx.cache().overflowSize();
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             return -1;
         }
     }

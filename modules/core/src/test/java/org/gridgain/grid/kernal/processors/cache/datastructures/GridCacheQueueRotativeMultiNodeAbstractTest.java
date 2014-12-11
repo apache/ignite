@@ -159,7 +159,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
                 try {
                     assert grid(1).compute().call(new TakeJob(queueName));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     error(e.getMessage(), e);
                 }
             }
@@ -209,7 +209,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -261,7 +261,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -313,7 +313,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
@@ -361,7 +361,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws GridException {
+        @Override public Boolean call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
@@ -377,7 +377,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
                 queue.take();
             }
-            catch (GridRuntimeException e) {
+            catch (IgniteException e) {
                 ignite.log().info("Caught expected exception: " + e.getMessage());
             }
 
@@ -409,7 +409,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws GridException {
+        @Override public Boolean call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");

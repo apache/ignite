@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
@@ -171,7 +172,7 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
      * @param taskInfo Task info.
      * @param gridJob Grid Hadoop job.
      */
-    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob gridJob) throws GridException {
+    public GridHadoopTestTaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob gridJob) throws IgniteCheckedException {
         super(taskInfo, gridJob, gridJob.id(), null, jobConfDataInput(gridJob));
     }
 
@@ -180,9 +181,9 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
      *
      * @param job Job.
      * @return DataInput with JobConf.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static DataInput jobConfDataInput(GridHadoopJob job) throws GridException {
+    private static DataInput jobConfDataInput(GridHadoopJob job) throws IgniteCheckedException {
         JobConf jobConf = new JobConf();
 
         for (Map.Entry<String, String> e : ((GridHadoopDefaultJobInfo)job.info()).properties().entrySet())
@@ -194,7 +195,7 @@ class GridHadoopTestTaskContext extends GridHadoopV2TaskContext {
             jobConf.write(new DataOutputStream(buf));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         return new DataInputStream(new ByteArrayInputStream(buf.toByteArray()));

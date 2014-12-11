@@ -36,9 +36,9 @@ public class MessagingPingPongExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         // Game is played over the default grid.
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
@@ -73,7 +73,7 @@ public class MessagingPingPongExample {
 
                         return false; // Unsubscribe.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new GridClosureException(e);
                     }
                 }
@@ -105,7 +105,7 @@ public class MessagingPingPongExample {
 
                         return true; // Continue listening.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new GridClosureException(e);
                     }
                 }

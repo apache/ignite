@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
 /**
@@ -23,7 +23,7 @@ public class GridNoopGgfsHelper implements GridGgfsHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException {
+    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws IgniteCheckedException {
         // No-op.
     }
 

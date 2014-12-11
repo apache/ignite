@@ -211,7 +211,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
             doWarmup(ignites);
         }
         catch (Exception e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
         finally {
             for (Ignite ignite : ignites)
@@ -288,7 +288,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
                             }
 
                             default:
-                                throw new GridException("Unsupported warmup method: " + warmupMethod);
+                                throw new IgniteCheckedException("Unsupported warmup method: " + warmupMethod);
                         }
 
                         futs.add(svc.submit(call));

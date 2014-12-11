@@ -10,10 +10,11 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import mx4j.tools.adaptor.http.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.communication.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
@@ -77,7 +78,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
             mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
         }
         catch (MalformedObjectNameException e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -203,7 +204,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         queue.offer(msg);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log().error("Unable to send message.", e);
 
                     fail("Unable to send message: " + e.getMessage());
@@ -291,7 +292,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                                 spis.get(from.id()).sendMessage(node, msg);
                             }
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.warning(">>> Oops, unable to send message (safe to ignore).", e);
                         }
 
@@ -366,7 +367,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         spi.sendMessage(to, msg);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fail("Unable to send message: " + e.getMessage());
                 }
             }

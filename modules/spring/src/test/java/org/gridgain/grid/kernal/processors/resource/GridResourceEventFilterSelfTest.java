@@ -155,7 +155,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
     @ComputeTaskName("name")
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -171,7 +171,7 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

@@ -52,7 +52,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
 
                 txCnt.increment();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
         }
@@ -189,7 +189,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
 
@@ -205,7 +205,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
                 }
             });
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IllegalStateException(e);
         }
     }

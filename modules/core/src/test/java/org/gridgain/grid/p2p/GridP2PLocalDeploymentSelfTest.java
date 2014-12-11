@@ -221,7 +221,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
-            throws GridException {
+            throws IgniteCheckedException {
 
             taskRsrc = rsrc;
 
@@ -232,11 +232,11 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                     return Collections.singletonMap(new TestJob(arg), node);
             }
 
-            throw new GridException("Failed to find target node: " + arg);
+            throw new IgniteCheckedException("Failed to find target node: " + arg);
         }
 
         /** {@inheritDoc} */
-        @Override public int[] reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             assert taskRsrc == rsrc;
@@ -263,7 +263,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             public TestJob(UUID nodeId) { super(nodeId); }
 
             /** {@inheritDoc} */
-            @Override public Serializable execute() throws GridException {
+            @Override public Serializable execute() throws IgniteCheckedException {
                 assert locNodeId.equals(argument(0)) == true;
 
                 jobRsrc = rsrc;

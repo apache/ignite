@@ -73,7 +73,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
                 assert false; // Timeout exception must be thrown.
             }
-            catch (GridException ignored) {
+            catch (IgniteCheckedException ignored) {
                 // Throwing exception is a correct behaviour.
             }
         }
@@ -115,7 +115,7 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
                 assert false; // Timeout exception must be thrown.
             }
-            catch (GridException ignored) {
+            catch (IgniteCheckedException ignored) {
                 // Throwing exception is a correct behaviour.
             }
         }

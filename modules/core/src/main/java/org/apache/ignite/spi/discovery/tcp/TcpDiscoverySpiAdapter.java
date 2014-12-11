@@ -417,9 +417,9 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param sock Socket.
      * @param msg Message.
      * @throws IOException If IO failed or write timed out.
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException, GridException {
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException, IgniteCheckedException {
         writeToSocket(sock, msg, new GridByteArrayOutputStream(8 * 1024)); // 8K.
     }
 
@@ -430,11 +430,11 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param msg Message.
      * @param bout Byte array output stream.
      * @throws IOException If IO failed or write timed out.
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, GridByteArrayOutputStream bout)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert sock != null;
         assert msg != null;
         assert bout != null;
@@ -523,9 +523,9 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param timeout Socket timeout for this operation.
      * @return Message.
      * @throws IOException If IO failed or read timed out.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout) throws IOException, GridException {
+    protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout) throws IOException, IgniteCheckedException {
         assert sock != null;
 
         int oldTimeout = sock.getSoTimeout();
@@ -535,7 +535,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
 
             return marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
                     "in long GC pauses on remote node. Current timeout: " + timeout + '.');
@@ -984,10 +984,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param sock Socket.
          * @param msg Message.
          * @throws IOException If IO failed.
-         * @throws GridException If marshalling failed.
+         * @throws IgniteCheckedException If marshalling failed.
          */
         protected final void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg)
-            throws IOException, GridException {
+            throws IOException, IgniteCheckedException {
             bout.reset();
 
             TcpDiscoverySpiAdapter.this.writeToSocket(sock, msg, bout);

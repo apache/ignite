@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -33,7 +33,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart)
-        throws GridException {
+        throws IgniteCheckedException {
         assert restart != null;
 
         this.restart = restart;
@@ -63,7 +63,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 
@@ -75,7 +75,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             if (restart)
                 new Thread(new Runnable() {
                     @Override public void run() {

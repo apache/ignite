@@ -9,22 +9,22 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.eviction.fifo.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
@@ -165,7 +165,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 GridCache<Integer, Integer> c = grid(0).cache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Nio specific exception.
  */
-public class GridNioException extends GridException {
+public class GridNioException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

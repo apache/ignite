@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -37,7 +37,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean offer(T item) throws GridRuntimeException {
+    @Override public boolean offer(T item) throws IgniteException {
         try {
             Long idx = transformHeader(new AddClosure(id, 1));
 
@@ -71,14 +71,14 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             return true;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws GridRuntimeException {
+    @Nullable @Override public T poll() throws IgniteException {
         try {
             while (true) {
                 Long idx = transformHeader(new PollClosure(id));
@@ -127,8 +127,8 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                 U.warn(log, "Failed to get item, will retry poll [queue=" + queueName + ", idx=" + idx + ']');
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -174,14 +174,14 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             return true;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void removeItem(long rmvIdx) throws GridException {
+    @Override protected void removeItem(long rmvIdx) throws IgniteCheckedException {
         Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
         if (idx != null) {
@@ -226,11 +226,11 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /**
      * @param c Transform closure to be applied for queue header.
      * @return Value computed by the transform closure.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private Long transformHeader(IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>> c)
-        throws GridException {
+        throws IgniteCheckedException {
         int cnt = 0;
 
         while (true) {

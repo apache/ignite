@@ -263,7 +263,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         try {
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
@@ -440,7 +440,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                             try {
                                 addrRes = new AddressResponse(data);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 LT.warn(log, e, "Failed to deserialize multicast response.");
 
                                 continue;
@@ -529,16 +529,16 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /**
          * @param addrs Addresses discovery SPI binds to.
-         * @throws GridException If marshalling failed.
+         * @throws IgniteCheckedException If marshalling failed.
          */
-        private AddressResponse(Collection<InetSocketAddress> addrs) throws GridException {
+        private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             this.addrs = addrs;
 
             byte[] addrsData = marsh.marshal(addrs);
             data = new byte[U.GG_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
-                throw new GridException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
+                throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
 
             System.arraycopy(U.GG_HEADER, 0, data, 0, U.GG_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
@@ -546,9 +546,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /**
          * @param data Message data.
-         * @throws GridException If unmarshalling failed.
+         * @throws IgniteCheckedException If unmarshalling failed.
          */
-        private AddressResponse(byte[] data) throws GridException {
+        private AddressResponse(byte[] data) throws IgniteCheckedException {
             assert U.bytesEqual(U.GG_HEADER, 0, data, 0, U.GG_HEADER.length);
 
             this.data = data;
@@ -671,7 +671,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             try {
                 res = new AddressResponse(addrs);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to prepare multicast message.", e);
 
                 return;

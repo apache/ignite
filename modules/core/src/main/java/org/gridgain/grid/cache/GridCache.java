@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -112,9 +112,9 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * Gets size (in bytes) of all entries swapped to disk.
      *
      * @return Size (in bytes) of all entries swapped to disk.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public long overflowSize() throws GridException;
+    public long overflowSize() throws IgniteCheckedException;
 
     /**
      * Gets number of cache entries stored in off-heap memory.
@@ -134,17 +134,17 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * Gets size in bytes for swap space.
      *
      * @return Size in bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapSize() throws GridException ;
+    public long swapSize() throws IgniteCheckedException;
 
     /**
      * Gets number of swap entries (keys).
      *
      * @return Number of entries stored in swap.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapKeys() throws GridException;
+    public long swapKeys() throws IgniteCheckedException;
 
     /**
      * Gets iterator over keys and values belonging to this cache swap space on local node. This
@@ -158,10 +158,10 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * {@link GridCacheFlag#SKIP_SWAP}.
      *
      * @return Iterator over keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @see #promote(Object)
      */
-    public Iterator<Map.Entry<K, V>> swapIterator() throws GridException;
+    public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException;
 
     /**
      * Gets iterator over keys and values belonging to this cache off-heap memory on local node. This
@@ -173,9 +173,9 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      *
      * @return Iterator over keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Iterator<Map.Entry<K, V>> offHeapIterator() throws GridException;
+    public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
 
     /**
      * Delegates to {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
@@ -197,9 +197,9 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param args Optional user arguments to be passed into
      *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
-    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws GridException;
+    public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws IgniteCheckedException;
 
     /**
      * Asynchronously delegates to {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method

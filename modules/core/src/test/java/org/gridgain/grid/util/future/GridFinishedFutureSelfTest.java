@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -39,7 +39,7 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
      */
     public void testExternalizable() throws Exception {
         Object t = "result";
-        Throwable ex = new GridRuntimeException("exception");
+        Throwable ex = new IgniteException("exception");
 
         testExternalizable(t, null, true);
         testExternalizable(t, null, false);

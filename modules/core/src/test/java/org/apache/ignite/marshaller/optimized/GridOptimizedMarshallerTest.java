@@ -25,9 +25,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable() throws GridException {
+    public void testNonSerializable() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -40,9 +40,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable1() throws GridException {
+    public void testNonSerializable1() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -61,9 +61,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable2() throws GridException {
+    public void testNonSerializable2() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -94,9 +94,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable3() throws GridException {
+    public void testNonSerializable3() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -111,9 +111,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable4() throws GridException {
+    public void testNonSerializable4() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -130,9 +130,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
      /**
      * Tests ability to marshal non-serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testNonSerializable5() throws GridException {
+    public void testNonSerializable5() throws IgniteCheckedException {
         IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         byte[] bytes = marsh.marshal(true);
@@ -145,9 +145,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal serializable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testSerializable() throws GridException {
+    public void testSerializable() throws IgniteCheckedException {
         IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         SomeSerializable outObj = marsh.unmarshal(marsh.marshal(new SomeSerializable(null)), null);
@@ -156,9 +156,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testSerializableAfterChangingValue() throws GridException {
+    public void testSerializableAfterChangingValue() throws IgniteCheckedException {
         IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         SomeSimpleSerializable newObj = new SomeSimpleSerializable();
@@ -177,9 +177,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal externalizable objects.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testExternalizable() throws GridException {
+    public void testExternalizable() throws IgniteCheckedException {
         IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
 
         ExternalizableA outObj = marsh.unmarshal(marsh.marshal(new ExternalizableA(null, true)), null);
@@ -202,7 +202,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridException ignore) {
+        catch (IgniteCheckedException ignore) {
             // No-op.
         }
     }
@@ -210,9 +210,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests {@link IgniteOptimizedMarshaller#setClassNames(List)}.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testUserPreregisteredNames() throws GridException {
+    public void testUserPreregisteredNames() throws IgniteCheckedException {
         Object obj = new SomeSerializable(null);
 
         // Clear caches.
@@ -239,10 +239,10 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests {@link IgniteOptimizedMarshaller#setClassNames(List)}.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      * @throws IOException If an I/O error occurs.
      */
-    public void testUserPreregisteredNamesPath() throws GridException, IOException {
+    public void testUserPreregisteredNamesPath() throws IgniteCheckedException, IOException {
         Object obj = new SomeSerializable(null);
 
         // Clear caches.
@@ -273,9 +273,9 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests {@link Proxy}.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testProxy() throws GridException {
+    public void testProxy() throws IgniteCheckedException {
         IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
@@ -625,7 +625,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             assert false;
 
             return null;

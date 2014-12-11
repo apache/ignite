@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.util.*;
@@ -142,7 +142,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
                 catch (ClusterTopologyException ignored) {
                     fut.onNodeLeft();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fut.onError(e);
 
                     break;

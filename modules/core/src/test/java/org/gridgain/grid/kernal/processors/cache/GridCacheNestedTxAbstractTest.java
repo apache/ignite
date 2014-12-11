@@ -9,19 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -152,7 +149,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         error("Failed tx thread", e);
                     }
                 }
@@ -181,7 +178,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         try {
                             c.unlock(CNTR_KEY);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             error("Failed unlock", e);
                         }
                     }
@@ -246,7 +243,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             error("Failed tx thread", e);
                         }
 
@@ -259,7 +256,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         try {
                             c.unlock(CNTR_KEY);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             error("Failed unlock", e);
                         }
                     }

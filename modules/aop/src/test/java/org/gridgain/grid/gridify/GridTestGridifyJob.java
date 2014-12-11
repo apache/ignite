@@ -32,7 +32,7 @@ public class GridTestGridifyJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws GridException {
+    @Override public Serializable execute() throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info("Execute GridTestGridifyJob.execute(" + argument(0) + ')');
 

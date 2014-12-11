@@ -75,7 +75,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+            @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                 switch (evt) {
                     case AFTER_GRID_START: {
                         GridCache<Object, MyValue> c1 = ignite.cache("one");
@@ -205,7 +205,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                                 ", missedKey=" + key + ", cache=" + grid.cache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
-                        catch (GridException e1) {
+                        catch (IgniteCheckedException e1) {
                             e1.printStackTrace();
 
                             assert false;

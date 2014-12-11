@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.testframework.GridTestUtils;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -1392,7 +1392,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }
@@ -1448,7 +1448,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }
@@ -1500,7 +1500,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }
@@ -1515,7 +1515,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }
@@ -1560,7 +1560,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }
@@ -1575,7 +1575,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         return false;
                     }
                 }

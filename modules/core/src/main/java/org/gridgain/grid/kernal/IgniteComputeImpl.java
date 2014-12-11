@@ -89,7 +89,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws GridException {
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteCheckedException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -105,7 +105,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job)
-        throws GridException {
+        throws IgniteCheckedException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -120,7 +120,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(String taskName, @Nullable T arg) throws GridException {
+    @Override public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteCheckedException {
         A.notNull(taskName, "taskName");
 
         guard();
@@ -138,7 +138,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls,
-        @Nullable T arg) throws GridException {
+        @Nullable T arg) throws IgniteCheckedException {
         A.notNull(taskCls, "taskCls");
 
         guard();
@@ -155,7 +155,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws GridException {
+    @Override public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteCheckedException {
         A.notNull(task, "task");
 
         guard();
@@ -172,7 +172,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(Runnable job) throws GridException {
+    @Override public void broadcast(Runnable job) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -186,7 +186,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> broadcast(Callable<R> job) throws GridException {
+    @Override public <R> Collection<R> broadcast(Callable<R> job) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -200,7 +200,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws GridException {
+    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -214,7 +214,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(Runnable job) throws GridException {
+    @Override public void run(Runnable job) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -228,7 +228,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(Collection<? extends Runnable> jobs) throws GridException {
+    @Override public void run(Collection<? extends Runnable> jobs) throws IgniteCheckedException {
         A.notEmpty(jobs, "jobs");
 
         guard();
@@ -242,7 +242,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws GridException {
+    @Override public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -256,7 +256,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R call(Callable<R> job) throws GridException {
+    @Override public <R> R call(Callable<R> job) throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
@@ -270,7 +270,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws GridException {
+    @Override public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws IgniteCheckedException {
         A.notEmpty(jobs, "jobs");
 
         guard();
@@ -285,7 +285,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T, R> Collection<R> apply(final IgniteClosure<T, R> job,
-        @Nullable Collection<? extends T> args) throws GridException {
+        @Nullable Collection<? extends T> args) throws IgniteCheckedException {
         A.notNull(job, "job");
         A.notNull(args, "args");
 
@@ -301,7 +301,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc)
-        throws GridException {
+        throws IgniteCheckedException {
         A.notEmpty(jobs, "jobs");
         A.notNull(rdc, "rdc");
 
@@ -317,7 +317,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
-        IgniteReducer<R1, R2> rdc) throws GridException {
+        IgniteReducer<R1, R2> rdc) throws IgniteCheckedException {
         A.notNull(job, "job");
         A.notNull(rdc, "rdc");
         A.notNull(args, "args");
@@ -391,7 +391,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws GridException {
+    @Override public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws IgniteCheckedException {
         A.notNull(taskCls, "taskCls", clsLdr, "clsLdr");
 
         guard();
@@ -420,7 +420,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void undeployTask(String taskName) throws GridException {
+    @Override public void undeployTask(String taskName) throws IgniteCheckedException {
         A.notNull(taskName, "taskName");
 
         guard();

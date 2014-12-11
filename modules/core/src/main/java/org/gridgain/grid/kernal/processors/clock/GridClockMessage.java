@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.clock;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -134,11 +134,11 @@ public class GridClockMessage {
      * @param off Offset.
      * @param len Packet length.
      * @return Assembled message.
-     * @throws GridException If message length is invalid.
+     * @throws IgniteCheckedException If message length is invalid.
      */
-    public static GridClockMessage fromBytes(byte[] buf, int off, int len) throws GridException {
+    public static GridClockMessage fromBytes(byte[] buf, int off, int len) throws IgniteCheckedException {
         if (len < PACKET_SIZE)
-            throw new GridException("Failed to assemble time server packet (message is too short).");
+            throw new IgniteCheckedException("Failed to assemble time server packet (message is too short).");
 
         long lsb = U.bytesToLong(buf, off);
         long msb = U.bytesToLong(buf, off + 8);

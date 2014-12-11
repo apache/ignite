@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.interop.*;
@@ -54,7 +54,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         if (store instanceof LifecycleAware) {
             // Avoid second start() call on store in case when near cache is enabled.
             if (cctx.config().isWriteBehindEnabled()) {
@@ -94,7 +94,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         ((LifecycleAware)store).stop();
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log(), "Failed to stop cache store.", e);
             }
         }
@@ -120,9 +120,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param tx Cache transaction.
      * @param key Cache key.
      * @return Loaded value, possibly <tt>null</tt>.
-     * @throws GridException If data loading failed.
+     * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable public V loadFromStore(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Nullable public V loadFromStore(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         if (store != null) {
             if (key instanceof GridCacheInternal)
                 // Never load internal keys from store as they are never persisted.
@@ -178,11 +178,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param keys Cache keys.
      * @param vis Closure.
      * @return {@code True} if there is a persistent storage.
-     * @throws GridException If data loading failed.
+     * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"unchecked"})
     public boolean loadAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys,
-        final IgniteBiInClosure<K, V> vis) throws GridException {
+        final IgniteBiInClosure<K, V> vis) throws IgniteCheckedException {
         if (store != null) {
             if (!keys.isEmpty()) {
                 if (keys.size() == 1) {
@@ -223,7 +223,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 catch (ClassCastException e) {
                     handleClassCastException(e);
                 }
-                catch (GridRuntimeException e) {
+                catch (IgniteException e) {
                     throw U.cast(e);
                 }
 
@@ -243,10 +243,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param vis Closer to cache loaded elements.
      * @param args User arguments.
      * @return {@code True} if there is a persistent storage.
-     * @throws GridException If data loading failed.
+     * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    public boolean loadCache(final GridInClosure3<K, V, GridCacheVersion> vis, Object[] args) throws GridException {
+    public boolean loadCache(final GridInClosure3<K, V, GridCacheVersion> vis, Object[] args) throws IgniteCheckedException {
         if (store != null) {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");
@@ -270,11 +270,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
                 }, args);
             }
-            catch (GridRuntimeException e) {
+            catch (IgniteException e) {
                 throw U.cast(e);
             }
             catch (AssertionError e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
 
             if (log.isDebugEnabled())
@@ -297,10 +297,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param val Value.
      * @param ver Version.
      * @return {@code true} If there is a persistent storage.
-     * @throws GridException If storage failed.
+     * @throws IgniteCheckedException If storage failed.
      */
     public boolean putToStore(@Nullable GridCacheTx tx, K key, V val, GridCacheVersion ver)
-        throws GridException {
+        throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
             if (key instanceof GridCacheInternal)
@@ -336,10 +336,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param tx Cache transaction.
      * @param map Map.
      * @return {@code True} if there is a persistent storage.
-     * @throws GridException If storage failed.
+     * @throws IgniteCheckedException If storage failed.
      */
     public boolean putAllToStore(@Nullable GridCacheTx tx, Map<K, IgniteBiTuple<V, GridCacheVersion>> map)
-        throws GridException {
+        throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
 
@@ -394,9 +394,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param tx Cache transaction.
      * @param key Key.
      * @return {@code True} if there is a persistent storage.
-     * @throws GridException If storage failed.
+     * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeFromStore(@Nullable GridCacheTx tx, K key) throws GridException {
+    public boolean removeFromStore(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         if (store != null) {
             // Never remove internal key from store as it is never persisted.
             if (key instanceof GridCacheInternal)
@@ -430,9 +430,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param tx Cache transaction.
      * @param keys Key.
      * @return {@code True} if there is a persistent storage.
-     * @throws GridException If storage failed.
+     * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws GridException {
+    public boolean removeAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
@@ -480,9 +480,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void forceFlush() throws GridException {
+    public void forceFlush() throws IgniteCheckedException {
         if (store instanceof GridCacheWriteBehindStore)
             ((GridCacheWriteBehindStore)store).forceFlush();
     }
@@ -490,22 +490,22 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param tx Transaction.
      * @param commit Commit.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         store.txEnd(tx, commit);
     }
 
     /**
      * @param e Class cast exception.
-     * @throws GridException Thrown exception.
+     * @throws IgniteCheckedException Thrown exception.
      */
-    private void handleClassCastException(ClassCastException e) throws GridException {
+    private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
         if (cctx.portableEnabled() && e.getMessage() != null &&
             e.getMessage().startsWith("org.gridgain.grid.util.portable.GridPortableObjectImpl")) {
-            throw new GridException("Cache store must work with portable objects if portables are " +
+            throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
         else

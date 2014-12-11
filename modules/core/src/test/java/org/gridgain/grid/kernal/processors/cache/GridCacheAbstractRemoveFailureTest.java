@@ -146,7 +146,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
                                 break;
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 if (put)
                                     log.error("Put failed [key=" + key + ", val=" + i + ']', e);
                                 else
@@ -220,7 +220,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
                     try {
                         if (!assertLatch.await(60_000, TimeUnit.MILLISECONDS))
-                            throw new GridException("Failed to suspend thread executing updates.");
+                            throw new IgniteCheckedException("Failed to suspend thread executing updates.");
 
                         log.info("Checking cache content.");
 

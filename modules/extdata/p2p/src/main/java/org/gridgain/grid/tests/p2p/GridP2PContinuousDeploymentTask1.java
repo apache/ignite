@@ -23,12 +23,12 @@ import java.util.*;
  */
 public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
         return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @Override public Object execute() throws GridException {
+            @Override public Object execute() throws IgniteCheckedException {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
 
                 ignite.cache(null).putx("key", new GridTestUserResource());
@@ -39,7 +39,7 @@ public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

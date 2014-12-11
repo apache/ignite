@@ -9,15 +9,16 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -240,7 +241,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         try {
             addrs = U.resolveLocalAddresses(locHost);
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
         }
 
@@ -297,7 +298,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                             sock0 + ']');
                 }
             }
-            catch (IOException | GridException e) {
+            catch (IOException | IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock0 + ']', e);
             }
@@ -492,7 +493,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         return false;
                     }
-                    catch (IOException | GridException e) {
+                    catch (IOException | IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to establish connection with address: " + addr, e);
 
@@ -522,9 +523,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
      * @param addr Address.
      * @return Remote node ID.
      * @throws IOException In case of I/O error.
-     * @throws GridException In case of other error.
+     * @throws IgniteCheckedException In case of other error.
      */
-    private IgniteBiTuple<Socket, UUID> initConnection(InetSocketAddress addr) throws IOException, GridException {
+    private IgniteBiTuple<Socket, UUID> initConnection(InetSocketAddress addr) throws IOException, IgniteCheckedException {
         assert addr != null;
 
         joinLatch = new CountDownLatch(1);
@@ -740,7 +741,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         msgWrk.addMessage(msg);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to read message [sock=" + sock0 + ", locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ']', e);
@@ -1059,7 +1060,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                             if (log.isDebugEnabled())
                                 log.debug("Heartbeat message sent [sock=" + sock0 + ", msg=" + msg + ']');
                         }
-                        catch (IOException | GridException e) {
+                        catch (IOException | IgniteCheckedException e) {
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to send heartbeat message [sock=" + sock0 +
                                     ", msg=" + msg + ']', e);

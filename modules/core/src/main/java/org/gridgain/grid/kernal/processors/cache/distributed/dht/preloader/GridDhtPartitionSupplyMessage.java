@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -180,9 +180,9 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param p Partition.
      * @param info Entry to add.
      * @param ctx Cache context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws GridException {
+    void addEntry(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert info != null;
 
         marshalInfo(info, ctx);
@@ -206,9 +206,9 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
      * @param p Partition.
      * @param info Entry to add.
      * @param ctx Cache context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws GridException {
+    void addEntry0(int p, GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert info != null;
         assert info.keyBytes() != null;
         assert info.valueBytes() != null || info.value() instanceof byte[] :
@@ -234,14 +234,14 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         infoBytes = ctx.marshaller().marshal(infoBytesMap);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         infoBytesMap = ctx.marshaller().unmarshal(infoBytes, ldr);

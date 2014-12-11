@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -65,7 +65,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     private void runTest(final IgniteInClosure<GridCache<String, Integer>> c) throws Exception {
         final IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (true) {
                     int i = cnt.getAndIncrement();
 
@@ -99,9 +99,9 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkConsistency() throws GridException {
+    private void checkConsistency() throws IgniteCheckedException {
         for (GridCacheEntry<String, Integer> e : cache())
             for (int i = 1; i < gridCount(); i++) {
                 Integer val = cache(i).get(e.getKey());
@@ -209,7 +209,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGet() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
                 assert cache.get("key" + rnd) == rnd;
@@ -223,7 +223,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGetAsync() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
                 assert cache.getAsync("key" + rnd).get() == rnd;
@@ -237,7 +237,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGetAll() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -255,7 +255,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGetAllAsync() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -273,7 +273,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemove() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -297,7 +297,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAsync() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -321,7 +321,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAll() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
                 cache.removeAll(rangeKeys(0, rnd));
@@ -337,7 +337,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAllFiltered() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 final int rnd = random();
 
                 cache.removeAll(new P1<GridCacheEntry<String, Integer>>() {
@@ -359,7 +359,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAllAsync() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
                 cache.removeAllAsync(rangeKeys(0, rnd)).get();
@@ -375,7 +375,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAllAsyncFiltered() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 final int rnd = random();
 
                 cache.removeAllAsync(new P1<GridCacheEntry<String, Integer>>() {

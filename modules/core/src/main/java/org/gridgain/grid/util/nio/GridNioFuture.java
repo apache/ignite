@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
@@ -27,12 +28,12 @@ public interface GridNioFuture<R> {
      * returns operation result.
      *
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
-     * @throws GridException If operation failed.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
+     * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
-    public R get() throws IOException, GridException;
+    public R get() throws IOException, IgniteCheckedException;
 
     /**
      * Synchronously waits for completion of the operation for
@@ -41,13 +42,13 @@ public interface GridNioFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
-     * @throws GridException If operation failed.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
+     * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
-    public R get(long timeout) throws IOException, GridException;
+    public R get(long timeout) throws IOException, IgniteCheckedException;
 
     /**
      * Synchronously waits for completion of the operation for
@@ -56,21 +57,21 @@ public interface GridNioFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
-     * @throws GridException If operation failed.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws org.apache.ignite.lang.IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
+     * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
-    public R get(long timeout, TimeUnit unit) throws IOException, GridException;
+    public R get(long timeout, TimeUnit unit) throws IOException, IgniteCheckedException;
 
     /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).
-     * @throws GridException If cancellation failed.
+     * @throws IgniteCheckedException If cancellation failed.
      */
-    public boolean cancel() throws GridException;
+    public boolean cancel() throws IgniteCheckedException;
 
     /**
      * Checks if operation is done.

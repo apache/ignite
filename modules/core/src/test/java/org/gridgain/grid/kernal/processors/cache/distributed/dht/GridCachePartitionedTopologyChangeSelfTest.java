@@ -163,7 +163,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     node.cache(null).unlock(key);
                                 }
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 info(">>> Failed to perform lock [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -257,7 +257,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     tx.commit();
                                 }
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 info("Failed to run tx for key [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -327,7 +327,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                 tx.commit();
                             }
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             info(">>> Failed to execute tx on new topology [key=" + key + ", e=" + e + ']');
                         }
                     }
@@ -409,7 +409,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                     tx.commit();
                                 }
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 info("Failed to run tx for key [key=" + key + ", e=" + e + ']');
                             }
                             catch (InterruptedException ignored) {
@@ -461,7 +461,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                 tx.commit();
                             }
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             info(">>> Failed to execute tx on new topology [key=" + key + ", e=" + e + ']');
                         }
                     }

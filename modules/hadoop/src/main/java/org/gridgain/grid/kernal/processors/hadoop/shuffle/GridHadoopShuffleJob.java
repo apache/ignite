@@ -88,10 +88,10 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @param mem Memory.
      * @param totalReducerCnt Amount of reducers in the Job.
      * @param locReducers Reducers will work on current node.
-     * @throws GridException If error.
+     * @throws IgniteCheckedException If error.
      */
     public GridHadoopShuffleJob(T locReduceAddr, IgniteLogger log, GridHadoopJob job, GridUnsafeMemory mem,
-        int totalReducerCnt, int[] locReducers) throws GridException {
+        int totalReducerCnt, int[] locReducers) throws IgniteCheckedException {
         this.locReduceAddr = locReduceAddr;
         this.job = job;
         this.mem = mem;
@@ -153,7 +153,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                             collectUpdatesAndSend(false);
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new IllegalStateException(e);
                     }
                 }
@@ -190,9 +190,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
 
     /**
      * @param msg Message.
-     * @throws GridException Exception.
+     * @throws IgniteCheckedException Exception.
      */
-    public void onShuffleMessage(GridHadoopShuffleMessage msg) throws GridException {
+    public void onShuffleMessage(GridHadoopShuffleMessage msg) throws IgniteCheckedException {
         assert msg.buffer() != null;
         assert msg.offset() > 0;
 
@@ -213,7 +213,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 /** */
                 private GridHadoopMultimap.Key key;
 
-                @Override public void onKey(byte[] buf, int off, int len) throws GridException {
+                @Override public void onKey(byte[] buf, int off, int len) throws IgniteCheckedException {
                     dataInput.bytes(buf, off, off + len);
 
                     key = adder.addKey(dataInput, key);
@@ -278,7 +278,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * Sends map updates to remote reducers.
      */
-    private void collectUpdatesAndSend(boolean flush) throws GridException {
+    private void collectUpdatesAndSend(boolean flush) throws IgniteCheckedException {
         for (int i = 0; i < maps.length(); i++) {
             GridHadoopMultimap map = maps.get(i);
 
@@ -384,7 +384,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     // Otherwise flush() should fail.
                     sentMsgs.remove(msgId);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Failed to send message.", e);
                 }
             }
@@ -395,7 +395,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         if (snd != null) {
             snd.cancel();
 
@@ -426,7 +426,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> flush() throws GridException {
+    public IgniteFuture<?> flush() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 
@@ -477,9 +477,9 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param taskCtx Task context.
      * @return Output.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
+    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         switch (taskCtx.taskInfo().type()) {
             case MAP:
                 assert !job.info().hasCombiner() : "The output creation is allowed if combiner has not been defined.";
@@ -495,10 +495,10 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
     /**
      * @param taskCtx Task context.
      * @return Input.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         switch (taskCtx.taskInfo().type()) {
             case REDUCE:
                 int reducer = taskCtx.taskInfo().taskNumber();
@@ -548,7 +548,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
          * Constructor.
          * @param taskCtx Task context.
          */
-        private PartitionedOutput(GridHadoopTaskContext taskCtx) throws GridException {
+        private PartitionedOutput(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
             this.taskCtx = taskCtx;
 
             if (needPartitioner)
@@ -556,14 +556,14 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
+        @Override public void write(Object key, Object val) throws IgniteCheckedException {
             int part = 0;
 
             if (partitioner != null) {
                 part = partitioner.partition(key, val, adders.length);
 
                 if (part < 0 || part >= adders.length)
-                    throw new GridException("Invalid partition: " + part);
+                    throw new IgniteCheckedException("Invalid partition: " + part);
             }
 
             GridHadoopTaskOutput out = adders[part];
@@ -575,7 +575,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             for (GridHadoopTaskOutput adder : adders) {
                 if (adder != null)
                     adder.close();

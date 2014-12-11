@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 /**
@@ -18,9 +19,9 @@ public interface GridGgfsHadoopStreamEventListener {
     /**
      * Callback invoked when the stream is being closed.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onClose() throws GridException;
+    public void onClose() throws IgniteCheckedException;
 
     /**
      * Callback invoked when remote error occurs.

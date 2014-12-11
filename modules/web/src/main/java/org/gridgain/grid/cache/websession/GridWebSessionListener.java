@@ -60,7 +60,7 @@ class GridWebSessionListener {
             if (cache.removex(sesId) && log.isDebugEnabled())
                 log.debug("Session destroyed: " + sesId);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to remove session: " + sesId, e);
         }
     }
@@ -106,7 +106,7 @@ class GridWebSessionListener {
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
         }
     }

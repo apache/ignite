@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Closure that takes no arguments, returns result and does not implement {@code GridPeerDeployAware}.
@@ -17,7 +17,7 @@ import org.gridgain.grid.*;
 public interface GridPlainOutClosure<R> {
     /**
      * @return Closure execution result.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public R apply() throws GridException;
+    public R apply() throws IgniteCheckedException;
 }

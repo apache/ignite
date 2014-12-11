@@ -77,14 +77,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 metaCacheStartFut.get();
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         cfg = ggfsCtx.configuration();
 
         metaCache = ggfsCtx.kernalContext().cache().cache(cfg.getMetaCacheName());
@@ -93,7 +93,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             .startFuture();
 
         if (metaCache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new GridException("Meta cache should be transactional: " + cfg.getMetaCacheName());
+            throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
         evts = ggfsCtx.kernalContext().event();
 
@@ -107,7 +107,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         locNode = ggfsCtx.kernalContext().discovery().localNode();
 
         // Start background delete worker.
@@ -158,9 +158,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param path Path.
      * @return File ID for specified path or {@code null} if such file doesn't exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteUuid fileId(IgniteFsPath path) throws GridException {
+    @Nullable public IgniteUuid fileId(IgniteFsPath path) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -181,9 +181,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path.
      * @param skipTx Whether to skip existing transaction.
      * @return File ID for specified path or {@code null} if such file doesn't exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteUuid fileId(IgniteFsPath path, boolean skipTx) throws GridException {
+    @Nullable private IgniteUuid fileId(IgniteFsPath path, boolean skipTx) throws IgniteCheckedException {
         List<IgniteUuid> ids = fileIds(path, skipTx);
 
         assert ids != null && !ids.isEmpty() : "Invalid file IDs [path=" + path + ", ids=" + ids + ']';
@@ -197,9 +197,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent directory ID to get child ID for.
      * @param fileName File name in parent listing to get file ID for.
      * @return File ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteUuid fileId(IgniteUuid parentId, String fileName) throws GridException {
+    @Nullable public IgniteUuid fileId(IgniteUuid parentId, String fileName) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return fileId(parentId, fileName, false);
@@ -220,9 +220,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileName File name in parent listing to get file ID for.
      * @param skipTx Whether to skip existing transaction.
      * @return File ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteUuid fileId(IgniteUuid parentId, String fileName, boolean skipTx) throws GridException {
+    @Nullable private IgniteUuid fileId(IgniteUuid parentId, String fileName, boolean skipTx) throws IgniteCheckedException {
         GridGgfsListingEntry entry = directoryListing(parentId, skipTx).get(fileName);
 
         if (entry == null) {
@@ -241,9 +241,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param path Path.
      * @return Collection of file IDs for components of specified path.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public List<IgniteUuid> fileIds(IgniteFsPath path) throws GridException {
+    public List<IgniteUuid> fileIds(IgniteFsPath path) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -266,9 +266,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path.
      * @param skipTx Whether to skip existing transaction.
      * @return Collection of file IDs for components of specified path.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private List<IgniteUuid> fileIds(IgniteFsPath path, boolean skipTx) throws GridException {
+    private List<IgniteUuid> fileIds(IgniteFsPath path, boolean skipTx) throws IgniteCheckedException {
         assert path != null;
 
         // Path components.
@@ -298,9 +298,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileId File id.
      * @return {@code True} in case such entry exists.
-     * @throws GridException IF failed.
+     * @throws IgniteCheckedException IF failed.
      */
-    public boolean exists(IgniteUuid fileId) throws GridException{
+    public boolean exists(IgniteUuid fileId) throws IgniteCheckedException{
         if (busyLock.enterBusy()) {
             try {
                 assert fileId != null;
@@ -322,9 +322,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileId File ID to get details for.
      * @return File info.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public GridGgfsFileInfo info(@Nullable IgniteUuid fileId) throws GridException {
+    @Nullable public GridGgfsFileInfo info(@Nullable IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 if (fileId == null)
@@ -351,9 +351,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileIds file IDs to get details for.
      * @return Files details.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Map<IgniteUuid, GridGgfsFileInfo> infos(Collection<IgniteUuid> fileIds) throws GridException {
+    public Map<IgniteUuid, GridGgfsFileInfo> infos(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -390,9 +390,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileId File ID to lock.
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsFileInfo lock(IgniteUuid fileId) throws GridException {
+    public GridGgfsFileInfo lock(IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -405,7 +405,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
-                        throw new GridException("Failed to lock file (file not found): " + fileId);
+                        throw new IgniteCheckedException("Failed to lock file (file not found): " + fileId);
 
                     GridGgfsFileInfo newInfo = lockInfo(oldInfo);
 
@@ -437,15 +437,15 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param info File info.
      * @return New file info with lock set.
-     * @throws GridException In case lock is already set on that file.
+     * @throws IgniteCheckedException In case lock is already set on that file.
      */
-    public GridGgfsFileInfo lockInfo(GridGgfsFileInfo info) throws GridException {
+    public GridGgfsFileInfo lockInfo(GridGgfsFileInfo info) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert info != null;
 
                 if (info.lockId() != null)
-                    throw new GridException("Failed to lock file (file is being concurrently written) [fileId=" +
+                    throw new IgniteCheckedException("Failed to lock file (file is being concurrently written) [fileId=" +
                         info.id() + ", lockId=" + info.lockId() + ']');
 
                 return new GridGgfsFileInfo(info, IgniteUuid.randomUuid(), info.modificationTime());
@@ -463,9 +463,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param info File info to unlock.
      * @param modificationTime Modification time to write to file info.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void unlock(GridGgfsFileInfo info, long modificationTime) throws GridException {
+    public void unlock(GridGgfsFileInfo info, long modificationTime) throws IgniteCheckedException {
         assert validTxState(false);
         assert info != null;
 
@@ -491,7 +491,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         throw new IgniteFsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
 
                     if (!info.lockId().equals(oldInfo.lockId()))
-                        throw new GridException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
+                        throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
                             ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
 
                     GridGgfsFileInfo newInfo = new GridGgfsFileInfo(oldInfo, null, modificationTime);
@@ -527,9 +527,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileIds file IDs to lock.
      * @return Locked file details. Resulting map doesn't contain details for not-existent files.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private Map<IgniteUuid, GridGgfsFileInfo> lockIds(IgniteUuid... fileIds) throws GridException {
+    private Map<IgniteUuid, GridGgfsFileInfo> lockIds(IgniteUuid... fileIds) throws IgniteCheckedException {
         assert validTxState(true);
         assert fileIds != null && fileIds.length > 0;
 
@@ -568,9 +568,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param fileId File to list child files for.
      * @return Directory listing for the specified file.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId) throws GridException {
+    public Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return directoryListing(fileId, false);
@@ -588,9 +588,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param exclude File IDs to exclude from result.
      * @return First qualified file info.
-     * @throws GridException If failed to get file for fragmentizer.
+     * @throws IgniteCheckedException If failed to get file for fragmentizer.
      */
-    public GridGgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws GridException {
+    public GridGgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return fileForFragmentizer0(ROOT_ID, exclude);
@@ -609,10 +609,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent ID to scan.
      * @param exclude File IDs to exclude from result.
      * @return First qualified file info.
-     * @throws GridException If failed to get file for fragmentizer.
+     * @throws IgniteCheckedException If failed to get file for fragmentizer.
      */
     private GridGgfsFileInfo fileForFragmentizer0(IgniteUuid parentId, Collection<IgniteUuid> exclude)
-        throws GridException {
+        throws IgniteCheckedException {
         GridGgfsFileInfo info = info(parentId);
 
         // Check if file was concurrently deleted.
@@ -651,9 +651,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileId File to list child files for.
      * @param skipTx Whether to skip existing transaction.
      * @return Directory listing for the specified file.*
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId, boolean skipTx) throws GridException {
+    private Map<String, GridGgfsListingEntry> directoryListing(IgniteUuid fileId, boolean skipTx) throws IgniteCheckedException {
         assert fileId != null;
 
         GridGgfsFileInfo info = skipTx ? id2InfoPrj.getAllOutTx(Collections.singletonList(fileId)).get(fileId) :
@@ -669,10 +669,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
      * @return File id already stored in meta cache or {@code null} if passed file info was stored.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public IgniteUuid putIfAbsent(IgniteUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -711,10 +711,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileName File name in the parent's listing.
      * @param newFileInfo File info to store in the parent's listing.
      * @return File id already stored in meta cache or {@code null} if passed file info was stored.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private IgniteUuid putIfAbsentNonTx(IgniteUuid parentId, String fileName, GridGgfsFileInfo newFileInfo)
-        throws GridException {
+        throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Locking parent id [parentId=" + parentId + ", fileName=" + fileName + ", newFileInfo=" +
                 newFileInfo + ']');
@@ -763,10 +763,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param srcParentId Parent directory ID.
      * @param destFileName New file name in the parent's listing after moving.
      * @param destParentId New parent directory ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void move(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
-        IgniteUuid destParentId) throws GridException {
+        IgniteUuid destParentId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -800,10 +800,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param srcParentId Parent directory ID.
      * @param destFileName New file name in the parent's listing after moving.
      * @param destParentId New parent directory ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void moveNonTx(IgniteUuid fileId, @Nullable String srcFileName, IgniteUuid srcParentId, String destFileName,
-        IgniteUuid destParentId) throws GridException {
+        IgniteUuid destParentId) throws IgniteCheckedException {
         assert validTxState(true);
         assert fileId != null;
         assert srcFileName != null;
@@ -882,11 +882,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path of the deleted file.
      * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
      * @return The last actual file info or {@code null} if such file no more exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridGgfsFileInfo removeIfEmpty(IgniteUuid parentId, String fileName, IgniteUuid fileId,
         IgniteFsPath path, boolean rmvLocked)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -929,11 +929,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path of the deleted file.
      * @param rmvLocked Whether to remove this entry in case it has explicit lock.
      * @return The last actual file info or {@code null} if such file no more exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private GridGgfsFileInfo removeIfEmptyNonTx(@Nullable IgniteUuid parentId, String fileName, IgniteUuid fileId,
         IgniteFsPath path, boolean rmvLocked)
-        throws GridException {
+        throws IgniteCheckedException {
         assert validTxState(true);
         assert parentId != null;
         assert fileName != null;
@@ -953,7 +953,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 // If file info does not exists but listing entry exists, throw inconsistent exception.
                 if (entry != null && entry.fileId().equals(fileId))
-                    throw new GridException("Failed to remove file (file system is in inconsistent state) " +
+                    throw new IgniteCheckedException("Failed to remove file (file system is in inconsistent state) " +
                         "[fileInfo=" + fileInfo + ", fileName=" + fileName + ", fileId=" + fileId + ']');
             }
 
@@ -998,9 +998,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param pathName Path name.
      * @param pathId Path ID.
      * @return ID of an entry located directly under the trash directory.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    IgniteUuid softDelete(@Nullable IgniteUuid parentId, @Nullable String pathName, IgniteUuid pathId) throws GridException {
+    IgniteUuid softDelete(@Nullable IgniteUuid parentId, @Nullable String pathName, IgniteUuid pathId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1041,10 +1041,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param name Path name.
      * @param id Path ID.
      * @return ID of an entry located directly under the trash directory.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, @Nullable String name, IgniteUuid id)
-        throws GridException {
+        throws IgniteCheckedException {
         assert validTxState(true);
 
         IgniteUuid resId;
@@ -1116,10 +1116,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param parentId Parent ID.
      * @param listing Listing entries.
      * @return Collection of really deleted entries.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     Collection<IgniteUuid> delete(IgniteUuid parentId, Map<String, GridGgfsListingEntry> listing)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert parentId != null;
@@ -1204,9 +1204,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param name Name.
      * @param id ID.
      * @return {@code True} in case the entry really was removed from the cache by this call.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    boolean delete(IgniteUuid parentId, String name, IgniteUuid id) throws GridException {
+    boolean delete(IgniteUuid parentId, String name, IgniteUuid id) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1255,9 +1255,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Check whether there are any pending deletes and return collection of pending delete entry IDs.
      *
      * @return Collection of entry IDs to be deleted.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public Collection<IgniteUuid> pendingDeletes() throws GridException {
+    public Collection<IgniteUuid> pendingDeletes() throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 GridGgfsFileInfo trashInfo = id2InfoPrj.get(TRASH_ID);
@@ -1292,10 +1292,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileId File ID to update information for.
      * @param props Properties to set for the file.
      * @return Updated file info or {@code null} if such file ID not found.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
     @Nullable private GridGgfsFileInfo updatePropertiesNonTx(@Nullable IgniteUuid parentId, IgniteUuid fileId,
-        String fileName, Map<String, String> props) throws GridException {
+        String fileName, Map<String, String> props) throws IgniteCheckedException {
         assert fileId != null;
         assert !F.isEmpty(props) : "Expects not-empty file's properties";
         assert validTxState(true);
@@ -1376,10 +1376,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileId File ID to update information for.
      * @param props Properties to set for the file.
      * @return Updated file info or {@code null} if such file ID not found.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
     @Nullable public GridGgfsFileInfo updateProperties(@Nullable IgniteUuid parentId, IgniteUuid fileId, String fileName,
-        Map<String, String> props) throws GridException {
+        Map<String, String> props) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1441,10 +1441,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileId File ID to update information for.
      * @param c Closure to update file's info inside transaction.
      * @return Updated file info or {@code null} if such file ID not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridGgfsFileInfo updateInfo(IgniteUuid fileId, IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo> c)
-        throws GridException {
+        throws IgniteCheckedException {
         assert validTxState(false);
         assert fileId != null;
         assert c != null;
@@ -1510,9 +1510,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @param val Sampling flag state or {@code null} to clear sampling state and mark it as "not set".
      * @return {@code True} if sampling mode was actually changed by this call.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean sampling(Boolean val) throws GridException {
+    public boolean sampling(Boolean val) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -1543,9 +1543,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      *
      * @return {@code True} in case sampling is enabled, {@code false} otherwise or {@code null} in case sampling
      * is not set.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Boolean sampling() throws GridException {
+    public Boolean sampling() throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -1575,12 +1575,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param blockSize Block size.
      * @param affKey Affinity key.
      * @return Output stream descriptor.
-     * @throws GridException If file creation failed.
+     * @throws IgniteCheckedException If file creation failed.
      */
     public GridGgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final boolean simpleCreate, @Nullable final Map<String, String> props, final boolean overwrite, final int bufSize,
         final short replication, final long blockSize, final IgniteUuid affKey)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -1674,7 +1674,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                                                 evts.record(new IgniteFsEvent(path, locNode, EVT_GGFS_FILE_PURGED));
                                             }
-                                            catch (GridException e) {
+                                            catch (IgniteCheckedException e) {
                                                 LT.warn(log, e, "Old file deletion failed in DUAL mode [path=" + path +
                                                     ", simpleCreate=" + simpleCreate + ", props=" + props +
                                                     ", overwrite=" + overwrite + ", bufferSize=" + bufSize +
@@ -1697,7 +1697,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
-                            throws GridException {
+                            throws IgniteCheckedException {
                             U.closeQuiet(out);
 
                             U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
@@ -1735,10 +1735,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path.
      * @param bufSize Buffer size.
      * @return Output stream descriptor.
-     * @throws GridException If output stream open for append has failed.
+     * @throws IgniteCheckedException If output stream open for append has failed.
      */
     public GridGgfsSecondaryOutputStreamDescriptor appendDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
-        final int bufSize) throws GridException {
+        final int bufSize) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -1787,7 +1787,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         @Override public GridGgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
-                            throws GridException {
+                            throws IgniteCheckedException {
                             U.closeQuiet(out);
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
@@ -1796,7 +1796,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             if (err instanceof IgniteFsException)
                                 throw (IgniteFsException)err;
                             else
-                                throw new GridException("Failed to append to the file due to secondary file system " +
+                                throw new IgniteCheckedException("Failed to append to the file due to secondary file system " +
                                     "exception: " + path, err);
                         }
                     };
@@ -1818,11 +1818,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path to open.
      * @param bufSize Buffer size.
      * @return Input stream descriptor.
-     * @throws GridException If input stream open has failed.
+     * @throws IgniteCheckedException If input stream open has failed.
      */
     public GridGgfsSecondaryInputStreamDescriptor openDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
         final int bufSize)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -1854,14 +1854,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         @Override public GridGgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
-                            throws GridException {
+                            throws IgniteCheckedException {
                             U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
                             if (err instanceof IgniteFsException)
-                                throw (GridException)err;
+                                throw (IgniteCheckedException)err;
                             else
-                                throw new GridException("Failed to open the path due to secondary file system " +
+                                throw new IgniteCheckedException("Failed to open the path due to secondary file system " +
                                     "exception: " + path, err);
                         }
                     };
@@ -1882,10 +1882,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fs File system.
      * @param path Path.
      * @return File info or {@code null} if file not found.
-     * @throws GridException If sync task failed.
+     * @throws IgniteCheckedException If sync task failed.
      */
     @Nullable public GridGgfsFileInfo synchronizeFileDual(final IgniteFsFileSystem fs, final IgniteFsPath path)
-        throws GridException {
+        throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
 
@@ -1905,11 +1905,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             return infos.get(path);
                         }
 
-                        @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
+                        @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
                             if (err instanceof IgniteFsException)
-                                throw (GridException)err;
+                                throw (IgniteCheckedException)err;
                             else
-                                throw new GridException("Failed to synchronize path due to secondary file system " +
+                                throw new IgniteCheckedException("Failed to synchronize path due to secondary file system " +
                                     "exception: " + path, err);
                         }
                     };
@@ -1933,10 +1933,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path to create.
      * @param props Properties to be applied.
      * @return {@code True} in case rename was successful.
-     * @throws GridException If directory creation failed.
+     * @throws IgniteCheckedException If directory creation failed.
      */
     public boolean mkdirsDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -1984,11 +1984,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         return true;
                     }
 
-                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                    @Override public Boolean onFailure(@Nullable Exception err) throws IgniteCheckedException {
                         U.error(log, "Directory creation in DUAL mode failed [path=" + path + ", properties=" + props +
                             ']', err);
 
-                        throw new GridException("Failed to create the path due to secondary file system exception: " +
+                        throw new IgniteCheckedException("Failed to create the path due to secondary file system exception: " +
                             path, err);
                     }
                 };
@@ -2017,10 +2017,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param src Source path.
      * @param dest Destination path.
      * @return Operation result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public boolean renameDual(final IgniteFsFileSystem fs, final IgniteFsPath src, final IgniteFsPath dest) throws
-        GridException {
+        IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -2082,14 +2082,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         return true;
                     }
 
-                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                    @Override public Boolean onFailure(@Nullable Exception err) throws IgniteCheckedException {
                         U.error(log, "Path rename in DUAL mode failed [source=" + src + ", destination=" + dest + ']',
                             err);
 
                         if (err instanceof IgniteFsException)
-                            throw (GridException)err;
+                            throw (IgniteCheckedException)err;
                         else
-                            throw new GridException("Failed to rename the path due to secondary file system " +
+                            throw new IgniteCheckedException("Failed to rename the path due to secondary file system " +
                                 "exception: " + src, err);
                     }
                 };
@@ -2118,10 +2118,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path to update.
      * @param recursive Recursive flag.
      * @return Operation result.
-     * @throws GridException If delete failed.
+     * @throws IgniteCheckedException If delete failed.
      */
     public boolean deleteDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final boolean recursive)
-        throws GridException {
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -2154,11 +2154,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         return true; // No additional handling is required.
                     }
 
-                    @Override public Boolean onFailure(@Nullable Exception err) throws GridException {
+                    @Override public Boolean onFailure(@Nullable Exception err) throws IgniteCheckedException {
                         U.error(log, "Path delete in DUAL mode failed [path=" + path + ", recursive=" + recursive + ']',
                             err);
 
-                        throw new GridException("Failed to delete the path due to secondary file system exception: ",
+                        throw new IgniteCheckedException("Failed to delete the path due to secondary file system exception: ",
                             err);
                     }
                 };
@@ -2184,10 +2184,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param path Path to update.
      * @param props Properties to be applied.
      * @return Update file info.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     public GridGgfsFileInfo updateDual(final IgniteFsFileSystem fs, final IgniteFsPath path, final Map<String, String> props)
-        throws GridException {
+        throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
         assert props != null && !props.isEmpty();
@@ -2208,11 +2208,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             props);
                     }
 
-                    @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws GridException {
+                    @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
                         U.error(log, "Path update in DUAL mode failed [path=" + path + ", properties=" + props + ']',
                             err);
 
-                        throw new GridException("Failed to update the path due to secondary file system exception: " +
+                        throw new IgniteCheckedException("Failed to update the path due to secondary file system exception: " +
                             path, err);
                     }
                 };
@@ -2237,11 +2237,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param strict Whether all paths must exist in the secondary file system.
      * @param created Optional map where data about all created values is put.
      * @return File info of the end path.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridGgfsFileInfo synchronize(IgniteFsFileSystem fs, IgniteFsPath startPath, GridGgfsFileInfo startPathInfo,
         IgniteFsPath endPath, boolean strict, @Nullable Map<IgniteFsPath, GridGgfsFileInfo> created)
-        throws GridException {
+        throws IgniteCheckedException {
         assert fs != null;
         assert startPath != null && startPathInfo != null && endPath != null;
 
@@ -2265,13 +2265,13 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 if (status != null) {
                     if (!status.isDirectory() && !curPath.equals(endPath))
-                        throw new GridException("Failed to create path the locally because secondary file system " +
+                        throw new IgniteCheckedException("Failed to create path the locally because secondary file system " +
                             "directory structure was modified concurrently and the path is not a directory as " +
                             "expected: " + curPath);
                 }
                 else {
                     if (strict) {
-                        throw new GridException("Failed to create path locally due to secondary file system " +
+                        throw new IgniteCheckedException("Failed to create path locally due to secondary file system " +
                             "exception: " + curPath);
                     }
                     else if (created != null)
@@ -2309,11 +2309,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param strict Whether paths must be re-created strictly.
      * @param paths Paths to synchronize.
      * @return Result of task execution.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
         IgniteFsPath... paths)
-        throws GridException {
+        throws IgniteCheckedException {
         return synchronizeAndExecute(task, fs, strict, null, paths);
     }
 
@@ -2327,10 +2327,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param extraLockIds Additional IDs to lock (optional).
      * @param paths Paths to synchronize.
      * @return Result of task execution.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
-        @Nullable Collection<IgniteUuid> extraLockIds, IgniteFsPath... paths) throws GridException {
+        @Nullable Collection<IgniteUuid> extraLockIds, IgniteFsPath... paths) throws IgniteCheckedException {
         assert task != null;
         assert fs != null;
         assert paths != null && paths.length > 0;
@@ -2505,7 +2505,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 tx.commit();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!finished) {
                     finished = true;
 
@@ -2529,9 +2529,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param key Key to retrieve/update the value for.
      * @param c Closure to apply to cached value.
      * @return {@code True} if value was stored in cache, {@code false} otherwise.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    private <K, V> boolean putx(GridCacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws GridException {
+    private <K, V> boolean putx(GridCacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws IgniteCheckedException {
         assert validTxState(true);
 
         V oldVal = cache.get(key);
@@ -2564,10 +2564,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @param fileName File name to update. Must match file ID.
      * @param accessTime Access time to set. If {@code -1}, will not be updated.
      * @param modificationTime Modification time to set. If {@code -1}, will not be updated.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     public void updateTimes(IgniteUuid parentId, IgniteUuid fileId, String fileName, long accessTime,
-        long modificationTime) throws GridException {
+        long modificationTime) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -2641,9 +2641,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          *
          * @param err Optional exception.
          * @return Task result.
-         * @throws GridException In case exception is to be thrown in that case.
+         * @throws IgniteCheckedException In case exception is to be thrown in that case.
          */
-        public T onFailure(Exception err) throws GridException;
+        public T onFailure(Exception err) throws IgniteCheckedException;
     }
 
     /**
@@ -2880,7 +2880,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridGgfsListingEntry oldEntry = listing.get(fileName);
 
                 if (oldEntry == null || !oldEntry.fileId().equals(entry.fileId()))
-                    throw new GridRuntimeException("Directory listing doesn't contain expected file" +
+                    throw new IgniteException("Directory listing doesn't contain expected file" +
                         " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry + ']');
 
                 // Modify listing in-place.
@@ -2891,7 +2891,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 GridGgfsListingEntry oldEntry = listing.put(fileName, entry);
 
                 if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
-                    throw new GridRuntimeException("Directory listing contains unexpected file" +
+                    throw new IgniteException("Directory listing contains unexpected file" +
                         " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
                         ", oldEntry=" + oldEntry + ']');
             }

@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.security.*;
@@ -27,7 +28,6 @@ import org.gridgain.grid.kernal.processors.rest.handlers.top.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.version.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -39,8 +39,8 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
 import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
+import static org.gridgain.grid.kernal.processors.rest.GridRestResponse.*;
 
 /**
  * Rest processor implementation.
@@ -67,7 +67,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
-        @Override public GridRestResponse handle(GridRestRequest req) throws GridException {
+        @Override public GridRestResponse handle(GridRestRequest req) throws IgniteCheckedException {
             return handleAsync(req).get();
         }
 
@@ -83,7 +83,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private IgniteFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
             return new GridFinishedFuture<>(ctx,
-                new GridException("Failed to handle request (received request while stopping grid)."));
+                new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
 
         try {
             final GridWorkerFuture<GridRestResponse> fut = new GridWorkerFuture<>(ctx);
@@ -100,7 +100,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                                 try {
                                     fut.onDone(f.get());
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     fut.onDone(e);
                                 }
                             }
@@ -148,7 +148,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                return new GridFinishedFuture<>(ctx, new GridException("Failed to handle request " +
+                return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Failed to handle request " +
                     "(protocol handler was interrupted when awaiting grid start).", e));
             }
         }
@@ -172,14 +172,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 try {
                     res.sessionTokenBytes(updateSessionToken(req, subjCtx));
                 }
-                catch (GridException e1) {
+                catch (IgniteCheckedException e1) {
                     U.warn(log, "Cannot update response session token: " + e1.getMessage());
                 }
             }
 
             return new GridFinishedFuture<>(ctx, res);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(ctx, new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
         }
 
@@ -191,7 +191,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         if (res == null)
             return new GridFinishedFuture<>(ctx,
-                new GridException("Failed to find registered handler for command: " + req.command()));
+                new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
 
         final GridSecurityContext subjCtx0 = subjCtx;
 
@@ -217,7 +217,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     try {
                         res.sessionTokenBytes(updateSessionToken(req, subjCtx0));
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.warn(log, "Cannot update response session token: " + e.getMessage());
                     }
                 }
@@ -237,7 +237,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (isRestEnabled()) {
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
@@ -255,7 +255,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (isRestEnabled()) {
             for (GridRestProtocol proto : protos)
                 proto.onKernalStart();
@@ -299,7 +299,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
         for (GridRestProtocol proto : protos) {
             Collection<IgniteBiTuple<String, Object>> props = proto.getProperties();
 
@@ -311,7 +311,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                         continue;
 
                     if (attrs.containsKey(key))
-                        throw new GridException(
+                        throw new IgniteCheckedException(
                             "Node attribute collision for attribute [processor=GridRestProcessor, attr=" + key + ']');
 
                     attrs.put(key, p.getValue());
@@ -450,9 +450,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
      *
      * @param req Request to authenticate.
      * @return Authentication subject context.
-     * @throws GridException If authentication failed.
+     * @throws IgniteCheckedException If authentication failed.
      */
-    private GridSecurityContext authenticate(GridRestRequest req) throws GridException {
+    private GridSecurityContext authenticate(GridRestRequest req) throws IgniteCheckedException {
         UUID clientId = req.clientId();
 
         byte[] sesTok = req.sessionToken();
@@ -500,9 +500,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         if (subjCtx == null) {
             if (req.credentials() == null)
-                throw new GridException("Failed to authenticate remote client (secure session SPI not set?): " + req);
+                throw new IgniteCheckedException("Failed to authenticate remote client (secure session SPI not set?): " + req);
             else
-                throw new GridException("Failed to authenticate remote client (invalid credentials?): " + req);
+                throw new IgniteCheckedException("Failed to authenticate remote client (invalid credentials?): " + req);
         }
 
         return subjCtx;
@@ -514,15 +514,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Grid est request.
      * @param subjCtx Authentication subject context.
      * @return Valid session token.
-     * @throws GridException If session token update process failed.
+     * @throws IgniteCheckedException If session token update process failed.
      */
-    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws GridException {
+    private byte[] updateSessionToken(GridRestRequest req, GridSecurityContext subjCtx) throws IgniteCheckedException {
         // Update token from request to actual state.
         byte[] sesTok = ctx.secureSession().updateSession(REMOTE_CLIENT, req.clientId(), subjCtx, null);
 
         // Validate token has been created.
         if (sesTok == null)
-            throw new GridException("Cannot create session token (is secure session SPI set?).");
+            throw new IgniteCheckedException("Cannot create session token (is secure session SPI set?).");
 
         return sesTok;
     }
@@ -626,18 +626,18 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * Starts TCP protocol.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private void startTcpProtocol() throws GridException {
+    private void startTcpProtocol() throws IgniteCheckedException {
         startProtocol(new GridTcpRestProtocol(ctx));
     }
 
     /**
      * Starts HTTP protocol if it exists on classpath.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private void startHttpProtocol() throws GridException {
+    private void startHttpProtocol() throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(HTTP_PROTO_CLS);
 
@@ -652,7 +652,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new GridException("Failed to initialize HTTP REST protocol.", e);
+            throw new IgniteCheckedException("Failed to initialize HTTP REST protocol.", e);
         }
     }
 
@@ -665,9 +665,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * @param proto Protocol.
-     * @throws GridException If protocol initialization failed.
+     * @throws IgniteCheckedException If protocol initialization failed.
      */
-    private void startProtocol(GridRestProtocol proto) throws GridException {
+    private void startProtocol(GridRestProtocol proto) throws IgniteCheckedException {
         assert proto != null;
         assert !protos.contains(proto);
 

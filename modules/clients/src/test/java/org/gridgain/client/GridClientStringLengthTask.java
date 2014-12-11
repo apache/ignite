@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -23,7 +23,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class GridClientStringLengthTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
         Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
         if (arg != null)
@@ -45,7 +45,7 @@ public class GridClientStringLengthTask extends ComputeTaskSplitAdapter<String, 
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         int sum = 0;
 
         for (ComputeJobResult res : results)
@@ -56,7 +56,7 @@ public class GridClientStringLengthTask extends ComputeTaskSplitAdapter<String, 
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        throws GridException {
+        throws IgniteCheckedException {
         if (res.getException() != null)
             return FAILOVER;
 

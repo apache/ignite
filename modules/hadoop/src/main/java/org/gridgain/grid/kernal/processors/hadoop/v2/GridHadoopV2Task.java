@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
@@ -34,7 +35,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
 
         hadoopCtx = new GridHadoopV2Context(ctx);
@@ -46,9 +47,9 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Internal task routine.
      *
      * @param taskCtx Task context.
-     * @throws GridException
+     * @throws IgniteCheckedException
      */
-    protected abstract void run0(GridHadoopV2TaskContext taskCtx) throws GridException;
+    protected abstract void run0(GridHadoopV2TaskContext taskCtx) throws IgniteCheckedException;
 
     /**
      * @return hadoop context.
@@ -73,11 +74,11 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      *
      * @param jobCtx Job context.
      * @return Output format.
-     * @throws GridException In case of Grid exception.
+     * @throws IgniteCheckedException In case of Grid exception.
      * @throws InterruptedException In case of interrupt.
      */
     protected OutputFormat prepareWriter(JobContext jobCtx)
-        throws GridException, InterruptedException {
+        throws IgniteCheckedException, InterruptedException {
         try {
             OutputFormat outputFormat = getOutputFormat(jobCtx);
 
@@ -95,7 +96,7 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
             return outputFormat;
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -130,11 +131,11 @@ public abstract class GridHadoopV2Task extends GridHadoopTask {
      * Commit task.
      *
      * @param outputFormat Output format.
-     * @throws GridException In case of Grid exception.
+     * @throws IgniteCheckedException In case of Grid exception.
      * @throws IOException In case of IO exception.
      * @throws InterruptedException In case of interrupt.
      */
-    protected void commit(@Nullable OutputFormat outputFormat) throws GridException, IOException, InterruptedException {
+    protected void commit(@Nullable OutputFormat outputFormat) throws IgniteCheckedException, IOException, InterruptedException {
         if (hadoopCtx.writer() != null) {
             assert outputFormat != null;
 

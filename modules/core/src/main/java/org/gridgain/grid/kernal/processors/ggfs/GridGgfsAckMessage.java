@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
@@ -34,7 +34,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
     /** Write exception. */
     @GridDirectTransient
-    private GridException err;
+    private IgniteCheckedException err;
 
     /** */
     private byte[] errBytes;
@@ -51,7 +51,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
      * @param id Request ID.
      * @param err Error.
      */
-    public GridGgfsAckMessage(IgniteUuid fileId, long id, @Nullable GridException err) {
+    public GridGgfsAckMessage(IgniteUuid fileId, long id, @Nullable IgniteCheckedException err) {
         this.fileId = fileId;
         this.id = id;
         this.err = err;
@@ -74,12 +74,12 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     /**
      * @return Error occurred when writing this batch, if any.
      */
-    public GridException error() {
+    public IgniteCheckedException error() {
         return err;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(IgniteMarshaller marsh) throws GridException {
+    @Override public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
         if (err != null)
@@ -87,7 +87,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)

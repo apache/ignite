@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.cache.jta.reflect;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
 import javax.transaction.*;
 import java.lang.reflect.*;
 
@@ -86,7 +87,7 @@ public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
     }
 
     /** {@inheritDoc} */
-    @Override public TransactionManager getTm() throws GridException {
+    @Override public TransactionManager getTm() throws IgniteCheckedException {
         assert cls != null;
         assert mtd != null;
 
@@ -94,13 +95,13 @@ public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
             return (TransactionManager)Class.forName(cls).getMethod(mtd).invoke(null);
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find class: " + cls, e);
+            throw new IgniteCheckedException("Failed to find class: " + cls, e);
         }
         catch (NoSuchMethodException e) {
-            throw new GridException("Failed to find method: " + mtd, e);
+            throw new IgniteCheckedException("Failed to find method: " + mtd, e);
         }
         catch (InvocationTargetException | IllegalAccessException e) {
-            throw new GridException("Failed to invoke method: " + mtd, e);
+            throw new IgniteCheckedException("Failed to invoke method: " + mtd, e);
         }
     }
 }

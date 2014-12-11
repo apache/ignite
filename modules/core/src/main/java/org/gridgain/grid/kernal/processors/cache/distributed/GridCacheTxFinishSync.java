@@ -232,7 +232,7 @@ public class GridCacheTxFinishSync<K, V> {
                     return null;
 
                 if (nodeLeft)
-                    return new GridFinishedFutureEx<>(new GridException("Failed to wait for finish synchronizer " +
+                    return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to wait for finish synchronizer " +
                         "state (node left grid): " + nodeId));
 
                 if (pendingFut == null) {
@@ -274,7 +274,7 @@ public class GridCacheTxFinishSync<K, V> {
                 nodeLeft = true;
 
                 if (pendingFut != null) {
-                    pendingFut.onDone(new GridException("Failed to wait for transaction synchronizer " +
+                    pendingFut.onDone(new IgniteCheckedException("Failed to wait for transaction synchronizer " +
                         "completed state (node left grid): " + nodeId));
 
                     pendingFut = null;

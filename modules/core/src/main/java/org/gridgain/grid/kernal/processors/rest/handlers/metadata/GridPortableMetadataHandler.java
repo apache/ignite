@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.metadata;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
@@ -84,7 +85,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
                 return new GridFinishedFuture<>(ctx, res);
             }
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
     }

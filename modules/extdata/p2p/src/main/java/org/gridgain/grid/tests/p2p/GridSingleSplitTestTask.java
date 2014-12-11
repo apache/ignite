@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.tests.p2p;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 
@@ -22,7 +23,7 @@ public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, In
     /**
      * {@inheritDoc}
      */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
         Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
@@ -36,7 +37,7 @@ public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, In
     /**
      * {@inheritDoc}
      */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {

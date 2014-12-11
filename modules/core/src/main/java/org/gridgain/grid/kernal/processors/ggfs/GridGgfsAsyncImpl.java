@@ -41,33 +41,33 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void format() throws GridException {
+    @Override public void format() throws IgniteCheckedException {
         saveOrGet(ggfs.formatAsync());
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
+        Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
         return saveOrGet(ggfs.executeAsync(task, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException {
+        throws IgniteCheckedException {
         return saveOrGet(ggfs.executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
+        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
         return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeLen, @Nullable T arg) throws GridException {
+        long maxRangeLen, @Nullable T arg) throws IgniteCheckedException {
         return saveOrGet(ggfs.executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -88,27 +88,27 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize,
-        int seqReadsBeforePrefetch) throws GridException {
+        int seqReadsBeforePrefetch) throws IgniteCheckedException {
         return ggfs.open(path, bufSize, seqReadsBeforePrefetch);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.open(path);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException {
         return ggfs.open(path, bufSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus globalSpace() throws GridException {
+    @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
         return ggfs.globalSpace();
     }
 
     /** {@inheritDoc} */
-    @Override public void globalSampling(@Nullable Boolean val) throws GridException {
+    @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
         ggfs.globalSampling(val);
     }
 
@@ -128,7 +128,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
+    @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
         return ggfs.awaitDeletesAsync();
     }
 
@@ -168,118 +168,118 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.summary(path);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
         return ggfs.create(path, overwrite);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-        long blockSize, @Nullable Map<String, String> props) throws GridException {
+        long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         return ggfs.create(path, bufSize, overwrite, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-        throws GridException {
+        throws IgniteCheckedException {
         return ggfs.create(path, bufSize, overwrite, affKey, replication, blockSize, props);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws IgniteCheckedException {
         return ggfs.append(path, create);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
-        @Nullable Map<String, String> props) throws GridException {
+        @Nullable Map<String, String> props) throws IgniteCheckedException {
         return ggfs.append(path, bufSize, create, props);
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException {
+    @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
         ggfs.setTimes(path, accessTime, modificationTime);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
-        throws GridException {
+        throws IgniteCheckedException {
         return ggfs.affinity(path, start, len);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen)
-        throws GridException {
+        throws IgniteCheckedException {
         return ggfs.affinity(path, start, len, maxLen);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsMetrics metrics() throws GridException {
+    @Override public IgniteFsMetrics metrics() throws IgniteCheckedException {
         return ggfs.metrics();
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics() throws GridException {
+    @Override public void resetMetrics() throws IgniteCheckedException {
         ggfs.resetMetrics();
     }
 
     /** {@inheritDoc} */
-    @Override public long size(IgniteFsPath path) throws GridException {
+    @Override public long size(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.size(path);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) throws GridException {
+    @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.exists(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         return ggfs.update(path, props);
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
+    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
         ggfs.rename(src, dest);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
+    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
         return ggfs.delete(path, recursive);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
         ggfs.mkdirs(path);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
         ggfs.mkdirs(path, props);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.listPaths(path);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.listFiles(path);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
+    @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
         return ggfs.info(path);
     }
 
     /** {@inheritDoc} */
-    @Override public long usedSpaceSize() throws GridException {
+    @Override public long usedSpaceSize() throws IgniteCheckedException {
         return ggfs.usedSpaceSize();
     }
 

@@ -12,18 +12,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -42,12 +42,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        // IndexingSpi
-        GridH2IndexingSpi spi = new GridH2IndexingSpi();
-        spi.setName("indexingSpi");
-        spi.setDefaultIndexPrimitiveKey(true);
-        cfg.setIndexingSpi(spi);
 
         // DiscoverySpi
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -84,6 +78,12 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setDistributionMode(PARTITIONED_ONLY);
         cfg.setPreloadPartitionedDelay(-1);
         cfg.setBackups(1);
+
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+
+        cfg.setQueryConfiguration(qcfg);
 
         return cfg;
     }
@@ -126,9 +126,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * Populates cache with data loader.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void realTimePopulate(final Ignite g) throws GridException {
+    private static void realTimePopulate(final Ignite g) throws IgniteCheckedException {
         try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelLoadOperations(1);
@@ -154,7 +154,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<Integer, Long> cache,
-            Collection<Map.Entry<Integer, Long>> entries) throws GridException {
+            Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.transform(entry.getKey(), INC);
         }

@@ -450,7 +450,7 @@ public abstract class GridUtils {
                         ", name2=" + field.getName() + ']';
                 }
                 catch (IllegalAccessException e) {
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
             }
         }
@@ -494,7 +494,7 @@ public abstract class GridUtils {
                 assert !containsIntArray(EVTS_ALL_MINUS_METRIC_UPDATE, EVT_NODE_METRICS_UPDATED);
             }
             catch (NoSuchFieldException e) {
-                throw new GridRuntimeException(e);
+                throw new IgniteException(e);
             }
         }
 
@@ -940,9 +940,9 @@ public abstract class GridUtils {
      *
      * @param cls Class to get empty constructor for.
      * @return Empty constructor if one could be found or {@code null} otherwise.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static Constructor<?> forceEmptyConstructor(Class<?> cls) throws GridException {
+    @Nullable public static Constructor<?> forceEmptyConstructor(Class<?> cls) throws IgniteCheckedException {
         Constructor<?> ctor = null;
 
         try {
@@ -957,7 +957,7 @@ public abstract class GridUtils {
                     ctor = (Constructor)ctorFac.invoke(sunRefFac, cls, U.objectConstructor());
                 }
                 catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new GridException("Failed to get object constructor for class: " + cls, e);
+                    throw new IgniteCheckedException("Failed to get object constructor for class: " + cls, e);
                 }
         }
 
@@ -967,11 +967,31 @@ public abstract class GridUtils {
     /**
      * Creates new instance of a class only if it has an empty constructor (can be non-public).
      *
+     * @param cls Class name.
+     * @return Instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public static <T> T newInstance(String cls) throws IgniteCheckedException {
+        Class<?> cls0;
+
+        try {
+            cls0 = Class.forName(cls);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+
+        return (T)newInstance(cls0);
+    }
+
+    /**
+     * Creates new instance of a class only if it has an empty constructor (can be non-public).
+     *
      * @param cls Class to instantiate.
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public static <T> T newInstance(Class<T> cls) throws GridException {
+    @Nullable public static <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
         boolean set = false;
 
         Constructor<T> ctor = null;
@@ -991,10 +1011,10 @@ public abstract class GridUtils {
             return ctor.newInstance();
         }
         catch (NoSuchMethodException e) {
-            throw new GridException("Failed to find empty constructor for class: " + cls, e);
+            throw new IgniteCheckedException("Failed to find empty constructor for class: " + cls, e);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new GridException("Failed to create new instance for class: " + cls, e);
+            throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
         } finally {
             if (ctor != null && set)
                 ctor.setAccessible(false);
@@ -1006,10 +1026,10 @@ public abstract class GridUtils {
      *
      * @param cls Class to instantiate.
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public static <T> T forceNewInstance(Class<?> cls) throws GridException {
+    @Nullable public static <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
         Constructor ctor = forceEmptyConstructor(cls);
 
         if (ctor == null)
@@ -1028,7 +1048,7 @@ public abstract class GridUtils {
             return (T)ctor.newInstance();
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new GridException("Failed to create new instance for class: " + cls, e);
+            throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
         } finally {
             if (set)
                 ctor.setAccessible(false);
@@ -1413,10 +1433,10 @@ public abstract class GridUtils {
      * @param locAddr Local address to resolve.
      * @return Resolved available addresses of given local address.
      * @throws IOException If failed.
-     * @throws GridException If no network interfaces found.
+     * @throws IgniteCheckedException If no network interfaces found.
      */
     public static IgniteBiTuple<Collection<String>, Collection<String>> resolveLocalAddresses(InetAddress locAddr)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert locAddr != null;
 
         Collection<String> addrs = new ArrayList<>();
@@ -1435,7 +1455,7 @@ public abstract class GridUtils {
             }
 
             if (F.isEmpty(addrs))
-                throw new GridException("No network addresses found (is networking enabled?).");
+                throw new IgniteCheckedException("No network addresses found (is networking enabled?).");
         }
         else
             addresses(locAddr, addrs, hostNames);
@@ -2360,7 +2380,7 @@ public abstract class GridUtils {
             ggHome0 = ggHomeTup.get();
 
         if (ggHome0 != null && !ggHome0.equals(path))
-            throw new GridRuntimeException("Failed to set GRIDGAIN_HOME after it has been already resolved " +
+            throw new IgniteException("Failed to set GRIDGAIN_HOME after it has been already resolved " +
                 "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
     }
 
@@ -5579,7 +5599,7 @@ public abstract class GridUtils {
     }
 
     /**
-     * Converts {@link InterruptedException} to {@link GridException}.
+     * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
      * @throws GridInterruptedException If interrupted.
@@ -6052,9 +6072,9 @@ public abstract class GridUtils {
      * @param c Callable to run.
      * @param <R> Return type.
      * @return Return value.
-     * @throws GridException If call failed.
+     * @throws IgniteCheckedException If call failed.
      */
-    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws GridException {
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.
@@ -6066,11 +6086,11 @@ public abstract class GridUtils {
 
             return c.call();
         }
-        catch (GridException | RuntimeException e) {
+        catch (IgniteCheckedException | RuntimeException e) {
             throw e;
         }
         catch (Exception e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             // Set the original class loader back.
@@ -6405,14 +6425,14 @@ public abstract class GridUtils {
      * @param str Input string.
      * @param date Date.
      * @return Next token.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private static boolean checkNextToken(StringTokenizer t, String str, String date) throws GridException {
+    private static boolean checkNextToken(StringTokenizer t, String str, String date) throws IgniteCheckedException {
         try {
             if (t.nextToken().equals(str))
                 return true;
             else
-                throw new GridException("Invalid date format: " + date);
+                throw new IgniteCheckedException("Invalid date format: " + date);
         }
         catch (NoSuchElementException ignored) {
             return false;
@@ -6423,9 +6443,9 @@ public abstract class GridUtils {
      *
      * @param str ISO date.
      * @return Calendar instance.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public static Calendar parseIsoDate(String str) throws GridException {
+    public static Calendar parseIsoDate(String str) throws IgniteCheckedException {
         StringTokenizer t = new StringTokenizer(str, "+-:.TZ", true);
 
         Calendar cal = Calendar.getInstance();
@@ -6501,7 +6521,7 @@ public abstract class GridUtils {
                         cal.set(Calendar.MILLISECOND, 0);
                 }
                 else
-                    throw new GridException("Invalid date format: " + str);
+                    throw new IgniteCheckedException("Invalid date format: " + str);
             }
             else {
                 cal.set(Calendar.SECOND, 0);
@@ -6510,12 +6530,12 @@ public abstract class GridUtils {
 
             if (!"Z".equals(tok)) {
                 if (!"+".equals(tok) && !"-".equals(tok))
-                    throw new GridException("Invalid date format: " + str);
+                    throw new IgniteCheckedException("Invalid date format: " + str);
 
                 boolean plus = "+".equals(tok);
 
                 if (!t.hasMoreTokens())
-                    throw new GridException("Invalid date format: " + str);
+                    throw new IgniteCheckedException("Invalid date format: " + str);
 
                 tok = t.nextToken();
 
@@ -6532,7 +6552,7 @@ public abstract class GridUtils {
                     if (checkNextToken(t, ":", str) && t.hasMoreTokens())
                         tzMin = Integer.parseInt(t.nextToken());
                     else
-                        throw new GridException("Invalid date format: " + str);
+                        throw new IgniteCheckedException("Invalid date format: " + str);
                 }
 
                 if (plus)
@@ -6544,7 +6564,7 @@ public abstract class GridUtils {
                 cal.setTimeZone(TimeZone.getTimeZone("GMT"));
         }
         catch (NumberFormatException ex) {
-            throw new GridException("Invalid date format: " + str, ex);
+            throw new IgniteCheckedException("Invalid date format: " + str, ex);
         }
 
         return cal;
@@ -6636,13 +6656,13 @@ public abstract class GridUtils {
     }
 
     /**
-     * Casts this throwable as {@link GridException}. Creates wrapping
-     * {@link GridException}, if needed.
+     * Casts this throwable as {@link IgniteCheckedException}. Creates wrapping
+     * {@link IgniteCheckedException}, if needed.
      *
      * @param t Throwable to cast.
      * @return Grid exception.
      */
-    public static GridException cast(Throwable t) {
+    public static IgniteCheckedException cast(Throwable t) {
         assert t != null;
 
         while (true) {
@@ -6655,13 +6675,13 @@ public abstract class GridUtils {
                 continue;
             }
 
-            if (t instanceof GridException)
-                return (GridException)t;
+            if (t instanceof IgniteCheckedException)
+                return (IgniteCheckedException)t;
 
-            if (!(t instanceof GridRuntimeException) || t.getCause() == null)
-                return new GridException(t);
+            if (!(t instanceof IgniteException) || t.getCause() == null)
+                return new IgniteCheckedException(t);
 
-            assert t.getCause() != null; // ...and it is GridRuntimeException.
+            assert t.getCause() != null; // ...and it is IgniteException.
 
             t = t.getCause();
         }
@@ -6971,14 +6991,14 @@ public abstract class GridUtils {
      *
      * @param fut Future.
      * @return Future result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static <T> T get(Future<T> fut) throws GridException {
+    public static <T> T get(Future<T> fut) throws IgniteCheckedException {
         try {
             return fut.get();
         }
         catch (ExecutionException e) {
-            throw new GridException(e.getCause());
+            throw new IgniteCheckedException(e.getCause());
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -6986,7 +7006,7 @@ public abstract class GridUtils {
             throw new GridInterruptedException(e);
         }
         catch (CancellationException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -7206,7 +7226,7 @@ public abstract class GridUtils {
                     try {
                         f.get();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to execute future: " + f, e);
                     }
                 }
@@ -7463,11 +7483,11 @@ public abstract class GridUtils {
             }
         }
         catch (Exception e) {
-            throw new GridRuntimeException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']',
+            throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']',
                 e);
         }
 
-        throw new GridRuntimeException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']');
+        throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']');
     }
 
     /**
@@ -7476,9 +7496,9 @@ public abstract class GridUtils {
      * @param cls Class.
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridException If static field with given name cannot be retreived.
+     * @throws IgniteCheckedException If static field with given name cannot be retreived.
      */
-    public static <T> T field(Class<?> cls, String fieldName) throws GridException {
+    public static <T> T field(Class<?> cls, String fieldName) throws IgniteCheckedException {
         assert cls != null;
         assert fieldName != null;
 
@@ -7487,7 +7507,7 @@ public abstract class GridUtils {
                 for (Field field : c.getDeclaredFields()) {
                     if (field.getName().equals(fieldName)) {
                         if (!Modifier.isStatic(field.getModifiers()))
-                            throw new GridException("Failed to get class field (field is not static) [cls=" +
+                            throw new IgniteCheckedException("Failed to get class field (field is not static) [cls=" +
                                 cls + ", fieldName=" + fieldName + ']');
 
                         boolean accessible = field.isAccessible();
@@ -7510,11 +7530,11 @@ public abstract class GridUtils {
             }
         }
         catch (Exception e) {
-            throw new GridException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']',
+            throw new IgniteCheckedException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']',
                 e);
         }
 
-        throw new GridException("Failed to get field value (field was not found) [fieldName=" + fieldName +
+        throw new IgniteCheckedException("Failed to get field value (field was not found) [fieldName=" + fieldName +
             ", cls=" + cls + ']');
     }
 
@@ -7527,10 +7547,10 @@ public abstract class GridUtils {
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
-     * @throws GridException If static field with given name cannot be retreived.
+     * @throws IgniteCheckedException If static field with given name cannot be retreived.
      */
     public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
-        Class[] paramTypes, Object... params) throws GridException {
+        Class[] paramTypes, Object... params) throws IgniteCheckedException {
         assert cls != null || obj != null;
         assert mtdName != null;
 
@@ -7563,11 +7583,11 @@ public abstract class GridUtils {
             }
         }
         catch (Exception e) {
-            throw new GridException("Failed to invoke [mtdName=" + mtdName + ", cls=" + cls + ']',
+            throw new IgniteCheckedException("Failed to invoke [mtdName=" + mtdName + ", cls=" + cls + ']',
                 e);
         }
 
-        throw new GridException("Failed to invoke (method was not found) [mtdName=" + mtdName +
+        throw new IgniteCheckedException("Failed to invoke (method was not found) [mtdName=" + mtdName +
             ", cls=" + cls + ']');
     }
 
@@ -7607,7 +7627,7 @@ public abstract class GridUtils {
             }
         }
         catch (Exception e) {
-            throw new GridRuntimeException(
+            throw new IgniteException(
                 "Failed to get property value [property=" + propName + ", obj=" + obj + ']', e);
         }
     }
@@ -7618,9 +7638,9 @@ public abstract class GridUtils {
      * @param cls Class.
      * @param fieldName Field name.
      * @return Field value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static <T> T staticField(Class<?> cls, String fieldName) throws GridException {
+    public static <T> T staticField(Class<?> cls, String fieldName) throws IgniteCheckedException {
         assert cls != null;
         assert fieldName != null;
 
@@ -7641,10 +7661,10 @@ public abstract class GridUtils {
                 }
         }
         catch (Exception e) {
-            throw new GridException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']', e);
+            throw new IgniteCheckedException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']', e);
         }
 
-        throw new GridException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']');
+        throw new IgniteCheckedException("Failed to get field value [fieldName=" + fieldName + ", cls=" + cls + ']');
     }
 
     /**
@@ -7684,9 +7704,9 @@ public abstract class GridUtils {
      *
      * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
      *      if it did not found in classpath. Notice that in this case logging is not suppressed.
-     * @throws GridException In case of failure to add no-op logger for Log4j.
+     * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
      */
-    public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws GridException {
+    public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
         Object rootLog;
         Object nullApp;
 
@@ -7710,7 +7730,7 @@ public abstract class GridUtils {
             rootLog.getClass().getMethod("addAppender", appCls).invoke(rootLog, nullApp);
         }
         catch (Exception e) {
-            throw new GridException("Failed to add no-op logger for Log4j.", e);
+            throw new IgniteCheckedException("Failed to add no-op logger for Log4j.", e);
         }
 
         return new IgniteBiTuple<>(rootLog, nullApp);
@@ -7720,9 +7740,9 @@ public abstract class GridUtils {
      * Removes previously added no-op logger via method {@link #addLog4jNoOpLogger}.
      *
      * @param t Tuple with root log and null appender instances.
-     * @throws GridException In case of failure to remove previously added no-op logger for Log4j.
+     * @throws IgniteCheckedException In case of failure to remove previously added no-op logger for Log4j.
      */
-    public static void removeLog4jNoOpLogger(IgniteBiTuple<Object, Object> t) throws GridException {
+    public static void removeLog4jNoOpLogger(IgniteBiTuple<Object, Object> t) throws IgniteCheckedException {
         Object rootLog = t.get1();
         Object nullApp = t.get2();
 
@@ -7735,7 +7755,7 @@ public abstract class GridUtils {
             rootLog.getClass().getMethod("removeAppender", appenderCls).invoke(rootLog, nullApp);
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove previously added no-op logger for Log4j.", e);
+            throw new IgniteCheckedException("Failed to remove previously added no-op logger for Log4j.", e);
         }
     }
 
@@ -8128,9 +8148,9 @@ public abstract class GridUtils {
      * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws GridException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
+     * @throws IgniteCheckedException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
      */
-    public static void startLifecycleAware(Iterable<?> objs) throws GridException {
+    public static void startLifecycleAware(Iterable<?> objs) throws IgniteCheckedException {
         for (Object obj : objs) {
             if (obj instanceof LifecycleAware)
                 ((LifecycleAware)obj).start();
@@ -8150,7 +8170,7 @@ public abstract class GridUtils {
                 try {
                     ((LifecycleAware)obj).stop();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }
@@ -8193,9 +8213,9 @@ public abstract class GridUtils {
      *
      * @param node Grid node.
      * @return Inet addresses for given addresses and host names.
-     * @throws GridException If non of addresses can be resolved.
+     * @throws IgniteCheckedException If non of addresses can be resolved.
      */
-    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws GridException {
+    public static Collection<InetAddress> toInetAddresses(ClusterNode node) throws IgniteCheckedException {
         return toInetAddresses(node.addresses(), node.hostNames());
     }
 
@@ -8206,10 +8226,10 @@ public abstract class GridUtils {
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @return Inet addresses for given addresses and host names.
-     * @throws GridException If non of addresses can be resolved.
+     * @throws IgniteCheckedException If non of addresses can be resolved.
      */
     public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
-        Collection<String> hostNames) throws GridException {
+        Collection<String> hostNames) throws IgniteCheckedException {
         List<InetAddress> res = new ArrayList<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
@@ -8240,7 +8260,7 @@ public abstract class GridUtils {
         }
 
         if (res.isEmpty())
-            throw new GridException("Addresses can not be resolved [addr=" + addrs +
+            throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
         return F.viewListReadOnly(res, F.<InetAddress>identity());
@@ -8300,13 +8320,13 @@ public abstract class GridUtils {
      * @param addrs Addresses.
      * @param port Port.
      * @return Resolved socket addresses.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
         IgniteAddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert addrRslvr != null;
 
         Collection<InetSocketAddress> extAddrs = new HashSet<>();
@@ -8321,7 +8341,7 @@ public abstract class GridUtils {
                     if (extAddrs0 != null)
                         extAddrs.addAll(extAddrs0);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to get mapped external addresses " +
                         "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
                 }
@@ -8382,7 +8402,7 @@ public abstract class GridUtils {
      * @param userGgHome GridGain home folder provided by user.
      */
     public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userGgHome)
-        throws GridException {
+        throws IgniteCheckedException {
         String ggWork0 = ggWork;
 
         if (ggWork0 == null) {
@@ -8405,23 +8425,23 @@ public abstract class GridUtils {
                     String tmpDirPath = System.getProperty("java.io.tmpdir");
 
                     if (tmpDirPath == null)
-                        throw new GridException("Failed to create work directory in OS temp " +
+                        throw new IgniteCheckedException("Failed to create work directory in OS temp " +
                             "(property 'java.io.tmpdir' is null).");
 
                     workDir = new File(tmpDirPath, "gridgain" + File.separator + "work");
                 }
 
                 if (!workDir.isAbsolute())
-                    throw new GridException("Work directory path must be absolute: " + workDir);
+                    throw new IgniteCheckedException("Work directory path must be absolute: " + workDir);
 
                 if (!mkdirs(workDir))
-                    throw new GridException("Work directory does not exist and cannot be created: " + workDir);
+                    throw new IgniteCheckedException("Work directory does not exist and cannot be created: " + workDir);
 
                 if (!workDir.canRead())
-                    throw new GridException("Cannot read from work directory: " + workDir);
+                    throw new IgniteCheckedException("Cannot read from work directory: " + workDir);
 
                 if (!workDir.canWrite())
-                    throw new GridException("Cannot write to work directory: " + workDir);
+                    throw new IgniteCheckedException("Cannot write to work directory: " + workDir);
 
                 ggWork = workDir.getAbsolutePath();
             }
@@ -8448,46 +8468,46 @@ public abstract class GridUtils {
      * @param path Path to resolve.
      * @param delIfExist Flag indicating whether to delete the specify directory or not.
      * @return Resolved work directory.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static File resolveWorkDirectory(String path, boolean delIfExist) throws GridException {
+    public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
             String ggWork0 = ggWork;
 
             if (F.isEmpty(ggWork0))
-                throw new GridException("Failed to resolve path (work directory has not been set): " + path);
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
 
             dir = new File(ggWork0, dir.getPath());
         }
 
         if (delIfExist && dir.exists()) {
             if (!U.delete(dir))
-                throw new GridException("Failed to delete directory: " + dir);
+                throw new IgniteCheckedException("Failed to delete directory: " + dir);
         }
 
         if (!mkdirs(dir))
-            throw new GridException("Directory does not exist and cannot be created: " + dir);
+            throw new IgniteCheckedException("Directory does not exist and cannot be created: " + dir);
 
         if (!dir.canRead())
-            throw new GridException("Cannot read from directory: " + dir);
+            throw new IgniteCheckedException("Cannot read from directory: " + dir);
 
         if (!dir.canWrite())
-            throw new GridException("Cannot write to directory: " + dir);
+            throw new IgniteCheckedException("Cannot write to directory: " + dir);
 
         return dir;
     }
 
     /**
-     * Creates {@code GridException} with the collection of suppressed exceptions.
+     * Creates {@code IgniteCheckedException} with the collection of suppressed exceptions.
      *
      * @param msg Message.
      * @param suppressed The collections of suppressed exceptions.
-     * @return {@code GridException}.
+     * @return {@code IgniteCheckedException}.
      */
-    public static GridException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
-        GridException e = new GridException(msg);
+    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+        IgniteCheckedException e = new IgniteCheckedException(msg);
 
         if (suppressed != null) {
             for (Throwable th : suppressed)
@@ -8520,14 +8540,14 @@ public abstract class GridUtils {
      * @param data An array of characters containing hexidecimal digits
      * @return A byte array containing binary data decoded from
      *         the supplied char array.
-     * @throws GridException Thrown if an odd number or illegal of characters is supplied.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
      */
-    public static byte[] decodeHex(char[] data) throws GridException {
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
 
         int len = data.length;
 
         if ((len & 0x01) != 0)
-            throw new GridException("Odd number of characters.");
+            throw new IgniteCheckedException("Odd number of characters.");
 
         byte[] out = new byte[len >> 1];
 
@@ -8553,13 +8573,13 @@ public abstract class GridUtils {
      * @param ch A character to convert to an integer digit
      * @param index The index of the character in the source
      * @return An integer
-     * @throws GridException Thrown if ch is an illegal hex character
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
      */
-    public static int toDigit(char ch, int index) throws GridException {
+    public static int toDigit(char ch, int index) throws IgniteCheckedException {
         int digit = Character.digit(ch, 16);
 
         if (digit == -1)
-            throw new GridException("Illegal hexadecimal character " + ch + " at index " + index);
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + index);
 
         return digit;
     }

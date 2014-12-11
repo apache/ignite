@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.fs.permission.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 import java.util.*;
@@ -33,9 +34,9 @@ class GridGgfsHadoopFSProperties {
      * Constructor.
      *
      * @param props Properties.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    GridGgfsHadoopFSProperties(Map<String, String> props) throws GridException {
+    GridGgfsHadoopFSProperties(Map<String, String> props) throws IgniteCheckedException {
         usrName = props.get(PROP_USER_NAME);
         grpName = props.get(PROP_GROUP_NAME);
 
@@ -46,7 +47,7 @@ class GridGgfsHadoopFSProperties {
                 perm = new FsPermission((short)Integer.parseInt(permStr, 8));
             }
             catch (NumberFormatException ignore) {
-                throw new GridException("Permissions cannot be parsed: " + permStr);
+                throw new IgniteCheckedException("Permissions cannot be parsed: " + permStr);
             }
         }
     }

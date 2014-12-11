@@ -9,7 +9,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.net.*;
 import java.util.*;
@@ -29,7 +29,7 @@ public interface IgniteAddressResolver {
      *      Note that if there are more than one external network the local address
      *      can be mapped differently to each and therefore may need to return
      *      multiple external addresses.
-     * @throws org.gridgain.grid.GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) throws GridException;
+    public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) throws IgniteCheckedException;
 }

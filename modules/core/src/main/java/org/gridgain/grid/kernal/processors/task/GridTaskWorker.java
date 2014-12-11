@@ -132,7 +132,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** Continuous mapper. */
     private final ComputeTaskContinuousMapper mapper = new ComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
-        @Override public void send(ComputeJob job, ClusterNode node) throws GridException {
+        @Override public void send(ComputeJob job, ClusterNode node) throws IgniteCheckedException {
             A.notNull(job, "job");
             A.notNull(node, "node");
 
@@ -140,31 +140,31 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws GridException {
+        @Override public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws IgniteCheckedException {
             A.notNull(mappedJobs, "mappedJobs");
 
             processMappedJobs(mappedJobs);
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ComputeJob job) throws GridException {
+        @Override public void send(ComputeJob job) throws IgniteCheckedException {
             A.notNull(job, "job");
 
             send(Collections.singleton(job));
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Collection<? extends ComputeJob> jobs) throws GridException {
+        @Override public void send(Collection<? extends ComputeJob> jobs) throws IgniteCheckedException {
             A.notNull(jobs, "jobs");
 
             if (jobs.isEmpty())
-                throw new GridException("Empty jobs collection passed to send(...) method.");
+                throw new IgniteCheckedException("Empty jobs collection passed to send(...) method.");
 
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
 
             for (ComputeJob job : jobs) {
                 if (job == null)
-                    throw new GridException("Null job passed to send(...) method.");
+                    throw new IgniteCheckedException("Null job passed to send(...) method.");
 
                 processMappedJobs(Collections.singletonMap(job, balancer.getBalancedNode(job, null)));
             }
@@ -314,13 +314,13 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @param taskCls Task class.
      * @return Task instance.
-     * @throws GridException Thrown in case of any instantiation error.
+     * @throws IgniteCheckedException Thrown in case of any instantiation error.
      */
-    private ComputeTask<T, R> newTask(Class<? extends ComputeTask<T, R>> taskCls) throws GridException {
+    private ComputeTask<T, R> newTask(Class<? extends ComputeTask<T, R>> taskCls) throws IgniteCheckedException {
         ComputeTask<T, R> task = dep.newInstance(taskCls);
 
         if (task == null)
-            throw new GridException("Failed to instantiate task (is default constructor available?): " + taskCls);
+            throw new IgniteCheckedException("Failed to instantiate task (is default constructor available?): " + taskCls);
 
         return task;
     }
@@ -354,7 +354,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 try {
                     task = newTask((Class<? extends ComputeTask<T, R>>)taskCls);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // If cannot instantiate task, then assign internal flag based
                     // on information available.
                     internal = dep.internalTask(null, taskCls);
@@ -388,7 +388,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
                 new Callable<Map<? extends ComputeJob, ClusterNode>>() {
-                    @Override public Map<? extends ComputeJob, ClusterNode> call() throws GridException {
+                    @Override public Map<? extends ComputeJob, ClusterNode> call() throws IgniteCheckedException {
                         return task.map(shuffledNodes, arg);
                     }
                 });
@@ -401,7 +401,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 synchronized (mux) {
                     // Check if some jobs are sent from continuous mapper.
                     if (F.isEmpty(jobRes))
-                        throw new GridException("Task map operation produced no mapped jobs: " + ses);
+                        throw new IgniteCheckedException("Task map operation produced no mapped jobs: " + ses);
                 }
             }
             else
@@ -418,7 +418,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             finishTask(null, e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (!fut.isCancelled()) {
                 U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
@@ -440,9 +440,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
     /**
      * @param jobs Map of jobs.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      */
-    private void processMappedJobs(Map<? extends ComputeJob, ClusterNode> jobs) throws GridException {
+    private void processMappedJobs(Map<? extends ComputeJob, ClusterNode> jobs) throws IgniteCheckedException {
         if (F.isEmpty(jobs))
             return;
 
@@ -456,10 +456,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ClusterNode node = mappedJob.getValue();
 
             if (job == null)
-                throw new GridException("Job can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
+                throw new IgniteCheckedException("Job can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
             if (node == null)
-                throw new GridException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
+                throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
             IgniteUuid jobId = IgniteUuid.fromUuid(node.id());
 
@@ -476,7 +476,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         synchronized (mux) {
             if (state != State.WAITING)
-                throw new GridException("Task is not in waiting state [state=" + state + ", ses=" + ses + ']');
+                throw new IgniteCheckedException("Task is not in waiting state [state=" + state + ", ses=" + ses + ']');
 
             // Do not add siblings if result cache is disabled.
             if (resCache)
@@ -490,7 +490,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // getting results while still sending out references.
             for (GridJobResultImpl res : jobResList) {
                 if (jobRes.put(res.getJobContext().getJobId(), res) != null)
-                    throw new GridException("Duplicate job ID for remote job found: " + res.getJobContext().getJobId());
+                    throw new IgniteCheckedException("Duplicate job ID for remote job found: " + res.getJobContext().getJobId());
 
                 res.setOccupied(true);
 
@@ -524,9 +524,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
     /**
      * @return Topology for this task.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      */
-    private List<ClusterNode> getTaskTopology() throws GridException {
+    private List<ClusterNode> getTaskTopology() throws IgniteCheckedException {
         Collection<UUID> top = ses.getTopology();
 
         Collection<? extends ClusterNode> subgrid = top != null ? ctx.discovery().nodes(top) : ctx.discovery().allNodes();
@@ -664,8 +664,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                         Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(), clsLdr);
 
-                        GridException ex = loc ? res.getException() :
-                            marsh.<GridException>unmarshal(res.getExceptionBytes(), clsLdr);
+                        IgniteCheckedException ex = loc ? res.getException() :
+                            marsh.<IgniteCheckedException>unmarshal(res.getExceptionBytes(), clsLdr);
 
                         Map<Object, Object> attrs = loc ? res.getJobAttributes() :
                             marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(), clsLdr);
@@ -675,7 +675,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Error deserializing job response: " + res, e);
 
                         finishTask(null, e);
@@ -698,7 +698,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     String errMsg = "Failed to obtain remote job result policy for result from GridComputeTask.result(..) " +
                         "method that returned null (will fail the whole task): " + jobRes;
 
-                    finishTask(null, new GridException(errMsg));
+                    finishTask(null, new IgniteCheckedException(errMsg));
 
                     return;
                 }
@@ -762,7 +762,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to obtain topology [ses=" + ses + ", err=" + e + ']', e);
 
                 finishTask(null, e);
@@ -806,7 +806,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         plc = task.result(jobRes, results);
 
                         if (plc == FAILOVER && noFailover) {
-                            GridException e = jobRes.getException();
+                            IgniteCheckedException e = jobRes.getException();
 
                             if (e != null)
                                 throw e;
@@ -824,7 +824,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     return plc;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (X.hasCause(e, GridInternalException.class) ||
                         X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
                         // Print internal exceptions only if debug is enabled.
@@ -833,7 +833,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
                     }
                     else if (X.hasCause(e, ComputeJobFailoverException.class)) {
-                        GridException e0 = new GridException(" Job was not failed over because " +
+                        IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                             "GridComputeJobResultPolicy.FAILOVER was not returned from " +
                             "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);
 
@@ -849,7 +849,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     return null;
                 }
-                catch (GridRuntimeException e) {
+                catch (IgniteException e) {
                     if (X.hasCause(e, GridInternalException.class) ||
                         X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
                         // Print internal exceptions only if debug is enabled.
@@ -858,7 +858,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
                     }
                     else if (X.hasCause(e, ComputeJobFailoverException.class)) {
-                        GridException e0 = new GridException(" Job was not failed over because " +
+                        IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                             "GridComputeJobResultPolicy.FAILOVER was not returned from " +
                             "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);
 
@@ -904,7 +904,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             try {
                 // Reduce results.
                 reduceRes = U.wrapThreadLoader(dep.classLoader(), new Callable<R>() {
-                    @Nullable @Override public R call() throws GridException {
+                    @Nullable @Override public R call() throws IgniteCheckedException {
                         return task.reduce(results);
                     }
                 });
@@ -927,7 +927,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             userE = e;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to reduce job results for task: " + task, e);
 
             userE = e;
@@ -1057,7 +1057,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             new GridJobCancelRequest(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true),
                             PUBLIC_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!isDeadNode(nodeId))
                         U.error(log, "Failed to send cancel request to node (will ignore) [nodeId=" +
                             nodeId + ", taskName=" + ses.getTaskName() +
@@ -1182,7 +1182,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     U.warn(log, "Job timed out prior to sending job execution request: " + res.getJob());
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             boolean deadNode = isDeadNode(res.getNode().id());
 
             // Avoid stack trace if node has left grid.

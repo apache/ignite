@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -165,7 +166,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws GridException {
+    @Override public void commit() throws IgniteCheckedException {
         enter();
 
         try {
@@ -177,7 +178,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         enter();
 
         try {
@@ -202,7 +203,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public void rollback() throws GridException {
+    @Override public void rollback() throws IgniteCheckedException {
         enter();
 
         try {

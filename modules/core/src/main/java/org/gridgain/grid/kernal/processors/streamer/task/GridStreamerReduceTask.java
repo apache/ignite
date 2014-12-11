@@ -56,7 +56,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
-        throws GridException {
+        throws IgniteCheckedException {
         Map<ComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -66,12 +66,12 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public R2 reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public R2 reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return rdc.reduce();
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         // No failover for this task.
         if (res.getException() != null)
             throw res.getException();
@@ -115,7 +115,7 @@ public class GridStreamerReduceTask<R1, R2> extends GridPeerDeployAwareTaskAdapt
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;

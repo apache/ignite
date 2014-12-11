@@ -9,7 +9,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -77,7 +77,7 @@ public interface GridSecurity {
      *
      * @return Collection of authenticated subjects.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
      * Gets security subject based on subject ID.
@@ -85,5 +85,5 @@ public interface GridSecurity {
      * @param subjId Subject ID.
      * @return Authorized security subject.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 }

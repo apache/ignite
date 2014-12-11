@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
@@ -46,12 +46,12 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start() throws GridException {
+        @Override public void start() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws GridException {
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
             // No-op.
         }
     }

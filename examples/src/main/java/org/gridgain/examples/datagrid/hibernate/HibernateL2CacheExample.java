@@ -73,9 +73,9 @@ public class HibernateL2CacheExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         // Start the GridGain node, run the example, and stop the node when finished.
         try (Ignite g = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session

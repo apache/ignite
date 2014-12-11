@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -41,13 +41,13 @@ class GridResourceBasicInjector<T> implements GridResourceInjector {
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceUtils.inject(field.getField(), target, rsrc);
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceUtils.inject(mtd.getMethod(), target, rsrc);
     }
 

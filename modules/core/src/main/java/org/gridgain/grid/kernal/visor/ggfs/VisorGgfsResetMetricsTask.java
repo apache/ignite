@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -45,13 +45,13 @@ public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> ggfsNames) throws GridException {
+        @Override protected Void run(Set<String> ggfsNames) throws IgniteCheckedException {
             for (String ggfsName: ggfsNames)
                 try {
                     g.fileSystem(ggfsName).resetMetrics();
                 }
                 catch (IllegalArgumentException iae) {
-                    throw new GridException("Failed to reset metrics for GGFS: " + ggfsName, iae);
+                    throw new IgniteCheckedException("Failed to reset metrics for GGFS: " + ggfsName, iae);
                 }
 
             return null;

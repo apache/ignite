@@ -34,10 +34,10 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
      *
      * @param clo Callback for every key.
      * @param args Optional arguments.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Override public void loadCache(final IgniteBiInClosure<GridTestKey, Long> clo,
-        Object... args) throws GridException {
+        Object... args) throws IgniteCheckedException {
         // Number of threads is passed in as argument by caller.
         final int numThreads = (Integer)args[0];
         int entryCnt = (Integer)args[1];
@@ -96,7 +96,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
                     completeSvc.take().get();
                 }
                 catch (InterruptedException | ExecutionException e) {
-                    throw new GridException(e);
+                    throw new IgniteCheckedException(e);
                 }
             }
 
@@ -108,15 +108,15 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
         }
     }
 
-    @Override public Long load(GridCacheTx tx, GridTestKey key) throws GridException {
+    @Override public Long load(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
         return null; // No-op.
     }
 
-    @Override public void put(GridCacheTx tx, GridTestKey key, Long val) throws GridException {
+    @Override public void put(GridCacheTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
         // No-op.
     }
 
-    @Override public void remove(GridCacheTx tx, GridTestKey key) throws GridException {
+    @Override public void remove(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
         // No-op.
     }
 }

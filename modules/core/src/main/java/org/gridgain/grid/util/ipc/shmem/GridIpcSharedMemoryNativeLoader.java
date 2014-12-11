@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -77,9 +77,9 @@ public class GridIpcSharedMemoryNativeLoader {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void load() throws GridException {
+    public static void load() throws IgniteCheckedException {
         if (loaded)
             return;
 
@@ -94,9 +94,9 @@ public class GridIpcSharedMemoryNativeLoader {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void doLoad() throws GridException {
+    private static void doLoad() throws IgniteCheckedException {
         assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
 
         Collection<Throwable> errs = new LinkedList<>();
@@ -127,10 +127,10 @@ public class GridIpcSharedMemoryNativeLoader {
             // Failed to find the library.
             assert !errs.isEmpty();
 
-            throw new GridException("Failed to load native IPC library: " + errs);
+            throw new IgniteCheckedException("Failed to load native IPC library: " + errs);
         }
         catch (IOException e) {
-            throw new GridException("Failed to obtain file lock: " + LOCK_FILE, e);
+            throw new IgniteCheckedException("Failed to obtain file lock: " + LOCK_FILE, e);
         }
     }
 

@@ -160,12 +160,12 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorTaskArg arg) throws GridException {
+    @Override protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorTaskArg arg) throws IgniteCheckedException {
         return run(new VisorNodeDataCollectorJobResult(), arg);
     }
 
     protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorJobResult res,
-        VisorNodeDataCollectorTaskArg arg) throws GridException {
+        VisorNodeDataCollectorTaskArg arg) throws IgniteCheckedException {
         res.gridName(g.name());
 
         res.topologyVersion(g.topologyVersion());

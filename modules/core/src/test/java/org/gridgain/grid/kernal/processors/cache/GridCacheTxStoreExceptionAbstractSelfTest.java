@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
@@ -313,7 +313,7 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
 
             fail("Transaction should fail.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.info("Expected exception: " + e);
         }
 
@@ -588,43 +588,43 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
         }
 
 
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key) throws GridException {
+        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key) throws IgniteCheckedException {
             return null;
         }
 
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
-            throws GridException {
+            throws IgniteCheckedException {
             if (fail)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
 
         @Override public void loadAll(@Nullable GridCacheTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
-            throws GridException {
+            throws IgniteCheckedException {
         }
 
-        @Override public void put(@Nullable GridCacheTx tx, Object key, Object val) throws GridException {
+        @Override public void put(@Nullable GridCacheTx tx, Object key, Object val) throws IgniteCheckedException {
             if (fail)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void putAll(@Nullable GridCacheTx tx, Map<?, ?> map) throws GridException {
+        @Override public void putAll(@Nullable GridCacheTx tx, Map<?, ?> map) throws IgniteCheckedException {
             if (fail)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void remove(@Nullable GridCacheTx tx, Object key) throws GridException {
+        @Override public void remove(@Nullable GridCacheTx tx, Object key) throws IgniteCheckedException {
             if (fail)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void removeAll(@Nullable GridCacheTx tx, Collection<?> keys) throws GridException {
+        @Override public void removeAll(@Nullable GridCacheTx tx, Collection<?> keys) throws IgniteCheckedException {
             if (fail)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
             if (fail && commit)
-                throw new GridException("Store exception");
+                throw new IgniteCheckedException("Store exception");
         }
     }
 }

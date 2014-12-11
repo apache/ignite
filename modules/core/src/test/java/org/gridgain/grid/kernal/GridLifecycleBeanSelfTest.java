@@ -108,7 +108,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
 
             assertTrue(false); // Should never get here.
         }
-        catch (GridException expected) {
+        catch (IgniteCheckedException expected) {
             info("Got expected exception: " + expected);
 
             assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
@@ -135,7 +135,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
 
             assertTrue(false); // Should never get here.
         }
-        catch (GridException expected) {
+        catch (IgniteCheckedException expected) {
             info("Got expected exception: " + expected);
 
             assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
@@ -211,7 +211,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
 
             assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
         }
-        catch (GridException ignore) {
+        catch (IgniteCheckedException ignore) {
             assertTrue(false);
         }
         finally {
@@ -243,7 +243,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
             callsCntr.get(evt).incrementAndGet();
         }
 
@@ -267,7 +267,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
 
         /**
          * @param errType type of event to throw error.
-         * @param gridErr {@code True} if {@link GridException}.
+         * @param gridErr {@code True} if {@link IgniteCheckedException}.
          */
         private LifeCycleExceptionBean(LifecycleEventType errType, boolean gridErr) {
             this.errType = errType;
@@ -275,10 +275,10 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
             if (evt == errType) {
                 if (gridErr)
-                    throw new GridException("Expected exception for event: " + evt) {
+                    throw new IgniteCheckedException("Expected exception for event: " + evt) {
                         @Override public void printStackTrace(PrintStream s) {
                             // No-op.
                         }

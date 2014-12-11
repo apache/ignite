@@ -140,7 +140,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         GridIpcSharedMemoryNativeLoader.load();
 
         pid = GridIpcSharedMemoryUtils.pid();
@@ -188,7 +188,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
-    @Override public GridIpcEndpoint accept() throws GridException {
+    @Override public GridIpcEndpoint accept() throws IgniteCheckedException {
         while (!Thread.currentThread().isInterrupted()) {
             Socket sock = null;
 
@@ -284,7 +284,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
                     sendErrorResponse(out, e);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     LT.error(log, e, "Failed to process incoming shared memory connection.");
 
                     sendErrorResponse(out, e);
@@ -303,7 +303,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             }
             catch (IOException e) {
                 if (!Thread.currentThread().isInterrupted() && !accepted)
-                    throw new GridException("Failed to accept incoming connection.", e);
+                    throw new IgniteCheckedException("Failed to accept incoming connection.", e);
 
                 if (!closed)
                     LT.error(log, null, "Failed to process incoming shared memory connection: " + e.getMessage());
@@ -443,9 +443,9 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * Sets configuration properties from the map.
      *
      * @param endpointCfg Map of properties.
-     * @throws GridException If invalid property name or value.
+     * @throws IgniteCheckedException If invalid property name or value.
      */
-    public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
+    public void setupConfiguration(Map<String, String> endpointCfg) throws IgniteCheckedException {
         for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
             try {
                 switch (e.getKey()) {
@@ -468,14 +468,14 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                         break;
 
                     default:
-                        throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                        throw new IgniteCheckedException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
                 }
             }
             catch (Throwable t) {
-                if (t instanceof GridException)
+                if (t instanceof IgniteCheckedException)
                     throw t;
 
-                throw new GridException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
+                throw new IgniteCheckedException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
                         getClass().getSimpleName(), t);
             }
         }

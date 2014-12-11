@@ -8,10 +8,10 @@
  */
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.gridgain.client.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.nio.*;
@@ -38,7 +38,7 @@ public class GridTcpRestParser implements GridNioParser {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
-        GridException {
+        IgniteCheckedException {
         ParserState state = ses.removeMeta(PARSER_STATE.ordinal());
 
         if (state == null)
@@ -105,7 +105,7 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, GridException {
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, IgniteCheckedException {
         assert msg0 != null;
 
         GridClientMessage msg = (GridClientMessage)msg0;
@@ -143,10 +143,10 @@ public class GridTcpRestParser implements GridNioParser {
      * @param state Current parser state.
      * @return Parsed packet.s
      * @throws IOException If packet cannot be parsed.
-     * @throws GridException If deserialization error occurred.
+     * @throws IgniteCheckedException If deserialization error occurred.
      */
     @Nullable private GridClientMessage parseMemcachePacket(GridNioSession ses, ByteBuffer buf, ParserState state)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.MEMCACHE;
         assert state.packet() != null;
         assert state.packet() instanceof GridMemcachedMessage;
@@ -293,10 +293,10 @@ public class GridTcpRestParser implements GridNioParser {
      * @param state Parser state.
      * @return Parsed message.
      * @throws IOException If packet parsing or deserialization failed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private GridClientMessage parseCustomPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.GRIDGAIN;
         assert state.packet() == null;
 
@@ -417,9 +417,9 @@ public class GridTcpRestParser implements GridNioParser {
      * @param state Parser state.
      * @return A parsed client message.
      * @throws IOException On marshaller error.
-     * @throws GridException If no marshaller was defined for the session.
+     * @throws IgniteCheckedException If no marshaller was defined for the session.
      */
-    protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) throws IOException, GridException {
+    protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) throws IOException, IgniteCheckedException {
         GridClientMarshaller marsh = marshaller(ses);
 
         GridClientMessage msg = marsh.unmarshal(state.buffer().toByteArray());
@@ -436,9 +436,9 @@ public class GridTcpRestParser implements GridNioParser {
      *
      * @param msg Message being serialized.
      * @return Serialized message.
-     * @throws GridException If serialization failed.
+     * @throws IgniteCheckedException If serialization failed.
      */
-    private ByteBuffer encodeMemcache(GridMemcachedMessage msg) throws GridException {
+    private ByteBuffer encodeMemcache(GridMemcachedMessage msg) throws IgniteCheckedException {
         GridByteArrayList res = new GridByteArrayList(HDR_LEN);
 
         int keyLen = 0;
@@ -522,9 +522,9 @@ public class GridTcpRestParser implements GridNioParser {
      * @param req Raw packet.
      * @return Same packet with fields deserialized.
      * @throws IOException If parsing failed.
-     * @throws GridException If deserialization failed.
+     * @throws IgniteCheckedException If deserialization failed.
      */
-    private GridClientMessage assemble(GridNioSession ses, GridMemcachedMessage req) throws IOException, GridException {
+    private GridClientMessage assemble(GridNioSession ses, GridMemcachedMessage req) throws IOException, IgniteCheckedException {
         byte[] extras = req.extras();
 
         // First, decode key and value, if any
@@ -614,9 +614,9 @@ public class GridTcpRestParser implements GridNioParser {
      * @param flags Flags.
      * @param bytes Byte array to decode.
      * @return Decoded value.
-     * @throws GridException If deserialization failed.
+     * @throws IgniteCheckedException If deserialization failed.
      */
-    private Object decodeObj(short flags, byte[] bytes) throws GridException {
+    private Object decodeObj(short flags, byte[] bytes) throws IgniteCheckedException {
         assert bytes != null;
 
         if ((flags & SERIALIZED_FLAG) != 0)
@@ -652,9 +652,9 @@ public class GridTcpRestParser implements GridNioParser {
      * @param obj Object to serialize.
      * @param out Output stream to which object should be written.
      * @return Serialization flags.
-     * @throws GridException If JDK serialization failed.
+     * @throws IgniteCheckedException If JDK serialization failed.
      */
-    private int encodeObj(Object obj, ByteArrayOutputStream out) throws GridException {
+    private int encodeObj(Object obj, ByteArrayOutputStream out) throws IgniteCheckedException {
         int flags = 0;
 
         byte[] data = null;

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * The object that writes some system counters to some storage for each running job. This operation is a part of
@@ -22,7 +22,7 @@ public interface GridHadoopCounterWriter {
      * @param jobInfo Job info.
      * @param jobId Job id.
      * @param cntrs Counters.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws GridException;
+    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IgniteCheckedException;
 }

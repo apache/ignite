@@ -9,14 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -140,7 +141,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
         // Try create only if cache allows empty entries.
         if (cached == null)
-            throw new GridRuntimeException("Failed to access cache entry metadata (entry is not present). " +
+            throw new IgniteException("Failed to access cache entry metadata (entry is not present). " +
                 "Put value to cache before accessing metadata: " + key);
 
         this.cached = cached = entryEx(true, topVer);
@@ -177,8 +178,8 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         try {
             return get();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -187,8 +188,8 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         try {
             return set(val, CU.<K, V>empty());
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -247,14 +248,14 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         try {
             return peek(MODES_SMART);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should never happen.
-            throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+            throw new IgniteException("Unable to perform entry peek() operation.", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         return peek0(modes, CU.<K, V>empty(), ctx.atomic() ? null : ctx.tm().localTxx());
     }
 
@@ -263,12 +264,12 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @param filter Optional entry filter.
      * @param tx Transaction to peek at (if mode is TX).
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert tx == null || tx.local();
 
         if (mode == null)
@@ -336,10 +337,10 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @param filter Optional entry filter.
      * @param tx Transaction to peek at (if modes contains TX value).
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -356,7 +357,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V reload() throws GridException {
+    @Nullable @Override public V reload() throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = ctx.gate().enter(proxy.gateProjection());
 
         try {
@@ -390,12 +391,12 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact() throws GridException {
+    @Override public boolean compact() throws IgniteCheckedException {
         return proxy.compact(key);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get() throws GridException {
+    @Nullable @Override public V get() throws IgniteCheckedException {
         return proxy.get(key, isNearEnabled(ctx) ? null : cached, true);
     }
 
@@ -405,7 +406,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         // Should not pass dht entries as to near cache.
         return proxy.put(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
@@ -417,7 +418,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public boolean setx(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         // Should not pass dht entries as to near cache.
         return proxy.putx(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
@@ -429,7 +430,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V replace(V val) throws GridException {
+    @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         return set(val, ctx.hasPeekArray());
     }
 
@@ -439,7 +440,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(V oldVal, V newVal) throws IgniteCheckedException {
         return setx(newVal, ctx.equalsPeekArray(newVal));
     }
 
@@ -485,7 +486,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V setIfAbsent(V val) throws GridException {
+    @Nullable @Override public V setIfAbsent(V val) throws IgniteCheckedException {
         return set(val, ctx.noPeekArray());
     }
 
@@ -495,7 +496,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setxIfAbsent(V val) throws GridException {
+    @Override public boolean setxIfAbsent(V val) throws IgniteCheckedException {
         return setx(val, ctx.noPeekArray());
     }
 
@@ -505,7 +506,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         transformAsync(transformer).get();
     }
 
@@ -515,7 +516,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(V val) throws GridException {
+    @Override public boolean replacex(V val) throws IgniteCheckedException {
         return setx(val, ctx.hasPeekArray());
     }
 
@@ -525,7 +526,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Nullable @Override public V remove(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.remove(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
@@ -535,7 +536,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.removex(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
@@ -545,7 +546,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(V val) throws GridException {
+    @Override public boolean remove(V val) throws IgniteCheckedException {
         return proxy.remove(key, val);
     }
 
@@ -694,7 +695,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.lock(key, timeout, filter);
     }
 
@@ -705,7 +706,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         proxy.unlock(key, filter);
     }
 
@@ -732,7 +733,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException {
+    @Override public int memorySize() throws IgniteCheckedException {
         GridCacheEntryEx<K, V> cached = this.cached;
 
         if (cached == null)

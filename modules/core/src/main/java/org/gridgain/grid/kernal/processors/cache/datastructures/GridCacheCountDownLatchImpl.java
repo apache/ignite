@@ -135,38 +135,38 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     }
 
     /** {@inheritDoc} */
-    @Override public void await() throws GridException {
+    @Override public void await() throws IgniteCheckedException {
         initializeLatch();
 
         U.await(internalLatch);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean await(long timeout, TimeUnit unit) throws GridException {
+    @Override public boolean await(long timeout, TimeUnit unit) throws IgniteCheckedException {
         initializeLatch();
 
         return U.await(internalLatch, timeout, unit);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean await(long timeout) throws GridException {
+    @Override public boolean await(long timeout) throws IgniteCheckedException {
         return await(timeout, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Override public int countDown() throws GridException {
+    @Override public int countDown() throws IgniteCheckedException {
         return CU.outTx(new CountDownCallable(1), ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public int countDown(int val) throws GridException {
+    @Override public int countDown(int val) throws IgniteCheckedException {
         A.ensure(val > 0, "val should be positive");
 
         return CU.outTx(new CountDownCallable(val), ctx);
     }
 
     /** {@inheritDoc}*/
-    @Override public void countDownAll() throws GridException {
+    @Override public void countDownAll() throws IgniteCheckedException {
         CU.outTx(new CountDownCallable(0), ctx);
     }
 
@@ -203,9 +203,9 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     }
 
     /**
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    private void initializeLatch() throws GridException {
+    private void initializeLatch() throws IgniteCheckedException {
         if (initGuard.compareAndSet(false, true)) {
             try {
                 internalLatch = CU.outTx(
@@ -248,7 +248,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
             U.await(initLatch);
 
             if (internalLatch == null)
-                throw new GridException("Internal latch has not been properly initialized.");
+                throw new IgniteCheckedException("Internal latch has not been properly initialized.");
         }
     }
 
@@ -279,7 +279,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
             return t.get1().dataStructures().countDownLatch(t.get2(), 0, false, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {

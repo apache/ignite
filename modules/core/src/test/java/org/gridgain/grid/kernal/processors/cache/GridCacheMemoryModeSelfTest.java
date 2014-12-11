@@ -203,7 +203,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         // put
         doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
                 for (int i = 0; i < all; i++)
                     c.put(valueOf(i), i);
             }
@@ -211,7 +211,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         //putAll
         doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws GridException {
+            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
                 Map<String, Integer> m = new HashMap<>();
 
                 for (int i = 0; i < all; i++)
@@ -228,7 +228,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param offheapEmpty Offheap is empty.
      * @param swapEmpty Swap is empty.
      * @param x Cache modifier.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<GridCache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This interface provides a rich API for working with distributed atomic sequence.
@@ -61,43 +61,43 @@ public interface GridCacheAtomicSequence {
      * Gets current value of atomic sequence.
      *
      * @return Value of atomic sequence.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long get() throws GridException;
+    public long get() throws IgniteCheckedException;
 
     /**
      * Increments and returns the value of atomic sequence.
      *
      * @return Value of atomic sequence after increment.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long incrementAndGet() throws GridException;
+    public long incrementAndGet() throws IgniteCheckedException;
 
     /**
      * Gets and increments current value of atomic sequence.
      *
      * @return Value of atomic sequence before increment.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndIncrement() throws GridException;
+    public long getAndIncrement() throws IgniteCheckedException;
 
     /**
      * Adds {@code l} elements to atomic sequence and gets value of atomic sequence.
      *
      * @param l Number of added elements.
      * @return Value of atomic sequence.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long addAndGet(long l) throws GridException;
+    public long addAndGet(long l) throws IgniteCheckedException;
 
     /**
      * Gets current value of atomic sequence and adds {@code l} elements.
      *
      * @param l Number of added elements.
      * @return Value of atomic sequence.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndAdd(long l) throws GridException;
+    public long getAndAdd(long l) throws IgniteCheckedException;
 
     /**
      * Gets local batch size for this atomic sequence.

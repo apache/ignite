@@ -66,7 +66,7 @@ public class StreamingPriceBarsExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("priceBars");
@@ -158,7 +158,7 @@ public class StreamingPriceBarsExample {
 
                     System.out.println("-----------------");
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -173,9 +173,9 @@ public class StreamingPriceBarsExample {
      * Streams random prices into the system.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void streamData(final Ignite g) throws GridException {
+    private static void streamData(final Ignite g) throws IgniteCheckedException {
         IgniteStreamer streamer = g.streamer("priceBars");
 
         for (int i = 0; i < CNT; i++) {
@@ -372,7 +372,7 @@ public class StreamingPriceBarsExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Quote> quotes)
-            throws GridException {
+            throws IgniteCheckedException {
             StreamerWindow win = ctx.window("stage1");
 
             // Add numbers to window.
@@ -413,7 +413,7 @@ public class StreamingPriceBarsExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Bar> bars)
-            throws GridException {
+            throws IgniteCheckedException {
             ConcurrentMap<String, Bar> loc = ctx.localSpace();
 
             StreamerWindow win = ctx.window("stage2");

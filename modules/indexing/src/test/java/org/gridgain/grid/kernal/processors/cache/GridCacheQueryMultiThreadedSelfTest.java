@@ -13,18 +13,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
-import org.apache.ignite.spi.swapspace.file.*;
+import org.gridgain.grid.kernal.processors.query.*;
+import org.gridgain.grid.kernal.processors.query.h2.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -87,36 +87,47 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cacheCfg.setBackups(1);
         cacheCfg.setEvictionPolicy(evictsEnabled() ? new GridCacheLruEvictionPolicy(100) : null);
 
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+
+        cacheCfg.setQueryConfiguration(qcfg);
+
         if (offheapEnabled() && evictsEnabled())
             cacheCfg.setOffHeapMaxMemory(1000); // Small offheap for evictions.
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi() {
-            @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key)
-                throws IgniteSpiException {
-                super.onSwap(spaceName, swapSpaceName, key);
+        GridQueryConfiguration indexing = new GridQueryConfiguration();
 
-                idxSwapCnt.incrementAndGet();
-            }
-
-            @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes)
-                throws IgniteSpiException {
-                super.onUnswap(spaceName, key, val, valBytes);
-
-                idxUnswapCnt.incrementAndGet();
-            }
-        };
-
-        indexing.setDefaultIndexPrimitiveKey(true);
         indexing.setMaxOffheapRowsCacheSize(128);
 
         if (offheapEnabled())
             indexing.setMaxOffHeapMemory(0);
 
-        cfg.setIndexingSpi(indexing);
+        cfg.setQueryConfiguration(indexing);
+
+        GridQueryProcessor.idxCls = FakeIndexing.class;
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private static class FakeIndexing extends GridH2Indexing {
+        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException {
+            super.onSwap(spaceName, key);
+
+            idxSwapCnt.incrementAndGet();
+        }
+
+        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
+        throws IgniteCheckedException {
+            super.onUnswap(spaceName, key, val, valBytes);
+
+            idxUnswapCnt.incrementAndGet();
+        }
     }
 
     /** @return {@code true} If offheap enabled. */
@@ -242,7 +253,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -322,7 +333,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -406,7 +417,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -487,7 +498,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -568,7 +579,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {
@@ -631,7 +642,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 int iter = 0;
 
                 while (!done.get() && !Thread.currentThread().isInterrupted()) {
@@ -713,7 +724,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (!stop.get()) {
                     Collection<Integer> rmtVals = rdcQry.execute(rmtRdc).get();
 
@@ -783,7 +794,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {

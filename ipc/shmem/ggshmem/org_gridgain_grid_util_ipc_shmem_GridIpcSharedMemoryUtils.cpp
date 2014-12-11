@@ -28,7 +28,7 @@
 using namespace std;
 
 /** GridException JNI class name. */
-const char* GRID_EXCEPTION = "org/gridgain/grid/GridException";
+const char* GRID_EXCEPTION = "org/apache/ignite/IgniteCheckedException";
 
 /** GridIpcSharedMemoryOperationTimedoutException JNI class name. */
 const char* OP_TIMEDOUT_EXCEPTION = "org/gridgain/grid/util/ipc/shmem/GridIpcSharedMemoryOperationTimedoutException";

@@ -98,9 +98,9 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
     /**
      * @param num Number.
      * @throws InterruptedException if failed.
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    private void checkTask(int num) throws InterruptedException, GridException {
+    private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class.getName(), num);
@@ -163,7 +163,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -193,7 +193,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (res.getException() != null)
                 throw res.getException();
 
@@ -223,7 +223,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

@@ -39,7 +39,7 @@ public final class MessagingExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
@@ -93,9 +93,9 @@ public final class MessagingExample {
      * Start listening to messages on all grid nodes within passed in projection.
      *
      * @param prj Grid projection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void startListening(ClusterGroup prj) throws GridException {
+    private static void startListening(ClusterGroup prj) throws IgniteCheckedException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
@@ -105,7 +105,7 @@ public final class MessagingExample {
                 // So, need to get projection for sender node through entire grid.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
 
@@ -121,7 +121,7 @@ public final class MessagingExample {
                 // So, need to get projection for sender node through entire grid.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
 

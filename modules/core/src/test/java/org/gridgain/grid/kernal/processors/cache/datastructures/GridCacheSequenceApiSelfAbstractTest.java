@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -316,7 +316,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
 
             fail("Exception expected.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

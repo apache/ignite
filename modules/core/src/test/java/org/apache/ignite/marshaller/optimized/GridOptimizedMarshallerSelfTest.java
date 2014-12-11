@@ -1,8 +1,8 @@
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.marshaller.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -56,9 +56,9 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
     /**
      * Tests marshal self-linked object.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void testMarshallingSelfLink() throws GridException {
+    public void testMarshallingSelfLink() throws IgniteCheckedException {
         SelfLink sl = new SelfLink("a string 1");
 
         sl.link(sl);
@@ -81,7 +81,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             null
         );
     }
@@ -121,7 +121,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assert e.getCause() instanceof IOException;
             assert e.getCause().getMessage().contains("must return the value of the field");
         }
@@ -196,7 +196,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
 
                 out.writeInt(val);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException(e);
             }
         }
@@ -213,7 +213,7 @@ public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest 
 
                 val = in.readInt();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException(e);
             }
         }

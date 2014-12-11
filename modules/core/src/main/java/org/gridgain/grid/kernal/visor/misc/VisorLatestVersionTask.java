@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.misc;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -43,7 +43,7 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws GridException {
+        @Override protected String run(Void arg) throws IgniteCheckedException {
             return g.product().latestVersion();
         }
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.serializer.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import java.io.*;
@@ -62,7 +63,7 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
      * @param serialization External serializer to wrap.
      * @param cls The class to serialize.
      */
-    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws GridException {
+    public GridHadoopSerializationWrapper(Serialization<T> serialization, Class<T> cls) throws IgniteCheckedException {
         assert cls != null;
 
         serializer = serialization.getSerializer(cls);
@@ -73,12 +74,12 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
             deserializer.open(inStream);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void write(DataOutput out, Object obj) throws GridException {
+    @Override public void write(DataOutput out, Object obj) throws IgniteCheckedException {
         assert out != null;
         assert obj != null;
 
@@ -90,12 +91,12 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
             currOut = null;
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
+    @Override public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException {
         assert in != null;
 
         try {
@@ -108,18 +109,18 @@ public class GridHadoopSerializationWrapper<T> implements GridHadoopSerializatio
             return res;
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         try {
             serializer.close();
             deserializer.close();
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 }

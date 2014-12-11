@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -103,7 +103,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, String> clo,
-            @Nullable Object... args) throws GridException {
+            @Nullable Object... args) throws IgniteCheckedException {
             assert clo != null;
             assert args != null;
 
@@ -116,19 +116,19 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws GridException {
+        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, String val) throws GridException {
+        @Override public void put(GridCacheTx tx, Integer key, String val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
     }

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.jta;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.jndi.*;
 import org.gridgain.grid.cache.jta.reflect.*;
@@ -39,7 +39,7 @@ public interface GridCacheTmLookup {
      * Gets Transaction Manager (TM).
      *
      * @return TM or {@code null} if TM cannot be looked up. 
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public TransactionManager getTm() throws GridException;
+    @Nullable public TransactionManager getTm() throws IgniteCheckedException;
 }

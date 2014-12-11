@@ -33,7 +33,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
     private Map<String, Integer> params;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
         assert taskSes != null;
         assert arg != null;
         assert arg > 0;
@@ -78,7 +78,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert taskSes != null;
         assert results != null;
         assert params != null;
@@ -112,7 +112,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
                     Thread.sleep(100);
                 }
                 catch (InterruptedException e) {
-                    throw new GridException("Thread interrupted.", e);
+                    throw new IgniteCheckedException("Thread interrupted.", e);
                 }
             }
         }

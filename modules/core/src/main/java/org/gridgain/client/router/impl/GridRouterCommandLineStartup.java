@@ -61,7 +61,7 @@ public class GridRouterCommandLineStartup {
                 try {
                     tcpRouter.start();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
 
                     tcpRouter = null;
@@ -78,7 +78,7 @@ public class GridRouterCommandLineStartup {
             try {
                 tcpRouter.stop();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Error while stopping the router.", e);
             }
         }
@@ -88,9 +88,9 @@ public class GridRouterCommandLineStartup {
      * Wrapper method to run router from command-line.
      *
      * @param args Command-line arguments.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         X.println(
             "  _____     _     _______      _         ",
             " / ___/____(_)___/ / ___/___ _(_)___     ",

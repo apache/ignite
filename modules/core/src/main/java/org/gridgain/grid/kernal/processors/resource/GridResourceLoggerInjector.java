@@ -27,13 +27,13 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<Ignite
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceUtils.inject(field.getField(), target, resource((IgniteLoggerResource)field.getAnnotation(), target));
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceUtils.inject(mtd.getMethod(), target, resource((IgniteLoggerResource)mtd.getAnnotation(), target));
     }
 

@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -29,8 +29,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.cache.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
@@ -300,7 +300,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 return new GridFinishedFuture<>(cctx.kernalContext(),
                     cacheCtx.store().loadAllFromStore(this, keys, c));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(cctx.kernalContext(), e);
             }
         }
@@ -324,10 +324,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /**
-     * @throws GridException If prepare step failed.
+     * @throws IgniteCheckedException If prepare step failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public void userPrepare() throws GridException {
+    public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
@@ -336,7 +336,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             setRollbackOnly();
 
-            throw new GridException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
+            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -344,18 +344,18 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         try {
             cctx.tm().prepareTx(this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw e;
         }
         catch (Throwable e) {
             setRollbackOnly();
 
-            throw new GridException("Transaction validation produced a runtime exception: " + this, e);
+            throw new IgniteCheckedException("Transaction validation produced a runtime exception: " + this, e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws GridException {
+    @Override public void commit() throws IgniteCheckedException {
         try {
             commitAsync().get();
         }
@@ -365,7 +365,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /** {@inheritDoc} */
-    @Override public void prepare() throws GridException {
+    @Override public void prepare() throws IgniteCheckedException {
         prepareAsync().get();
     }
 
@@ -445,10 +445,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * cache transaction can still be rolled back.
      *
      * @param writeEntries Transaction write set.
-     * @throws GridException If batch update failed.
+     * @throws IgniteCheckedException If batch update failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws GridException {
+    protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
         if (store != null && (!internal() || groupLock())) {
@@ -549,7 +549,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 // Commit while locks are held.
                 store.txEnd(this, true);
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 commitError(ex);
 
                 setRollbackOnly();
@@ -567,14 +567,14 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
 
-                throw new GridException("Failed to commit transaction to database: " + this, ex);
+                throw new IgniteCheckedException("Failed to commit transaction to database: " + this, ex);
             }
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
-    @Override public void userCommit() throws GridException {
+    @Override public void userCommit() throws IgniteCheckedException {
         GridCacheTxState state = state();
 
         if (state != COMMITTING) {
@@ -583,7 +583,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             setRollbackOnly();
 
-            throw new GridException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
+            throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -835,7 +835,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             throw ex;
                         }
                         else {
-                            GridException err = new GridCacheTxHeuristicException("Failed to locally write to cache " +
+                            IgniteCheckedException err = new GridCacheTxHeuristicException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
@@ -869,7 +869,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 try {
                     store.txEnd(this, true);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     commitError(e);
 
                     setRollbackOnly();
@@ -948,13 +948,13 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /** {@inheritDoc} */
-    @Override public void userRollback() throws GridException {
+    @Override public void userRollback() throws IgniteCheckedException {
         GridCacheTxState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
-            throw new GridException("Invalid transaction state for rollback [state=" + state + ", tx=" + this + ']',
+            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state + ", tx=" + this + ']',
                 commitErr.get());
         }
 
@@ -975,7 +975,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         store.txEnd(this, false);
                 }
             }
-            catch (Error | GridException | RuntimeException e) {
+            catch (Error | IgniteCheckedException | RuntimeException e) {
                 U.addLastCause(e, commitErr.get(), log);
 
                 throw e;
@@ -995,7 +995,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param keysCnt Keys count (to avoid call to {@code Collection.size()}).
      * @param deserializePortable Deserialize portable flag.
      * @param filter Filter to test.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return Enlisted keys.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
@@ -1007,7 +1007,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         Map<K, GridCacheVersion> missed,
         int keysCnt,
         boolean deserializePortable,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1381,8 +1381,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             break; // While loop.
                         }
-                        catch (GridException ex) {
-                            throw new GridRuntimeException("Failed to put value for cache entry: " + e, ex);
+                        catch (IgniteCheckedException ex) {
+                            throw new IgniteException("Failed to put value for cache entry: " + e, ex);
                         }
                     }
                 }
@@ -1461,7 +1461,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     isolation, isInvalidate(), CU.<K, V>empty());
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
-                    @Override public IgniteFuture<Map<K, V>> postLock() throws GridException {
+                    @Override public IgniteFuture<Map<K, V>> postLock() throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for read on keys: " + lockKeys);
 
@@ -1573,7 +1573,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         try {
                             return plc2.apply(false, e);
                         }
@@ -1650,7 +1650,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -1702,10 +1702,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param cached Cached entry.
      * @param filter Filter to check.
      * @return {@code True} if passed or pessimistic.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private boolean filter(GridCacheEntryEx<K, V> cached,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return pessimistic() || cached.context().isAll(cached, filter);
     }
 
@@ -1749,7 +1749,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         try {
             addActiveCache(cacheCtx);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
@@ -1830,7 +1830,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             // Check if lock is being explicitly acquired by the same thread.
                             if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                                 entry.lockedByThread(threadId, xidVer))
-                                throw new GridException("Cannot access key within transaction if lock is " +
+                                throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
                                     "externally held [key=" + key + ", entry=" + entry + ", xidVer=" + xidVer +
                                     ", threadId=" + threadId +
                                     ", locNodeId=" + cctx.localNodeId() + ']');
@@ -1953,7 +1953,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 }
                 else {
                     if (transformClo == null && txEntry.op() == TRANSFORM)
-                        throw new GridException("Failed to enlist write value for key (cannot have update value in " +
+                        throw new IgniteCheckedException("Failed to enlist write value for key (cannot have update value in " +
                             "transaction after transform closure is applied): " + key);
 
                     GridCacheEntryEx<K, V> entry = txEntry.cached();
@@ -1987,7 +1987,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
@@ -2006,7 +2006,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param retval Flag to return value or not.
      * @param filter Filter to check entries.
      * @return Failed keys.
-     * @throws GridException If error.
+     * @throws IgniteCheckedException If error.
      */
     protected Set<K> postLockWrite(
         GridCacheContext<K, V> cacheCtx,
@@ -2018,12 +2018,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean rmv,
         boolean retval,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         for (K k : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(cacheCtx.txKey(k));
 
             if (txEntry == null)
-                throw new GridException("Transaction entry is null (most likely collection of keys passed into cache " +
+                throw new IgniteCheckedException("Transaction entry is null (most likely collection of keys passed into cache " +
                     "operation was changed before operation completed) [missingKey=" + k + ", tx=" + this + ']');
 
             while (true) {
@@ -2210,7 +2210,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         try {
             checkValid();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
@@ -2223,7 +2223,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 try {
                     commit();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
 
@@ -2275,7 +2275,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     retval, isolation, isInvalidate(), CU.<K, V>empty());
 
                 PLC1<GridCacheReturn<V>> plc1 = new PLC1<GridCacheReturn<V>>(ret) {
-                    @Override public GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws GridException {
+                    @Override public GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for put on keys: " + keys);
 
@@ -2295,7 +2295,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         try {
                             return plc1.apply(false, e);
                         }
@@ -2312,7 +2312,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             }
             else {
                 return loadFut.chain(new CX1<IgniteFuture<Set<K>>, GridCacheReturn<V>>() {
-                    @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws GridException {
+                    @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws IgniteCheckedException {
                         f.get();
 
                         return ret;
@@ -2320,7 +2320,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 });
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -2392,7 +2392,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         try {
             checkValid();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
@@ -2403,7 +2403,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 try {
                     commit();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2450,7 +2450,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     isolation, isInvalidate(), CU.<K, V>empty());
 
                 PLC1<GridCacheReturn<V>> plc1 = new PLC1<GridCacheReturn<V>>(ret) {
-                    @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws GridException {
+                    @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for remove on keys: " + passedKeys);
 
@@ -2468,7 +2468,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(cctx.kernalContext(), e.unwrap());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         try {
                             return plc1.apply(false, e);
                         }
@@ -2485,7 +2485,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             }
             else {
                 return loadFut.chain(new CX1<IgniteFuture<Set<K>>, GridCacheReturn<V>>() {
-                    @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws GridException {
+                    @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws IgniteCheckedException {
                         f.get();
 
                         return ret;
@@ -2493,7 +2493,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 });
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -2524,9 +2524,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * Checks that affinity keys are enlisted in group transaction on start.
      *
      * @param keys Keys to check.
-     * @throws GridException If sanity check failed.
+     * @throws IgniteCheckedException If sanity check failed.
      */
-    private void groupLockSanityCheck(GridCacheContext<K, V> cacheCtx, Iterable<? extends K> keys) throws GridException {
+    private void groupLockSanityCheck(GridCacheContext<K, V> cacheCtx, Iterable<? extends K> keys) throws IgniteCheckedException {
         if (groupLock() && cctx.kernalContext().config().isCacheSanityCheckEnabled()) {
             // Note that affinity is called without mapper on purpose.
             int affinityPart = cacheCtx.config().getAffinity().partition(grpLockKey.key());
@@ -2536,7 +2536,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     int part = cacheCtx.affinity().partition(key);
 
                     if (affinityPart != part)
-                        throw new GridException("Failed to enlist key into group-lock transaction (given " +
+                        throw new IgniteCheckedException("Failed to enlist key into group-lock transaction (given " +
                             "key does not belong to locked partition) [key=" + key + ", affinityPart=" + affinityPart +
                             ", part=" + part + ", groupLockKey=" + grpLockKey + ']');
                 }
@@ -2544,7 +2544,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     Object affinityKey = cacheCtx.config().getAffinityMapper().affinityKey(key);
 
                     if (!grpLockKey.equals(affinityKey))
-                        throw new GridException("Failed to enlist key into group-lock transaction (affinity key was " +
+                        throw new IgniteCheckedException("Failed to enlist key into group-lock transaction (affinity key was " +
                             "not enlisted to transaction on start) [key=" + key + ", affinityKey=" + affinityKey +
                             ", groupLockKey=" + grpLockKey + ']');
                 }
@@ -2592,7 +2592,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     CU.<K, V>empty()) :
                 new GridFinishedFuture<>(cctx.kernalContext());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             return new GridFinishedFuture<Object>(cctx.kernalContext(), e);
@@ -2621,10 +2621,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * Adds cache to the list of active caches in transaction.
      *
      * @param cacheCtx Cache context to add.
-     * @throws GridException If caches already enlisted in this transaction are not compatible with given
+     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
      *      cache (e.g. they have different stores).
      */
-    private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws GridException {
+    private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
         // If this is a first cache to work on, capture cache settings.
         if (activeCacheIds.isEmpty() ||
             !activeCacheIds.contains(cacheCtx.cacheId()) && cctx.txCompatible(activeCacheIds, cacheCtx))
@@ -2634,9 +2634,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /**
      * Checks transaction expiration.
      *
-     * @throws GridException If transaction check failed.
+     * @throws IgniteCheckedException If transaction check failed.
      */
-    protected void checkValid() throws GridException {
+    protected void checkValid() throws IgniteCheckedException {
         if (isRollbackOnly()) {
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Cache transaction timed out: " + this);
@@ -2651,7 +2651,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 throw new GridCacheTxHeuristicException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
-            throw new GridException("Cache transaction marked as rollback-only: " + this);
+            throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
         if (remainingTime() == 0 && setRollbackOnly())
@@ -3012,7 +3012,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     rollback = false;
 
                     return commitAsync().chain(new CX1<IgniteFuture<GridCacheTx>, T>() {
-                        @Override public T applyx(IgniteFuture<GridCacheTx> f) throws GridException {
+                        @Override public T applyx(IgniteFuture<GridCacheTx> f) throws IgniteCheckedException {
                             f.get();
 
                             return r;
@@ -3024,7 +3024,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 return new GridFinishedFuture<>(cctx.kernalContext(), r);
             }
-            catch (final GridException ex) {
+            catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
                     return rollbackAsync().chain(new C1<IgniteFuture<GridCacheTx>, T>() {
                         @Override public T apply(IgniteFuture<GridCacheTx> f) {
@@ -3045,9 +3045,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
          *
          * @param val Argument.
          * @return Future return value.
-         * @throws GridException If operation failed.
+         * @throws IgniteCheckedException If operation failed.
          */
-        protected abstract T postLock(T val) throws GridException;
+        protected abstract T postLock(T val) throws IgniteCheckedException;
     }
 
     /**
@@ -3077,7 +3077,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 return fut;
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 throw new GridClosureException(ex);
             }
             finally {
@@ -3090,9 +3090,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
          * Post lock callback.
          *
          * @return Future return value.
-         * @throws GridException If operation failed.
+         * @throws IgniteCheckedException If operation failed.
          */
-        protected abstract IgniteFuture<T> postLock() throws GridException;
+        protected abstract IgniteFuture<T> postLock() throws IgniteCheckedException;
     }
 
     /**
@@ -3118,7 +3118,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 return fut;
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 throw new GridClosureException(ex);
             }
             finally {
@@ -3132,9 +3132,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
          *
          * @param t Post-miss parameter.
          * @return Future return value.
-         * @throws GridException If operation failed.
+         * @throws IgniteCheckedException If operation failed.
          */
-        protected abstract IgniteFuture<T> postMiss(T t) throws GridException;
+        protected abstract IgniteFuture<T> postMiss(T t) throws IgniteCheckedException;
     }
 
     /**
@@ -3164,7 +3164,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 return t;
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 throw new GridClosureException(ex);
             }
             finally {
@@ -3176,8 +3176,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         /**
          * @param t Argument.
          * @return Result.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        abstract T finish(T t) throws GridException;
+        abstract T finish(T t) throws IgniteCheckedException;
     }
 }

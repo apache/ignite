@@ -160,7 +160,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     try {
                         tx.rollback();
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
@@ -174,7 +174,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 catch (GridCacheTxHeuristicException ignore) {
                     // Future should complete with GridCacheTxHeuristicException.
                 }
-                catch (GridException err) {
+                catch (IgniteCheckedException err) {
                     U.error(log, "Failed to invalidate transaction: " + tx, err);
                 }
             }
@@ -332,7 +332,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 else
                     fut.onDone();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyException)
                     fut.onResult((ClusterTopologyException)e);
@@ -389,7 +389,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     else
                         fut.onDone();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyException)
                         fut.onResult((ClusterTopologyException)e);

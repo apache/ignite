@@ -9,7 +9,7 @@
 
 package org.apache.ignite.plugin.segmentation;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.io.*;
 
@@ -50,7 +50,7 @@ public interface GridSegmentationResolver extends Serializable {
      * in configuration.
      *
      * @return {@code True} if segment is correct, {@code false} otherwise.
-     * @throws GridException If an error occurred.
+     * @throws IgniteCheckedException If an error occurred.
      */
-    public abstract boolean isValidSegment() throws GridException;
+    public abstract boolean isValidSegment() throws IgniteCheckedException;
 }

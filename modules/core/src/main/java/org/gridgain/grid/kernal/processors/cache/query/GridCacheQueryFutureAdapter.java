@@ -156,8 +156,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         catch (NoSuchElementException ignored) {
             return null;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -165,9 +165,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * Returns next page for the query.
      *
      * @return Next page or {@code null} if no more pages available.
-     * @throws GridException If fetch failed.
+     * @throws IgniteCheckedException If fetch failed.
      */
-    public Collection<R> nextPage() throws GridException {
+    public Collection<R> nextPage() throws IgniteCheckedException {
         return nextPage(qry.query().timeout(), startTime);
     }
 
@@ -176,9 +176,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      *
      * @param timeout Timeout.
      * @return Next page or {@code null} if no more pages available.
-     * @throws GridException If fetch failed.
+     * @throws IgniteCheckedException If fetch failed.
      */
-    public Collection<R> nextPage(long timeout) throws GridException {
+    public Collection<R> nextPage(long timeout) throws IgniteCheckedException {
         return nextPage(timeout, U.currentTimeMillis());
     }
 
@@ -188,9 +188,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param timeout Timeout.
      * @param startTime Timeout wait start time.
      * @return Next page or {@code null} if no more pages available.
-     * @throws GridException If fetch failed.
+     * @throws IgniteCheckedException If fetch failed.
      */
-    private Collection<R> nextPage(long timeout, long startTime) throws GridException {
+    private Collection<R> nextPage(long timeout, long startTime) throws IgniteCheckedException {
         Collection<R> res = null;
 
         while (res == null) {
@@ -215,7 +215,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                         catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
 
-                            throw new GridException("Query was interrupted: " + qry, e);
+                            throw new IgniteCheckedException("Query was interrupted: " + qry, e);
                         }
                     }
                 }
@@ -230,21 +230,21 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @throws GridException If future is done with an error.
+     * @throws IgniteCheckedException If future is done with an error.
      */
-    private void checkError() throws GridException {
+    private void checkError() throws IgniteCheckedException {
         if (error() != null) {
             clear();
 
-            throw new GridException("Query execution failed: " + qry, error());
+            throw new IgniteCheckedException("Query execution failed: " + qry, error());
         }
     }
 
     /**
      * @return Iterator.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private Iterator<R> internalIterator() throws GridException {
+    private Iterator<R> internalIterator() throws IgniteCheckedException {
         checkError();
 
         Iterator<R> it = null;
@@ -288,7 +288,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
 
-                        throw new GridException("Query was interrupted: " + qry, e);
+                        throw new IgniteCheckedException("Query was interrupted: " + qry, e);
                     }
                 }
             }
@@ -362,9 +362,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     onPage(nodeId, true);
 
                     onDone(nodeId != null ?
-                        new GridException("Failed to execute query on node [query=" + qry +
+                        new IgniteCheckedException("Failed to execute query on node [query=" + qry +
                             ", nodeId=" + nodeId + "]", err) :
-                        new GridException("Failed to execute query locally: " + qry, err));
+                        new IgniteCheckedException("Failed to execute query locally: " + qry, err));
 
                     mux.notifyAll();
                 }
@@ -455,7 +455,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> get() throws GridException {
+    @Override public Collection<R> get() throws IgniteCheckedException {
         if (!isDone())
             loadAllPages();
 
@@ -463,7 +463,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> get(long timeout, TimeUnit unit) throws GridException {
+    @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         if (!isDone())
             loadAllPages();
 
@@ -498,7 +498,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
             cancelQuery();
 
@@ -509,9 +509,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected abstract void cancelQuery() throws GridException;
+    protected abstract void cancelQuery() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public IgniteUuid timeoutId() {
@@ -530,7 +530,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             onDone(new IgniteFutureTimeoutException("Query timed out."));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onDone(e);
         }
     }

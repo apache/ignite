@@ -102,7 +102,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws GridException {
+            @Nullable Object arg) throws IgniteCheckedException {
             taskSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
             ClusterNode node = null;
@@ -121,7 +121,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -136,7 +136,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws GridException {
+        @Nullable @Override public Object execute() throws IgniteCheckedException {
             jobSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
             return null;

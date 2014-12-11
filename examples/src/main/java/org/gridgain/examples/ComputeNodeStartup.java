@@ -20,9 +20,9 @@ public class ComputeNodeStartup {
      * Start up an empty node with example compute configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         Ignition.start("examples/config/example-compute.xml");
     }
 }

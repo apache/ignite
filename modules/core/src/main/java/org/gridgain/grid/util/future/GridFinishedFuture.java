@@ -141,7 +141,7 @@ public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public T get() throws GridException {
+    @Override public T get() throws IgniteCheckedException {
         if (err != null)
             throw U.cast(err);
 
@@ -149,12 +149,12 @@ public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public T get(long timeout) throws GridException {
+    @Override public T get(long timeout) throws IgniteCheckedException {
         return get();
     }
 
     /** {@inheritDoc} */
-    @Override public T get(long timeout, TimeUnit unit) throws GridException {
+    @Override public T get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         return get();
     }
 

@@ -195,7 +195,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue("Invalid exception thrown: " + e, X.hasCause(e, GridCacheAtomicUpdateTimeoutException.class)
                 || X.hasSuppressed(e, GridCacheAtomicUpdateTimeoutException.class));
         }
@@ -230,7 +230,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue("Invalid exception thrown: " + e, X.hasCause(e, GridCacheAtomicUpdateTimeoutException.class)
                 || X.hasSuppressed(e, GridCacheAtomicUpdateTimeoutException.class));
         }

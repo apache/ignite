@@ -761,9 +761,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void delay() throws GridException {
+    private void delay() throws IgniteCheckedException {
         if (writeOrderMode == CLOCK)
             U.sleep(100);
     }

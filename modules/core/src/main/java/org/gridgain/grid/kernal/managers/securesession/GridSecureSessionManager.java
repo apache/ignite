@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.managers.securesession;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,10 +27,10 @@ public interface GridSecureSessionManager extends GridManager {
      * @param tok Token.
      * @param params Parameters.
      * @return Validated secure session or {@code null} if session is not valid.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
     public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId, @Nullable byte[] tok,
-        @Nullable Object params) throws GridException;
+        @Nullable Object params) throws IgniteCheckedException;
 
     /**
      * Generates secure session token.
@@ -42,5 +42,5 @@ public interface GridSecureSessionManager extends GridManager {
      * @return Generated session token.
      */
     public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
-        @Nullable Object params) throws GridException;
+        @Nullable Object params) throws IgniteCheckedException;
 }

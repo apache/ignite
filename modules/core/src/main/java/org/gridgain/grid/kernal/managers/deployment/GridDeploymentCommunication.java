@@ -170,7 +170,7 @@ class GridDeploymentCommunication {
             try {
                 req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), null));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process deployment request (will ignore): " + req, e);
 
                 return;
@@ -285,7 +285,7 @@ class GridDeploymentCommunication {
                 if (log.isDebugEnabled())
                     log.debug("Sent peer class loading response [node=" + node.id() + ", res=" + res + ']');
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (ctx.discovery().pingNode(nodeId))
                     U.error(log, "Failed to send peer class loading response to node: " + nodeId, e);
                 else if (log.isDebugEnabled())
@@ -302,9 +302,9 @@ class GridDeploymentCommunication {
     /**
      * @param rsrcName Resource to undeploy.
      * @param rmtNodes Nodes to send request to.
-     * @throws GridException If request could not be sent.
+     * @throws IgniteCheckedException If request could not be sent.
      */
-    void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws GridException {
+    void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws IgniteCheckedException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
         GridTcpCommunicationMessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
@@ -329,11 +329,11 @@ class GridDeploymentCommunication {
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
      * @return Either response value or {@code null} if timeout occurred.
-     * @throws GridException Thrown if there is no connection with remote node.
+     * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws GridException {
+        final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
@@ -455,7 +455,7 @@ class GridDeploymentCommunication {
                     // Interrupt again to get it in the users code.
                     Thread.currentThread().interrupt();
 
-                    throw new GridException("Got interrupted while waiting for response from node: " +
+                    throw new IgniteCheckedException("Got interrupted while waiting for response from node: " +
                         dstNode.id(), e);
                 }
             }

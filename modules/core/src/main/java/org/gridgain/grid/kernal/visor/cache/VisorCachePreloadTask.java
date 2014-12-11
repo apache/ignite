@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -47,7 +47,7 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> cacheNames) throws GridException {
+        @Override protected Void run(Set<String> cacheNames) throws IgniteCheckedException {
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
             for(GridCache c : g.cachesx()) {

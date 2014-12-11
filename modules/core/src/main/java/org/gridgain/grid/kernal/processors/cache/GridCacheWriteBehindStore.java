@@ -250,9 +250,9 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      * Performs all the initialization logic for write-behind cache store.
      * This class must not be used until this method returns.
      *
-     * @throws GridException If cache cannot be started due to some reasons.
+     * @throws IgniteCheckedException If cache cannot be started due to some reasons.
      */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         assert cacheFlushFreq != 0 || cacheMaxSize != 0;
 
         if (stopping.compareAndSet(true, false)) {
@@ -285,13 +285,13 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(GridKernalContext ctx) throws GridException {
+    @Override public void initialize(GridKernalContext ctx) throws IgniteCheckedException {
         if (store instanceof GridInteropAware)
             ((GridInteropAware)store).initialize(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(GridKernalContext ctx) throws GridException {
+    @Override public void destroy(GridKernalContext ctx) throws IgniteCheckedException {
         if (store instanceof GridInteropAware)
             ((GridInteropAware)store).destroy(ctx);
     }
@@ -331,9 +331,9 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      * Performs shutdown logic for store. No put, get and remove requests will be processed after
      * this method is called.
      *
-     * @throws GridException If shutdown failed for some reason.
+     * @throws IgniteCheckedException If shutdown failed for some reason.
      */
-    @Override public void stop() throws GridException {
+    @Override public void stop() throws IgniteCheckedException {
         if (stopping.compareAndSet(false, true)) {
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');
@@ -355,9 +355,9 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
     /**
      * Forces all entries collected to be flushed to the underlying store.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void forceFlush() throws GridException {
+    public void forceFlush() throws IgniteCheckedException {
         wakeUp();
     }
 
@@ -368,17 +368,17 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      *
      * @param clo {@inheritDoc}
      * @param args {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args)
-        throws GridException {
+        throws IgniteCheckedException {
         store.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems"})
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws GridException {
+        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store load all [keys=" + keys + ", tx=" + tx + ']');
 
@@ -420,7 +420,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public V load(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store load [key=" + key + ", tx=" + tx + ']');
 
@@ -451,13 +451,13 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map<? extends K, ? extends V> map)
-        throws GridException {
+        throws IgniteCheckedException {
         for (Map.Entry<? extends K, ? extends V> e : map.entrySet())
             put(tx, e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
 
@@ -466,13 +466,13 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable GridCacheTx tx, @Nullable Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         for (K key : keys)
             remove(tx, key);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
 
@@ -480,7 +480,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -684,7 +684,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             LT.warn(log, e, "Unable to update underlying store: " + store);
 
             if (writeCache.sizex() > cacheCriticalSize || stopping.get()) {

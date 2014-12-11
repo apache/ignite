@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Cache manager shared across all caches.
@@ -19,9 +19,9 @@ public interface GridCacheSharedManager <K, V> {
      * Starts manager.
      *
      * @param cctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void start(GridCacheSharedContext<K, V> cctx) throws GridException;
+    public void start(GridCacheSharedContext<K, V> cctx) throws IgniteCheckedException;
 
     /**
      * Stops manager.
@@ -31,9 +31,9 @@ public interface GridCacheSharedManager <K, V> {
     public void stop(boolean cancel);
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onKernalStart() throws GridException;
+    public void onKernalStart() throws IgniteCheckedException;
 
     /**
      * @param cancel Cancel flag.

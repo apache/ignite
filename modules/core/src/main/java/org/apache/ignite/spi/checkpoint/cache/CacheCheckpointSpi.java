@@ -176,7 +176,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         try {
             return getSpiContext().get(cacheName, key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to load checkpoint data [key=" + key + ']', e);
         }
     }
@@ -196,7 +196,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
             else
                 return getSpiContext().putIfAbsent(cacheName, key, state, timeout) == null;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to save checkpoint data [key=" + key +
                 ", stateSize=" + state.length + ", timeout=" + timeout + ']', e);
         }
@@ -209,7 +209,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         try {
             return getSpiContext().remove(cacheName, key) != null;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to remove checkpoint data [key=" + key + ']', e);
 
             return false;

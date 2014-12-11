@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -26,7 +27,7 @@ public class GridHadoopProtocolSubmitJobTask extends GridHadoopProtocolTaskAdapt
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus run(ComputeJobContext jobCtx, GridHadoop hadoop,
-        GridHadoopProtocolTaskArguments args) throws GridException {
+        GridHadoopProtocolTaskArguments args) throws IgniteCheckedException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);
         GridHadoopDefaultJobInfo info = args.get(2);

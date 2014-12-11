@@ -186,7 +186,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             ses.setAttribute("fail", true);
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
@@ -197,20 +197,20 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
                 /** {@inheritDoc} */
                 @SuppressWarnings({"RedundantTypeArguments"})
                 @Override
-                public Serializable execute() throws GridException {
+                public Serializable execute() throws IgniteCheckedException {
                     boolean fail;
 
                     try {
                         fail = ses.<String, Boolean>waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     if (fail) {
                         ses.setAttribute("fail", false);
 
-                        throw new GridException("Job exception.");
+                        throw new IgniteCheckedException("Job exception.");
                     }
 
                     // This job does not return any result.
@@ -221,7 +221,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-                throws GridException {
+                throws IgniteCheckedException {
             if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException))
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -229,7 +229,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();

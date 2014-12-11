@@ -9,7 +9,7 @@
 
 package org.apache.ignite.fs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -40,9 +40,9 @@ public interface IgniteFsFileSystem {
      *
      * @param path Path to check for existence in the file system.
      * @return {@code True} if such file exists, otherwise - {@code false}.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public boolean exists(IgniteFsPath path) throws GridException;
+    public boolean exists(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Updates file information for the specified path. Existent properties, not listed in the passed collection,
@@ -60,9 +60,9 @@ public interface IgniteFsFileSystem {
      * @param path File path to set properties for.
      * @param props Properties to update.
      * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException;
+    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException;
 
     /**
      * Renames/moves a file.
@@ -80,10 +80,10 @@ public interface IgniteFsFileSystem {
      * @param src Source file path to rename.
      * @param dest Destination file path. If destination path is a directory, then source file will be placed
      *     into destination directory with original name.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IgniteFsFileNotFoundException If source file doesn't exist.
      */
-    public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException;
+    public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException;
 
     /**
      * Deletes file.
@@ -91,46 +91,46 @@ public interface IgniteFsFileSystem {
      * @param path File path to delete.
      * @param recursive Delete non-empty directories recursively.
      * @return {@code True} in case of success, {@code false} otherwise.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    boolean delete(IgniteFsPath path, boolean recursive) throws GridException;
+    boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException;
 
     /**
      * Creates directories under specified path.
      *
      * @param path Path of directories chain to create.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void mkdirs(IgniteFsPath path) throws GridException;
+    public void mkdirs(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Creates directories under specified path with the specified properties.
      *
      * @param path Path of directories chain to create.
      * @param props Metadata properties to set on created directories.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException;
+    public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException;
 
     /**
      * Lists file paths under the specified path.
      *
      * @param path Path to list files under.
      * @return List of files under the specified path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException;
+    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Lists files under the specified path.
      *
      * @param path Path to list files under.
      * @return List of files under the specified path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException;
+    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Opens a file for reading.
@@ -138,10 +138,10 @@ public interface IgniteFsFileSystem {
      * @param path File path to read.
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public IgniteFsReader open(IgniteFsPath path, int bufSize) throws GridException;
+    public IgniteFsReader open(IgniteFsPath path, int bufSize) throws IgniteCheckedException;
 
     /**
      * Creates a file and opens it for writing.
@@ -149,9 +149,9 @@ public interface IgniteFsFileSystem {
      * @param path File path to create.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
      * @return File output stream to write data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public OutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
+    public OutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException;
 
     /**
      * Creates a file and opens it for writing.
@@ -163,10 +163,10 @@ public interface IgniteFsFileSystem {
      * @param blockSize Block size.
      * @param props File properties to set.
      * @return File output stream to write data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
-       @Nullable Map<String, String> props) throws GridException;
+       @Nullable Map<String, String> props) throws IgniteCheckedException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -176,28 +176,28 @@ public interface IgniteFsFileSystem {
      * @param create Create file if it doesn't exist yet.
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public OutputStream append(IgniteFsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Gets file information for the specified path.
      *
      * @param path Path to get information for.
      * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Nullable public IgniteFsFile info(IgniteFsPath path) throws GridException;
+    @Nullable public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Gets used space in bytes.
      *
      * @return Used space in bytes.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public long usedSpaceSize() throws GridException;
+    public long usedSpaceSize() throws IgniteCheckedException;
 
     /**
      * Gets the implementation specific properties of file system.

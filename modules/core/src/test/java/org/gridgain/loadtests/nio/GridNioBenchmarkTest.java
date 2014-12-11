@@ -43,10 +43,10 @@ public class GridNioBenchmarkTest {
      * Runs the benchmark.
      *
      * @throws UnknownHostException If can't connect to given hist,
-     * @throws GridException If NIO server initialisation failed.
+     * @throws IgniteCheckedException If NIO server initialisation failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void run() throws UnknownHostException, GridException {
+    public void run() throws UnknownHostException, IgniteCheckedException {
         GridNioServerListener<ByteBuffer> lsnr = new GridNioServerListenerAdapter<ByteBuffer>() {
             @Override public void onConnected(GridNioSession ses) {
                 X.print("New connection accepted.");
@@ -95,9 +95,9 @@ public class GridNioBenchmarkTest {
      *
      * @param args Command line arguments.
      * @throws UnknownHostException If can't connect to given hist,
-     * @throws GridException If NIO server initialisation failed.
+     * @throws IgniteCheckedException If NIO server initialisation failed.
      */
-    public static void main(String[] args) throws UnknownHostException, GridException {
+    public static void main(String[] args) throws UnknownHostException, IgniteCheckedException {
         if (args.length != 2) {
             X.println("Usage: " + GridNioBenchmarkTest.class.getSimpleName() + " <threads> <port>");
 

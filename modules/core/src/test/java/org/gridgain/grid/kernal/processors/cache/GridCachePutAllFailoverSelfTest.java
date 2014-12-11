@@ -249,7 +249,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -421,7 +421,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -472,7 +472,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                         try {
                             taskFut.get(); //if something went wrong - we'll get exception here
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.error("Job failed", e);
 
                             jobFailed.set(true);
@@ -541,10 +541,10 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      * @param workerNode Worker node.
      * @param keys Keys that are suspected to be absent
      * @return List of absent keys. If no keys are absent, the list is empty.
-     * @throws GridException If error occurs.
+     * @throws IgniteCheckedException If error occurs.
      */
     private Collection<Integer> findAbsentKeys(Ignite workerNode,
-        Collection<Integer> keys) throws GridException {
+        Collection<Integer> keys) throws IgniteCheckedException {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 

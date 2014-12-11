@@ -85,7 +85,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             }
 
             default:
-                return new GridFinishedFutureEx<>(new GridException("Unsupported query command: " + req.command()));
+                return new GridFinishedFutureEx<>(new IgniteCheckedException("Unsupported query command: " + req.command()));
         }
     }
 
@@ -114,7 +114,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             return ctx.closure().callLocalSafe(c, false);
         else {
             if (ctx.discovery().node(destId) == null)
-                return new GridFinishedFutureEx<>(new GridException("Destination node ID has left the grid (retry " +
+                return new GridFinishedFutureEx<>(new IgniteCheckedException("Destination node ID has left the grid (retry " +
                     "the query): " + destId));
 
             try {
@@ -124,7 +124,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
                 return comp.future();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Should not be thrown since uses asynchronous execution.
                 return new GridFinishedFutureEx<>(e);
             }
@@ -151,13 +151,13 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
                         return new GridRestResponse();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new GridClosureException(e);
                     }
                 }
             });
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should not be thrown since uses asynchronous execution.
             return new GridFinishedFutureEx<>(e);
         }
@@ -169,16 +169,16 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param locMap Queries map.
      * @param locNodeId Local node ID.
      * @return Rest response.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private static GridRestResponse fetchQueryResults(
         long qryId,
         QueryFutureWrapper wrapper,
         ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap,
         UUID locNodeId
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         if (wrapper == null)
-            throw new GridException("Failed to find query future (query has been expired).");
+            throw new IgniteCheckedException("Failed to find query future (query has been expired).");
 
         GridCacheQueryFutureAdapter<?, ?, ?> fut = wrapper.future();
 
@@ -211,14 +211,14 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param cls Target class.
      * @param clsName Implementing class name.
      * @return Class instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static <T> T instance(Class<? extends T> cls, String clsName) throws GridException {
+    private static <T> T instance(Class<? extends T> cls, String clsName) throws IgniteCheckedException {
         try {
             Class<?> implCls = Class.forName(clsName);
 
             if (!cls.isAssignableFrom(implCls))
-                throw new GridException("Failed to create instance (target class does not extend or implement " +
+                throw new IgniteCheckedException("Failed to create instance (target class does not extend or implement " +
                     "required class or interface) [cls=" + cls.getName() + ", clsName=" + clsName + ']');
 
             Constructor<?> ctor = implCls.getConstructor();
@@ -226,22 +226,22 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             return (T)ctor.newInstance();
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find target class: " + clsName, e);
+            throw new IgniteCheckedException("Failed to find target class: " + clsName, e);
         }
         catch (NoSuchMethodException e) {
-            throw new GridException("Failed to find constructor for provided arguments " +
+            throw new IgniteCheckedException("Failed to find constructor for provided arguments " +
                 "[clsName=" + clsName + ']', e);
         }
         catch (InstantiationException e) {
-            throw new GridException("Failed to instantiate target class " +
+            throw new IgniteCheckedException("Failed to instantiate target class " +
                 "[clsName=" + clsName + ']', e);
         }
         catch (IllegalAccessException e) {
-            throw new GridException("Failed to instantiate class (constructor is not available) " +
+            throw new IgniteCheckedException("Failed to instantiate class (constructor is not available) " +
                 "[clsName=" + clsName + ']', e);
         }
         catch (InvocationTargetException e) {
-            throw new GridException("Failed to instantiate class (constructor threw an exception) " +
+            throw new IgniteCheckedException("Failed to instantiate class (constructor threw an exception) " +
                 "[clsName=" + clsName + ']', e.getCause());
         }
     }
@@ -298,7 +298,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     break;
 
                 default:
-                    throw new GridException("Unsupported query type: " + req.type());
+                    throw new IgniteCheckedException("Unsupported query type: " + req.type());
             }
 
             boolean keepPortable = req.keepPortable();

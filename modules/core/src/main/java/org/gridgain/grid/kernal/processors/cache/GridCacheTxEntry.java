@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -709,9 +709,9 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /**
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (keyBytes == null)
@@ -734,9 +734,9 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      *
      * @param ctx Cache context.
      * @param clsLdr Class loader.
-     * @throws GridException If un-marshalling failed.
+     * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<K, V> ctx, boolean near, ClassLoader clsLdr) throws GridException {
+    public void unmarshal(GridCacheSharedContext<K, V> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
         if (this.ctx == null) {
             GridCacheContext<K, V> cacheCtx = ctx.cacheContext(cacheId);
 
@@ -979,10 +979,10 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         /**
          * @param ctx Cache context.
          * @param depEnabled Deployment enabled flag.
-         * @throws GridException If marshaling failed.
+         * @throws IgniteCheckedException If marshaling failed.
          */
         public void marshal(GridCacheSharedContext<K, V> sharedCtx, GridCacheContext<K, V> ctx, boolean depEnabled)
-            throws GridException {
+            throws IgniteCheckedException {
             boolean valIsByteArr = val != null && val instanceof byte[];
 
             // Do not send write values to remote nodes.
@@ -997,9 +997,9 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
          * @param ctx Cache context.
          * @param ldr Class loader.
          * @param depEnabled Deployment enabled flag.
-         * @throws GridException If unmarshalling failed.
+         * @throws IgniteCheckedException If unmarshalling failed.
          */
-        public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr, boolean depEnabled) throws GridException {
+        public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader ldr, boolean depEnabled) throws IgniteCheckedException {
             if (valBytes != null && val == null && (ctx.isUnmarshalValues() || op == TRANSFORM || depEnabled))
                 val = ctx.marshaller().unmarshal(valBytes, ldr);
         }

@@ -119,9 +119,9 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     /**
      * @param num Task number.
      * @throws InterruptedException If interrupted.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkTask(int num) throws InterruptedException, GridException {
+    private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
@@ -187,7 +187,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -259,7 +259,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @SuppressWarnings("deprecation")
         @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (received.size() == 1) {
                 Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
 
@@ -278,7 +278,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

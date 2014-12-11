@@ -10,11 +10,11 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.commons.dbcp.managed.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.h2.jdbcx.*;
-import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.cache.spi.access.*;
 import org.hibernate.engine.transaction.internal.jta.*;
 import org.hibernate.engine.transaction.spi.TransactionFactory;
 import org.hibernate.service.*;
@@ -56,7 +56,7 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
     @SuppressWarnings("PublicInnerClass")
     public static class TestTmLookup implements GridCacheTmLookup {
         /** {@inheritDoc} */
-        @Override public TransactionManager getTm() throws GridException {
+        @Override public TransactionManager getTm() throws IgniteCheckedException {
             return jotm.getTransactionManager();
         }
     }

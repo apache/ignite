@@ -9,19 +9,19 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.lang.reflect.*;
@@ -82,7 +82,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
             fail("Expected exception not thrown.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected exception: " + e);
         }
     }
@@ -107,7 +107,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
             fail("Expected exception not thrown.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected exception: " + e);
         }
     }
@@ -150,7 +150,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
             fail("Expects failed with incompatible types message.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected exception: " + e);
 
             assertTrue(e.getMessage().startsWith("Incompatible types"));
@@ -165,9 +165,9 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @param append Append or prepend flag.
      * @param <T> Cache value type.
      * @return Resulting value in cache.
-     * @throws GridException In case of any grid exception.
+     * @throws IgniteCheckedException In case of any grid exception.
      */
-    private <T> T testAppend(T curVal, T newVal, boolean append) throws GridException {
+    private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
         GridRestCommandHandler hnd = new GridCacheCommandHandler(((GridKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
@@ -226,7 +226,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
          *
          * @return Instance of a GridCache proxy.
          */
-        @Override protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws GridException {
+        @Override protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
             final GridCacheProjectionEx<Object, Object> cache = super.localCache(cacheName);
 
             return (GridCacheProjectionEx<Object, Object>)Proxy.newProxyInstance(getClass().getClassLoader(),
@@ -235,7 +235,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
                             IgniteFuture<Object> fut = new GridFinishedFuture<>(ctx,
-                                new GridException("Operation failed"));
+                                new IgniteCheckedException("Operation failed"));
 
                             fut.syncNotify(sync);
 

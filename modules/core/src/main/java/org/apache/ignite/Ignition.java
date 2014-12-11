@@ -261,10 +261,10 @@ public class Ignition {
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
-     * @throws GridException If default grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Ignite start() throws GridException {
+    public static Ignite start() throws IgniteCheckedException {
         return GridGainEx.start();
     }
 
@@ -274,10 +274,10 @@ public class Ignition {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * @return Started grid.
-     * @throws GridException If grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
         return GridGainEx.start(cfg);
     }
 
@@ -293,11 +293,11 @@ public class Ignition {
      * @param springCfgPath Spring XML configuration file path or URL.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath) throws IgniteCheckedException {
         return GridGainEx.start(springCfgPath);
     }
 
@@ -313,11 +313,11 @@ public class Ignition {
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(URL springCfgUrl) throws GridException {
+    public static Ignite start(URL springCfgUrl) throws IgniteCheckedException {
         return GridGainEx.start(springCfgUrl);
     }
 

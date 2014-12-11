@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
@@ -43,11 +43,11 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
-        return new GridFinishedFutureEx<>(new GridException("Hadoop is not available."));
+        return new GridFinishedFutureEx<>(new IgniteCheckedException("Hadoop is not available."));
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException {
         return null;
     }
 
@@ -57,12 +57,12 @@ public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+    @Override public boolean kill(GridHadoopJobId jobId) throws IgniteCheckedException {
         return false;
     }
 }

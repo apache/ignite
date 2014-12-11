@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.protocol.gg.*;
 import org.gridgain.grid.kernal.processors.task.*;
-import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -72,7 +72,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         GridProtocolHandler.registerDeploymentManager(this);
 
         assertParameter(ctx.config().getDeploymentMode() != null, "ctx.config().getDeploymentMode() != null");
@@ -102,7 +102,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         GridProtocolHandler.deregisterDeploymentManager();
 
         if (verStore != null)
@@ -126,7 +126,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart0() throws GridException {
+    @Override public void onKernalStart0() throws IgniteCheckedException {
         locStore.onKernalStart();
         ldrStore.onKernalStart();
         verStore.onKernalStart();
@@ -205,7 +205,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             try {
                 comm.sendUndeployRequest(taskName, rmtNodes);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send undeployment request for task: " + taskName, e);
             }
         }
@@ -232,10 +232,10 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     /**
      * @param cls Class to deploy.
      * @param clsLdr Class loader.
-     * @throws GridException If deployment failed.
+     * @throws IgniteCheckedException If deployment failed.
      * @return Grid deployment.
      */
-    @Nullable public GridDeployment deploy(Class<?> cls, ClassLoader clsLdr) throws GridException {
+    @Nullable public GridDeployment deploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         if (clsLdr == null)
             clsLdr = getClass().getClassLoader();
 
@@ -251,7 +251,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                 cls = Class.forName(clsName, true, clsLdr);
             }
             catch (ClassNotFoundException e) {
-                throw new GridException("Cannot deploy parent class for lambda: " + clsName, e);
+                throw new IgniteCheckedException("Cannot deploy parent class for lambda: " + clsName, e);
             }
         }
 
@@ -262,7 +262,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             if ((ldr.deployMode() == ISOLATED || ldr.deployMode() == PRIVATE) &&
                 (ctx.config().getDeploymentMode() == SHARED || ctx.config().getDeploymentMode() == CONTINUOUS) &&
                 !U.hasAnnotation(cls, GridInternal.class))
-                throw new GridException("Attempt to deploy class loaded in ISOLATED or PRIVATE mode on node with " +
+                throw new IgniteCheckedException("Attempt to deploy class loaded in ISOLATED or PRIVATE mode on node with " +
                     "SHARED or CONTINUOUS deployment mode [cls=" + cls + ", clsDeployMode=" + ldr.deployMode() +
                     ", localDeployMode=" + ctx.config().getDeploymentMode() + ']');
 

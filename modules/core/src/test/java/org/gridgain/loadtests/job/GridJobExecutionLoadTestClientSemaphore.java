@@ -209,7 +209,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
 
@@ -225,7 +225,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 }
             });
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IllegalStateException(e);
         }
     }

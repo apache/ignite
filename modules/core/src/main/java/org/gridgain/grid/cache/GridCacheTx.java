@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 
@@ -215,16 +216,16 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
     /**
      * Commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @throws GridException If commit failed.
+     * @throws IgniteCheckedException If commit failed.
      */
-    public void commit() throws GridException;
+    public void commit() throws IgniteCheckedException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
-     * @throws GridException If transaction could not be gracefully ended.
+     * @throws IgniteCheckedException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
@@ -236,7 +237,7 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
     /**
      * Rolls back this transaction.
      *
-     * @throws GridException If rollback failed.
+     * @throws IgniteCheckedException If rollback failed.
      */
-    public void rollback() throws GridException;
+    public void rollback() throws IgniteCheckedException;
 }

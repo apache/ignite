@@ -34,7 +34,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testQueryLocal() throws Exception {
         GridCache<Integer, String> cache = ignite.cache(null);

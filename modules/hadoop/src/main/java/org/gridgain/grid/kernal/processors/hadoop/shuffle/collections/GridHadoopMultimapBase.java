@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
@@ -126,8 +127,8 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
             try {
                 return read(valPtr + 12, valueSize(valPtr));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 
@@ -145,7 +146,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
          * @param size Object size.
          * @return Object.
          */
-        protected Object read(long ptr, long size) throws GridException {
+        protected Object read(long ptr, long size) throws IgniteCheckedException {
             in.buffer().set(ptr, size);
 
             tmp = ser.read(in, tmp);
@@ -154,7 +155,7 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             ser.close();
         }
     }
@@ -180,9 +181,9 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
 
         /**
          * @param ctx Task context.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected AdderBase(GridHadoopTaskContext ctx) throws GridException {
+        protected AdderBase(GridHadoopTaskContext ctx) throws IgniteCheckedException {
             valSer = ctx.valueSerialization();
             keySer = ctx.keySerialization();
 
@@ -249,9 +250,9 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
          * @param off Offset.
          * @param o Object.
          * @return Page pointer.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected long write(int off, Object o, GridHadoopSerialization ser) throws GridException {
+        protected long write(int off, Object o, GridHadoopSerialization ser) throws IgniteCheckedException {
             writeStart = fixAlignment();
 
             if (off != 0)
@@ -296,12 +297,12 @@ public abstract class GridHadoopMultimapBase implements GridHadoopMultimap {
         }
 
         /** {@inheritDoc} */
-        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
+        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             allPages.add(pages);
 
             keySer.close();

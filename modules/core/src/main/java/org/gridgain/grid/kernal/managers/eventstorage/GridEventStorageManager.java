@@ -9,18 +9,19 @@
 
 package org.gridgain.grid.kernal.managers.eventstorage;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.eventstorage.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.eventstorage.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -205,7 +206,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         if (log.isDebugEnabled())
@@ -213,7 +214,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         Map<IgnitePredicate<? extends IgniteEvent>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
@@ -513,8 +514,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         try {
             ctx.resource().injectGeneric(lsnr);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Failed to inject resources to event listener: " + lsnr, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to inject resources to event listener: " + lsnr, e);
         }
 
         addLocalEventListener(new UserListenerWrapper(lsnr), types);
@@ -677,10 +678,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Optional predicate.
      * @param types Event types to wait for.
      * @return Event.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public IgniteEvent waitForEvent(long timeout, @Nullable Runnable c,
-        @Nullable final IgnitePredicate<? super IgniteEvent> p, int... types) throws GridException {
+        @Nullable final IgnitePredicate<? super IgniteEvent> p, int... types) throws IgniteCheckedException {
         assert timeout >= 0;
 
         final GridFutureAdapter<IgniteEvent> fut = new GridFutureAdapter<>(ctx);
@@ -700,7 +701,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 c.run();
         }
         catch (Exception e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         return fut.get(timeout);
@@ -764,7 +765,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 try {
                     fut.onDone(query(p, nodes, timeout));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fut.onDone(e);
                 }
             }
@@ -778,11 +779,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param nodes Collection of nodes.
      * @param timeout Maximum time to wait for result, if {@code 0}, then wait until result is received.
      * @return Collection of events.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
     private <T extends IgniteEvent> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
-        long timeout) throws GridException {
+        long timeout) throws IgniteCheckedException {
         assert p != null;
         assert nodes != null;
 
@@ -839,7 +840,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     if (res.exceptionBytes() != null)
                         res.exception(marsh.<Throwable>unmarshal(res.exceptionBytes(), null));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal events query response: " + msg, e);
 
                     return;
@@ -914,11 +915,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
 
-                    throw new GridException("Got interrupted while waiting for event query responses.", e);
+                    throw new IgniteCheckedException("Got interrupted while waiting for event query responses.", e);
                 }
 
                 if (err.get() != null)
-                    throw new GridException("Failed to query events due to exception on remote node.", err.get());
+                    throw new IgniteCheckedException("Failed to query events due to exception on remote node.", err.get());
 
                 if (!uids.isEmpty())
                     uidsCp = new LinkedList<>(uids);
@@ -932,7 +933,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         iter.remove();
 
                 if (!uidsCp.isEmpty())
-                    throw new GridException("Failed to receive event query response from following nodes: " +
+                    throw new IgniteCheckedException("Failed to receive event query response from following nodes: " +
                         uidsCp);
             }
         }
@@ -952,10 +953,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param topic Topic to send the message to.
      * @param msg Event to be sent.
      * @param plc Type of processing.
-     * @throws GridException If sending failed.
+     * @throws IgniteCheckedException If sending failed.
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
-        GridEventStorageMessage msg, GridIoPolicy plc) throws GridException {
+        GridEventStorageMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
         ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
@@ -1054,7 +1055,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     // Get local events.
                     evts = localEvents(filter);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to query events [nodeId=" + nodeId + ", filter=" + filter + ']', e);
 
                     evts = Collections.emptyList();
@@ -1084,7 +1085,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                     ctx.io().send(node, req.responseTopic(), res, PUBLIC_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send event query response to node [node=" + nodeId + ", res=" +
                         res + ']', e);
                 }

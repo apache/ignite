@@ -49,7 +49,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         checkValid();
 
         if (onCancelled()) {

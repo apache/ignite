@@ -11,15 +11,14 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.swapspace.noop.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.GridCacheAbstractQuerySelfTest.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
-import org.apache.ignite.spi.swapspace.noop.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -48,12 +47,6 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
-
-        indexing.setDefaultIndexPrimitiveKey(true);
-
-        c.setIndexingSpi(indexing);
-
         c.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
         GridCacheConfiguration cc = defaultCacheConfiguration();
@@ -67,6 +60,12 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
+
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+
+        cc.setQueryConfiguration(qcfg);
 
         c.setCacheConfiguration(cc);
 

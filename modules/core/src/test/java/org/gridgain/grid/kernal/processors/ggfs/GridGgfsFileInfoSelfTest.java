@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +38,7 @@ public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
             private final Random rnd = new Random();
 
             @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
-            @Nullable @Override public Object call() throws GridException {
+            @Nullable @Override public Object call() throws IgniteCheckedException {
                 for (int i = 0; i < 10000; i++) {
                     testSerialization(new GridGgfsFileInfo());
                     testSerialization(new GridGgfsFileInfo());
@@ -61,9 +61,9 @@ public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
      * Test node info serialization.
      *
      * @param info Node info to test serialization for.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testSerialization(GridGgfsFileInfo info) throws GridException {
+    public void testSerialization(GridGgfsFileInfo info) throws IgniteCheckedException {
         assertEquals(info, mu(info));
     }
 
@@ -72,9 +72,9 @@ public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
      *
      * @param obj Object to marshal/unmarshal.
      * @return Marshalled and then unmarshalled object.
-     * @throws GridException In case of any marshalling exception.
+     * @throws IgniteCheckedException In case of any marshalling exception.
      */
-    private <T> T mu(T obj) throws GridException {
+    private <T> T mu(T obj) throws IgniteCheckedException {
         return marshaller.unmarshal(marshaller.marshal(obj), null);
     }
 }

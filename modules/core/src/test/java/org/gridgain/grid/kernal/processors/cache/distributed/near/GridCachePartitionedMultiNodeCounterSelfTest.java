@@ -599,7 +599,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws GridException, InterruptedException {
+        @Override public Boolean call() throws IgniteCheckedException, InterruptedException {
             assertNotNull(ignite);
 
             startLatchMultiNode.countDown();

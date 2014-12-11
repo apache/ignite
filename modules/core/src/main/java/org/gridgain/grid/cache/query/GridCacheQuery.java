@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.query;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -45,7 +46,7 @@ import org.jetbrains.annotations.*;
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link GridCacheQuerySqlFunction}. Classes containing these methods must be registered in
- * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(java.lang.Class[])}.
+ * {@link GridQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link GridCacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
@@ -143,8 +144,7 @@ import org.jetbrains.annotations.*;
  * mastersQry.execute();
  * </pre>
  * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
- * GridGain also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index
- * (supported by {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi}):
+ * GridGain also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index:
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
  *     // Geospatial index.

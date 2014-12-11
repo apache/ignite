@@ -147,7 +147,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
         try {
             info = meta.info(TRASH_ID);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Cannot obtain trash directory info.", e);
         }
 
@@ -174,7 +174,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 catch (GridInterruptedException ignored) {
                     // Ignore this exception while stopping.
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete entry from the trash directory: " + entry.getKey(), e);
 
                     sendDeleteMessage(new GridGgfsDeleteMessage(fileId, e));
@@ -189,9 +189,9 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      * @param name Entry name.
      * @param id Entry ID.
      * @return {@code True} in case the entry really was deleted form the file system by this call.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private boolean delete(String name, IgniteUuid id) throws GridException {
+    private boolean delete(String name, IgniteUuid id) throws IgniteCheckedException {
         assert name != null;
         assert id != null;
 
@@ -235,9 +235,9 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
      *
      * @param parentId Parent ID.
      * @param id Entry id.
-     * @throws GridException If delete failed for some reason.
+     * @throws IgniteCheckedException If delete failed for some reason.
      */
-    private void deleteDirectory(IgniteUuid parentId, IgniteUuid id) throws GridException {
+    private void deleteDirectory(IgniteUuid parentId, IgniteUuid id) throws IgniteCheckedException {
         assert parentId != null;
         assert id != null;
 
@@ -334,7 +334,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
             try {
                 ggfsCtx.send(node, topic, msg0, GridIoPolicy.SYSTEM_POOL);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +
                     ", msg=" + msg + ", err=" + e.getMessage() + ']');
             }

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -38,16 +38,16 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      *
      * @param clo {@inheritDoc}
      * @param args {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args)
-        throws GridException {
+        throws IgniteCheckedException {
         /* No-op. */
     }
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys,
-        IgniteBiInClosure<K, V> c) throws GridException {
+        IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         assert keys != null;
 
         for (K key : keys) {
@@ -60,7 +60,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
 
     /** {@inheritDoc} */
     @Override public void putAll(GridCacheTx tx, Map<? extends K, ? extends V> map)
-        throws GridException {
+        throws IgniteCheckedException {
         assert map != null;
 
         for (Map.Entry<? extends K, ? extends V> e : map.entrySet())
@@ -69,7 +69,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
 
     /** {@inheritDoc} */
     @Override public void removeAll(GridCacheTx tx, Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         assert keys != null;
 
         for (K key : keys)
@@ -83,9 +83,9 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      *
      * @param tx {@inheritDoc}
      * @param commit {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 }

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -53,7 +53,7 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Nullable @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         LoadFuture fut = pendingLoads.get(key);
 
         if (fut != null)
@@ -81,13 +81,13 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws IgniteCheckedException {
         delegate.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, final IgniteBiInClosure<K, V> c)
-        throws GridException {
+        throws IgniteCheckedException {
         if (keys.size() > loadAllThreshold) {
             delegate.loadAll(tx, keys, c);
 
@@ -165,27 +165,27 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException {
         delegate.put(tx, key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws GridException {
+    @Override public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException {
         delegate.putAll(tx, map);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         delegate.remove(tx, key);
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws GridException {
+    @Override public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
         delegate.removeAll(tx, keys);
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         delegate.txEnd(tx, commit);
     }
 
@@ -261,9 +261,9 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
          *
          * @param key Key to load.
          * @return Loaded value (possibly {@code null}).
-         * @throws GridException If load failed.
+         * @throws IgniteCheckedException If load failed.
          */
-        public V get(K key) throws GridException {
+        public V get(K key) throws IgniteCheckedException {
             return get().get(key);
         }
     }

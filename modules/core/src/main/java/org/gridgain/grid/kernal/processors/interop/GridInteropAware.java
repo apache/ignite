@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.interop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 
 /**
@@ -27,15 +27,15 @@ public interface GridInteropAware {
      * Initializes interop-aware component.
      *
      * @param ctx Context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void initialize(GridKernalContext ctx) throws GridException;
+    public void initialize(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Destroys interop-aware component.
      *
      * @param ctx Context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void destroy(GridKernalContext ctx) throws GridException;
+    public void destroy(GridKernalContext ctx) throws IgniteCheckedException;
 }

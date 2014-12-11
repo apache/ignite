@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +43,7 @@ public interface GridGgfsServerHandler {
     /**
      * Stops handling of incoming requests. No server commands will be handled anymore.
      *
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public void stop() throws GridException;
+    public void stop() throws IgniteCheckedException;
 }

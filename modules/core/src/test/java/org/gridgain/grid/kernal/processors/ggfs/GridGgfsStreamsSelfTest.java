@@ -142,9 +142,9 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
     /**
      * Test GGFS construction.
      *
-     * @throws GridException In case of exception.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public void testConfiguration() throws GridException {
+    public void testConfiguration() throws IgniteCheckedException {
         GridCache metaCache = getFieldValue(fs, "meta", "metaCache");
         GridCache dataCache = getFieldValue(fs, "data", "dataCache");
 

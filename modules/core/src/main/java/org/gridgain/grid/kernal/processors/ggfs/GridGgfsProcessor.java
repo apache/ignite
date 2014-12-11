@@ -65,7 +65,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -137,7 +137,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -229,7 +229,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         super.addAttributes(attrs);
 
         IgniteConfiguration gridCfg = ctx.config();
@@ -292,39 +292,39 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     /**
      * Validates local GGFS configurations. Compares attributes only for GGFSes with same name.
      * @param cfgs GGFS configurations
-     * @throws GridException If any of GGFS configurations is invalid.
+     * @throws IgniteCheckedException If any of GGFS configurations is invalid.
      */
-    private void validateLocalGgfsConfigurations(IgniteFsConfiguration[] cfgs) throws GridException {
+    private void validateLocalGgfsConfigurations(IgniteFsConfiguration[] cfgs) throws IgniteCheckedException {
         Collection<String> cfgNames = new HashSet<>();
 
         for (IgniteFsConfiguration cfg : cfgs) {
             String name = cfg.getName();
 
             if (cfgNames.contains(name))
-                throw new GridException("Duplicate GGFS name found (check configuration and " +
+                throw new IgniteCheckedException("Duplicate GGFS name found (check configuration and " +
                     "assign unique name to each): " + name);
 
             GridCacheAdapter<Object, Object> dataCache = ctx.cache().internalCache(cfg.getDataCacheName());
 
             if (dataCache == null)
-                throw new GridException("Data cache is not configured locally for GGFS: " + cfg);
+                throw new IgniteCheckedException("Data cache is not configured locally for GGFS: " + cfg);
 
             if (dataCache.configuration().isQueryIndexEnabled())
-                throw new GridException("GGFS data cache cannot start with enabled query indexing.");
+                throw new IgniteCheckedException("GGFS data cache cannot start with enabled query indexing.");
 
             GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
 
             if (metaCache == null)
-                throw new GridException("Metadata cache is not configured locally for GGFS: " + cfg);
+                throw new IgniteCheckedException("Metadata cache is not configured locally for GGFS: " + cfg);
 
             if (metaCache.configuration().isQueryIndexEnabled())
-                throw new GridException("GGFS metadata cache cannot start with enabled query indexing.");
+                throw new IgniteCheckedException("GGFS metadata cache cannot start with enabled query indexing.");
 
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
-                throw new GridException("Cannot use same cache as both data and meta cache: " + cfg.getName());
+                throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
 
             if (!(dataCache.configuration().getAffinityMapper() instanceof IgniteFsGroupDataBlocksKeyMapper))
-                throw new GridException("Invalid GGFS data cache configuration (key affinity mapper class should be " +
+                throw new IgniteCheckedException("Invalid GGFS data cache configuration (key affinity mapper class should be " +
                     IgniteFsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
             long maxSpaceSize = cfg.getMaxSpaceSize();
@@ -336,11 +336,11 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
 
                 if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
                     // Offheap is disabled.
-                    throw new GridException("Maximum GGFS space size cannot be greater that size of available heap " +
+                    throw new IgniteCheckedException("Maximum GGFS space size cannot be greater that size of available heap " +
                         "memory [maxHeapSize=" + maxHeapSize + ", maxGgfsSpaceSize=" + maxSpaceSize + ']');
                 else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
                     // Offheap is enabled, but limited.
-                    throw new GridException("Maximum GGFS space size cannot be greater than size of available heap " +
+                    throw new IgniteCheckedException("Maximum GGFS space size cannot be greater than size of available heap " +
                         "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
                         ", maxGgfsSpaceSize=" + maxSpaceSize + ']');
             }
@@ -349,7 +349,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                 int backups = dataCache.configuration().getBackups();
 
                 if (backups != 0)
-                    throw new GridException("GGFS data cache cannot be used with backups (set backup count " +
+                    throw new IgniteCheckedException("GGFS data cache cannot be used with backups (set backup count " +
                         "to 0 and restart the grid): " + cfg.getDataCacheName());
             }
 
@@ -380,9 +380,9 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
      * Check GGFS config on remote node.
      *
      * @param rmtNode Remote node.
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
-    private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws GridException {
+    private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws IgniteCheckedException {
         GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_GGFS);
         GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(GridNodeAttributes.ATTR_GGFS);
 
@@ -396,7 +396,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                 // Checking the use of different caches on the different GGFSes.
                 if (!F.eq(rmtAttr.ggfsName(), locAttr.ggfsName())) {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
-                        throw new GridException("Meta cache names should be different for different GGFS instances " +
+                        throw new IgniteCheckedException("Meta cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
                             "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
@@ -406,7 +406,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
                             ", rmtGgfsName=" + rmtAttr.ggfsName() + ']');
 
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
-                        throw new GridException("Data cache names should be different for different GGFS instances " +
+                        throw new IgniteCheckedException("Data cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
                             "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
@@ -443,9 +443,9 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
     }
 
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String ggfsName)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))
-            throw new GridException(name + " should be the same on all nodes in grid for GGFS configuration " +
+            throw new IgniteCheckedException(name + " should be the same on all nodes in grid for GGFS configuration " +
                 "(fix configuration or set " +
                 "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                 "property ) [rmtNodeId=" + rmtNodeId +

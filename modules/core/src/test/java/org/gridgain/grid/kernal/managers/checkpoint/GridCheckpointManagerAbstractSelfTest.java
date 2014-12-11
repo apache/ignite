@@ -295,7 +295,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @SuppressWarnings({"TooBroadScope"})
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             assert ignite != null;
             assert taskSes != null;
 
@@ -312,7 +312,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val2, SESSION_SCOPE, 0);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert val1.equals(taskSes.loadCheckpoint(key1));
                     assert val2.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -323,7 +323,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, false);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert val1.equals(taskSes.loadCheckpoint(key1));
                     assert val2.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -333,7 +333,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             taskSes.saveCheckpoint(key2, val1, SESSION_SCOPE, 0, true);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert val2.equals(taskSes.loadCheckpoint(key1));
                     assert val1.equals(taskSes.loadCheckpoint(key2));
                 }
@@ -345,7 +345,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             assert !taskSes.removeCheckpoint(key2);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert taskSes.loadCheckpoint(key1) == null;
                     assert taskSes.loadCheckpoint(key2) == null;
                 }
@@ -365,11 +365,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 Thread.sleep(6000);
             }
             catch (InterruptedException e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert taskSes.loadCheckpoint(key1) == null;
                     assert taskSes.loadCheckpoint(key2) == null;
                 }
@@ -388,12 +388,12 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridTestCheckpointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             return Collections.singleton(new GridTestCheckpointJob());
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -411,7 +411,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             assert ignite != null;
             assert taskSes != null;
 
@@ -433,7 +433,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             X.println(">>> Producer started.");
@@ -447,7 +447,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read1FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             // No retries here as other thread should have seen checkpoint already.
@@ -463,7 +463,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read2FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
@@ -479,7 +479,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read3FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             assert SES_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
@@ -496,7 +496,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             rmvLatch.countDown();
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert taskSes.loadCheckpoint(GLOBAL_KEY) == null;
                     assert taskSes.loadCheckpoint(SES_KEY) == null;
                 }
@@ -515,7 +515,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             assert taskSes != null;
 
             assert startLatch != null;
@@ -536,7 +536,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             X.println(">>> Consumer started.");
@@ -545,12 +545,12 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read1Latch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             // Test that checkpoints were saved properly.
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
                     assert SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -562,12 +562,12 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read2Latch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             // Test that checkpoints were not overwritten.
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
                     assert SES_VAL.equals(taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -579,11 +579,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read3Latch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assertEquals(SES_VAL_OVERWRITTEN, taskSes.loadCheckpoint(GLOBAL_KEY));
                     assertEquals(GLOBAL_VAL_OVERWRITTEN, taskSes.loadCheckpoint(SES_KEY));
                 }
@@ -595,14 +595,14 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 rmvLatch.await();
             }
             catch (InterruptedException e) {
-                throw new GridException("Thread has been interrupted.", e);
+                throw new IgniteCheckedException("Thread has been interrupted.", e);
             }
             // Check checkpoints are actually removed.
             assert !taskSes.removeCheckpoint(GLOBAL_KEY);
             assert !taskSes.removeCheckpoint(SES_KEY);
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assert taskSes.loadCheckpoint(GLOBAL_KEY) == null;
                     assert taskSes.loadCheckpoint(SES_KEY) == null;
                 }
@@ -618,7 +618,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridMultiNodeTestCheckPointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert gridSize == 2;
 
             return Arrays.asList(
@@ -628,7 +628,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -641,9 +641,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() throws GridException {
+                @Nullable @Override public Object execute() throws IgniteCheckedException {
                     assert taskSes != null;
 
                     assert startLatch != null;
@@ -664,7 +664,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         startLatch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Thread has been interrupted.", e);
+                        throw new IgniteCheckedException("Thread has been interrupted.", e);
                     }
 
                     X.println(">>> Global consumer started.");
@@ -673,7 +673,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read1Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Thread has been interrupted.", e);
+                        throw new IgniteCheckedException("Thread has been interrupted.", e);
                     }
 
                     // Test that checkpoints were saved properly.
@@ -686,7 +686,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read2Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Thread has been interrupted.", e);
+                        throw new IgniteCheckedException("Thread has been interrupted.", e);
                     }
 
                     // Test that checkpoints were not overwritten.
@@ -699,7 +699,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read3Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Thread has been interrupted.", e);
+                        throw new IgniteCheckedException("Thread has been interrupted.", e);
                     }
 
                     assert GLOBAL_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(SES_KEY));
@@ -711,7 +711,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         rmvLatch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Thread has been interrupted.", e);
+                        throw new IgniteCheckedException("Thread has been interrupted.", e);
                     }
                     // Check checkpoints are actually removed.
                     assert !taskSes.removeCheckpoint(GLOBAL_KEY);
@@ -726,7 +726,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             int sum = 0;
 
             for (ComputeJobResult res : results)

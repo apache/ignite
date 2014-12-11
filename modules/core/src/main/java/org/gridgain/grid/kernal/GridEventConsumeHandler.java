@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -99,7 +100,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert ctx != null;
@@ -143,7 +144,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                                 ctx.continuous().addNotification(nodeId, routineId, wrapper, null);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);
                             }
                         }
@@ -217,7 +218,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 try {
                     wrapper.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to unmarshal event.", e);
                 }
             }
@@ -231,7 +232,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pMarshal(GridKernalContext ctx) throws GridException {
+    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
@@ -252,7 +253,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws GridException {
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
@@ -342,9 +343,9 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         /**
          * @param marsh Marshaller.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws GridException {
+        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             bytes = marsh.marshal(evt);
@@ -353,9 +354,9 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         /**
          * @param marsh Marshaller.
          * @param ldr Class loader.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert evt == null;

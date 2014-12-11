@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.misc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,7 +32,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 
@@ -54,7 +54,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String arg) throws GridException {
+        @Override protected Void run(String arg) throws IgniteCheckedException {
             System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;

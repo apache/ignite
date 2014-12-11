@@ -108,7 +108,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
     /**
      * Test output stream deferred exception (GG-4440).
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutputStreamDeferredException() throws Exception {

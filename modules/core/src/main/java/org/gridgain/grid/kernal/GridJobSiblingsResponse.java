@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -59,9 +59,9 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
     /**
      * @param marsh Marshaller.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void unmarshalSiblings(IgniteMarshaller marsh) throws GridException {
+    public void unmarshalSiblings(IgniteMarshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         if (siblingsBytes != null)

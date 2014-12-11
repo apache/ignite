@@ -52,7 +52,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -140,9 +140,9 @@ public class GridStreamProcessor extends GridProcessorAdapter {
      * Check configuration identity on local and remote nodes.
      *
      * @param rmtNode Remote node to check.
-     * @throws GridException If configuration mismatch detected.
+     * @throws IgniteCheckedException If configuration mismatch detected.
      */
-    private void checkStreamer(ClusterNode rmtNode) throws GridException {
+    private void checkStreamer(ClusterNode rmtNode) throws IgniteCheckedException {
         GridStreamerAttributes[] rmtAttrs = rmtNode.attribute(ATTR_STREAMER);
         GridStreamerAttributes[] locAttrs = ctx.discovery().localNode().attribute(ATTR_STREAMER);
 
@@ -156,7 +156,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (rmtAttr.atLeastOnce() != locAttr.atLeastOnce())
-                    throw new GridException("Streamer atLeastOnce configuration flag mismatch (fix atLeastOnce flag " +
+                    throw new IgniteCheckedException("Streamer atLeastOnce configuration flag mismatch (fix atLeastOnce flag " +
                         "in streamer configuration or set " +
                         "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                         "property) [streamer=" + locAttr.name() +
@@ -165,7 +165,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                         ", rmtNodeId=" + rmtNode.id() + ']');
 
                 if (!rmtAttr.stages().equals(locAttr.stages()))
-                    throw new GridException("Streamer stages configuration mismatch (fix streamer stages " +
+                    throw new IgniteCheckedException("Streamer stages configuration mismatch (fix streamer stages " +
                         "configuration or set " +
                         "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                         "property) [streamer=" + locAttr.name() +
@@ -215,7 +215,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -249,7 +249,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
             if (old != null) {
                 old.stop(true);
 
-                throw new GridException("Duplicate streamer name found (check configuration and " +
+                throw new IgniteCheckedException("Duplicate streamer name found (check configuration and " +
                     "assign unique name to each streamer): " + c.getName());
             }
         }
@@ -278,7 +278,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -289,7 +289,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         super.addAttributes(attrs);
 
         StreamerConfiguration[] cfg = ctx.config().getStreamerConfiguration();

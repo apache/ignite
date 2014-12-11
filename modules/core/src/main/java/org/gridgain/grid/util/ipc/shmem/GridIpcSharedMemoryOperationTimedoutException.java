@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Thrown when IPC operation (such as {@link GridIpcSharedMemorySpace#wait(long)})
  * has timed out.
  */
-public class GridIpcSharedMemoryOperationTimedoutException extends GridException {
+public class GridIpcSharedMemoryOperationTimedoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -108,7 +108,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
                 cfgUrl = U.resolveGridGainUrl(cfgFile);
 
             if (cfgUrl == null)
-                throw new GridRuntimeException("Failed to find Spring configuration file (path provided should be " +
+                throw new IgniteException("Failed to find Spring configuration file (path provided should be " +
                     "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
 
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t;
@@ -116,15 +116,15 @@ public class GridServletContextListenerStartup implements ServletContextListener
             try {
                 t = GridGainEx.loadConfigurations(cfgUrl);
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to load GridGain configuration.", e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to load GridGain configuration.", e);
             }
 
             cfgs = t.get1();
             rsrcCtx  = t.get2();
 
             if (cfgs.isEmpty())
-                throw new GridRuntimeException("Can't find grid factory configuration in: " + cfgUrl);
+                throw new IgniteException("Can't find grid factory configuration in: " + cfgUrl);
         }
         else
             cfgs = Collections.<IgniteConfiguration>singleton(new IgniteConfiguration());
@@ -151,12 +151,12 @@ public class GridServletContextListenerStartup implements ServletContextListener
                     gridNames.add(ignite.name());
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Stop started grids only.
             for (String name : gridNames)
                 G.stop(name, true);
 
-            throw new GridRuntimeException("Failed to start GridGain.", e);
+            throw new IgniteException("Failed to start GridGain.", e);
         }
     }
 

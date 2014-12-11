@@ -8,8 +8,8 @@
  */
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -46,7 +46,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
                 assert false : "Exception should have been thrown.";
             }
             catch (Exception e) {
-                if (X.hasCause(e, GridRuntimeException.class))
+                if (X.hasCause(e, IgniteException.class))
                     info("Caught expected exception: " + e);
                 else
                     throw e;

@@ -1046,7 +1046,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
         try {
             uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize default file scanner", e);
         }
 

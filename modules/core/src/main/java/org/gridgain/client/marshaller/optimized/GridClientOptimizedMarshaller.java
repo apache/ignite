@@ -9,6 +9,7 @@
 
 package org.gridgain.client.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.client.marshaller.*;
 import org.gridgain.grid.*;
@@ -46,7 +47,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * @param clsNamesPath Path to a file with user preregistered class names.
      * @param poolSize Object streams pool size.
      * @throws IOException If an I/O error occurs while writing stream header.
-     * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
+     * @throws IgniteException If this marshaller is not supported on the current JVM.
      * @see org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller
      */
     public GridClientOptimizedMarshaller(boolean requireSer, List<String> clsNames, String clsNamesPath, int poolSize)
@@ -54,7 +55,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         try {
             opMarsh = new IgniteOptimizedMarshaller(requireSer, clsNames, clsNamesPath, poolSize);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -78,7 +79,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
             return buf;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -88,7 +89,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         try {
             return opMarsh.unmarshal(bytes, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }

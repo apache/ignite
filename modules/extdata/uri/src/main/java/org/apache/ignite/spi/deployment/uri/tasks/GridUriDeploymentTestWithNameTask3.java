@@ -9,6 +9,7 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 
@@ -22,14 +23,14 @@ public class GridUriDeploymentTestWithNameTask3 extends ComputeTaskSplitAdapter<
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
         return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

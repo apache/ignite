@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.nio.*;
@@ -182,9 +182,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
     /**
      * @param ctx Cache context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         assert ctx != null;
@@ -200,9 +200,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @param ctx Context.
      * @param ldr Loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null)

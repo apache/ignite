@@ -123,7 +123,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+    @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Remote client connected, creating SSL handler and performing initial handshake: " + ses);
 
@@ -158,14 +158,14 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+    @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
         GridNioSslHandler hnd = sslHandler(ses);
 
         try {
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
             if (fut != null)
-                fut.onDone(new GridException("SSL handshake failed (connection closed)."));
+                fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
 
             hnd.shutdown();
         }
@@ -175,7 +175,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
@@ -221,7 +221,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         if (directMode)
             return proceedSessionWrite(ses, msg);
 
@@ -260,7 +260,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         ByteBuffer input = checkMessage(ses, msg);
 
         GridNioSslHandler hnd = sslHandler(ses);
@@ -299,7 +299,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         GridNioSslHandler hnd = sslHandler(ses);
 
         hnd.lock();
@@ -320,7 +320,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd) throws GridException {
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd) throws IgniteCheckedException {
         try {
             hnd.closeOutbound();
 
@@ -334,12 +334,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionWriteTimeout(ses);
     }
 
@@ -353,7 +353,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         GridNioSslHandler hnd = ses.meta(SSL_HANDLER.ordinal());
 
         if (hnd == null)
-            throw new GridRuntimeException("Failed to process incoming message (received message before SSL handler " +
+            throw new IgniteException("Failed to process incoming message (received message before SSL handler " +
                 "was created): " + ses);
 
         return hnd;

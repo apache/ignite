@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -116,9 +116,9 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @param range Range to update status.
      * @param status New range status.
-     * @throws GridException If range was not found.
+     * @throws IgniteCheckedException If range was not found.
      */
-    public void updateRangeStatus(GridGgfsFileAffinityRange range, int status) throws GridException {
+    public void updateRangeStatus(GridGgfsFileAffinityRange range, int status) throws IgniteCheckedException {
         if (ranges == null)
             throw new GridGgfsInvalidRangeException("Failed to update range status (file map is empty) " +
                 "[range=" + range + ", ranges=" + ranges + ']');
@@ -178,7 +178,7 @@ public class GridGgfsFileMap implements Externalizable {
      *
      * @param range Range to delete.
      */
-    public void deleteRange(GridGgfsFileAffinityRange range) throws GridException {
+    public void deleteRange(GridGgfsFileAffinityRange range) throws IgniteCheckedException {
         if (ranges == null)
             throw new GridGgfsInvalidRangeException("Failed to remove range (file map is empty) " +
                 "[range=" + range + ", ranges=" + ranges + ']');

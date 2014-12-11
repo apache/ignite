@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -37,9 +38,9 @@ import java.util.concurrent.*;
 
 import static java.util.Map.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -91,7 +92,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
 
@@ -101,12 +102,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !F.isEmpty(cfg.getServiceConfiguration()))
-            throw new GridException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+            throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
 
@@ -165,7 +166,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (cfgQry != null)
                 cfgQry.close();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to unsubscribe service configuration notifications.", e);
         }
 
@@ -173,7 +174,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (assignQry != null)
                 assignQry.close();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to unsubscribe service assignment notifications.", e);
         }
 
@@ -217,15 +218,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Validates service configuration.
      *
      * @param c Service configuration.
-     * @throws GridRuntimeException If validation failed.
+     * @throws IgniteException If validation failed.
      */
-    private void validate(ManagedServiceConfiguration c) throws GridRuntimeException {
+    private void validate(ManagedServiceConfiguration c) throws IgniteException {
         IgniteConfiguration cfg = ctx.config();
 
         IgniteDeploymentMode depMode = cfg.getDeploymentMode();
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED))
-            throw new GridRuntimeException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+            throw new IgniteException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
 
         ensure(c.getName() != null, "getName() != null", null);
         ensure(c.getTotalCount() >= 0, "getTotalCount() >= 0", c.getTotalCount());
@@ -243,9 +244,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private void ensure(boolean cond, String desc, @Nullable Object v) {
         if (!cond)
             if (v != null)
-                throw new GridRuntimeException("Service configuration check failed (" + desc + "): " + v);
+                throw new IgniteException("Service configuration check failed (" + desc + "): " + v);
             else
-                throw new GridRuntimeException("Service configuration check failed (" + desc + ")");
+                throw new IgniteException("Service configuration check failed (" + desc + ")");
     }
 
     /**
@@ -323,7 +324,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (old != null) {
             if (!old.configuration().equalsIgnoreNodeFilter(cfg)) {
-                fut.onDone(new GridException("Failed to deploy service (service already exists with " +
+                fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
                     "different configuration) [deployed=" + old.configuration() + ", new=" + cfg + ']'));
 
                 return fut;
@@ -348,7 +349,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             // Remove future from local map.
                             depFuts.remove(cfg.getName(), fut);
 
-                            fut.onDone(new GridException("Failed to deploy service (service already exists with " +
+                            fut.onDone(new IgniteCheckedException("Failed to deploy service (service already exists with " +
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
@@ -384,7 +385,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(ClusterTopologyException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
@@ -429,7 +430,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 log.error("Failed to undeploy service: " + name, e);
 
                 return new GridFinishedFuture<>(ctx, e);
@@ -481,7 +482,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     descs.add(desc);
                 }
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 log.error("Failed to get assignments from replicated cache for service: " +
                     dep.configuration().getName(), ex);
             }
@@ -546,14 +547,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
-        throws GridRuntimeException {
+        throws IgniteException {
 
         if (hasLocalNode(prj)) {
             ManagedServiceContextImpl ctx = serviceContext(name);
 
             if (ctx != null) {
                 if (!svcItf.isAssignableFrom(ctx.service().getClass()))
-                    throw new GridRuntimeException("Service does not implement specified interface [svcItf=" +
+                    throw new IgniteException("Service does not implement specified interface [svcItf=" +
                         svcItf.getSimpleName() + ", svcCls=" + ctx.service().getClass() + ']');
 
                 return (T)ctx.service();
@@ -607,9 +608,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      *
      * @param dep Service deployment.
      * @param topVer Topology version.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void reassign(GridServiceDeployment dep, long topVer) throws GridException {
+    private void reassign(GridServiceDeployment dep, long topVer) throws IgniteCheckedException {
         ManagedServiceConfiguration cfg = dep.configuration();
 
         int totalCnt = cfg.getTotalCount();
@@ -811,7 +812,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
                                         svcCtx.executionId() + ']');
                             }
-                            catch (GridRuntimeException e) {
+                            catch (IgniteException e) {
                                 if (e.hasCause(InterruptedException.class) ||
                                     e.hasCause(GridInterruptedException.class)) {
                                     if (log.isDebugEnabled())
@@ -834,7 +835,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 try {
                                     ctx.resource().cleanup(cp);
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
                                 }
                             }
@@ -861,7 +862,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             return cp;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
 
             return svc;
@@ -971,7 +972,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 try {
                                     cache.remove(key);
                                 }
-                                catch (GridException ex) {
+                                catch (IgniteCheckedException ex) {
                                     log.error("Failed to remove assignments for undeployed service: " + name, ex);
                                 }
                             }
@@ -998,7 +999,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (newTopVer == topVer)
                     reassign(dep, topVer);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
@@ -1078,7 +1079,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                                         reassign(dep, topVer);
                                     }
-                                    catch (GridException ex) {
+                                    catch (IgniteCheckedException ex) {
                                         if (!(e instanceof ClusterTopologyException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
@@ -1111,7 +1112,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     cache.remove(e.getKey());
                                 }
                             }
-                            catch (GridException ex) {
+                            catch (IgniteCheckedException ex) {
                                 log.error("Failed to clean up zombie assignments for service: " + name, ex);
                             }
                         }
@@ -1148,7 +1149,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                         it.remove();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (!(e instanceof ClusterTopologyException))
                             LT.error(log, e, "Failed to do service reassignment (will retry): " +
                                 dep.configuration().getName());

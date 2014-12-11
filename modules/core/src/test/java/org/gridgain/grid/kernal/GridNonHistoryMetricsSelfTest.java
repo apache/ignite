@@ -110,7 +110,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return results;
         }
     }

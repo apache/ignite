@@ -9,9 +9,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
@@ -131,7 +131,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      */
     private static class TestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -140,7 +140,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();
@@ -153,7 +153,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
     @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -162,7 +162,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();

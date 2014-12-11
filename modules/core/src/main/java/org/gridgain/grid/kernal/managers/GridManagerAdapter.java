@@ -107,7 +107,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 return t;
         }
 
-        throw new GridRuntimeException("Failed to find SPI for name: " + name);
+        throw new IgniteException("Failed to find SPI for name: " + name);
     }
 
     /** {@inheritDoc} */
@@ -123,7 +123,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void addSpiAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public final void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         for (T spi : spis) {
             // Inject all spi resources.
             ctx.resource().inject(spi);
@@ -137,7 +137,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 if (retval != null) {
                     for (Map.Entry<String, Object> e : retval.entrySet()) {
                         if (attrs.containsKey(e.getKey()))
-                            throw new GridException("SPI attribute collision for attribute [spi=" + spi +
+                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
                                 ", attr=" + e.getKey() + ']' +
                                 ". Attribute set by one SPI implementation has the same name (name collision) as " +
                                 "attribute set by other SPI implementation. Such overriding is not allowed. " +
@@ -149,16 +149,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 }
             }
             catch (IgniteSpiException e) {
-                throw new GridException("Failed to get SPI attributes.", e);
+                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
             }
         }
     }
 
     /**
      * @param spi SPI whose internal objects need to be injected.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
-    private void inject(IgniteSpi spi) throws GridException {
+    private void inject(IgniteSpi spi) throws IgniteCheckedException {
         if (spi instanceof IgniteSpiAdapter) {
             Collection<Object> injectables = ((IgniteSpiAdapter)spi).injectables();
 
@@ -170,9 +170,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
     /**
      * @param spi SPI whose internal objects need to be injected.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
-    private void cleanup(IgniteSpi spi) throws GridException {
+    private void cleanup(IgniteSpi spi) throws IgniteCheckedException {
         if (spi instanceof IgniteSpiAdapter) {
             Collection<Object> injectables = ((IgniteSpiAdapter)spi).injectables();
 
@@ -185,9 +185,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     /**
      * Starts wrapped SPI.
      *
-     * @throws GridException If wrapped SPI could not be started.
+     * @throws IgniteCheckedException If wrapped SPI could not be started.
      */
-    protected final void startSpi() throws GridException {
+    protected final void startSpi() throws IgniteCheckedException {
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
@@ -196,7 +196,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 log.debug("Starting SPI: " + spi);
 
             if (names.contains(spi.getName()))
-                throw new GridException("Duplicate SPI name (need to explicitly configure 'setName()' property): " +
+                throw new IgniteCheckedException("Duplicate SPI name (need to explicitly configure 'setName()' property): " +
                     spi.getName());
 
             names.add(spi.getName());
@@ -208,7 +208,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 spi.spiStart(ctx.gridName());
             }
             catch (IgniteSpiException e) {
-                throw new GridException("Failed to start SPI: " + spi, e);
+                throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
             }
 
             if (log.isDebugEnabled())
@@ -219,9 +219,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     /**
      * Stops wrapped SPI.
      *
-     * @throws GridException If underlying SPI could not be stopped.
+     * @throws IgniteCheckedException If underlying SPI could not be stopped.
      */
-    protected final void stopSpi() throws GridException {
+    protected final void stopSpi() throws IgniteCheckedException {
         for (T spi : spis) {
             if (log.isDebugEnabled())
                 log.debug("Stopping SPI: " + spi);
@@ -233,7 +233,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     log.debug("SPI module stopped OK: " + spi.getClass().getName());
             }
             catch (IgniteSpiException e) {
-                throw new GridException("Failed to stop SPI: " + spi, e);
+                throw new IgniteCheckedException("Failed to stop SPI: " + spi, e);
             }
 
             try {
@@ -241,7 +241,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                 ctx.resource().cleanup(spi);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to remove injected resources from SPI (ignoring): " + spi, e);
             }
         }
@@ -262,7 +262,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws GridException {
+    @Override public final void onKernalStart() throws IgniteCheckedException {
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {
@@ -314,7 +314,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             throw unwrapException(e);
                         }
                     }
@@ -374,12 +374,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.ports().deregisterPorts(spi.getClass());
                     }
 
-                    @Nullable @Override public <K, V> V get(String cacheName, K key) throws GridException {
+                    @Nullable @Override public <K, V> V get(String cacheName, K key) throws IgniteCheckedException {
                         return ctx.cache().<K, V>cache(cacheName).get(key);
                     }
 
                     @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl)
-                        throws GridException {
+                        throws IgniteCheckedException {
                         GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
 
                         assert e != null;
@@ -390,7 +390,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl)
-                        throws GridException {
+                        throws IgniteCheckedException {
                         GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
 
                         assert e != null;
@@ -400,7 +400,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return e.setIfAbsent(val);
                     }
 
-                    @Nullable @Override public <K, V> V remove(String cacheName, K key) throws GridException {
+                    @Nullable @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {
                         return ctx.cache().<K, V>cache(cacheName).remove(key);
                     }
 
@@ -409,32 +409,32 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-                        @Nullable ClassLoader ldr) throws GridException {
+                        @Nullable ClassLoader ldr) throws IgniteCheckedException {
                         assert ctx.swap().enabled();
 
                         ctx.swap().write(spaceName, key, val, ldr);
                     }
 
                     @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key,
-                        byte[] keyBytes, @Nullable ClassLoader ldr) throws GridException {
+                        byte[] keyBytes, @Nullable ClassLoader ldr) throws IgniteCheckedException {
                         return ctx.offheap().getValue(spaceName, part, key, keyBytes, ldr);
                     }
 
                     @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-                        @Nullable byte[] keyBytes) throws GridException {
+                        @Nullable byte[] keyBytes) throws IgniteCheckedException {
                         return ctx.offheap().removex(spaceName, part, key, keyBytes);
                     }
 
                     @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
                         @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr)
-                        throws GridException {
+                        throws IgniteCheckedException {
                         ctx.offheap().put(spaceName, part, key, keyBytes, valBytes != null ? valBytes :
                             ctx.config().getMarshaller().marshal(val));
                     }
 
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, SwapKey key,
-                        @Nullable ClassLoader ldr) throws GridException {
+                        @Nullable ClassLoader ldr) throws IgniteCheckedException {
                         assert ctx.swap().enabled();
 
                         return ctx.swap().readValue(spaceName, key, ldr);
@@ -445,7 +445,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public void removeFromSwap(String spaceName, Object key,
-                        @Nullable ClassLoader ldr) throws GridException {
+                        @Nullable ClassLoader ldr) throws IgniteCheckedException {
                         assert ctx.swap().enabled();
 
                         ctx.swap().remove(spaceName, key, null, ldr);
@@ -480,17 +480,17 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return true;
                     }
 
-                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
                         return ctx.grid().security().authenticatedSubjects();
                     }
 
-                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
                         return ctx.grid().security().authenticatedSubject(subjId);
                     }
 
                     @SuppressWarnings("unchecked")
                     @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
-                        Object key, @Nullable ClassLoader ldr) throws GridException {
+                        Object key, @Nullable ClassLoader ldr) throws IgniteCheckedException {
                         GridCache<Object, V> cache = ctx.cache().cache(spaceName);
 
                         GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
@@ -511,7 +511,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.
                      */
-                    private IgniteSpiException unwrapException(GridException e) {
+                    private IgniteSpiException unwrapException(IgniteCheckedException e) {
                         // Avoid double-wrapping.
                         if (e.getCause() instanceof IgniteSpiException)
                             return (IgniteSpiException)e.getCause();
@@ -521,7 +521,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                 });
             }
             catch (IgniteSpiException e) {
-                throw new GridException("Failed to initialize SPI context.", e);
+                throw new IgniteCheckedException("Failed to initialize SPI context.", e);
             }
         }
 
@@ -547,9 +547,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void onKernalStart0() throws GridException {
+    protected void onKernalStart0() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -575,11 +575,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
      *      </pre>
      *      Note that in case when variable name is the same as JavaBean property you
      *      can just copy Java condition expression into description as a string.
-     * @throws GridException Thrown if given condition is {@code false}
+     * @throws IgniteCheckedException Thrown if given condition is {@code false}
      */
-    protected final void assertParameter(boolean cond, String condDesc) throws GridException {
+    protected final void assertParameter(boolean cond, String condDesc) throws IgniteCheckedException {
         if (!cond)
-            throw new GridException("Grid configuration parameter failed condition check: " + condDesc);
+            throw new IgniteCheckedException("Grid configuration parameter failed condition check: " + condDesc);
     }
 
     /** {@inheritDoc} */

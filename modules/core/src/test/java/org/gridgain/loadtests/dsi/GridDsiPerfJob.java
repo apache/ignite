@@ -225,7 +225,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
         try {
             getId();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             e.printStackTrace();
         }
 
@@ -240,7 +240,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
         try {
             ses = (GridDsiSession)get(GridDsiSession.getCacheKey(terminalId));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             e.printStackTrace();
         }
 
@@ -293,9 +293,9 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
     /**
      * @return ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private long getId() throws GridException {
+    private long getId() throws IgniteCheckedException {
         GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
@@ -308,9 +308,9 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @param o Object.
      * @param cacheKey Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void put(Object o, Object cacheKey) throws GridException {
+    private void put(Object o, Object cacheKey) throws IgniteCheckedException {
         GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
@@ -324,10 +324,10 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @param key Key.
      * @return Object.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private <T> Object get(Object key) throws GridException {
+    private <T> Object get(Object key) throws IgniteCheckedException {
         return ignite.cache(cacheName).get(key);
     }
 }

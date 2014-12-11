@@ -9,6 +9,7 @@
 
 package org.gridgain.jdbc.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.gridgain.grid.*;
@@ -40,7 +41,7 @@ public class GridJdbcUtils {
         try {
             return MARSHALLER.marshal(args);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }
@@ -69,7 +70,7 @@ public class GridJdbcUtils {
         try {
             return MARSHALLER.unmarshal(bytes, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new SQLException("Failed to unmarshal result.", e);
         }
     }

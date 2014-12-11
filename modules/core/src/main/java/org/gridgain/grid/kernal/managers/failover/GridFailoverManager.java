@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.kernal.managers.failover;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.failover.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.apache.ignite.spi.failover.*;
+
 import java.util.*;
 
 /**
@@ -29,7 +30,7 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         startSpi();
 
         if (log.isDebugEnabled())
@@ -37,7 +38,7 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         if (log.isDebugEnabled())

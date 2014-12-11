@@ -36,7 +36,7 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
     @Nullable @Override public Object get(Object key) throws CacheException {
         try {
             return cache.get(key);
-        } catch (GridException e) {
+        } catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -45,7 +45,7 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
     @Override public void put(Object key, Object val) throws CacheException {
         try {
             cache.putx(key, val);
-        } catch (GridException e) {
+        } catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }

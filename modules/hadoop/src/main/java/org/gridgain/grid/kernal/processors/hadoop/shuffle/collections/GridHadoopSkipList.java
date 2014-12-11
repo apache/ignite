@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
@@ -54,7 +55,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws IgniteCheckedException {
         if (!visitGuard.compareAndSet(false, true))
             return false;
 
@@ -85,12 +86,12 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws IgniteCheckedException {
         return new AdderImpl(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         Input in = new Input(taskCtx);
 
         Comparator<Object> grpCmp = taskCtx.groupComparator();
@@ -251,8 +252,8 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
             try {
                 return read(k + 4, keySize(k));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }
@@ -275,9 +276,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /**
          * @param ctx Task context.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+        protected AdderImpl(GridHadoopTaskContext ctx) throws IgniteCheckedException {
             super(ctx);
 
             keyReader = new Reader(keySer);
@@ -286,14 +287,14 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
+        @Override public void write(Object key, Object val) throws IgniteCheckedException {
             A.notNull(val, "val");
 
             add(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
+        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws IgniteCheckedException {
             KeyImpl k = reuse == null ? new KeyImpl() : (KeyImpl)reuse;
 
             k.tmpKey = keySer.read(in, k.tmpKey);
@@ -327,9 +328,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         /**
          * @param key Key.
          * @return Pointer.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private long writeKey(Object key) throws GridException {
+        private long writeKey(Object key) throws IgniteCheckedException {
             long keyPtr = write(4, key, keySer);
             int keySize = writtenSize() - 4;
 
@@ -358,9 +359,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
          * @param key Key.
          * @param val Value.
          * @return Meta pointer.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private long add(Object key, @Nullable Object val) throws GridException {
+        private long add(Object key, @Nullable Object val) throws IgniteCheckedException {
             assert key != null;
 
             stack.clear();
@@ -574,9 +575,9 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
 
         /**
          * @param taskCtx Task context.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private Input(GridHadoopTaskContext taskCtx) throws GridException {
+        private Input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
             keyReader = new Reader(taskCtx.keySerialization());
             valReader = new Reader(taskCtx.valueSerialization());
         }
@@ -599,7 +600,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             keyReader.close();
             valReader.close();
         }
@@ -711,7 +712,7 @@ public class GridHadoopSkipList extends GridHadoopMultimapBase {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             in.close();
         }
     }

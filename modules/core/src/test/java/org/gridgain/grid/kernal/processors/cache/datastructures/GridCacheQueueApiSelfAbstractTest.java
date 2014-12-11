@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -418,7 +418,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
                         fail("Queue failed");
                     }
-                    catch (GridRuntimeException e) {
+                    catch (IgniteException e) {
                         putLatch.countDown();
 
                         assert e.getMessage().contains("removed");
@@ -445,7 +445,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
                                 log.debug("Queue removed [queue " + queue + ']');
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         info("Caught expected exception: " + e.getMessage());
 
                         assert queue.removed();
@@ -468,7 +468,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             assert queue.isEmpty() : queue.size();
             fail("Queue must be removed.");
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             assert e.getMessage().contains("removed");
 
             assert queue.removed();
@@ -507,7 +507,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
                             fail("Queue failed");
                         }
                     }
-                    catch (GridRuntimeException e) {
+                    catch (IgniteException e) {
                         takeLatch.countDown();
 
                         assert e.getMessage().contains("removed");
@@ -533,7 +533,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
                                 log.debug("Queue has been removed." + queue);
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         info("Caught expected exception: " + e.getMessage());
 
                         assert queue.removed();
@@ -557,7 +557,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
             fail("Queue must be removed.");
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             assert e.getMessage().contains("removed");
 
             assert queue.removed();

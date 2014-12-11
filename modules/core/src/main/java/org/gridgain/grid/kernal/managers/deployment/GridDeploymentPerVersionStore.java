@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -74,7 +74,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(IgniteEvent evt) {
                 assert evt instanceof IgniteDiscoveryEvent;
@@ -162,7 +162,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         Collection<SharedDeployment> undeployed = new LinkedList<>();
 
         synchronized (mux) {

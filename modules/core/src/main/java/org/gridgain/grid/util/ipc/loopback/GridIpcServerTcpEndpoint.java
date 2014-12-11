@@ -43,7 +43,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (port <= 0 || port >= 0xffff)
             throw new GridIpcEndpointBindException("Port value is illegal: " + port);
 
@@ -67,14 +67,14 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     }
 
     /** {@inheritDoc} */
-    @Override public GridIpcEndpoint accept() throws GridException {
+    @Override public GridIpcEndpoint accept() throws IgniteCheckedException {
         try {
             Socket sock = srvSock.accept();
 
             return new GridIpcClientTcpEndpoint(sock);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -134,9 +134,9 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
      * Sets configuration properties from the map.
      *
      * @param endpointCfg Map of properties.
-     * @throws GridException If invalid property name or value.
+     * @throws IgniteCheckedException If invalid property name or value.
      */
-    public void setupConfiguration(Map<String, String> endpointCfg) throws GridException {
+    public void setupConfiguration(Map<String, String> endpointCfg) throws IgniteCheckedException {
         for (Map.Entry<String,String> e : endpointCfg.entrySet()) {
             try {
                 switch (e.getKey()) {
@@ -157,14 +157,14 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
                         break;
 
                     default:
-                        throw new GridException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
+                        throw new IgniteCheckedException("Invalid property '" + e.getKey() + "' of " + getClass().getSimpleName());
                 }
             }
             catch (Throwable t) {
-                if (t instanceof GridException)
+                if (t instanceof IgniteCheckedException)
                     throw t;
 
-                throw new GridException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
+                throw new IgniteCheckedException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
                     getClass().getSimpleName(), t);
             }
         }

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.util.gridify;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.gridgain.grid.*;
 
 import java.lang.reflect.*;
 
@@ -54,9 +54,9 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
      * out of this method.
      *
      * @return {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public Object execute() throws GridException {
+    @Override public Object execute() throws IgniteCheckedException {
         GridifyArgument arg = argument(0);
 
         try {
@@ -70,7 +70,7 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
                     mtd.setAccessible(true);
                 }
                 catch (SecurityException e) {
-                    throw new GridException("Got security exception when attempting to soften access control for " +
+                    throw new IgniteCheckedException("Got security exception when attempting to soften access control for " +
                         "@Gridify method: " + mtd, e);
                 }
 
@@ -84,16 +84,16 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
             return mtd.invoke(obj, arg.getMethodParameters());
         }
         catch (InvocationTargetException e) {
-            if (e.getTargetException() instanceof GridException)
-                throw (GridException)e.getTargetException();
+            if (e.getTargetException() instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e.getTargetException();
 
-            throw new GridException("Failed to invoke a method due to user exception.", e.getTargetException());
+            throw new IgniteCheckedException("Failed to invoke a method due to user exception.", e.getTargetException());
         }
         catch (IllegalAccessException e) {
-            throw new GridException("Failed to access method for execution.", e);
+            throw new IgniteCheckedException("Failed to access method for execution.", e);
         }
         catch (NoSuchMethodException e) {
-            throw new GridException("Failed to find method for execution.", e);
+            throw new IgniteCheckedException("Failed to find method for execution.", e);
         }
     }
 }

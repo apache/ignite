@@ -11,6 +11,7 @@ package org.apache.ignite.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.math.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -68,6 +69,12 @@ public interface PortableRawWriter {
      * @throws PortableException In case of error.
      */
     public void writeBoolean(boolean val) throws PortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws PortableException In case of error.
+     */
+    public void writeDecimal(@Nullable BigDecimal val) throws PortableException;
 
     /**
      * @param val Value to write.
@@ -146,6 +153,12 @@ public interface PortableRawWriter {
      * @throws PortableException In case of error.
      */
     public void writeBooleanArray(@Nullable boolean[] val) throws PortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws PortableException In case of error.
+     */
+    public void writeDecimalArray(@Nullable BigDecimal[] val) throws PortableException;
 
     /**
      * @param val Value to write.

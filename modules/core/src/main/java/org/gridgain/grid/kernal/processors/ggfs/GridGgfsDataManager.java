@@ -130,14 +130,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
             try {
                 dataCacheStartFut.get();
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         ggfs = ggfsCtx.ggfs();
 
         dataCachePrj = ggfsCtx.kernalContext().cache().internalCache(ggfsCtx.configuration().getDataCacheName());
@@ -147,7 +147,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             .preloader().startFuture();
 
         if (dataCache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new GridException("Data cache should be transactional: " +
+            throw new IgniteCheckedException("Data cache should be transactional: " +
                 ggfsCtx.configuration().getDataCacheName());
 
         metrics = ggfsCtx.ggfs().localMetrics();
@@ -214,7 +214,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         new Thread(delWorker).start();
     }
 
@@ -313,10 +313,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      *
      * @param fileInfo File info.
      * @return List of local data block indices.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public List<Long> listLocalDataBlocks(GridGgfsFileInfo fileInfo)
-        throws GridException {
+        throws IgniteCheckedException {
         assert fileInfo != null;
 
         int prevGrpIdx = 0; // Block index within affinity group.
@@ -368,11 +368,11 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param blockIdx Block index.
      * @param secReader Optional secondary file system reader.
      * @return Requested data block or {@code null} if nothing found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgniteFuture<byte[]> dataBlock(final GridGgfsFileInfo fileInfo, final IgniteFsPath path,
         final long blockIdx, @Nullable final IgniteFsReader secReader)
-        throws GridException {
+        throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         assert fileInfo != null;
@@ -395,7 +395,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         if (secReader != null) {
             fut = fut.chain(new CX1<IgniteFuture<byte[]>, byte[]>() {
-                @Override public byte[] applyx(IgniteFuture<byte[]> fut) throws GridException {
+                @Override public byte[] applyx(IgniteFuture<byte[]> fut) throws IgniteCheckedException {
                     byte[] res = fut.get();
 
                     if (res == null) {
@@ -430,7 +430,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                         }
                                     }
                                     catch (IOException e) {
-                                        throw new GridException("Failed to read data due to secondary file system " +
+                                        throw new IgniteCheckedException("Failed to read data due to secondary file system " +
                                             "exception: " + e.getMessage(), e);
                                     }
                                 }
@@ -445,7 +445,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                                 metrics.addReadBlocks(1, 1);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 rmtReadFut.onDone(e);
 
                                 throw e;
@@ -527,7 +527,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param batch Optional secondary file system worker batch.
      *
      * @return Remainder if data did not fill full block.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public byte[] storeDataBlocks(
         GridGgfsFileInfo fileInfo,
@@ -538,7 +538,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         boolean flush,
         GridGgfsFileAffinityRange affinityRange,
         @Nullable GridGgfsFileWorkerBatch batch
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return byteBufWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, data, data.remaining(),
@@ -558,7 +558,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param flush Flush flag.
      * @param affinityRange File affinity range to update if file cal be colocated.
      * @param batch Optional secondary file system worker batch.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return Remainder of data that did not fit the block if {@code flush} flag is {@code false}.
      * @throws IOException If store failed.
      */
@@ -572,7 +572,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         boolean flush,
         GridGgfsFileAffinityRange affinityRange,
         @Nullable GridGgfsFileWorkerBatch batch
-    ) throws GridException, IOException {
+    ) throws IgniteCheckedException, IOException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return dataInputWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, in, len, flush,
@@ -644,7 +644,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to clean up file range [fileInfo=" + fileInfo + ", range=" + range + ']', e);
         }
     }
@@ -715,7 +715,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to clean up file range [fileInfo=" + fileInfo + ", range=" + range + ']', e);
         }
     }
@@ -727,10 +727,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param start Start position in the file.
      * @param len File part length to get affinity for.
      * @return Affinity blocks locations.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len)
-        throws GridException {
+        throws IgniteCheckedException {
         return affinity(info, start, len, 0);
     }
 
@@ -742,10 +742,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param len File part length to get affinity for.
      * @param maxLen Maximum block length.
      * @return Affinity blocks locations.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public Collection<IgniteFsBlockLocation> affinity(GridGgfsFileInfo info, long start, long len, long maxLen)
-        throws GridException {
+        throws IgniteCheckedException {
         assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
         assert start >= 0 : "Start position should not be negative: " + start;
@@ -852,10 +852,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param len Length.
      * @param maxLen Maximum allowed split length.
      * @param res Result collection to add regions to.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void affinity0(GridGgfsFileInfo info, long start, long len, long maxLen, Deque<IgniteFsBlockLocation> res)
-        throws GridException {
+        throws IgniteCheckedException {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 
@@ -996,10 +996,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param fileId File ID.
      * @param node Node to process blocks on.
      * @param blocks Blocks to put in cache.
-     * @throws GridException If batch processing failed.
+     * @throws IgniteCheckedException If batch processing failed.
      */
     private void processBatch(IgniteUuid fileId, final ClusterNode node,
-        final Map<GridGgfsBlockKey, byte[]> blocks) throws GridException {
+        final Map<GridGgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
         final long batchId = reqIdCtr.getAndIncrement();
 
         final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
@@ -1028,7 +1028,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     try {
                         ggfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         completionFut.onError(nodeId, e);
                     }
 
@@ -1046,7 +1046,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                                 completionFut.onWriteAck(nodeId, batchId);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 completionFut.onError(nodeId, e);
                             }
                         }
@@ -1066,10 +1066,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * @param colocatedKey Block key.
      * @param startOff Data start offset within block.
      * @param data Data to write.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     private void processPartialBlockWrite(IgniteUuid fileId, GridGgfsBlockKey colocatedKey, int startOff,
-        byte[] data) throws GridException {
+        byte[] data) throws IgniteCheckedException {
         if (dataCachePrj.ggfsDataSpaceUsed() >= dataCachePrj.ggfsDataSpaceMax()) {
             try {
                 ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
@@ -1139,7 +1139,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             }
 
             if (!hasVal)
-                throw new GridException("Failed to write partial block (no previous data was found in cache) " +
+                throw new IgniteCheckedException("Failed to write partial block (no previous data was found in cache) " +
                     "[key=" + colocatedKey + ", relaxedKey=" + key + ", startOff=" + startOff +
                     ", dataLen=" + data.length + ']');
 
@@ -1177,9 +1177,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
      *
      * @param key Key.
      * @param data Data.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void putSafe(final GridGgfsBlockKey key, final byte[] data) throws GridException {
+    private void putSafe(final GridGgfsBlockKey key, final byte[] data) throws IgniteCheckedException {
         assert key != null;
         assert data != null;
 
@@ -1193,7 +1193,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 curPendingPuts += data.length;
             }
             catch (InterruptedException ignore) {
-                throw new GridException("Failed to put GGFS data block into cache due to interruption: " + key);
+                throw new IgniteCheckedException("Failed to put GGFS data block into cache due to interruption: " + key);
             }
             finally {
                 pendingPutsLock.unlock();
@@ -1205,7 +1205,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 try {
                     dataCachePrj.putx(key, data);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to put GGFS data block into cache [key=" + key + ", err=" + e + ']');
                 }
                 finally {
@@ -1258,8 +1258,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
                             ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
 
             }
-            catch (GridException e) {
-                return new GridFinishedFuture<>(ggfsCtx.kernalContext(), new GridException("Failed to store data " +
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(ggfsCtx.kernalContext(), new IgniteCheckedException("Failed to store data " +
                     "block due to unexpected exception.", e));
             }
         }
@@ -1274,12 +1274,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private void processBlocksMessage(final UUID nodeId, final GridGgfsBlocksMessage blocksMsg) {
         storeBlocksAsync(blocksMsg.blocks()).listenAsync(new CI1<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> fut) {
-                GridException err = null;
+                IgniteCheckedException err = null;
 
                 try {
                     fut.get();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     err = e;
                 }
 
@@ -1288,7 +1288,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     ggfsCtx.send(nodeId, topic, new GridGgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
                         SYSTEM_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to send batch acknowledgement (did node leave the grid?) [nodeId=" + nodeId +
                         ", fileId=" + blocksMsg.fileId() + ", batchId=" + blocksMsg.id() + ']', e);
                 }
@@ -1304,7 +1304,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         try {
             ackMsg.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);
 
             return;
@@ -1388,7 +1388,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param flush Flush flag.
          * @param affinityRange Affinity range to update if file write can be colocated.
          * @param batch Optional secondary file system worker batch.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
         @Nullable public byte[] storeDataBlocks(
@@ -1401,7 +1401,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             boolean flush,
             GridGgfsFileAffinityRange affinityRange,
             @Nullable GridGgfsFileWorkerBatch batch
-        ) throws GridException {
+        ) throws IgniteCheckedException {
             IgniteUuid id = fileInfo.id();
             int blockSize = fileInfo.blockSize();
 
@@ -1480,7 +1480,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
                 if (batch != null) {
                     if (!batch.write(portion))
-                        throw new GridException("Cannot write more data to the secondary file system output " +
+                        throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                             "stream because it was marked as closed: " + batch.path());
                     else
                         writtenSecondary = 1;
@@ -1534,9 +1534,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param src Data source.
          * @param dst Destination.
          * @param dstOff Destination buffer offset.
-         * @throws GridException If read failed.
+         * @throws IgniteCheckedException If read failed.
          */
-        protected abstract void readData(T src, byte[] dst, int dstOff) throws GridException;
+        protected abstract void readData(T src, byte[] dst, int dstOff) throws IgniteCheckedException;
     }
 
     /**
@@ -1555,12 +1555,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private class DataInputBlocksWriter extends BlocksWriter<DataInput> {
         /** {@inheritDoc} */
         @Override protected void readData(DataInput src, byte[] dst, int dstOff)
-            throws GridException {
+            throws IgniteCheckedException {
             try {
                 src.readFully(dst, dstOff, dst.length - dstOff);
             }
             catch (IOException e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
     }
@@ -1715,7 +1715,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     catch (GridInterruptedException ignored) {
                         // Ignore interruption during shutdown.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         log.error("Failed to remove file contents: " + fileInfo, e);
                     }
                     finally {
@@ -1726,14 +1726,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 ldr.removeData(new GridGgfsBlockKey(fileId, fileInfo.affinityKey(),
                                     fileInfo.evictExclude(), block));
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.error("Failed to remove file contents: " + fileInfo, e);
                         }
                         finally {
                             try {
                                 ldr.close(isCancelled());
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 log.error("Failed to stop data loader while shutting down ggfs async delete thread.", e);
                             }
                             finally {
@@ -1828,15 +1828,15 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param nodeId Node ID.
          * @param e Caught exception.
          */
-        private void onError(UUID nodeId, GridException e) {
+        private void onError(UUID nodeId, IgniteCheckedException e) {
             Set<Long> reqIds = pendingAcks.get(nodeId);
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
                 if (e instanceof IgniteFsOutOfSpaceException)
-                    onDone(new GridException("Failed to write data (not enough space on node): " + nodeId, e));
+                    onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
-                    onDone(new GridException(
+                    onDone(new IgniteCheckedException(
                         "Failed to wait for write completion (write failed on node): " + nodeId, e));
             }
         }
@@ -1844,12 +1844,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
         /**
          * @param e Error.
          */
-        private void onLocalError(GridException e) {
+        private void onLocalError(IgniteCheckedException e) {
             if (e instanceof IgniteFsOutOfSpaceException)
-                onDone(new GridException("Failed to write data (not enough space on node): " +
+                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
                     ggfsCtx.kernalContext().localNodeId(), e));
             else
-                onDone(new GridException(
+                onDone(new IgniteCheckedException(
                     "Failed to wait for write completion (write failed on node): " +
                         ggfsCtx.kernalContext().localNodeId(), e));
         }

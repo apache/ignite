@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -124,9 +124,9 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void populateCache() throws GridException {
+    private void populateCache() throws IgniteCheckedException {
         GridCache<String, Object> cache = G.ignite().cache(null);
 
         cache.put("int", intValue());
@@ -144,9 +144,9 @@ public class GridRestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void deployTasks() throws GridException {
+    private void deployTasks() throws IgniteCheckedException {
         G.ignite().compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
         G.ignite().compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
     }

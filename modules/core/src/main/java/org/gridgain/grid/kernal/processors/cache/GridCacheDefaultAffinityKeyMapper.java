@@ -102,7 +102,7 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
                 if (o != null)
                     return o;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to access affinity field for key [field=" +
                     reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
             }
@@ -113,7 +113,7 @@ public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMa
                 if (o != null)
                     return o;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to invoke affinity method for key [mtd=" +
                     reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
             }

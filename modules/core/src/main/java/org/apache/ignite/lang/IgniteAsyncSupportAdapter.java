@@ -9,7 +9,7 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Adapter for {@link IgniteAsyncSupport}.
@@ -62,9 +62,9 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
      * @param fut Future.
      * @return If async mode is enabled saves future and returns {@code null},
      *         otherwise waits for future and returns result.
-     * @throws GridException If asynchronous mode is disabled and future failed.
+     * @throws IgniteCheckedException If asynchronous mode is disabled and future failed.
      */
-    public <R> R saveOrGet(IgniteFuture<R> fut) throws GridException {
+    public <R> R saveOrGet(IgniteFuture<R> fut) throws IgniteCheckedException {
         if (curFut != null) {
             curFut.set(fut);
 

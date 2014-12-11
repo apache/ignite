@@ -87,10 +87,10 @@ public class GridUriDeploymentFtpScanner extends GridUriDeploymentScanner {
 
         // Username and password must be defined in URI.
         if (username == null)
-            throw new GridRuntimeException("Username has not been provided.");
+            throw new IgniteException("Username has not been provided.");
 
         if (pswd == null)
-            throw new GridRuntimeException("Password has not been provided.");
+            throw new IgniteException("Password has not been provided.");
 
         cfg.setHost(uri.getHost());
         cfg.setPort(uri.getPort());

@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -101,9 +101,9 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testNotExistingKeys() throws GridException {
+    public void testNotExistingKeys() throws IgniteCheckedException {
         GridCache<Integer, String> cache = cache();
         Map<Integer, String> map = store.getMap();
 
@@ -409,7 +409,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assertEquals(5, cache.size());
 
         cache.forEach(new CIX1<GridCacheEntry<Integer, String>>() {
-            @Override public void applyx(GridCacheEntry<Integer, String> entry) throws GridException {
+            @Override public void applyx(GridCacheEntry<Integer, String> entry) throws IgniteCheckedException {
                 String val = entry.get();
 
                 assert val != null;

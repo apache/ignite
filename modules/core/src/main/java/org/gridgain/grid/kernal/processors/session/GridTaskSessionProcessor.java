@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.session;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -39,7 +39,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /**
      * Starts session processor.
      */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Session processor started.");
     }
@@ -47,7 +47,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /**
      * Stops session processor.
      */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Session processor stopped.");
     }

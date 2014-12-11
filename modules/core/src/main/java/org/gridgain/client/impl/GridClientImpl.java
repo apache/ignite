@@ -8,11 +8,11 @@
  */
 package org.gridgain.client.impl;
 
+import org.apache.ignite.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.connection.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -51,7 +51,7 @@ public class GridClientImpl implements GridClient {
             else
                 U.addJavaNoOpLogger();
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // Our log4j warning suppression failed, leave it as is.
         }
     }

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -47,9 +47,9 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
     /**
      * @param msg Message.
      * @param jdkMarshaller JDK marshaller.
-     * @throws GridException If failed to marshal.
+     * @throws IgniteCheckedException If failed to marshal.
      */
-    public GridMemcachedMessageWrapper(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws GridException {
+    public GridMemcachedMessageWrapper(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
         bytes = encodeMemcache(msg, jdkMarshaller);
     }
 
@@ -109,9 +109,9 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
      * @param msg Message being serialized.
      * @param jdkMarshaller JDK marshaller.
      * @return Serialized message.
-     * @throws org.gridgain.grid.GridException If serialization failed.
+     * @throws IgniteCheckedException If serialization failed.
      */
-    private byte[] encodeMemcache(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws GridException {
+    private byte[] encodeMemcache(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
         GridByteArrayList res = new GridByteArrayList(HDR_LEN - 1);
 
         int keyLen = 0;
@@ -193,9 +193,9 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
      * @param out Output stream to which object should be written.
      * @param jdkMarshaller JDK marshaller.
      * @return Serialization flags.
-     * @throws GridException If JDK serialization failed.
+     * @throws IgniteCheckedException If JDK serialization failed.
      */
-    private int encodeObj(Object obj, ByteArrayOutputStream out, IgniteMarshaller jdkMarshaller) throws GridException {
+    private int encodeObj(Object obj, ByteArrayOutputStream out, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
         int flags = 0;
 
         byte[] data = null;

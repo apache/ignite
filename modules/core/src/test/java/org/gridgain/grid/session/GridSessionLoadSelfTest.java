@@ -127,7 +127,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg)
-            throws GridException {
+            throws IgniteCheckedException {
             assert taskSes != null;
             assert arg != null;
             assert arg > 1;
@@ -163,7 +163,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert taskSes != null;
             assert results != null;
             assert params != null;
@@ -228,7 +228,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             assert taskSes != null;
             assert argument(0) != null;
 

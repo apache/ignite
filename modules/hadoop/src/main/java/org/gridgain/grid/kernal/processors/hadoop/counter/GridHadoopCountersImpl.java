@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.counter;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.lang.*;
@@ -71,7 +72,7 @@ public class GridHadoopCountersImpl implements GridHadoopCounters, Externalizabl
             return (T)constructor.newInstance(grp, name);
         }
         catch (Exception e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 

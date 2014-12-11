@@ -229,7 +229,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -339,7 +339,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         assertEquals(executedTasks.get(), cancelledTasks.get() + 1);
     }
@@ -394,7 +394,7 @@ public class GridHadoopTaskExecutionSelfTest extends GridHadoopAbstractSelfTest 
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         assertEquals(executedTasks.get(), cancelledTasks.get());
 

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.misc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.*;
@@ -50,7 +50,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, String> run(Void arg) throws GridException {
+        @Override protected Map<String, String> run(Void arg) throws IgniteCheckedException {
             Map<String, String> res = new HashMap<>();
 
             try {
@@ -82,7 +82,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                 }
             }
             catch (Throwable e) {
-                throw new GridException("Failed to resolve host name", e);
+                throw new IgniteCheckedException("Failed to resolve host name", e);
             }
 
             return res;

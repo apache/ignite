@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
@@ -176,11 +177,11 @@ public class GridHadoopUtils {
      *
      * @param attr Attribute name.
      * @param msg Message for creation of exception.
-     * @throws org.gridgain.grid.GridException If attribute is set.
+     * @throws IgniteCheckedException If attribute is set.
      */
-    public static void ensureNotSet(Configuration cfg, String attr, String msg) throws GridException {
+    public static void ensureNotSet(Configuration cfg, String attr, String msg) throws IgniteCheckedException {
         if (cfg.get(attr) != null)
-            throw new GridException(attr + " is incompatible with " + msg + " mode.");
+            throw new IgniteCheckedException(attr + " is incompatible with " + msg + " mode.");
     }
 
     /**
@@ -188,9 +189,9 @@ public class GridHadoopUtils {
      *
      * @param cfg Hadoop configuration.
      * @return Job info.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static GridHadoopDefaultJobInfo createJobInfo(Configuration cfg) throws GridException {
+    public static GridHadoopDefaultJobInfo createJobInfo(Configuration cfg) throws IgniteCheckedException {
         JobConf jobConf = new JobConf(cfg);
 
         boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
@@ -249,18 +250,18 @@ public class GridHadoopUtils {
     }
 
     /**
-     * Throws new {@link GridException} with original exception is serialized into string.
+     * Throws new {@link IgniteCheckedException} with original exception is serialized into string.
      * This is needed to transfer error outside the current class loader.
      *
      * @param e Original exception.
-     * @return GridException New exception.
+     * @return IgniteCheckedException New exception.
      */
-    public static GridException transformException(Throwable e) {
+    public static IgniteCheckedException transformException(Throwable e) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         e.printStackTrace(new PrintStream(os, true));
 
-        return new GridException(os.toString());
+        return new IgniteCheckedException(os.toString());
     }
 
     /**
@@ -269,9 +270,9 @@ public class GridHadoopUtils {
      * @param locNodeId Local node ID.
      * @param jobId Job ID.
      * @return Working directory for job.
-     * @throws GridException If Failed.
+     * @throws IgniteCheckedException If Failed.
      */
-    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws GridException {
+    public static File jobLocalDir(UUID locNodeId, GridHadoopJobId jobId) throws IgniteCheckedException {
         return new File(new File(U.resolveWorkDirectory("hadoop", false), "node-" + locNodeId), "job_" + jobId);
     }
 
@@ -281,9 +282,9 @@ public class GridHadoopUtils {
      * @param locNodeId Local node ID.
      * @param info Task info.
      * @return Working directory for task.
-     * @throws GridException If Failed.
+     * @throws IgniteCheckedException If Failed.
      */
-    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws GridException {
+    public static File taskLocalDir(UUID locNodeId, GridHadoopTaskInfo info) throws IgniteCheckedException {
         File jobLocDir = jobLocalDir(locNodeId, info.jobId());
 
         return new File(jobLocDir, info.type() + "_" + info.taskNumber() + "_" + info.attempt());

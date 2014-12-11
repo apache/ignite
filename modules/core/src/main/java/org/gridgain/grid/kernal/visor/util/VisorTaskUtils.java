@@ -603,17 +603,17 @@ public class VisorTaskUtils {
      *
      * @param ggfs GGFS instance to resolve logs dir for.
      * @return {@link Path} to log dir or {@code null} if not found.
-     * @throws GridException if failed to resolve.
+     * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws GridException {
+    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
         String logsDir;
 
         if (ggfs instanceof GridGgfsEx)
             logsDir = ((GridGgfsEx) ggfs).clientLogDirectory();
         else if (ggfs == null)
-            throw new GridException("Failed to get profiler log folder (GGFS instance not found)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
         else
-            throw new GridException("Failed to get profiler log folder (unexpected GGFS instance type)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
 
         URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 
@@ -746,5 +746,36 @@ public class VisorTaskUtils {
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
         return end;
+    }
+
+
+    /**
+     * Checks if address can be reached using one argument InetAddress.isReachable() version or ping command if failed.
+     *
+     * @param addr Address to check.
+     * @param reachTimeout Timeout for the check.
+     * @return {@code True} if address is reachable.
+     */
+    public static boolean reachableByPing(InetAddress addr, int reachTimeout) {
+        try {
+            if (addr.isReachable(reachTimeout))
+                return true;
+
+            String cmd = String.format("ping -%s 1 %s", U.isWindows() ? "n" : "c", addr.getHostAddress());
+
+            Process myProcess = Runtime.getRuntime().exec(cmd);
+
+            myProcess.waitFor();
+
+            return myProcess.exitValue() == 0;
+        }
+        catch (IOException ignore) {
+            return false;
+        }
+        catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
     }
 }

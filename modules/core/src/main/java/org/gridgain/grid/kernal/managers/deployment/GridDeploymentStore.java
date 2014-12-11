@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -22,9 +22,9 @@ public interface GridDeploymentStore {
     /**
      * Starts store.
      *
-     * @throws GridException If start failed.
+     * @throws IgniteCheckedException If start failed.
      */
-    public void start() throws GridException;
+    public void start() throws IgniteCheckedException;
 
     /**
      * Stops store.
@@ -34,9 +34,9 @@ public interface GridDeploymentStore {
     /**
      * Kernal started callback.
      *
-     * @throws GridException If callback execution failed.
+     * @throws IgniteCheckedException If callback execution failed.
      */
-    public void onKernalStart() throws GridException;
+    public void onKernalStart() throws IgniteCheckedException;
 
     /**
      * Kernel stopping callback.
@@ -69,9 +69,9 @@ public interface GridDeploymentStore {
      * @param cls Class to explicitly deploy.
      * @param clsLdr Class loader.
      * @return Grid deployment.
-     * @throws GridException Id deployment failed.
+     * @throws IgniteCheckedException Id deployment failed.
      */
-    public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws GridException;
+    public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
      * @param nodeId Optional ID of node that initiated request.

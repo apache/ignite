@@ -276,9 +276,9 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * Does remapping.
      * @param master Master grid.
      * @param keys Keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void remap(final Ignite master, Iterable<Integer> keys) throws GridException {
+    private void remap(final Ignite master, Iterable<Integer> keys) throws IgniteCheckedException {
         Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
         for (Integer key : keys) {
@@ -307,10 +307,10 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * @param master Master node to submit from.
      * @param preferredNodeId Node id to execute job on.
      * @param dataChunk Data chunk to put in cache.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void submitDataChunk(final Ignite master, UUID preferredNodeId, final Collection<Integer> dataChunk)
-        throws GridException {
+        throws IgniteCheckedException {
         ClusterGroup prj = master.cluster().forPredicate(workerNodesFilter);
 
         IgniteCompute comp = master.compute(prj).enableAsync();
@@ -328,7 +328,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                 try {
                     f.get(); //if something went wrong - we'll get exception here
                 }
-                catch (GridException ignore) {
+                catch (IgniteCheckedException ignore) {
                     info("Put task failed, going to remap keys: " + dataChunk.size());
 
                     fail = true;
@@ -341,7 +341,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                         if (fail)
                             remap(master, dataChunk);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         info("Failed to remap task [data=" + dataChunk.size() + ", e=" + e + ']');
                     }
                 }
@@ -367,10 +367,10 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
      * @param workerNode Worker node.
      * @param keys Keys that are suspected to be absent
      * @return List of absent keys. If no keys are absent, the list is empty.
-     * @throws GridException If error occurs.
+     * @throws IgniteCheckedException If error occurs.
      */
     private Collection<Integer> findAbsentKeys(Ignite workerNode,
-        Collection<Integer> keys) throws GridException {
+        Collection<Integer> keys) throws IgniteCheckedException {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -30,7 +30,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
 
         IOException ioEx = new IOException(conEx);
 
-        GridException gridEx = new GridException(ioEx);
+        IgniteCheckedException gridEx = new IgniteCheckedException(ioEx);
 
         assert X.hasCause(gridEx, IOException.class, NumberFormatException.class);
         assert !X.hasCause(gridEx, NumberFormatException.class);

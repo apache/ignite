@@ -9,9 +9,9 @@
 
 package org.apache.ignite.spi.collision;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -77,29 +77,29 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws GridException {
+    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws GridException {
+        throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
-        boolean overwrite) throws GridException {
+        boolean overwrite) throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T loadCheckpoint(String key) throws GridException {
+    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
         assert false : "Not implemented";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws GridException {
+    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
         assert false : "Not implemented";
 
         return false;
@@ -139,7 +139,7 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteCheckedException {
         return getJobSiblings();
     }
 

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -42,14 +42,14 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws GridException {
+        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
             try {
                 ((GridGgfsEx) g.fileSystem(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+                throw new IgniteCheckedException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
             }
         }
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
@@ -26,7 +26,7 @@ public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapte
     private boolean closed;
 
     /** {@inheritDoc} */
-    @Override public final T nextX() throws GridException {
+    @Override public final T nextX() throws IgniteCheckedException {
         if (!hasNextX())
             throw new NoSuchElementException();
 
@@ -35,24 +35,24 @@ public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapte
 
     /**
      * @return Next element.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws NoSuchElementException If no element found.
      */
-    protected abstract T onNext() throws GridException;
+    protected abstract T onNext() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public final boolean hasNextX() throws GridException {
+    @Override public final boolean hasNextX() throws IgniteCheckedException {
         return !closed && onHasNext();
     }
 
     /**
      * @return {@code True} if iterator has next element.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract boolean onHasNext() throws GridException;
+    protected abstract boolean onHasNext() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public final void removeX() throws GridException {
+    @Override public final void removeX() throws IgniteCheckedException {
         checkClosed();
 
         onRemove();
@@ -61,14 +61,14 @@ public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapte
     /**
      * Called on remove from iterator.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void onRemove() throws GridException {
+    protected void onRemove() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public final void close() throws GridException {
+    @Override public final void close() throws IgniteCheckedException {
         if (!closed) {
             onClose();
 
@@ -84,9 +84,9 @@ public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapte
     /**
      * Invoked on iterator close.
      *
-     * @throws GridException If closing failed.
+     * @throws IgniteCheckedException If closing failed.
      */
-    protected void onClose() throws GridException {
+    protected void onClose() throws IgniteCheckedException {
         // No-op.
     }
 

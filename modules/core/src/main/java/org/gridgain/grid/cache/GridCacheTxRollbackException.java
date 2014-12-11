@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class GridCacheTxRollbackException extends GridException {
+public class GridCacheTxRollbackException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

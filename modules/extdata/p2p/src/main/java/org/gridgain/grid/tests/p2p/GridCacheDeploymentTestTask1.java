@@ -29,13 +29,13 @@ public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable ClusterNode node) throws GridException {
+        @Nullable ClusterNode node) throws IgniteCheckedException {
         return F.asMap(
             new ComputeJobAdapter() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws GridException {
+                @Override public Object execute() throws IgniteCheckedException {
                     X.println("Executing GridCacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
 
@@ -52,7 +52,7 @@ public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

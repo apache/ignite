@@ -588,7 +588,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onError(e);
 
             return false;
@@ -864,7 +864,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                         cctx.io().send(n, req);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyException)
                             fut.onResult((ClusterTopologyException)e);
@@ -929,7 +929,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     catch (ClusterTopologyException e) {
                         fut.onResult(e);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         onError(e);
 
                         break; // For
@@ -946,10 +946,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param req Request.
      * @param e Entry.
      * @return Entry.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridDhtCacheEntry<K, V> addOwned(GridDhtLockRequest<K, V> req, GridDhtCacheEntry<K, V> e)
-        throws GridException {
+        throws IgniteCheckedException {
         while (true) {
             try {
                 GridCacheMvccCandidate<K> added = e.candidate(lockVer);
@@ -1152,7 +1152,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                     false, null, null, null);
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         onDone(e);
 
                         return;

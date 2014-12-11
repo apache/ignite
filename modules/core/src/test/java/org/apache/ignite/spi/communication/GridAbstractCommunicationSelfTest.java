@@ -10,9 +10,9 @@
 package org.apache.ignite.spi.communication;
 
 import mx4j.tools.adaptor.http.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
@@ -61,7 +61,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
         }
         catch (MalformedObjectNameException e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 

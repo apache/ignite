@@ -61,7 +61,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             //No-op
         }
 
@@ -81,11 +81,11 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
         try {
             ignite.compute().execute(GridTestFailoverTask.class.getName(),
-                new GridException("Task should NOT be failed over"));
+                new IgniteCheckedException("Task should NOT be failed over"));
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             //No-op
         }
 
@@ -110,19 +110,19 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 1;
-            assert arg instanceof GridException;
+            assert arg instanceof IgniteCheckedException;
 
             Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++)
-                res.add(new GridTestFailoverJob((GridException)arg));
+                res.add(new GridTestFailoverJob((IgniteCheckedException)arg));
 
             return res;
         }
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws GridException {
+            List<ComputeJobResult> received) throws IgniteCheckedException {
             if (res.getException() != null)
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -142,11 +142,11 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /**
          * @param ex Exception to be thrown in {@link #execute}.
          */
-        GridTestFailoverJob(GridException ex) { super(ex); }
+        GridTestFailoverJob(IgniteCheckedException ex) { super(ex); }
 
         /** {@inheritDoc} */
-        @Override public GridException execute() throws GridException {
-            throw this.<GridException>argument(0);
+        @Override public IgniteCheckedException execute() throws IgniteCheckedException {
+            throw this.<IgniteCheckedException>argument(0);
         }
     }
 }

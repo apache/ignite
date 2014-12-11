@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
@@ -71,7 +71,7 @@ public class GridFutureListenPerformanceTest {
                                         try {
                                             t.get();
                                         }
-                                        catch (GridException e) {
+                                        catch (IgniteCheckedException e) {
                                             e.printStackTrace();
                                         }
 

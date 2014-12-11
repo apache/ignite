@@ -9,14 +9,14 @@
 
 package org.apache.ignite.product;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
  * This exception is thrown when license violation is detected.
  */
-public class IgniteProductLicenseException extends GridException {
+public class IgniteProductLicenseException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

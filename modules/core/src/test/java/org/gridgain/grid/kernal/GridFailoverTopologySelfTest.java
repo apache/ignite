@@ -87,7 +87,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             try {
                 compute(ignite1.cluster().forRemotes()).execute(JobFailTask.class, null);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Got expected grid exception: " + e);
             }
 
@@ -109,7 +109,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         private boolean jobFailedOver;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             assert locNodeId != null;
 
             ClusterNode remoteNode = null;
@@ -120,14 +120,14 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             }
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                @Override public Serializable execute() throws GridException {
-                    throw new GridException("Job exception.");
+                @Override public Serializable execute() throws IgniteCheckedException {
+                    throw new IgniteCheckedException("Job exception.");
                 }
             }, remoteNode);
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
             if (res.getException() != null && !jobFailedOver) {
                 jobFailedOver = true;
 
@@ -138,7 +138,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();

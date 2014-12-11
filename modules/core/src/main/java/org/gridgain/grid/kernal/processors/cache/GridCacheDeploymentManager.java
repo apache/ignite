@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -74,7 +74,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private boolean depEnabled;
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         globalLdr = new CacheClassLoader();
 
         nodeFilter = new P1<ClusterNode>() {
@@ -245,7 +245,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                         catch (GridCacheEntryRemovedException ignore) {
                             return false;
                         }
-                        catch (GridRuntimeException ignore) {
+                        catch (IgniteException ignore) {
                             // Peek can throw runtime exception if unmarshalling failed.
                             return true;
                         }
@@ -505,9 +505,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Register local classes.
      *
      * @param objs Objects to register.
-     * @throws GridException If registration failed.
+     * @throws IgniteCheckedException If registration failed.
      */
-    public void registerClasses(Object... objs) throws GridException {
+    public void registerClasses(Object... objs) throws IgniteCheckedException {
         registerClasses(F.asList(objs));
     }
 
@@ -515,9 +515,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Register local classes.
      *
      * @param objs Objects to register.
-     * @throws GridException If registration failed.
+     * @throws IgniteCheckedException If registration failed.
      */
-    public void registerClasses(Iterable<?> objs) throws GridException {
+    public void registerClasses(Iterable<?> objs) throws IgniteCheckedException {
         if (objs != null)
             for (Object o : objs)
                 registerClass(o);
@@ -525,9 +525,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param obj Object whose class to register.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void registerClass(Object obj) throws GridException {
+    public void registerClass(Object obj) throws IgniteCheckedException {
         if (obj == null)
             return;
 
@@ -542,9 +542,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param cls Class to register.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void registerClass(Class<?> cls) throws GridException {
+    public void registerClass(Class<?> cls) throws IgniteCheckedException {
         if (cls == null)
             return;
 
@@ -554,9 +554,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param cls Class to register.
      * @param ldr Class loader.
-     * @throws GridException If registration failed.
+     * @throws IgniteCheckedException If registration failed.
      */
-    public void registerClass(Class<?> cls, ClassLoader ldr) throws GridException {
+    public void registerClass(Class<?> cls, ClassLoader ldr) throws IgniteCheckedException {
         assert cctx.deploymentEnabled();
 
         if (cls == null || GridCacheInternal.class.isAssignableFrom(cls))
@@ -603,14 +603,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                                 break; // While loop.
                         }
                         else
-                            throw new GridException("Encountered incompatible class loaders for cache " +
+                            throw new IgniteCheckedException("Encountered incompatible class loaders for cache " +
                                 "[class1=" + cls.getName() + ", class2=" + dep.sampleClassName() + ']');
                     }
                     else if (locDep.compareAndSet(null, newDep))
                         break; // While loop.
                 }
                 else
-                    throw new GridException("Failed to deploy class for local deployment [clsName=" + cls.getName() +
+                    throw new IgniteCheckedException("Failed to deploy class for local deployment [clsName=" + cls.getName() +
                         ", ldr=" + ldr + ']');
             }
         }

@@ -265,7 +265,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     U.sleep(delayTime);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Cannot process incoming message", e);
             }
         }

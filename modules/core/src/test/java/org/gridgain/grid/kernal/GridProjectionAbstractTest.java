@@ -723,7 +723,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<String, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
             Collection<ComputeJob> jobs = new HashSet<>();
 
             for (int i = 0; i < gridSize; i++)
@@ -733,7 +733,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -744,7 +744,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws GridException {
+        @Nullable @Override public Object execute() throws IgniteCheckedException {
             return null;
         }
     }

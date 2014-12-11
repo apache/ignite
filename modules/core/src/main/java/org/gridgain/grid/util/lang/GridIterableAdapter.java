@@ -9,8 +9,9 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -45,7 +46,7 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() throws GridException {
+    @Override public boolean hasNextX() throws IgniteCheckedException {
         return hasNext();
     }
 
@@ -55,7 +56,7 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public T nextX() throws GridException {
+    @Override public T nextX() throws IgniteCheckedException {
         return next();
     }
 
@@ -65,7 +66,7 @@ public class GridIterableAdapter<T> implements GridIterable<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeX() throws GridException {
+    @Override public void removeX() throws IgniteCheckedException {
         remove();
     }
 

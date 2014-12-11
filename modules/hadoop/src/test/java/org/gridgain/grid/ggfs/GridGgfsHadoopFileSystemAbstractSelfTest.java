@@ -309,7 +309,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
      * @param gridName Grid name.
      * @return GGFS configuration.
      */
-    protected IgniteFsConfiguration ggfsConfiguration(String gridName) throws GridException {
+    protected IgniteFsConfiguration ggfsConfiguration(String gridName) throws IgniteCheckedException {
         IgniteFsConfiguration cfg = new IgniteFsConfiguration();
 
         cfg.setDataCacheName("partitioned");

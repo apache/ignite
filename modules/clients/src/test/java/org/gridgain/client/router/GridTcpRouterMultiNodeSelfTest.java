@@ -1,10 +1,10 @@
 package org.gridgain.client.router;
 
+import org.apache.ignite.*;
 import org.apache.ignite.logger.log4j.*;
 import org.gridgain.client.*;
 import org.gridgain.client.integration.*;
 import org.gridgain.client.router.impl.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -61,9 +61,9 @@ public class GridTcpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeS
     /**
      * @param i Number of router. Used to avoid configuration conflicts.
      * @return Router configuration.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridTcpRouterConfiguration routerConfiguration(int i) throws GridException {
+    private GridTcpRouterConfiguration routerConfiguration(int i) throws IgniteCheckedException {
         GridTcpRouterConfiguration cfg = new GridTcpRouterConfiguration();
 
         cfg.setHost(HOST);

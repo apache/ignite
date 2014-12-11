@@ -54,6 +54,7 @@ import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
@@ -485,16 +486,16 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param attrs Current attributes.
      * @param name  New attribute name.
      * @param val New attribute value.
-     * @throws GridException If duplicated SPI name found.
+     * @throws IgniteCheckedException If duplicated SPI name found.
      */
-    private void add(Map<String, Object> attrs, String name, @Nullable Serializable val) throws GridException {
+    private void add(Map<String, Object> attrs, String name, @Nullable Serializable val) throws IgniteCheckedException {
         assert attrs != null;
         assert name != null;
 
         if (attrs.put(name, val) != null) {
             if (name.endsWith(ATTR_SPI_CLASS))
                 // User defined duplicated names for the different SPIs.
-                throw new GridException("Failed to set SPI attribute. Duplicated SPI name found: " +
+                throw new IgniteCheckedException("Failed to set SPI attribute. Duplicated SPI name found: " +
                     name.substring(0, name.length() - ATTR_SPI_CLASS.length()));
 
             // Otherwise it's a mistake of setting up duplicated attribute.
@@ -506,10 +507,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * Notifies life-cycle beans of grid event.
      *
      * @param evt Grid event.
-     * @throws GridException If user threw exception during start.
+     * @throws IgniteCheckedException If user threw exception during start.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void notifyLifecycleBeans(LifecycleEventType evt) throws GridException {
+    private void notifyLifecycleBeans(LifecycleEventType evt) throws IgniteCheckedException {
         if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
             for (LifecycleBean bean : cfg.getLifecycleBeans())
                 if (bean != null)
@@ -537,11 +538,11 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param cfg Grid configuration to use.
      * @param utilityCachePool Utility cache pool.
      * @param errHnd Error handler to use for notification about startup problems.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
     public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
-        throws GridException {
+        throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -563,7 +564,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 }
 
                 case STOPPING: {
-                    throw new GridException("Grid is in process of being stopped");
+                    throw new IgniteCheckedException("Grid is in process of being stopped");
                 }
 
                 case STOPPED: {
@@ -619,7 +620,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
                 verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to create GridUpdateNotifier: " + e);
             }
@@ -636,7 +637,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         // with internally reserved names.
         for (String name : cfg.getUserAttributes().keySet())
             if (name.startsWith(ATTR_PREFIX))
-                throw new GridException("User attribute has illegal name: '" + name + "'. Note that all names " +
+                throw new IgniteCheckedException("User attribute has illegal name: '" + name + "'. Note that all names " +
                     "starting with '" + ATTR_PREFIX + "' are reserved for internal use.");
 
         // Ack local node user attributes.
@@ -724,6 +725,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             startProcessor(ctx, createComponent(GridLicenseProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
             startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
+            startProcessor(ctx, new GridQueryProcessor(ctx), attrs);
             startProcessor(ctx, new GridCacheProcessor(ctx), attrs);
             startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
             startProcessor(ctx, new GridJobProcessor(ctx), attrs);
@@ -820,10 +822,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             stop(true);
 
-            if (e instanceof GridException)
-                throw (GridException)e;
+            if (e instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e;
             else
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
         }
 
         // Mark start timestamp.
@@ -973,7 +975,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                             nodes = metrics.getTotalNodes();
                             cpus = metrics.getTotalCpus();
                         }
-                        catch (GridException ignore) {
+                        catch (IgniteCheckedException ignore) {
                         }
 
                         int pubPoolActiveThreads = 0;
@@ -1218,10 +1220,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param cfg Grid configuration.
      * @param build Build string.
      * @return Map of all node attributes.
-     * @throws GridException thrown if was unable to set up attribute.
+     * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private Map<String, Object> createNodeAttributes(IgniteConfiguration cfg, String build) throws GridException {
+    private Map<String, Object> createNodeAttributes(IgniteConfiguration cfg, String build) throws IgniteCheckedException {
         Map<String, Object> attrs = new HashMap<>();
 
         final String[] incProps = cfg.getIncludeProperties();
@@ -1239,7 +1241,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 log.debug("Added environment properties to node attributes.");
         }
         catch (SecurityException e) {
-            throw new GridException("Failed to add environment properties to node attributes due to " +
+            throw new IgniteCheckedException("Failed to add environment properties to node attributes due to " +
                 "security violation: " + e.getMessage());
         }
 
@@ -1267,7 +1269,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 log.debug("Added system properties to node attributes.");
         }
         catch (SecurityException e) {
-            throw new GridException("Failed to add system properties to node attributes due to security " +
+            throw new IgniteCheckedException("Failed to add system properties to node attributes due to security " +
                 "violation: " + e.getMessage());
         }
 
@@ -1358,15 +1360,15 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 if (cred != null)
                     add(attrs, ATTR_SECURITY_CREDENTIALS, cred);
                 else if (securityEnabled)
-                    throw new GridException("Failed to start node (authentication SPI is configured, " +
+                    throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
                         "by security credentials provider returned null).");
             }
             else if (securityEnabled)
-                throw new GridException("Failed to start node (authentication SPI is configured, " +
+                throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
                     "but security credentials provider is not set. Fix the configuration and restart the node).");
         }
-        catch (GridException e) {
-            throw new GridException("Failed to create node security credentials", e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to create node security credentials", e);
         }
 
         // Stick in SPI versions and classes attributes.
@@ -1401,9 +1403,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      *
      * @param attrs Node attributes map to add SPI attributes to.
      * @param spiList Collection of SPIs to get attributes from.
-     * @throws GridException Thrown if was unable to set up attribute.
+     * @throws IgniteCheckedException Thrown if was unable to set up attribute.
      */
-    private void addAttributes(Map<String, Object> attrs, IgniteSpi... spiList) throws GridException {
+    private void addAttributes(Map<String, Object> attrs, IgniteSpi... spiList) throws IgniteCheckedException {
         for (IgniteSpi spi : spiList) {
             Class<? extends IgniteSpi> spiCls = spi.getClass();
 
@@ -1411,8 +1413,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         }
     }
 
-    /** @throws GridException If registration failed. */
-    private void registerKernalMBean() throws GridException {
+    /** @throws IgniteCheckedException If registration failed. */
+    private void registerKernalMBean() throws IgniteCheckedException {
         try {
             kernalMBean = U.registerMBean(
                 cfg.getMBeanServer(),
@@ -1428,12 +1430,12 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         catch (JMException e) {
             kernalMBean = null;
 
-            throw new GridException("Failed to register kernal MBean.", e);
+            throw new IgniteCheckedException("Failed to register kernal MBean.", e);
         }
     }
 
-    /** @throws GridException If registration failed. */
-    private void registerLocalNodeMBean() throws GridException {
+    /** @throws IgniteCheckedException If registration failed. */
+    private void registerLocalNodeMBean() throws IgniteCheckedException {
         ClusterNodeMetricsMBean mbean = new ClusterLocalNodeMetrics(ctx.discovery().localNode());
 
         try {
@@ -1451,12 +1453,12 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         catch (JMException e) {
             locNodeMBean = null;
 
-            throw new GridException("Failed to register local node MBean.", e);
+            throw new IgniteCheckedException("Failed to register local node MBean.", e);
         }
     }
 
-    /** @throws GridException If registration failed. */
-    private void registerExecutorMBeans() throws GridException {
+    /** @throws IgniteCheckedException If registration failed. */
+    private void registerExecutorMBeans() throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(cfg.getExecutorService(), "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
@@ -1474,9 +1476,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param exec Executor service to register.
      * @param name Property name for executor.
      * @return Name for created MBean.
-     * @throws GridException If registration failed.
+     * @throws IgniteCheckedException If registration failed.
      */
-    private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws GridException {
+    private ObjectName registerExecutorMBean(ExecutorService exec, String name) throws IgniteCheckedException {
         assert exec != null;
 
         try {
@@ -1494,7 +1496,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             return res;
         }
         catch (JMException e) {
-            throw new GridException("Failed to register executor service MBean [name=" + name + ", exec=" + exec + ']',
+            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name + ", exec=" + exec + ']',
                 e);
         }
     }
@@ -1528,10 +1530,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param ctx Kernal context.
      * @param mgr Manager to start.
      * @param attrs SPI attributes to set.
-     * @throws GridException Throw in case of any errors.
+     * @throws IgniteCheckedException Throw in case of any errors.
      */
     private void startManager(GridKernalContextImpl ctx, GridManager mgr, Map<String, Object> attrs)
-        throws GridException {
+        throws IgniteCheckedException {
         mgr.addSpiAttributes(attrs);
 
         // Set all node attributes into discovery manager,
@@ -1547,8 +1549,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         try {
             mgr.start();
         }
-        catch (GridException e) {
-            throw new GridException("Failed to start manager: " + mgr, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
     }
 
@@ -1556,10 +1558,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param ctx Kernal context.
      * @param proc Processor to start.
      * @param attrs Attributes.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      */
     private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
-        throws GridException {
+        throws IgniteCheckedException {
         ctx.add(proc);
 
         try {
@@ -1567,8 +1569,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             proc.addAttributes(attrs);
         }
-        catch (GridException e) {
-            throw new GridException("Failed to start processor: " + proc, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to start processor: " + proc, e);
         }
     }
 
@@ -2089,7 +2091,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                             false,
                             Arrays.asList(cfg.getAdminEmails()));
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send lifecycle email notification.", e);
                     }
                 }
@@ -2488,7 +2490,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         try {
             compute().undeployTask(taskName);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.jmException(e);
         }
     }
@@ -2499,7 +2501,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         try {
             return compute().<String, String>execute(taskName, arg);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.jmException(e);
         }
     }
@@ -2603,7 +2605,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
-        int timeout, int maxConn) throws GridException {
+        int timeout, int maxConn) throws IgniteCheckedException {
         return startNodesAsync(file, restart, timeout, maxConn).get();
     }
 
@@ -2613,10 +2615,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
-    IgniteFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws GridException {
+    IgniteFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws IgniteCheckedException {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
@@ -2644,7 +2646,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws GridException {
+        int maxConn) throws IgniteCheckedException {
         return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
     }
 
@@ -2655,12 +2657,12 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
     IgniteFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws GridException {
+        int maxConn) throws IgniteCheckedException {
         A.notNull(hosts, "hosts");
 
         guard();
@@ -2681,7 +2683,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     addr = InetAddress.getByName(host);
                 }
                 catch (UnknownHostException e) {
-                    throw new GridException("Invalid host name: " + host, e);
+                    throw new IgniteCheckedException("Invalid host name: " + host, e);
                 }
 
                 Collection<? extends ClusterNode> neighbors = null;
@@ -2816,7 +2818,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes() throws GridException {
+    @Override public void stopNodes() throws IgniteCheckedException {
         guard();
 
         try {
@@ -2828,7 +2830,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes(Collection<UUID> ids) throws GridException {
+    @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
         guard();
 
         try {
@@ -2840,7 +2842,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes() throws GridException {
+    @Override public void restartNodes() throws IgniteCheckedException {
         guard();
 
         try {
@@ -2852,7 +2854,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes(Collection<UUID> ids) throws GridException {
+    @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
         guard();
 
         try {
@@ -3087,7 +3089,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** {@inheritDoc} */
     @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName,
-        @Nullable Collection<? extends K> keys) throws GridException {
+        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
@@ -3102,7 +3104,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws GridException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws IgniteCheckedException {
         A.notNull(key, "key");
 
         guard();
@@ -3202,7 +3204,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         Ignition.stop(gridName, true);
     }
 
@@ -3212,9 +3214,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @param cls Component interface.
      * @param ctx Kernal context.
      * @return Created component.
-     * @throws GridException If failed to create component.
+     * @throws IgniteCheckedException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws GridException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws IgniteCheckedException {
         assert cls.isInterface() : cls;
 
         T comp = ctx.plugins().createComponent(cls);
@@ -3242,10 +3244,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         }
 
         if (implCls == null)
-            throw new GridException("Failed to find component implementation: " + cls.getName());
+            throw new IgniteCheckedException("Failed to find component implementation: " + cls.getName());
 
         if (!cls.isAssignableFrom(implCls))
-            throw new GridException("Component implementation does not implement component interface " +
+            throw new IgniteCheckedException("Component implementation does not implement component interface " +
                 "[component=" + cls.getName() + ", implementation=" + implCls.getName() + ']');
 
         Constructor<T> constructor;
@@ -3254,14 +3256,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             constructor = implCls.getConstructor(GridKernalContext.class);
         }
         catch (NoSuchMethodException e) {
-            throw new GridException("Component does not have expected constructor: " + implCls.getName(), e);
+            throw new IgniteCheckedException("Component does not have expected constructor: " + implCls.getName(), e);
         }
 
         try {
             return constructor.newInstance(ctx);
         }
         catch (ReflectiveOperationException e) {
-            throw new GridException("Failed to create component [component=" + cls.getName() +
+            throw new IgniteCheckedException("Failed to create component [component=" + cls.getName() +
                 ", implementation=" + implCls.getName() + ']', e);
         }
     }

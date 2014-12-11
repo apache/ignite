@@ -16,7 +16,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 
@@ -36,9 +36,9 @@ public class MemcacheRestExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         Ignition.start(configuration());
     }
 
@@ -46,9 +46,9 @@ public class MemcacheRestExampleNodeStartup {
      * Create Grid configuration with GGFS and enabled IPC.
      *
      * @return Grid configuration.
-     * @throws GridException If configuration creation failed.
+     * @throws IgniteCheckedException If configuration creation failed.
      */
-    public static IgniteConfiguration configuration() throws GridException {
+    public static IgniteConfiguration configuration() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
@@ -61,19 +61,19 @@ public class MemcacheRestExampleNodeStartup {
 
         cfg.setMarshaller(marsh);
 
-        GridH2IndexingSpi indexSpi = new GridH2IndexingSpi();
-
-        indexSpi.setDefaultIndexPrimitiveKey(true);
-        indexSpi.setDefaultIndexFixedTyping(false);
-
-        cfg.setIndexingSpi(indexSpi);
-
         GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
 
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        GridCacheQueryConfiguration qryCfg = new GridCacheQueryConfiguration();
+
+        qryCfg.setIndexPrimitiveKey(true);
+        qryCfg.setIndexFixedTyping(false);
+
+        cacheCfg.setQueryConfiguration(qryCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

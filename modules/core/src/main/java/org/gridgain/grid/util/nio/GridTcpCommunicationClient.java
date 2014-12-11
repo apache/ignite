@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.direct.*;
-import org.jetbrains.annotations.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
@@ -55,7 +55,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
      * @param bufSize Buffer size (or {@code 0} to disable buffer).
      * @param minBufferedMsgCnt Minimum buffered message count.
      * @param bufSizeRatio Communication buffer size ratio.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridTcpCommunicationClient(
         GridNioMetricsListener metricsLsnr,
@@ -69,7 +69,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         int bufSize,
         int minBufferedMsgCnt,
         double bufSizeRatio
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
@@ -114,7 +114,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             success = true;
         }
         catch (IOException e) {
-            throw new GridException("Failed to connect to remote host " +
+            throw new IgniteCheckedException("Failed to connect to remote host " +
                 "[addr=" + addr + ", localHost=" + locHost + ']', e);
         }
         finally {
@@ -124,12 +124,12 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
         try {
             handshakeC.applyx(sock.getInputStream(), sock.getOutputStream());
         }
         catch (IOException e) {
-            throw new GridException("Failed to access IO streams when executing handshake with remote node: " +
+            throw new IgniteCheckedException("Failed to access IO streams when executing handshake with remote node: " +
                 sock.getRemoteSocketAddress(), e);
         }
     }
@@ -165,9 +165,9 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(byte[] data, int len) throws GridException {
+    @Override public void sendMessage(byte[] data, int len) throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         try {
             out.write(data, 0, len);
@@ -175,7 +175,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             metricsLsnr.onBytesSent(len);
         }
         catch (IOException e) {
-            throw new GridException("Failed to send message to remote node: " + sock.getRemoteSocketAddress(), e);
+            throw new IgniteCheckedException("Failed to send message to remote node: " + sock.getRemoteSocketAddress(), e);
         }
 
         markUsed();
@@ -183,9 +183,9 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
 
     /** {@inheritDoc} */
     @Override public void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
-        throws GridException {
+        throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         assert writeBuf.hasArray();
 
@@ -195,7 +195,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
             metricsLsnr.onBytesSent(cnt);
         }
         catch (IOException e) {
-            throw new GridException("Failed to send message to remote node: " + sock.getRemoteSocketAddress(), e);
+            throw new IgniteCheckedException("Failed to send message to remote node: " + sock.getRemoteSocketAddress(), e);
         }
 
         markUsed();
@@ -212,7 +212,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ByteBuffer data) throws GridException {
+    @Override public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 

@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -101,7 +101,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestStore implements GridCacheStore<Integer, Integer> {
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(@Nullable GridCacheTx tx, Integer key) throws GridException {
+        @Nullable @Override public Integer load(@Nullable GridCacheTx tx, Integer key) throws IgniteCheckedException {
             loads.incrementAndGet();
 
             return null;
@@ -109,42 +109,42 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) throws GridException {
+            IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx, Integer key,
-            @Nullable Integer val) throws GridException {
+            @Nullable Integer val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void putAll(@Nullable GridCacheTx tx,
-            Map<? extends Integer, ? extends Integer> map) throws GridException {
+            Map<? extends Integer, ? extends Integer> map) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx, Integer key)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void removeAll(@Nullable GridCacheTx tx, Collection<? extends Integer> keys)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
             // No-op.
         }
     }

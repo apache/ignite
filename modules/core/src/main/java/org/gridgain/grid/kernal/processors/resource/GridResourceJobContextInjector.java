@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 
 /**
@@ -28,7 +28,7 @@ public class GridResourceJobContextInjector extends GridResourceBasicInjector<Co
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         assert target != null;
 
         if (!(target instanceof ComputeTask))
@@ -37,7 +37,7 @@ public class GridResourceJobContextInjector extends GridResourceBasicInjector<Co
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         assert target != null;
 
         if (!(target instanceof ComputeTask))

@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -83,7 +83,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
             atomic1.get();
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }

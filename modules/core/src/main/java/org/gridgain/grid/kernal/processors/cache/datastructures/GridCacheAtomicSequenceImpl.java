@@ -128,7 +128,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     }
 
     /** {@inheritDoc} */
-    @Override public long get() throws GridException {
+    @Override public long get() throws IgniteCheckedException {
         checkRemoved();
 
         lock.lock();
@@ -142,24 +142,24 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     }
 
     /** {@inheritDoc} */
-    @Override public long incrementAndGet() throws GridException {
+    @Override public long incrementAndGet() throws IgniteCheckedException {
         return internalUpdate(1, incAndGetCall, true);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndIncrement() throws GridException {
+    @Override public long getAndIncrement() throws IgniteCheckedException {
         return internalUpdate(1, getAndIncCall, false);
     }
 
     /** {@inheritDoc} */
-    @Override public long addAndGet(long l) throws GridException {
+    @Override public long addAndGet(long l) throws IgniteCheckedException {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
         return internalUpdate(l, null, true);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndAdd(long l) throws GridException {
+    @Override public long getAndAdd(long l) throws IgniteCheckedException {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
         return internalUpdate(l, null, false);
@@ -173,10 +173,10 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param updated If {@code true}, will return sequence value after update, otherwise will return sequence value
      *      prior to update.
      * @return Sequence value.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private long internalUpdate(long l, @Nullable Callable<Long> updateCall, boolean updated) throws GridException {
+    private long internalUpdate(long l, @Nullable Callable<Long> updateCall, boolean updated) throws IgniteCheckedException {
         checkRemoved();
 
         assert l > 0;
@@ -252,11 +252,11 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param updated If {@code true}, will return sequence value after update, otherwise will return sequence value
      *      prior to update.
      * @return Future indicating sequence value.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     @SuppressWarnings("SignalWithoutCorrespondingAwait")
     private IgniteFuture<Long> internalUpdateAsync(long l, @Nullable Callable<Long> updateCall, boolean updated)
-        throws GridException {
+        throws IgniteCheckedException {
         checkRemoved();
 
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
@@ -353,9 +353,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /**
      * Check removed status.
      *
-     * @throws GridException If removed.
+     * @throws IgniteCheckedException If removed.
      */
-    private void checkRemoved() throws GridException {
+    private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
             throw new GridCacheDataStructureRemovedException("Sequence was removed from cache: " + name);
     }
@@ -493,7 +493,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
             return t.get1().dataStructures().sequence(t.get2(), 0L, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {

@@ -484,7 +484,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws GridInterruptedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
-            throws GridException, GridInterruptedException {
+            throws IgniteCheckedException, GridInterruptedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
 
@@ -545,8 +545,8 @@ public class GridDhtPartitionDemandPool<K, V> {
             catch (GridInterruptedException e) {
                 throw e;
             }
-            catch (GridException e) {
-                throw new GridException("Failed to cache preloaded entry (will stop preloading) [local=" +
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Failed to cache preloaded entry (will stop preloading) [local=" +
                     cctx.nodeId() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
             }
 
@@ -569,10 +569,10 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
          * @throws org.apache.ignite.cluster.ClusterTopologyException If node left.
-         * @throws GridException If failed to send message.
+         * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
-            GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, GridException {
+            GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, IgniteCheckedException {
             cntr++;
 
             d.topic(topic(cntr));
@@ -830,7 +830,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                         return;
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
                     }
                 }
@@ -915,7 +915,7 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                                     break; // For.
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to receive partitions from node (preloading will not " +
                                         "fully finish) [node=" + node.id() + ", msg=" + d + ']', e);
                                 }

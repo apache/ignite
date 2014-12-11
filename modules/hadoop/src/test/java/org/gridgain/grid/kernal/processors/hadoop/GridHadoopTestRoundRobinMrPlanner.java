@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -23,7 +24,7 @@ import java.util.*;
 public class GridHadoopTestRoundRobinMrPlanner implements GridHadoopMapReducePlanner {
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
-        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
+        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException {
         if (top.isEmpty())
             throw new IllegalArgumentException("Topology is empty");
 

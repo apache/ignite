@@ -31,7 +31,7 @@ public class ComputeBroadcastExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -50,9 +50,9 @@ public class ComputeBroadcastExample {
      * Print 'Hello' message on all grid nodes.
      *
      * @param g Grid instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void hello(Ignite g) throws GridException {
+    private static void hello(Ignite g) throws IgniteCheckedException {
         // Print out hello message on all nodes.
         g.compute().broadcast(
             new IgniteRunnable() {
@@ -71,9 +71,9 @@ public class ComputeBroadcastExample {
      * Gather system info from all nodes and print it out.
      *
      * @param g Grid instance.
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    private static void gatherSystemInfo(Ignite g) throws GridException {
+    private static void gatherSystemInfo(Ignite g) throws IgniteCheckedException {
         // Gather system info from all nodes.
         Collection<String> res = g.compute().broadcast(
             new IgniteCallable<String>() {

@@ -86,7 +86,7 @@ public class IgniteException extends RuntimeException {
      * Adds troubleshooting links if they where not added by below in {@code cause} hierarchy.
      */
     @Override public String getMessage() {
-        return X.hasCauseExcludeRoot(this, IgniteException.class, GridRuntimeException.class) ?
+        return X.hasCauseExcludeRoot(this, IgniteException.class, IgniteException.class) ?
             super.getMessage() : errorMessageWithHelpUrls(super.getMessage());
     }
 

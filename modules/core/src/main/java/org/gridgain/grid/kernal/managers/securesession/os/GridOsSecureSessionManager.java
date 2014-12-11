@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.managers.securesession.os;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -36,7 +36,7 @@ public class GridOsSecureSessionManager extends GridNoopManagerAdapter implement
     /** {@inheritDoc} */
     @Override public GridSecureSession validateSession(GridSecuritySubjectType subjType, UUID subjId,
         @Nullable byte[] tok,
-        @Nullable Object params) throws GridException {
+        @Nullable Object params) throws IgniteCheckedException {
         return null;
     }
 

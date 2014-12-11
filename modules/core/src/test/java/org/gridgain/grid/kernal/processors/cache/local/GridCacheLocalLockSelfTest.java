@@ -68,9 +68,9 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testLockReentry() throws GridException {
+    public void testLockReentry() throws IgniteCheckedException {
         GridCache<Integer, String> cache = ignite.cache(null);
 
         assert !cache.isLocked(1);

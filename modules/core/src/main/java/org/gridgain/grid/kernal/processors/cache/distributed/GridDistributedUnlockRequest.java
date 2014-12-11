@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
@@ -70,9 +70,9 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
      * @param key Key.
      * @param bytes Key bytes.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addKey(K key, byte[] bytes, GridCacheContext<K, V> ctx) throws GridException {
+    public void addKey(K key, byte[] bytes, GridCacheContext<K, V> ctx) throws IgniteCheckedException {
         boolean depEnabled = ctx.deploymentEnabled();
 
         if (depEnabled)
@@ -91,7 +91,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (F.isEmpty(keyBytes) && !F.isEmpty(keys))
@@ -99,7 +99,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (keys == null && !F.isEmpty(keyBytes))

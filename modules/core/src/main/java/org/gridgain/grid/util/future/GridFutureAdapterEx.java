@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -134,7 +135,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public R get() throws GridException {
+    @Override public R get() throws IgniteCheckedException {
         checkValid();
 
         try {
@@ -157,13 +158,13 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout) throws GridException {
+    @Override public R get(long timeout) throws IgniteCheckedException {
         // Do not replace with static import, as it may not compile.
         return get(timeout, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws GridException {
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
         A.notNull(unit, "unit");
 
@@ -184,9 +185,9 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
      * @return Result.
      * @throws InterruptedException If interrupted.
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timeout reached before computation completed.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable protected R get0(long nanosTimeout) throws InterruptedException, GridException {
+    @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
             throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
 
@@ -333,7 +334,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
      * and call {@link #onCancelled()} callback explicitly if cancellation
      * indeed did happen.
      */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         checkValid();
 
         return false;

@@ -72,7 +72,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> longWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicLong al = cache.cache().dataStructures().atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -90,7 +90,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> longReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicLong al = cache.cache().dataStructures().atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -108,7 +108,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> refWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicReference<Integer> ar = cache.cache().dataStructures().atomicReference(TEST_REF_NAME,
                 null, true);
 
@@ -127,7 +127,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> refReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicReference<Integer> ar = cache.cache().dataStructures().atomicReference(TEST_REF_NAME, null,
                 true);
 
@@ -146,7 +146,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> seqWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicSequence as = cache.cache().dataStructures().atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -164,7 +164,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> seqReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicSequence as = cache.cache().dataStructures().atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -182,7 +182,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> stampWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicStamped<Integer, Integer> as = cache.cache().dataStructures().atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
@@ -201,7 +201,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> stampReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheAtomicStamped<Integer, Integer> as = cache.cache().dataStructures().atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
@@ -220,7 +220,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> queueWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheQueue<Integer> q = cache.cache().dataStructures().queue(TEST_QUEUE_NAME, 0, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -238,7 +238,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> queueReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheQueue<Integer> q = cache.cache().dataStructures().queue(TEST_QUEUE_NAME, 0, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -256,7 +256,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> latchWriteClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheCountDownLatch l = cache.cache().dataStructures().countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT,
                 true, true);
 
@@ -275,7 +275,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<GridCacheProjection<Integer, Integer>> latchReadClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             GridCacheCountDownLatch l = cache.cache().dataStructures().countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT,
                 true, true);
 
@@ -292,9 +292,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
     /**
      * @param args Arguments.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');

@@ -29,7 +29,7 @@ public class ComputeProjectionExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -71,9 +71,9 @@ public class ComputeProjectionExample {
      *
      * @param ignite Grid.
      * @param prj Grid projection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void sayHello(Ignite ignite, final ClusterGroup prj) throws GridException {
+    private static void sayHello(Ignite ignite, final ClusterGroup prj) throws IgniteCheckedException {
         // Print out hello message on all projection nodes.
         ignite.compute(prj).broadcast(
             new IgniteRunnable() {

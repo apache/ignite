@@ -642,7 +642,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -689,7 +689,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -745,7 +745,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -797,7 +797,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         }
 
         /** {@inheritDoc} */
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');

@@ -9,13 +9,13 @@
 
 package org.apache.ignite.fs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * {@code GGFS} exception thrown by file system components.
  */
-public class IgniteFsException extends GridException {
+public class IgniteFsException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

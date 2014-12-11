@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -34,7 +35,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final Object mux = new Object();
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         if (cctx.kernalContext().isDaemon() || !cctx.config().isEagerTtl())
             return;
 
@@ -42,7 +43,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cleanupWorker != null)
             new IgniteThread(cleanupWorker).start();
     }

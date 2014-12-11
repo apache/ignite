@@ -9,22 +9,22 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
-import java.lang.reflect.Array;
+import java.lang.reflect.*;
 import java.util.*;
 
+import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
 
 /**
  * Tests for node validation logic in {@link GridGgfsProcessor}.
@@ -443,7 +443,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     }
 
     /**
-     * Checks that the given grid configuration will lead to {@link GridException} upon grid startup.
+     * Checks that the given grid configuration will lead to {@link IgniteCheckedException} upon grid startup.
      *
      * @param cfg Grid configuration to check.
      * @param excMsgSnippet Root cause (assertion) exception message snippet.
@@ -458,7 +458,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
             fail("No exception has been thrown.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (testLoc) {
                 if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
                     e.getCause().getMessage().contains(excMsgSnippet))

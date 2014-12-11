@@ -275,7 +275,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
 
             assert false : "SharedResourceTask4 should not be allowed to deploy.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Received expected exception: " + e);
         }
         finally {
@@ -316,7 +316,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -343,7 +343,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -434,7 +434,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -512,7 +512,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -548,7 +548,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -626,7 +626,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -662,7 +662,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -740,7 +740,7 @@ public class GridResourceIsolatedClassLoaderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;

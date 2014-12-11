@@ -190,7 +190,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
             log.info("Injected resource1: " + rsrc1);
             log.info("Injected resource1: " + rsrc2);
 
@@ -202,7 +202,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Nothing to reduce.
             return null;
         }
@@ -262,7 +262,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
             log.info("Injected resource1: " + rsrc1);
             log.info("Injected resource1: " + rsrc2);
 
@@ -274,7 +274,7 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Nothing to reduce.
             return null;
         }

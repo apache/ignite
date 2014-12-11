@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -59,7 +59,7 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testReadAhead() throws Exception {
         store.testThread(Thread.currentThread());
@@ -121,7 +121,7 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(GridCacheTx tx, Object key) throws GridException {
+        @Nullable @Override public Object load(GridCacheTx tx, Object key) throws IgniteCheckedException {
             if (trackLoads) {
                 wasAsyncLoad = wasAsyncLoad || !testThread.equals(Thread.currentThread());
 
@@ -137,12 +137,12 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Object key, Object val) throws GridException {
+        @Override public void put(GridCacheTx tx, Object key, Object val) throws IgniteCheckedException {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
             /* No-op. */
         }
 

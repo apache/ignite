@@ -97,7 +97,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Received expected exception: " + e);
             }
         }

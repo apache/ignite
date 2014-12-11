@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.index.hash.*;
@@ -107,7 +108,7 @@ public class GridStreamerIndexLoadTest {
         final AtomicLong enqueueCntr = new AtomicLong();
 
         IgniteFuture<Long> enqueueFut = runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!Thread.currentThread().isInterrupted()) {
@@ -121,7 +122,7 @@ public class GridStreamerIndexLoadTest {
         final AtomicLong evictCntr = new AtomicLong();
 
         IgniteFuture<Long> evictFut = runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (!Thread.currentThread().isInterrupted()) {
                     win.pollEvicted();
 

@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown when atomic operation timeout occurs.
  */
-public class GridCacheAtomicUpdateTimeoutException extends GridException {
+public class GridCacheAtomicUpdateTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

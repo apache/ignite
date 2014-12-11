@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -35,7 +35,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     private GridPartitionLockKey[] partAffKeys;
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
             cctx.config().getAffinityMapper(), cctx.config().getBackups());
 
@@ -72,7 +72,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cctx.isLocal())
             // No discovery event needed for local affinity.
             aff.calculate(1, null);

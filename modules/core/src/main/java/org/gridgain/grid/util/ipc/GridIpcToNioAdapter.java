@@ -121,15 +121,15 @@ public class GridIpcToNioAdapter<T> {
             }
         }
         catch (Exception e) {
-            chain.onExceptionCaught(ses, new GridException("Failed to read from IPC endpoint.", e));
+            chain.onExceptionCaught(ses, new IgniteCheckedException("Failed to read from IPC endpoint.", e));
         }
         finally {
             try {
                 // Assuming remote end closed connection - pushing event from head to tail.
                 chain.onSessionClosed(ses);
             }
-            catch (GridException e) {
-                chain.onExceptionCaught(ses, new GridException("Failed to process session close event " +
+            catch (IgniteCheckedException e) {
+                chain.onExceptionCaught(ses, new IgniteCheckedException("Failed to process session close event " +
                     "for IPC endpoint.", e));
             }
         }
@@ -152,7 +152,7 @@ public class GridIpcToNioAdapter<T> {
 
             metricsLsnr.onBytesSent(cnt);
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             return new GridNioFinishedFuture<Object>(e);
         }
 
@@ -171,17 +171,17 @@ public class GridIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+        @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionOpened(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+        @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionClosed(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 
@@ -193,12 +193,12 @@ public class GridIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
             proceedMessageReceived(ses, msg);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
             // This call should be synced externally to avoid races.
             boolean b = latchRef.compareAndSet(null, new CountDownLatch(1));
 
@@ -208,7 +208,7 @@ public class GridIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             // This call should be synced externally to avoid races.
             CountDownLatch latch = latchRef.getAndSet(null);
 
@@ -231,12 +231,12 @@ public class GridIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionIdleTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionWriteTimeout(ses);
         }
     }

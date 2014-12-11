@@ -44,7 +44,7 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+    @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
         assert rsrc1 != null;
         assert rsrc2 != null;
         assert rsrc3 != null;
@@ -71,7 +71,7 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert rsrc1 != null;
         assert rsrc2 != null;
         assert rsrc3 != null;
@@ -109,7 +109,7 @@ public class GridUserExternalResourceTask1 extends ComputeTaskSplitAdapter<Objec
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;

@@ -29,9 +29,9 @@ public final class LifecycleExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Lifecycle example started.");
 

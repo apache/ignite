@@ -9,7 +9,7 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.*;
  * rejects execution.
  * @see org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()
  */
-public class ComputeExecutionRejectedException extends GridException {
+public class ComputeExecutionRejectedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.jobmetrics;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.typedef.*;
@@ -114,12 +114,12 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         assertParameter(histSize > 0, "metricsHistorySize > 0");
         assertParameter(expireTime > 0, "metricsExpireTime > 0");
 
         if (metrics.snapshotsQueues == null)
-            throw new GridException("Invalid concurrency level configured " +
+            throw new IgniteCheckedException("Invalid concurrency level configured " +
                 "(is 'GRIDGAIN_JOBS_METRICS_CONCURRENCY_LEVEL' system property properly set?).");
 
         if (log.isDebugEnabled())
@@ -129,7 +129,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Job metrics processor stopped.");
     }

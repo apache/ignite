@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.lang.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override public final T nextX() throws GridException {
+    @Override public final T nextX() throws IgniteCheckedException {
         if (closed.get())
             return null;
 
@@ -37,7 +37,7 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
 
             return onNext();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (closed.get())
                 return null;
             else
@@ -47,20 +47,20 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
 
     /**
      * @return Next element.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws NoSuchElementException If no element found.
      */
-    protected abstract T onNext() throws GridException;
+    protected abstract T onNext() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public final boolean hasNextX() throws GridException {
+    @Override public final boolean hasNextX() throws IgniteCheckedException {
         if (closed.get())
             return false;
 
         try {
             return onHasNext();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (closed.get())
                 return false;
             else
@@ -70,19 +70,19 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
 
     /**
      * @return {@code True} if iterator has next element.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract boolean onHasNext() throws GridException;
+    protected abstract boolean onHasNext() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public final void removeX() throws GridException {
+    @Override public final void removeX() throws IgniteCheckedException {
         if (closed.get())
             throw new NoSuchElementException("Iterator has been closed.");
 
         try {
             onRemove();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (!closed.get())
                 throw e;
         }
@@ -91,14 +91,14 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
     /**
      * Called on remove from iterator.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void onRemove() throws GridException {
+    protected void onRemove() throws IgniteCheckedException {
         throw new UnsupportedOperationException("Remove is not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public final void close() throws GridException {
+    @Override public final void close() throws IgniteCheckedException {
         if (closed.compareAndSet(false, true))
             onClose();
     }
@@ -106,9 +106,9 @@ public abstract class GridCloseableIteratorAdapterEx<T> extends GridIteratorAdap
     /**
      * Invoked on iterator close.
      *
-     * @throws GridException If closing failed.
+     * @throws IgniteCheckedException If closing failed.
      */
-    protected void onClose() throws GridException {
+    protected void onClose() throws IgniteCheckedException {
         // No-op.
     }
 

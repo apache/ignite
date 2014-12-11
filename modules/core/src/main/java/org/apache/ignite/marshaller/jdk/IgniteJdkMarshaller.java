@@ -9,8 +9,8 @@
 
 package org.apache.ignite.marshaller.jdk;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -78,7 +78,7 @@ import java.io.*;
  */
 public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
     /** {@inheritDoc} */
-    @Override public void marshal(@Nullable Object obj, OutputStream out) throws GridException {
+    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         ObjectOutputStream objOut = null;
@@ -92,7 +92,7 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
             objOut.flush();
         }
         catch (IOException e) {
-            throw new GridException("Failed to serialize object: " + obj, e);
+            throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally{
             U.closeQuiet(objOut);
@@ -101,7 +101,7 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws GridException {
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -115,10 +115,10 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
             return (T)objIn.readObject();
         }
         catch (IOException e) {
-            throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find class with given class loader for unmarshalling " +
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same versions of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
         }

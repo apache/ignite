@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.clock;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.thread.*;
@@ -18,8 +19,8 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.net.*;
@@ -64,7 +65,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         super.start();
 
         clockSrc = ctx.timeSource();
@@ -104,7 +105,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         super.addAttributes(attrs);
 
         attrs.put(ATTR_TIME_SERVER_HOST, srv.host());
@@ -112,7 +113,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
         srv.afterStart();
@@ -149,7 +150,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
         if (srv != null)
@@ -189,7 +190,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
             try {
                 srv.sendPacket(msg, addr, port);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send time server reply to remote node: " + msg, e);
             }
         }
@@ -291,7 +292,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                 try {
                     ctx.io().send(n, TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (ctx.discovery().pingNode(n.id()))
                         U.error(log, "Failed to send time sync snapshot to remote node (did not leave grid?) " +
                             "[nodeId=" + n.id() + ", msg=" + msg + ", err=" + e.getMessage() + ']');
@@ -426,7 +427,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
 
                     srv.sendPacket(req, addr, port);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     LT.warn(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
                         ", addr=" + addr + ", port=" + port + ']');
                 }

@@ -41,7 +41,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    &#64;Override
- *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *        for (int i = 0; i &lt; gridSize; i++) {
@@ -67,7 +67,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    GridComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
- *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
+ *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
  *        Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
  *
  *        // In more complex cases, you can actually do
@@ -81,7 +81,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result

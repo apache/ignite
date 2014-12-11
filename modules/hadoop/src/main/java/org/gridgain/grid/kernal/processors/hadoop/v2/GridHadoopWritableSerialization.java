@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -34,26 +35,26 @@ public class GridHadoopWritableSerialization implements GridHadoopSerialization 
     }
 
     /** {@inheritDoc} */
-    @Override public void write(DataOutput out, Object obj) throws GridException {
+    @Override public void write(DataOutput out, Object obj) throws IgniteCheckedException {
         assert cls.isAssignableFrom(obj.getClass()) : cls + " " + obj.getClass();
 
         try {
             ((Writable)obj).write(out);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Object read(DataInput in, @Nullable Object obj) throws GridException {
+    @Override public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException {
         Writable w = obj == null ? U.newInstance(cls) : cls.cast(obj);
 
         try {
             w.readFields(in);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         return w;

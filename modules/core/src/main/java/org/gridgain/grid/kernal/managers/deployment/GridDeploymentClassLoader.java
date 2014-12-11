@@ -563,7 +563,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             nodeLdrMapCp = singleNode ? nodeLdrMap : new HashMap<>(nodeLdrMap);
         }
 
-        GridException err = null;
+        IgniteCheckedException err = null;
 
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
@@ -594,7 +594,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     else if (log.isDebugEnabled())
                         log.debug(msg);
 
-                    err = new GridException(msg);
+                    err = new IgniteCheckedException(msg);
 
                     continue;
                 }
@@ -615,7 +615,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 throw new ClassNotFoundException("Failed to peer load class [class=" + name + ", nodeClsLdrs=" +
                     nodeLdrMapCp + ", parentClsLoader=" + getParent() + ", reason=" + res.errorMessage() + ']');
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
                 // got interrupted. So we assume that thread can be interrupted
                 // by processing cancellation request.
@@ -759,7 +759,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         res.byteSource().size());
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // This thread should be interrupted again in communication if it
                 // got interrupted. So we assume that thread can be interrupted
                 // by processing cancellation request.

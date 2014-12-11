@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Exception indicating that index update failed during cache entry update. If this exception is thrown, entry
  * is kept in it's original state (no updates performed).
  */
-public class GridCacheIndexUpdateException extends GridException {
+public class GridCacheIndexUpdateException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -88,11 +88,11 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
      * @param mode Grid GGFS mode.
      * @param batch Optional secondary file system batch.
      * @param metrics Local GGFs metrics.
-     * @throws GridException If stream creation failed.
+     * @throws IgniteCheckedException If stream creation failed.
      */
     IgniteFsOutputStreamImpl(GridGgfsContext ggfsCtx, IgniteFsPath path, GridGgfsFileInfo fileInfo, IgniteUuid parentId,
                              int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch, GridGgfsLocalMetrics metrics)
-        throws GridException {
+        throws IgniteCheckedException {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
         assert fileInfo != null;
@@ -159,7 +159,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlock(ByteBuffer block) throws GridException, IOException {
+    @Override protected synchronized void storeDataBlock(ByteBuffer block) throws IgniteCheckedException, IOException {
         int writeLen = block.remaining();
 
         preStoreDataBlocks(null, writeLen);
@@ -193,7 +193,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws GridException, IOException {
+    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException {
         preStoreDataBlocks(in, len);
 
         int blockSize = fileInfo.blockSize();
@@ -229,7 +229,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws GridException, IOException {
+    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws IgniteCheckedException, IOException {
         // Check if any exception happened while writing data.
         if (writeCompletionFut.isDone()) {
             assert ((GridFutureAdapter)writeCompletionFut).isFailed();
@@ -255,7 +255,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
         try {
             exists = meta.exists(fileInfo.id());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOError(e); // Something unrecoverable.
         }
 
@@ -290,7 +290,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
                 space = 0;
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException("Failed to flush data [path=" + path + ", space=" + space + ']', e);
         }
     }
@@ -323,7 +323,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
             try {
                 exists = !deleted && meta.exists(fileInfo.id());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IOError(e); // Something unrecoverable.
             }
 
@@ -335,7 +335,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
 
                     writeCompletionFut.get();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     err = new IOException("Failed to close stream [path=" + path + ", fileInfo=" + fileInfo + ']', e);
                 }
 
@@ -346,7 +346,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
                     try {
                         batch.await();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (err == null)
                             err = new IOException("Failed to close secondary file system stream [path=" + path +
                                 ", fileInfo=" + fileInfo + ']', e);
@@ -363,7 +363,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
 
                     throw new IOException("File was concurrently deleted: " + path);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new IOError(e); // Something unrecoverable.
                 }
 
@@ -377,7 +377,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
                     if (mode == DUAL_SYNC)
                         batch.await();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new IOException("Failed to close secondary file system stream [path=" + path +
                         ", fileInfo=" + fileInfo + ']', e);
                 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 
@@ -22,7 +23,7 @@ public class GridTestJobResult implements ComputeJobResult {
     private final Serializable data;
 
     /** */
-    private final GridException e;
+    private final IgniteCheckedException e;
 
     /** */
     private final ComputeJob job;
@@ -49,7 +50,7 @@ public class GridTestJobResult implements ComputeJobResult {
      * @param node Grid node.
      * @param jobCtx Job context.
      */
-    public GridTestJobResult(Serializable data, GridException e, ComputeJob job, ClusterNode node, ComputeJobContext jobCtx) {
+    public GridTestJobResult(Serializable data, IgniteCheckedException e, ComputeJob job, ClusterNode node, ComputeJobContext jobCtx) {
         this.data = data;
         this.e = e;
         this.job = job;
@@ -71,7 +72,7 @@ public class GridTestJobResult implements ComputeJobResult {
 
     /** {@inheritDoc} */ @Override public Serializable getData() { return data; }
 
-    /** {@inheritDoc} */ @Override public GridException getException() { return e; }
+    /** {@inheritDoc} */ @Override public IgniteCheckedException getException() { return e; }
 
     /** {@inheritDoc} */ @Override public boolean isCancelled() { return false; }
 

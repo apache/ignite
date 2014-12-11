@@ -107,7 +107,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
     /** Test predefined affinity - must be ported to all clients. */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefined() throws GridException {
+    public void testPredefined() throws IgniteCheckedException {
         GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
 
         getTestResources().inject(aff);
@@ -209,7 +209,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
     /** Test predefined affinity - must be ported to other clients. */
     @SuppressWarnings("UnaryPlus")
-    public void testPredefinedHashIdResolver() throws GridException {
+    public void testPredefinedHashIdResolver() throws IgniteCheckedException {
         // Use Md5 hasher for this test.
         GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
 

@@ -9,11 +9,11 @@
 
 package org.gridgain.client.router;
 
+import org.apache.ignite.*;
 import org.apache.ignite.logger.log4j.*;
 import org.gridgain.client.*;
 import org.gridgain.client.integration.*;
 import org.gridgain.client.router.impl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
@@ -90,9 +90,9 @@ public abstract class GridTcpRouterAbstractSelfTest extends GridClientAbstractSe
 
     /**
      * @return Router configuration.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridTcpRouterConfiguration routerConfiguration() throws GridException {
+    public GridTcpRouterConfiguration routerConfiguration() throws IgniteCheckedException {
         GridTcpRouterConfiguration cfg = new GridTcpRouterConfiguration();
 
         cfg.setHost(HOST);

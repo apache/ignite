@@ -64,9 +64,9 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
      * Sends job to node.
      *
      * @param n Node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void sendJob(ClusterNode n) throws GridException {
+    private void sendJob(ClusterNode n) throws IgniteCheckedException {
         try {
             int jobId = queue.take();
 
@@ -86,13 +86,13 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
             }, n);
         }
         catch (InterruptedException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg)
-        throws GridException {
+        throws IgniteCheckedException {
         maxExecs = arg;
 
         // Start worker thread.
@@ -108,9 +108,9 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         if (res.getException() != null)
-            throw new GridException(res.getException());
+            throw new IgniteCheckedException(res.getException());
 
         TestObject o = res.getData();
 
@@ -125,7 +125,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         X.println(">>> Reducing task...");
 
         t.interrupt();
@@ -134,7 +134,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
             t.join();
         }
         catch (InterruptedException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         return null;

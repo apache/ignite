@@ -287,7 +287,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onError(e);
 
             return false;
@@ -398,9 +398,9 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /**
      * Checks for errors.
      *
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private void checkError() throws GridException {
+    private void checkError() throws IgniteCheckedException {
         if (err.get() != null)
             throw U.cast(err.get());
     }

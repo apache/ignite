@@ -123,9 +123,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    protected final void stop(@Nullable Object respMsg) throws GridException {
+    protected final void stop(@Nullable Object respMsg) throws IgniteCheckedException {
         keepGoing = false;
 
         send(nodeId, respMsg);
@@ -154,9 +154,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    protected final void respond(@Nullable Object respMsg) throws GridException {
+    protected final void respond(@Nullable Object respMsg) throws IgniteCheckedException {
         checkReversing();
 
         keepGoing = true;
@@ -174,9 +174,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      * @param id ID of the node to send the message to, if any.
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    protected final void respond(UUID id, @Nullable Object respMsg) throws GridException {
+    protected final void respond(UUID id, @Nullable Object respMsg) throws IgniteCheckedException {
         checkReversing();
 
         keepGoing = true;
@@ -198,9 +198,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param nodeId ID of the node to send message to.
      * @param respMsg Message to send.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private void send(UUID nodeId, @Nullable Object respMsg) throws GridException {
+    private void send(UUID nodeId, @Nullable Object respMsg) throws IgniteCheckedException {
         assert nodeId != null;
 
         if (respMsg != null) {
@@ -209,7 +209,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
             if (node != null)
                 ignite.message(ignite.cluster().forNode(node)).send(null, respMsg); // Can still fail.
             else
-                throw new GridException("Failed to send message since destination node has " +
+                throw new IgniteCheckedException("Failed to send message since destination node has " +
                     "left topology (ignoring) [nodeId=" +nodeId + ", respMsg=" + respMsg + ']');
         }
     }

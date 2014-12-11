@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,9 +23,9 @@ public interface GridHadoopSerialization extends AutoCloseable {
      *
      * @param out Output.
      * @param obj Object to serialize.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void write(DataOutput out, Object obj) throws GridException;
+    public void write(DataOutput out, Object obj) throws IgniteCheckedException;
 
     /**
      * Reads object from the given input optionally reusing given instance.
@@ -33,14 +33,14 @@ public interface GridHadoopSerialization extends AutoCloseable {
      * @param in Input.
      * @param obj Object.
      * @return New object or reused instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Object read(DataInput in, @Nullable Object obj) throws GridException;
+    public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException;
 
     /**
      * Finalise the internal objects.
      * 
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 }

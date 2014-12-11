@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.grid.util.typedef.*;
@@ -468,7 +469,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         try {
             hadoopJars = hadoopUrls();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
         }
 
@@ -492,9 +493,9 @@ public class GridHadoopClassLoader extends URLClassLoader {
 
     /**
      * @return Collection of jar URLs.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static Collection<URL> hadoopUrls() throws GridException {
+    public static Collection<URL> hadoopUrls() throws IgniteCheckedException {
         Collection<URL> hadoopUrls = hadoopJars;
 
         if (hadoopUrls != null)
@@ -511,7 +512,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
             String hadoopPrefix = hadoopHome();
 
             if (F.isEmpty(hadoopPrefix))
-                throw new GridException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
+                throw new IgniteCheckedException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
                     "HADOOP_HOME environment variables must be set.");
 
             String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
@@ -533,7 +534,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
                 addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-core");
             }
             catch (Exception e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
 
             hadoopJars = hadoopUrls;

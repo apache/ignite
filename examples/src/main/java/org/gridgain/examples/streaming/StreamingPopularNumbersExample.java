@@ -84,7 +84,7 @@ public class StreamingPopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
@@ -132,9 +132,9 @@ public class StreamingPopularNumbersExample {
      * Streams random numbers into the system.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void streamData(final Ignite g) throws GridException {
+    private static void streamData(final Ignite g) throws IgniteCheckedException {
         final IgniteStreamer streamer = g.streamer("popular-numbers");
 
         // Use gaussian distribution to ensure that
@@ -178,7 +178,7 @@ public class StreamingPopularNumbersExample {
 
                     System.out.println("----------------");
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -201,7 +201,7 @@ public class StreamingPopularNumbersExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> nums)
-            throws GridException {
+            throws IgniteCheckedException {
             StreamerWindow<Integer> win = ctx.window();
 
             // Add numbers to window.

@@ -9,8 +9,8 @@
 
 package org.apache.ignite.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -95,18 +95,18 @@ public interface StreamerWindow<E> extends Iterable<E> {
      *
      * @param evt Event to add.
      * @return {@code True} if event was added.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public boolean enqueue(E evt) throws GridException;
+    public boolean enqueue(E evt) throws IgniteCheckedException;
 
     /**
      * Adds events to window.
      *
      * @param evts Events to add.
      * @return {@code}
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public boolean enqueue(E... evts) throws GridException;
+    public boolean enqueue(E... evts) throws IgniteCheckedException;
 
     /**
      * Adds all events to window.
@@ -114,17 +114,17 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * @param evts Collection of events to add.
      * @return {@code True} if all events were added, {@code false} if at
      *      least 1 event was skipped.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public boolean enqueueAll(Collection<E> evts) throws GridException;
+    public boolean enqueueAll(Collection<E> evts) throws IgniteCheckedException;
 
     /**
      * Dequeues last element from windows. Will return {@code null} if window is empty.
      *
      * @return Dequeued element.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    @Nullable public E dequeue() throws GridException;
+    @Nullable public E dequeue() throws IgniteCheckedException;
 
     /**
      * Dequeues up to {@code cnt} elements from window. If current window size is less than {@code cnt},
@@ -132,35 +132,35 @@ public interface StreamerWindow<E> extends Iterable<E> {
      *
      * @param cnt Count to dequeue.
      * @return Collection of dequeued elements.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public Collection<E> dequeue(int cnt) throws GridException;
+    public Collection<E> dequeue(int cnt) throws IgniteCheckedException;
 
     /**
      * Dequeues all elements from window.
      *
      * @return Collection of dequeued elements.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public Collection<E> dequeueAll() throws GridException;
+    public Collection<E> dequeueAll() throws IgniteCheckedException;
 
     /**
      * If window supports eviction, this method will return next evicted element.
      *
      * @return Polls and returns next evicted event or {@code null} if eviction queue is empty or if
      *      window does not support eviction.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    @Nullable public E pollEvicted() throws GridException;
+    @Nullable public E pollEvicted() throws IgniteCheckedException;
 
     /**
      * If window supports eviction, this method will return up to {@code cnt} evicted elements.
      *
      * @param cnt Number of elements to evict.
      * @return Collection of evicted elements.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public Collection<E> pollEvicted(int cnt) throws GridException;
+    public Collection<E> pollEvicted(int cnt) throws IgniteCheckedException;
 
     /**
      * If window supports batch eviction, this method will poll next evicted batch from window.
@@ -169,24 +169,24 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * If window does not support eviction, will return empty collection.
      *
      * @return Next evicted batch.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public Collection<E> pollEvictedBatch() throws GridException;
+    public Collection<E> pollEvictedBatch() throws IgniteCheckedException;
 
     /**
      * If window supports eviction, this method will return all available evicted elements.
      *
      * @return Collection of evicted elements.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public Collection<E> pollEvictedAll() throws GridException;
+    public Collection<E> pollEvictedAll() throws IgniteCheckedException;
 
     /**
      * Clears all evicted entries.
      *
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    public void clearEvicted() throws GridException;
+    public void clearEvicted() throws IgniteCheckedException;
 
     /**
      * Create window snapshot. Evicted entries are not included.

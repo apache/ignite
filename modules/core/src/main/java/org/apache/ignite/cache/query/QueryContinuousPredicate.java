@@ -9,7 +9,7 @@
 
 package org.apache.ignite.cache.query;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import javax.cache.*;
 import javax.cache.event.*;
@@ -191,9 +191,9 @@ public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> i
      * cancelled, it's non-operational. If you need to repeat execution, use {@link
      * org.gridgain.grid.cache.query.GridCacheQueries#createContinuousQuery()} method to create new query.
      *
-     * @throws org.gridgain.grid.GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         // TODO: implement.
     }
 

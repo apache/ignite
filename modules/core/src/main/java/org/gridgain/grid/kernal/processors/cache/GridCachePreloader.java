@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.jetbrains.annotations.*;
 
@@ -24,9 +24,9 @@ public interface GridCachePreloader<K, V> {
     /**
      * Starts preloading.
      *
-     * @throws GridException If start failed.
+     * @throws IgniteCheckedException If start failed.
      */
-    public void start() throws GridException;
+    public void start() throws IgniteCheckedException;
 
     /**
      * Stops preloading.
@@ -36,9 +36,9 @@ public interface GridCachePreloader<K, V> {
     /**
      * Kernal start callback.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onKernalStart() throws GridException;
+    public void onKernalStart() throws IgniteCheckedException;
 
     /**
      * Kernal stop callback.

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.*;
@@ -152,7 +152,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws GridException {
+        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws IgniteCheckedException {
             try {
                 Path logsDir = resolveGgfsProfilerLogsDir(g.fileSystem(arg));
 
@@ -162,7 +162,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new GridException("Failed to parse profiler logs for GGFS: " + arg, e);
+                throw new IgniteCheckedException("Failed to parse profiler logs for GGFS: " + arg, e);
             }
         }
 

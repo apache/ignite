@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.io.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
@@ -45,7 +45,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         fut = new GridFutureAdapter<>();
 
-        fut.onDone(new GridException("TestMessage"));
+        fut.onDone(new IgniteCheckedException("TestMessage"));
 
         final GridFutureAdapter<String> callFut1 = fut;
 
@@ -53,11 +53,11 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 return callFut1.get();
             }
-        }, GridException.class, "TestMessage");
+        }, IgniteCheckedException.class, "TestMessage");
 
         fut = new GridFutureAdapter<>();
 
-        fut.onDone("test", new GridException("TestMessage"));
+        fut.onDone("test", new IgniteCheckedException("TestMessage"));
 
         final GridFutureAdapter<String> callFut2 = fut;
 
@@ -65,7 +65,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 return callFut2.get();
             }
-        }, GridException.class, "TestMessage");
+        }, IgniteCheckedException.class, "TestMessage");
 
         fut = new GridFutureAdapter<>();
 
@@ -228,7 +228,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("ErrorNotRethrown")
     public void testChaining() throws Exception {
         final CX1<IgniteFuture<Object>, Object> passThrough = new CX1<IgniteFuture<Object>, Object>() {
-            @Override public Object applyx(IgniteFuture<Object> f) throws GridException {
+            @Override public Object applyx(IgniteFuture<Object> f) throws IgniteCheckedException {
                 return f.get();
             }
         };

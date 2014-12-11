@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.continuous;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
@@ -27,9 +27,9 @@ public interface GridContinuousHandler extends Externalizable {
      * @param routineId Routine ID.
      * @param ctx Kernal context.
      * @return Whether listener was actually registered.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public boolean register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws GridException;
+    public boolean register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Callback called after listener is registered and acknowledgement is sent.
@@ -61,18 +61,18 @@ public interface GridContinuousHandler extends Externalizable {
      * Deploys and marshals inner objects (called only if peer deployment is enabled).
      *
      * @param ctx Kernal context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void p2pMarshal(GridKernalContext ctx) throws GridException;
+    public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Unmarshals inner objects (called only if peer deployment is enabled).
      *
      * @param nodeId Sender node ID.
      * @param ctx Kernal context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws GridException;
+    public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * @return Topic for ordered notifications. If {@code null}, notifications

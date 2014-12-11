@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.gridgain.grid.kernal.processors.query.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 
 import java.util.*;
 
@@ -21,5 +21,5 @@ public interface GridCacheQueryMetadataAware {
     /**
      * @return Future to retrieve metadata.
      */
-    public IgniteFuture<List<IndexingFieldMetadata>> metadata();
+    public IgniteFuture<List<GridQueryFieldMetadata>> metadata();
 }

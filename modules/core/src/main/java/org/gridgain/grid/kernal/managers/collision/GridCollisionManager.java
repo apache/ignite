@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.managers.collision;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
+import org.apache.ignite.spi.collision.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.apache.ignite.spi.collision.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -35,7 +35,7 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -59,7 +59,7 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 

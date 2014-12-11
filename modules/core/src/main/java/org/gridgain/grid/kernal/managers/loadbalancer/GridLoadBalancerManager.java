@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.managers.loadbalancer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.loadbalancing.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.apache.ignite.spi.loadbalancing.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +36,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         startSpi();
 
         if (log.isDebugEnabled())
@@ -44,7 +44,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         if (log.isDebugEnabled())
@@ -56,10 +56,10 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
      * @param top Task topology.
      * @param job Job to balance.
      * @return Next balanced node.
-     * @throws GridException If anything failed.
+     * @throws IgniteCheckedException If anything failed.
      */
     public ClusterNode getBalancedNode(GridTaskSessionImpl ses, List<ClusterNode> top, ComputeJob job)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ses != null;
         assert top != null;
         assert job != null;
@@ -89,7 +89,7 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         // Return value is not intended for sending over network.
         return new GridLoadBalancerAdapter() {
             @Nullable @Override public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
-                throws GridException {
+                throws IgniteCheckedException {
                 A.notNull(job, "job");
 
                 if (F.isEmpty(exclNodes))
@@ -111,10 +111,10 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
      * @param job Grid job.
      * @param nodes Topology nodes.
      * @return Cache affinity node or {@code null} if this job is not routed with cache affinity key.
-     * @throws GridException If failed to determine whether to use affinity routing.
+     * @throws IgniteCheckedException If failed to determine whether to use affinity routing.
      */
     @Nullable private ClusterNode cacheAffinityNode(GridDeployment dep, ComputeJob job, Collection<ClusterNode> nodes)
-        throws GridException {
+        throws IgniteCheckedException {
         assert dep != null;
         assert job != null;
         assert nodes != null;
@@ -136,19 +136,19 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
             ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, key);
 
             if (node == null)
-                throw new GridException("Failed to map key to node (is cache with given name started?) [gridName=" +
+                throw new IgniteCheckedException("Failed to map key to node (is cache with given name started?) [gridName=" +
                     ctx.gridName() + ", key=" + key + ", cacheName=" + cacheName +
                     ", nodes=" + U.toShortString(nodes) + ']');
 
             if (!nodes.contains(node))
-                throw new GridException("Failed to map key to node (projection nodes do not contain affinity node) " +
+                throw new IgniteCheckedException("Failed to map key to node (projection nodes do not contain affinity node) " +
                     "[gridName=" + ctx.gridName() + ", key=" + key + ", cacheName=" + cacheName +
                     ", nodes=" + U.toShortString(nodes) + ", node=" + U.toShortString(node) + ']');
 
             return node;
         }
-        catch (GridException e) {
-            throw new GridException("Failed to map affinity key to node for job [gridName=" + ctx.gridName() +
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to map affinity key to node for job [gridName=" + ctx.gridName() +
                 ", job=" + job + ']', e);
         }
     }

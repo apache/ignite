@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -55,7 +56,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                 try {
                     onDone(c.apply(embedded.get(), null));
                 }
-                catch (GridException| RuntimeException e) {
+                catch (IgniteCheckedException| RuntimeException e) {
                     onDone(c.apply(null, e));
                 }
                 catch (Error e) {
@@ -117,7 +118,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                             catch (GridClosureException e) {
                                 onDone(e.unwrap());
                             }
-                            catch (GridException | RuntimeException e) {
+                            catch (IgniteCheckedException | RuntimeException e) {
                                 onDone(e);
                             }
                             catch (Error e) {
@@ -133,7 +134,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                     onDone(e.unwrap());
                 }
-                catch (GridException | RuntimeException e) {
+                catch (IgniteCheckedException | RuntimeException e) {
                     c.apply(null, e);
 
                     onDone(e);
@@ -186,7 +187,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                                 onDone(e.unwrap());
                             }
-                            catch (GridException | RuntimeException e) {
+                            catch (IgniteCheckedException | RuntimeException e) {
                                 c2.apply(null, e);
 
                                 onDone(e);
@@ -204,7 +205,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
                     onDone(e.unwrap());
                 }
-                catch (GridException | RuntimeException e) {
+                catch (IgniteCheckedException | RuntimeException e) {
                     c1.apply(null, e);
 
                     onDone(e);
@@ -219,7 +220,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         return embedded.cancel();
     }
 

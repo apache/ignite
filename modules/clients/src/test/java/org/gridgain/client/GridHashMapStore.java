@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
@@ -26,26 +26,26 @@ public class GridHashMapStore extends GridCacheStoreAdapter {
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure c, Object... args)
-        throws GridException {
+        throws IgniteCheckedException {
         for (Map.Entry e : map.entrySet())
             c.apply(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
     @Override public Object load(@Nullable GridCacheTx tx, Object key)
-        throws GridException {
+        throws IgniteCheckedException {
         return map.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, Object key,
-        @Nullable Object val) throws GridException {
+        @Nullable Object val) throws IgniteCheckedException {
         map.put(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable GridCacheTx tx, Object key)
-        throws GridException {
+        throws IgniteCheckedException {
         map.remove(key);
     }
 }

@@ -65,9 +65,9 @@ final class GridTestBinaryClient {
      *
      * @param host Hostname.
      * @param port Port number.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    GridTestBinaryClient(String host, int port) throws GridException {
+    GridTestBinaryClient(String host, int port) throws IgniteCheckedException {
         assert host != null;
         assert port > 0;
 
@@ -95,7 +95,7 @@ final class GridTestBinaryClient {
                 "Client handshake failed [code=" + buf[0] + ']';
         }
         catch (IOException e) {
-            throw new GridException("Failed to establish connection.", e);
+            throw new IgniteCheckedException("Failed to establish connection.", e);
         }
 
         // Start socket reader thread.
@@ -193,7 +193,7 @@ final class GridTestBinaryClient {
     }
 
     /** {@inheritDoc} */
-    public void shutdown() throws GridException {
+    public void shutdown() throws IgniteCheckedException {
         try {
             if (rdr != null) {
                 rdr.interrupt();
@@ -204,7 +204,7 @@ final class GridTestBinaryClient {
             }
         }
         catch (InterruptedException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -213,9 +213,9 @@ final class GridTestBinaryClient {
      *
      * @param msg Message to request,
      * @return Response object.
-     * @throws GridException If request failed.
+     * @throws IgniteCheckedException If request failed.
      */
-    private Response makeRequest(GridClientMessage msg) throws GridException {
+    private Response makeRequest(GridClientMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
         // Send request
@@ -223,7 +223,7 @@ final class GridTestBinaryClient {
             sock.getOutputStream().write(createPacket(msg));
         }
         catch (IOException e) {
-            throw new GridException("Failed to send packet.", e);
+            throw new IgniteCheckedException("Failed to send packet.", e);
         }
 
         // Wait for response.
@@ -238,7 +238,7 @@ final class GridTestBinaryClient {
                 // Check opaque value.
                 if (res.opaque() == msg.requestId()) {
                     if (!res.isSuccess() && res.error() != null)
-                        throw new GridException(res.error());
+                        throw new IgniteCheckedException(res.error());
                     else
                         return res;
                 }
@@ -247,7 +247,7 @@ final class GridTestBinaryClient {
                     queue.add(res);
             }
             catch (InterruptedException e) {
-                throw new GridException("Interrupted while waiting for response.", e);
+                throw new IgniteCheckedException("Interrupted while waiting for response.", e);
             }
         }
 
@@ -285,10 +285,10 @@ final class GridTestBinaryClient {
      * @param key Key.
      * @param val Value.
      * @return If value was actually put.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cachePut(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         return cachePutAll(cacheName, Collections.singletonMap(key, val));
     }
 
@@ -297,10 +297,10 @@ final class GridTestBinaryClient {
      * @param entries Entries.
      * @return {@code True} if map contained more then one entry or if put succeeded in case of one entry,
      *      {@code false} otherwise
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cachePutAll(@Nullable String cacheName, Map<K, V> entries)
-        throws GridException {
+        throws IgniteCheckedException {
         assert entries != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(PUT_ALL);
@@ -316,10 +316,10 @@ final class GridTestBinaryClient {
      * @param cacheName Cache name.
      * @param key Key.
      * @return Value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> V cacheGet(@Nullable String cacheName, K key)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(GET);
@@ -336,10 +336,10 @@ final class GridTestBinaryClient {
      * @param cacheName Cache name.
      * @param keys Keys.
      * @return Entries.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> Map<K, V> cacheGetAll(@Nullable String cacheName, K... keys)
-        throws GridException {
+        throws IgniteCheckedException {
         assert keys != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(GET_ALL);
@@ -355,10 +355,10 @@ final class GridTestBinaryClient {
      * @param cacheName Cache name.
      * @param key Key.
      * @return Whether entry was actually removed.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws GridException {
+    public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws IgniteCheckedException {
         assert key != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(RMV);
@@ -374,10 +374,10 @@ final class GridTestBinaryClient {
      * @param cacheName Cache name.
      * @param keys Keys.
      * @return Whether entries were actually removed
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K> boolean cacheRemoveAll(@Nullable String cacheName, K... keys)
-        throws GridException {
+        throws IgniteCheckedException {
         assert keys != null;
 
         GridClientCacheRequest req = new GridClientCacheRequest(RMV_ALL);
@@ -394,10 +394,10 @@ final class GridTestBinaryClient {
      * @param key Key.
      * @param val Value.
      * @return Whether value was actually replaced.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cacheReplace(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -417,10 +417,10 @@ final class GridTestBinaryClient {
      * @param val1 Value 1.
      * @param val2 Value 2.
      * @return Whether new value was actually set.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cacheCompareAndSet(@Nullable String cacheName, K key, @Nullable V val1, @Nullable V val2)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         GridClientCacheRequest msg = new GridClientCacheRequest(CAS);
@@ -437,9 +437,9 @@ final class GridTestBinaryClient {
     /**
      * @param cacheName Cache name.
      * @return Metrics.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws GridException {
+    public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws IgniteCheckedException {
         GridClientCacheRequest metrics = new GridClientCacheRequest(METRICS);
 
         metrics.requestId(idCntr.getAndIncrement());
@@ -453,10 +453,10 @@ final class GridTestBinaryClient {
      * @param key Key.
      * @param val Value.
      * @return Whether entry was appended.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cacheAppend(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -475,10 +475,10 @@ final class GridTestBinaryClient {
      * @param key Key.
      * @param val Value.
      * @return Whether entry was prepended.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cachePrepend(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -496,9 +496,9 @@ final class GridTestBinaryClient {
      * @param taskName Task name.
      * @param arg Task arguments.
      * @return Task execution result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public GridClientTaskResultBean execute(String taskName, @Nullable Object arg) throws GridException {
+    public GridClientTaskResultBean execute(String taskName, @Nullable Object arg) throws IgniteCheckedException {
         assert !F.isEmpty(taskName);
 
         GridClientTaskRequest msg = new GridClientTaskRequest();
@@ -514,10 +514,10 @@ final class GridTestBinaryClient {
      * @param includeAttrs Whether to include attributes.
      * @param includeMetrics Whether to include metrics.
      * @return Node.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public GridClientNodeBean node(UUID id, boolean includeAttrs, boolean includeMetrics)
-        throws GridException {
+        throws IgniteCheckedException {
         assert id != null;
 
         GridClientTopologyRequest msg = new GridClientTopologyRequest();
@@ -534,10 +534,10 @@ final class GridTestBinaryClient {
      * @param includeAttrs Whether to include attributes.
      * @param includeMetrics Whether to include metrics.
      * @return Node.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public GridClientNodeBean node(String ipAddr, boolean includeAttrs, boolean includeMetrics)
-        throws GridException {
+        throws IgniteCheckedException {
         assert !F.isEmpty(ipAddr);
 
         GridClientTopologyRequest msg = new GridClientTopologyRequest();
@@ -553,10 +553,10 @@ final class GridTestBinaryClient {
      * @param includeAttrs Whether to include attributes.
      * @param includeMetrics Whether to include metrics.
      * @return Nodes.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public List<GridClientNodeBean> topology(boolean includeAttrs, boolean includeMetrics)
-        throws GridException {
+        throws IgniteCheckedException {
         GridClientTopologyRequest msg = new GridClientTopologyRequest();
 
         msg.includeAttributes(includeAttrs);
@@ -568,9 +568,9 @@ final class GridTestBinaryClient {
     /**
      * @param path Log file path.
      * @return Log file contents.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public List<String> log(@Nullable String path, int from, int to) throws GridException {
+    public List<String> log(@Nullable String path, int from, int to) throws IgniteCheckedException {
         GridClientLogRequest msg = new GridClientLogRequest();
 
         msg.requestId(idCntr.getAndIncrement());

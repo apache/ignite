@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -60,7 +60,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String arg) throws GridException {
+            @Nullable String arg) throws IgniteCheckedException {
             for (ClusterNode node : subgrid)
                 if (node.id().equals(locId))
                     return Collections.singletonMap(new ComputeJobAdapter() {
@@ -69,7 +69,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
                         }
                     }, node);
 
-            throw new GridException("Local node not found.");
+            throw new IgniteCheckedException("Local node not found.");
         }
 
         /** {@inheritDoc} */

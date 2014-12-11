@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.kernal.managers.swapspace;
 
+import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -41,7 +41,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -116,7 +116,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -133,17 +133,17 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param key Key.
      * @param ldr Class loader (optional).
      * @return Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public byte[] read(@Nullable String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         try {
             return getSpi().read(spaceName, key, context(ldr));
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to read from swap space [space=" + spaceName + ", key=" + key + ']', e);
+            throw new IgniteCheckedException("Failed to read from swap space [space=" + spaceName + ", key=" + key + ']', e);
         }
     }
 
@@ -154,11 +154,11 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param key Swap key.
      * @param ldr Class loader (optional).
      * @return Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <T> T readValue(@Nullable String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         return unmarshal(read(spaceName, key, ldr), ldr);
@@ -171,10 +171,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param key Key.
      * @param val Value.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void write(@Nullable String spaceName, SwapKey key, byte[] val, @Nullable ClassLoader ldr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -182,7 +182,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
             getSpi().store(spaceName, key, val, context(ldr));
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to write to swap space [space=" + spaceName + ", key=" + key +
+            throw new IgniteCheckedException("Failed to write to swap space [space=" + spaceName + ", key=" + key +
                 ", valLen=" + val.length + ']', e);
         }
     }
@@ -193,10 +193,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param spaceName Space name.
      * @param batch Swapped entries.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> void writeAll(String spaceName, Map<SwapKey, byte[]> batch,
-        @Nullable ClassLoader ldr) throws GridException {
+        @Nullable ClassLoader ldr) throws IgniteCheckedException {
         getSpi().storeAll(spaceName, batch, context(ldr));
     }
 
@@ -207,10 +207,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param key Key.
      * @param val Value.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void write(@Nullable String spaceName, Object key, @Nullable Object val, @Nullable ClassLoader ldr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         write(spaceName, new SwapKey(key), marshal(val), ldr);
@@ -225,17 +225,17 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *      removing. If there was no value in storage the closure is executed given
      *      {@code null} value as parameter.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void remove(@Nullable String spaceName, SwapKey key, @Nullable IgniteInClosure<byte[]> c,
-        @Nullable ClassLoader ldr) throws GridException {
+        @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert key != null;
 
         try {
             getSpi().remove(spaceName, key, c, context(ldr));
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to remove from swap space [space=" + spaceName + ", key=" + key + ']', e);
+            throw new IgniteCheckedException("Failed to remove from swap space [space=" + spaceName + ", key=" + key + ']', e);
         }
     }
 
@@ -248,17 +248,17 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *      removing. If there was no value in storage the closure is executed given
      *      {@code null} value as parameter.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void removeAll(@Nullable String spaceName, Collection<SwapKey> keys,
-        IgniteBiInClosure<SwapKey, byte[]> c, @Nullable ClassLoader ldr) throws GridException {
+        IgniteBiInClosure<SwapKey, byte[]> c, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert keys != null;
 
         try {
             getSpi().removeAll(spaceName, keys, c, context(ldr));
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to remove from swap space [space=" + spaceName + ", " +
+            throw new IgniteCheckedException("Failed to remove from swap space [space=" + spaceName + ", " +
                 "keysCnt=" + keys.size() + ']', e);
         }
     }
@@ -272,10 +272,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *      removing. If there was no value in storage the closure is executed given
      *      {@code null} value as parameter.
      * @param ldr Class loader (optional).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void remove(@Nullable String spaceName, Object key, @Nullable IgniteInClosure<byte[]> c,
-        @Nullable ClassLoader ldr) throws GridException {
+        @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert key != null;
 
         remove(spaceName, new SwapKey(key), c, ldr);
@@ -286,14 +286,14 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *
      * @param spaceName Space name.
      * @return Swap size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapSize(@Nullable String spaceName) throws GridException {
+    public long swapSize(@Nullable String spaceName) throws IgniteCheckedException {
         try {
             return getSpi().size(spaceName);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to get swap size for space: " + spaceName, e);
+            throw new IgniteCheckedException("Failed to get swap size for space: " + spaceName, e);
         }
     }
 
@@ -302,27 +302,27 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *
      * @param spaceName Space name.
      * @return Number of stored entries in swap space.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapKeys(@Nullable String spaceName) throws GridException {
+    public long swapKeys(@Nullable String spaceName) throws IgniteCheckedException {
         try {
             return getSpi().count(spaceName);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to get swap keys count for space: " + spaceName, e);
+            throw new IgniteCheckedException("Failed to get swap keys count for space: " + spaceName, e);
         }
     }
 
     /**
      * @param spaceName Space name.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void clear(@Nullable String spaceName) throws GridException {
+    public void clear(@Nullable String spaceName) throws IgniteCheckedException {
         try {
             getSpi().clear(spaceName);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to clear swap space [space=" + spaceName + ']', e);
+            throw new IgniteCheckedException("Failed to clear swap space [space=" + spaceName + ']', e);
         }
     }
 
@@ -334,20 +334,20 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName);
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
+            throw new IgniteCheckedException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }
 
     /** {@inheritDoc} */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
-        throws GridException{
+        throws IgniteCheckedException{
         try {
             IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> it = getSpi().rawIterator(spaceName, part);
 
@@ -355,7 +355,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
                 new GridSpiCloseableIteratorWrapper<>(it);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
+            throw new IgniteCheckedException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }
 
@@ -368,14 +368,14 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
     @Nullable public <K> GridCloseableIterator<K> keysIterator(@Nullable String spaceName,
-        @Nullable ClassLoader ldr) throws GridException {
+        @Nullable ClassLoader ldr) throws IgniteCheckedException {
         try {
             IgniteSpiCloseableIterator<K> it = getSpi().keyIterator(spaceName, context(ldr));
 
             return it == null ? null : new GridSpiCloseableIteratorWrapper<>(it);
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
+            throw new IgniteCheckedException("Failed to get iterator over swap space [space=" + spaceName + ']', e);
         }
     }
 
@@ -383,10 +383,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      * @param swapBytes Swap bytes to unmarshal.
      * @param ldr Class loader.
      * @return Unmarshalled value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    private <T> T unmarshal(byte[] swapBytes, @Nullable ClassLoader ldr) throws GridException {
+    private <T> T unmarshal(byte[] swapBytes, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         if (swapBytes == null)
             return null;
 
@@ -398,9 +398,9 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
      *
      * @param obj Object to marshal.
      * @return Marshalled array.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private byte[] marshal(Object obj) throws GridException {
+    private byte[] marshal(Object obj) throws IgniteCheckedException {
         return ctx.config().getMarshaller().marshal(obj);
     }
 

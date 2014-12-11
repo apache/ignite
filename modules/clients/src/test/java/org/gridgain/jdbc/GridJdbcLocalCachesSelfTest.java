@@ -14,7 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.sql.*;
@@ -47,13 +47,13 @@ public class GridJdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
+        GridCacheQueryConfiguration qryCfg = new GridCacheQueryConfiguration();
+
+        qryCfg.setIndexPrimitiveKey(true);
+
+        cache.setQueryConfiguration(qryCfg);
+
         cfg.setCacheConfiguration(cache);
-
-        GridH2IndexingSpi idx = new GridH2IndexingSpi();
-
-        idx.setDefaultIndexPrimitiveKey(true);
-
-        cfg.setIndexingSpi(idx);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
