@@ -85,7 +85,8 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
             return map;
         }
         finally {
-            logMapped(g.log(), getClass(), map.values());
+            if (debug)
+                logMapped(g.log(), getClass(), map.values());
         }
     }
 

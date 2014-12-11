@@ -747,4 +747,35 @@ public class VisorTaskUtils {
 
         return end;
     }
+
+
+    /**
+     * Checks if address can be reached using one argument InetAddress.isReachable() version or ping command if failed.
+     *
+     * @param addr Address to check.
+     * @param reachTimeout Timeout for the check.
+     * @return {@code True} if address is reachable.
+     */
+    public static boolean reachableByPing(InetAddress addr, int reachTimeout) {
+        try {
+            if (addr.isReachable(reachTimeout))
+                return true;
+
+            String cmd = String.format("ping -%s 1 %s", U.isWindows() ? "n" : "c", addr.getHostAddress());
+
+            Process myProcess = Runtime.getRuntime().exec(cmd);
+
+            myProcess.waitFor();
+
+            return myProcess.exitValue() == 0;
+        }
+        catch (IOException ignore) {
+            return false;
+        }
+        catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+    }
 }
