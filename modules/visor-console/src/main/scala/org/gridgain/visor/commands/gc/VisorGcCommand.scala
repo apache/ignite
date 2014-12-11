@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
 import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}

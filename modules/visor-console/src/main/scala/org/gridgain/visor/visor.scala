@@ -38,6 +38,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.gridgain.grid.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.jetbrains.annotations.Nullable

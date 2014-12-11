@@ -13,6 +13,7 @@ package org.gridgain.scalar.pimps
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterNode}
 import org.apache.ignite.lang.{IgniteFutureCancelledException, IgniteFuture, IgnitePredicate}
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.jetbrains.annotations._
 

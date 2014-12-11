@@ -11,6 +11,7 @@
 
 package org.gridgain.visor.commands.start
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.util.{GridUtils => U}
 

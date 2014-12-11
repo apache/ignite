@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
 
 import java.lang.System._
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._

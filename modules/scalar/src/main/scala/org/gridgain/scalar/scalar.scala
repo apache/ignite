@@ -17,6 +17,7 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.jetbrains.annotations.Nullable
 import java.util.UUID
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.cache.query._

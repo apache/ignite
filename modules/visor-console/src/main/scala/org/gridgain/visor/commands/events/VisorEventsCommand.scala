@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 
 import java.util.UUID
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import IgniteEventType._
 import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg

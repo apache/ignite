@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.kill
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 

@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.lang
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.util.lang.IgniteClosure2X
 

@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
 
 import java.util.Collections
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._

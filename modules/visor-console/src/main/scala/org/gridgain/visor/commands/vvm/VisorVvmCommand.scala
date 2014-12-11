@@ -13,6 +13,7 @@ package org.gridgain.visor.commands.vvm
 
 import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.util.{GridUtils => U}

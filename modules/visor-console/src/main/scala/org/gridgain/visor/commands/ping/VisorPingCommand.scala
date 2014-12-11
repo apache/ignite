@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.ping
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite._
 import org.gridgain.grid._
 
 import java.util.concurrent._
