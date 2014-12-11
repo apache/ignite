@@ -26,7 +26,7 @@ public class IgniteCheckedException extends Exception {
      * Create empty exception.
      */
     public IgniteCheckedException() {
-        // No-op.  +7(960)249-38-88
+        // No-op.
     }
 
     /**
