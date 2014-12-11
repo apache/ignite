@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -45,8 +44,8 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -399,7 +398,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "transaction manager can not be used with ATOMIC cache");
 
         if (cc.isPortableEnabled() && !ctx.isEnterprise())
-            throw new GridException("Portable mode for cache is supported only in Enterprise edition " +
+            throw new IgniteCheckedException("Portable mode for cache is supported only in Enterprise edition " +
                 "(set 'portableEnabled' property to 'false') [cacheName=" + cc.getName() + ']');
     }
 
