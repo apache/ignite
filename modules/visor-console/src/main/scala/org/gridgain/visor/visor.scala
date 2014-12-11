@@ -230,18 +230,18 @@ object visor extends VisorTag {
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws GridException if Visor is disconnected or node not found.
+     * @throws IgniteCheckedException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
-            throw new GridException("Visor disconnected")
+            throw new IgniteCheckedException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new GridException("Node is gone: " + nid)
+                throw new IgniteCheckedException("Node is gone: " + nid)
 
             node
         }
@@ -1473,7 +1473,7 @@ object visor extends VisorTag {
                             val url = U.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new GridException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1498,10 +1498,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new GridException("Can't find grid configuration in: " + url)
+                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new GridException("More than one grid configuration found in: " + url)
+                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1560,7 +1560,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: GridException =>
+            case e: IgniteCheckedException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1603,7 +1603,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new GridException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)

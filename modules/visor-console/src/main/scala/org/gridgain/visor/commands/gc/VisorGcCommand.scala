@@ -160,7 +160,7 @@ class VisorGcCommand {
             }
             catch {
                 case e: ClusterGroupEmptyException => scold("Topology is empty.")
-                case e: GridException => scold(e.getMessage)
+                case e: IgniteCheckedException => scold(e.getMessage)
             }
         }
     }

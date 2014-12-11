@@ -290,7 +290,7 @@ class VisorEventsCommand {
                 grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     return

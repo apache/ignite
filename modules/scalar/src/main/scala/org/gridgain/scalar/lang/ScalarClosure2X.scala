@@ -23,7 +23,7 @@ class ScalarClosure2X[E1, E2, R](private val f: (E1, E2) => R) extends IgniteClo
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(e1: E1, e2: E2): R = {
         f(e1, e2)
     }

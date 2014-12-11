@@ -23,7 +23,7 @@ class ScalarAbsClosureX(private val f: () => Unit) extends GridAbsClosureX {
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx() {
         f()
     }

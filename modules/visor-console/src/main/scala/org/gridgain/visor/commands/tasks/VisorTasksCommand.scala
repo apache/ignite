@@ -777,7 +777,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()
@@ -970,7 +970,7 @@ class VisorTasksCommand {
                 }
             }
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()
@@ -1102,7 +1102,7 @@ class VisorTasksCommand {
                 evtsT.render()
             }
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()
@@ -1214,7 +1214,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()
@@ -1330,7 +1330,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()

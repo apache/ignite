@@ -205,7 +205,7 @@ class VisorConfigurationCommand {
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()

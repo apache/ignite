@@ -23,7 +23,7 @@ class ScalarInClosure3X[T1, T2, T3](private val f: (T1, T2, T3) => Unit) extends
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(t1: T1, t2: T2, t3: T3) {
         f(t1, t2, t3)
     }

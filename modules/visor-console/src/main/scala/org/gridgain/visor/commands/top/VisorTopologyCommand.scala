@@ -184,7 +184,7 @@ class VisorTopologyCommand {
             }
             catch {
                 case e: NumberFormatException => scold(e.getMessage)
-                case e: GridException => scold(e.getMessage)
+                case e: IgniteCheckedException => scold(e.getMessage)
             }
         }
     }
@@ -205,7 +205,7 @@ class VisorTopologyCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(v(n))
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**

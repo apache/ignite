@@ -226,7 +226,7 @@ class VisorStartCommand {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
+                    case e: IgniteCheckedException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -281,7 +281,7 @@ class VisorStartCommand {
                     res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
+                    case e: IgniteCheckedException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }

@@ -23,7 +23,7 @@ class ScalarInClosureX[T](private val f: T => Unit) extends IgniteInClosureX[T] 
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(t: T) {
         f(t)
     }

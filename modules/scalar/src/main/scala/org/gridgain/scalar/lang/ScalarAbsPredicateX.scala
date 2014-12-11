@@ -23,7 +23,7 @@ class ScalarAbsPredicateX(private val f: () => Boolean) extends GridAbsPredicate
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(): Boolean = {
         f()
     }

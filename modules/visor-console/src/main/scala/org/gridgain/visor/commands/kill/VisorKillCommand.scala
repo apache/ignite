@@ -171,7 +171,7 @@ class VisorKillCommand {
                     if (restart && node != null && node.attribute[String](ATTR_RESTART_ENABLED) != "true")
                         scold("Node doesn't support restart: " + nid8(node)).^^
                 catch {
-                    case e: GridException => scold("Failed to restart the node. " + e.getMessage).^^
+                    case e: IgniteCheckedException => scold("Failed to restart the node. " + e.getMessage).^^
                 }
 
                 val op = if (restart) "restart" else "kill"
@@ -179,7 +179,7 @@ class VisorKillCommand {
                 try
                     killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
-                    case _: GridException => scold("Failed to " + op + " due to system error.").^^
+                    case _: IgniteCheckedException => scold("Failed to " + op + " due to system error.").^^
                 }
             }
         }

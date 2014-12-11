@@ -23,7 +23,7 @@ class ScalarInClosure2X[T1, T2](private val f: (T1, T2) => Unit) extends IgniteI
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(t1: T1, t2: T2) {
         f(t1, t2)
     }

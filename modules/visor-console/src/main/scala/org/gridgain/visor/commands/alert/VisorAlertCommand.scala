@@ -216,7 +216,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(value(n))
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -235,7 +235,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             () => f() && expr.get.apply(value())
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -291,7 +291,7 @@ class VisorAlertCommand {
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
                             case "r" => () // Skipping.
-                            case _ => throw new GridException("Invalid argument: " + makeArg(arg))
+                            case _ => throw new IgniteCheckedException("Invalid argument: " + makeArg(arg))
                         }
                     })
                 }

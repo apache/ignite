@@ -23,7 +23,7 @@ class ScalarPredicateX[T](private val p: T => Boolean) extends IgnitePredicateX[
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(e: T): Boolean = {
         p(e)
     }

@@ -247,7 +247,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         else if (c == classOf[Byte])
             classOf[java.lang.Byte]
         else if (c == classOf[Symbol])
-            throw new GridException("Cache type projeciton on 'scala.Symbol' are not supported.")
+            throw new IgniteCheckedException("Cache type projeciton on 'scala.Symbol' are not supported.")
         else
             c
     }

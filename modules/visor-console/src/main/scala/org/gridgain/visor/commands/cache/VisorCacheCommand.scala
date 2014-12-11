@@ -473,7 +473,7 @@ class VisorCacheCommand {
                 new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
-            case e: GridException => Nil
+            case e: IgniteCheckedException => Nil
         }
     }
 
@@ -488,7 +488,7 @@ class VisorCacheCommand {
             grid.compute(grid.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
-            case e: GridException =>
+            case e: IgniteCheckedException =>
                 scold(e.getMessage)
 
                 null

@@ -23,7 +23,7 @@ class ScalarPredicate3X[T1, T2, T3](private val p: (T1, T2, T3) => Boolean) exte
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(e1: T1, e2: T2, e3: T3): Boolean = {
         p(e1, e2, e3)
     }
