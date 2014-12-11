@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -132,9 +132,9 @@ public enum GridComponentType {
      * @param ctx Kernal context.
      * @param noOp No-op flag.
      * @return Created component.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws GridException {
+    public <T extends GridComponent> T create(GridKernalContext ctx, boolean noOp) throws IgniteCheckedException {
         return create0(ctx, noOp ? noOpClsName : clsName);
     }
 
@@ -144,10 +144,10 @@ public enum GridComponentType {
      * @param ctx Kernal context.
      * @param mandatory If the component is mandatory.
      * @return Created component.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <T extends GridComponent> T createIfInClassPath(GridKernalContext ctx, boolean mandatory)
-        throws GridException {
+        throws IgniteCheckedException {
         String cls = clsName;
 
         try {
@@ -168,9 +168,9 @@ public enum GridComponentType {
      *
      * @param noOp No-op flag.
      * @return Created component.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public <T> T create(boolean noOp) throws GridException {
+    public <T> T create(boolean noOp) throws IgniteCheckedException {
         return create0(null, noOp ? noOpClsName : clsName);
     }
 
@@ -179,9 +179,9 @@ public enum GridComponentType {
      *
      * @param ctx Kernal context.
      * @return Created component or no-op implementation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public <T> T createOptional(GridKernalContext ctx) throws GridException {
+    public <T> T createOptional(GridKernalContext ctx) throws IgniteCheckedException {
         return createOptional0(ctx);
     }
 
@@ -189,9 +189,9 @@ public enum GridComponentType {
      * First tries to find main component class, if it is not found creates no-op implementation.
      *
      * @return Created component or no-op implementation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public <T> T createOptional() throws GridException {
+    public <T> T createOptional() throws IgniteCheckedException {
         return createOptional0(null);
     }
 
@@ -200,10 +200,10 @@ public enum GridComponentType {
      *
      * @param ctx Kernal context.
      * @return Created component or no-op implementation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T> T createOptional0(@Nullable GridKernalContext ctx) throws GridException {
+    private <T> T createOptional0(@Nullable GridKernalContext ctx) throws IgniteCheckedException {
         Class<?> cls;
 
         try {
@@ -214,7 +214,7 @@ public enum GridComponentType {
                 cls = Class.forName(noOpClsName);
             }
             catch (ClassNotFoundException e) {
-                throw new GridException("Failed to find both real component class and no-op class.", e);
+                throw new IgniteCheckedException("Failed to find both real component class and no-op class.", e);
             }
         }
 
@@ -241,10 +241,10 @@ public enum GridComponentType {
      * @param ctx Kernal context.
      * @param clsName Component class name.
      * @return Component instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws GridException {
+    private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(clsName);
 
@@ -268,8 +268,8 @@ public enum GridComponentType {
      * @param err Creation error.
      * @return Component creation exception.
      */
-    private GridException componentException(Exception err) {
-        return new GridException("Failed to create GridGain component (consider adding " + module +
+    private IgniteCheckedException componentException(Exception err) {
+        return new IgniteCheckedException("Failed to create GridGain component (consider adding " + module +
             " module to classpath) [component=" + this + ", cls=" + clsName + ']', err);
     }
 }

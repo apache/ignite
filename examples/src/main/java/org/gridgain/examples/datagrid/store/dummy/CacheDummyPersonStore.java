@@ -37,28 +37,28 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
+    @Override public Person load(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         return dummyDB.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Long key, Person val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, Long key, Person val) throws IgniteCheckedException {
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.put(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.remove(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws IgniteCheckedException {
         int cnt = (Integer)args[0];
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -60,7 +60,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /**
-     * Sets a flag indicating if methods of this class should fail with {@link GridException}.
+     * Sets a flag indicating if methods of this class should fail with {@link IgniteCheckedException}.
      *
      * @param shouldFail {@code true} if should fail.
      */
@@ -161,7 +161,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V load(GridCacheTx tx, K key) throws GridException {
+    @Override public V load(GridCacheTx tx, K key) throws IgniteCheckedException {
         lastMtd = "load";
 
         checkOperation();
@@ -171,7 +171,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object[] args)
-        throws GridException {
+        throws IgniteCheckedException {
         lastMtd = "loadAllFull";
 
         checkOperation();
@@ -179,7 +179,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void loadAll(GridCacheTx tx, Collection<? extends K> keys,
-        IgniteBiInClosure<K, V> c) throws GridException {
+        IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         lastMtd = "loadAll";
 
         for (K key : keys) {
@@ -194,7 +194,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         lastMtd = "put";
 
         checkOperation();
@@ -206,7 +206,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void putAll(GridCacheTx tx, Map<? extends K, ? extends V> map)
-        throws GridException {
+        throws IgniteCheckedException {
         lastMtd = "putAll";
 
         checkOperation();
@@ -217,7 +217,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(GridCacheTx tx, K key) throws IgniteCheckedException {
         lastMtd = "remove";
 
         checkOperation();
@@ -229,7 +229,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll(GridCacheTx tx, Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         lastMtd = "removeAll";
 
         checkOperation();
@@ -249,11 +249,11 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
      * Checks the flag and throws exception if it is set. Checks operation delay and sleeps
      * for specified amount of time, if needed.
      *
-     * @throws GridException Always if flag is set.
+     * @throws IgniteCheckedException Always if flag is set.
      */
-    private void checkOperation() throws GridException {
+    private void checkOperation() throws IgniteCheckedException {
         if (shouldFail)
-            throw new GridException("Store exception");
+            throw new IgniteCheckedException("Store exception");
 
         if (operationDelay > 0)
             U.sleep(operationDelay);

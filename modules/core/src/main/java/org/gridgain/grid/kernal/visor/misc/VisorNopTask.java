@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.misc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -27,7 +27,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Integer arg) throws GridException {
+        @Nullable Integer arg) throws IgniteCheckedException {
 
         Map<ComputeJob, ClusterNode> map = new GridLeanMap<>(subgrid.size());
 
@@ -39,12 +39,12 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-        List<ComputeJobResult> rcvd) throws GridException {
+        List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 
@@ -61,7 +61,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ConstantConditions")
-        @Nullable @Override public Object execute() throws GridException {
+        @Nullable @Override public Object execute() throws IgniteCheckedException {
             try {
                 Integer maxTimeout = argument(0);
 

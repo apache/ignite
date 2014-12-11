@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.affinity;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
@@ -31,9 +31,9 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
 
 /**
@@ -99,7 +99,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
     }
 
@@ -115,10 +115,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param keys Keys to map.
      * @return Map of nodes to keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws GridException {
+        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         return keysToNodes(cacheName, keys);
     }
 
@@ -127,10 +127,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      *
      * @param keys Keys to map.
      * @return Map of nodes to keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         return keysToNodes(null, keys);
     }
 
@@ -140,9 +140,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param key Key to map.
      * @return Picked node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException {
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException {
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key));
 
         return map != null ? F.first(map.keySet()) : null;
@@ -154,9 +154,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param key Key to map.
      * @return Picked node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key, long topVer) throws GridException {
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key, long topVer) throws IgniteCheckedException {
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key), topVer);
 
         return map != null ? F.first(map.keySet()) : null;
@@ -167,9 +167,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      *
      * @param key Key to map.
      * @return Picked node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(K key) throws GridException {
+    @Nullable public <K> ClusterNode mapKeyToNode(K key) throws IgniteCheckedException {
         return mapKeyToNode(null, key);
     }
 
@@ -179,10 +179,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param key Cache key.
      * @return Affinity key.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public Object affinityKey(@Nullable String cacheName, @Nullable Object key) throws GridException {
+    @Nullable public Object affinityKey(@Nullable String cacheName, @Nullable Object key) throws IgniteCheckedException {
         if (key == null)
             return null;
 
@@ -209,10 +209,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param keys Keys.
      * @return Affinity map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
-        Collection<? extends K> keys) throws GridException {
+        Collection<? extends K> keys) throws IgniteCheckedException {
         return keysToNodes(cacheName, keys, ctx.discovery().topologyVersion());
     }
 
@@ -221,10 +221,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param keys Keys.
      * @param topVer Topology version.
      * @return Affinity map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
-        Collection<? extends K> keys, long topVer) throws GridException {
+        Collection<? extends K> keys, long topVer) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
@@ -241,10 +241,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name.
      * @return Affinity cache.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private AffinityInfo affinityCache(@Nullable final String cacheName, long topVer) throws GridException {
+    private AffinityInfo affinityCache(@Nullable final String cacheName, long topVer) throws IgniteCheckedException {
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
         IgniteFuture<AffinityInfo> fut = affMap.get(key);
@@ -305,7 +305,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             // Double check since we deal with dynamic view.
             if (!it.hasNext())
                 // Exception will be caught in this method.
-                throw new GridException("No cache nodes in topology for cache name: " + cacheName);
+                throw new IgniteCheckedException("No cache nodes in topology for cache name: " + cacheName);
 
             ClusterNode n = it.next();
 
@@ -315,7 +315,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             // Map all keys to a single node, if the cache mode is LOCAL.
             if (mode == LOCAL) {
-                fut0.onDone(new GridException("Failed to map keys for LOCAL cache."));
+                fut0.onDone(new IgniteCheckedException("Failed to map keys for LOCAL cache."));
 
                 // Will throw exception.
                 fut0.get();
@@ -328,7 +328,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to get affinity from node (will retry) [cache=" + cacheName +
                         ", node=" + U.toShortString(n) + ", msg=" + e.getMessage() + ']');
@@ -341,12 +341,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
                 affMap.remove(maskNull(cacheName), fut0);
 
-                fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+                fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
 
                 break;
             }
             catch (RuntimeException | Error e) {
-                fut0.onDone(new GridException("Failed to get affinity mapping from node: " + n, e));
+                fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
 
                 break;
             }
@@ -361,10 +361,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.
      * @return Affinity cached function.
-     * @throws GridException If either local or remote node cannot get deployment for affinity objects.
+     * @throws IgniteCheckedException If either local or remote node cannot get deployment for affinity objects.
      */
     private AffinityInfo affinityInfoFromNode(@Nullable String cacheName, long topVer, ClusterNode n)
-        throws GridException {
+        throws IgniteCheckedException {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
 
@@ -386,11 +386,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param aff Affinity function.
      * @param keys Keys.
      * @return Affinity map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     private <K> Map<ClusterNode, Collection<K>> affinityMap(AffinityInfo aff, Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         assert aff != null;
         assert !F.isEmpty(keys);
 
@@ -413,9 +413,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             return map;
         }
-        catch (GridRuntimeException e) {
-            // Affinity calculation may lead to GridRuntimeException if no cache nodes found for pair cacheName+topVer.
-            throw new GridException("Failed to get affinity map for keys: " + keys, e);
+        catch (IgniteException e) {
+            // Affinity calculation may lead to IgniteException if no cache nodes found for pair cacheName+topVer.
+            throw new IgniteCheckedException("Failed to get affinity map for keys: " + keys, e);
         }
     }
 
@@ -425,15 +425,15 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param aff Affinity function.
      * @param key Key to check.
      * @return Primary node for given key.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private <K> ClusterNode primary(AffinityInfo aff, K key) throws GridException {
+    private <K> ClusterNode primary(AffinityInfo aff, K key) throws IgniteCheckedException {
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
 
         Collection<ClusterNode> nodes = aff.assignment.get(part);
 
         if (F.isEmpty(nodes))
-            throw new GridException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
+            throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
 
         return nodes.iterator().next();
     }

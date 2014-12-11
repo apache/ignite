@@ -29,7 +29,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable int[] jobIds)
-        throws GridException {
+        throws IgniteCheckedException {
         Map<ComputeJob, ClusterNode> mappings = new HashMap<>(jobIds.length);
 
         Iterator<ClusterNode> nodeIter = g.cluster().forRemotes().nodes().iterator();
@@ -63,7 +63,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         TestObject o = res.getData();
 
         X.println("Received job result from node [resId=" + o.getId() + ", node=" + res.getNode().id() + ']');
@@ -72,7 +72,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         X.println(">>> Reducing task...");
 
         return null;

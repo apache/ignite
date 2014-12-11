@@ -9,6 +9,7 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
@@ -33,7 +34,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;String> {
  *     &#64;Override
- *     protected Collection&lt;? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob> jobs = new ArrayList&lt;MyFooBarJob>(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {
@@ -59,7 +60,7 @@ import java.util.*;
  *     GridComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, GridNode> map(List&lt;GridNode> subgrid, String arg) throws GridException {
+ *     public Map&lt;? extends ComputeJob, GridNode> map(List&lt;GridNode> subgrid, String arg) throws IgniteCheckedException {
  *         Map&lt;MyFooBarJob, GridNode> jobs = new HashMap&lt;MyFooBarJob, GridNode>(subgrid.size());
  *
  *         // In more complex cases, you can actually do
@@ -75,7 +76,7 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
@@ -100,8 +101,8 @@ public interface ComputeLoadBalancer extends GridMetadataAware {
      * @param exclNodes Optional collection of nodes that should be excluded from balanced nodes.
      *      If collection is {@code null} or empty - no nodes will be excluded.
      * @return Next balanced node.
-     * @throws GridException If any error occurred when finding next balanced node.
+     * @throws IgniteCheckedException If any error occurred when finding next balanced node.
      */
     @Nullable public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
-        throws GridException;
+        throws IgniteCheckedException;
 }

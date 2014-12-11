@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.util.ipc;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -26,15 +26,15 @@ public class GridIpcServerEndpointDeserializer {
      *
      * @param endpointCfg Map with properties of the IPC server endpoint config.
      * @return Deserialized instance of {@link GridIpcServerEndpoint}.
-     * @throws GridException If any problem with configuration properties setting has happened.
+     * @throws IgniteCheckedException If any problem with configuration properties setting has happened.
      */
-    public static GridIpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws GridException {
+    public static GridIpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws IgniteCheckedException {
         A.notNull(endpointCfg, "endpointCfg");
 
         String endpointType = endpointCfg.get("type");
 
         if (endpointType == null)
-            throw new GridException("Failed to create server endpoint (type is not specified)");
+            throw new IgniteCheckedException("Failed to create server endpoint (type is not specified)");
 
         switch (endpointType) {
             case "shmem": {
@@ -52,7 +52,7 @@ public class GridIpcServerEndpointDeserializer {
                 return endpoint;
             }
             default:
-                throw new GridException("Failed to create server endpoint (type is unknown): " + endpointType);
+                throw new IgniteCheckedException("Failed to create server endpoint (type is unknown): " + endpointType);
         }
     }
 }

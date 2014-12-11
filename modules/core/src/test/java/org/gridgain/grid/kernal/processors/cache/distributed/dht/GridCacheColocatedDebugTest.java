@@ -295,7 +295,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                                 info(">>> " + itNum + " iterations completed.");
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         fail("Unexpected exception caught: " + e);
                     }
                 }
@@ -375,7 +375,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                             g0.cache(null).unlock(key);
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         fail("Unexpected exception: " + e);
                     }
 

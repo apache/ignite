@@ -1501,26 +1501,26 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            Object... args) throws GridException {
+            Object... args) throws IgniteCheckedException {
             for (int i = 0; i < 10; i++)
                 clo.apply(i, i);
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx, Object key,
-            @Nullable Object val) throws GridException {
+            @Nullable Object val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
     }

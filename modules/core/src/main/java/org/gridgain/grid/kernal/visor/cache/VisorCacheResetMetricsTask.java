@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -44,7 +44,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) throws GridException {
+        @Override protected Void run(String cacheName) throws IgniteCheckedException {
             GridCache cache = g.cachex(cacheName);
 
             if (cache != null)

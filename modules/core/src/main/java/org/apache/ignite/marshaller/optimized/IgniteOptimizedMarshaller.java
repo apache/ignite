@@ -9,8 +9,8 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -101,11 +101,11 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     /**
      * Initializes marshaller not to enforce {@link Serializable} interface.
      *
-     * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
+     * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
     public IgniteOptimizedMarshaller() {
         if (!available())
-            throw new GridRuntimeException("Using GridOptimizedMarshaller on unsupported JVM version (some of " +
+            throw new IgniteException("Using GridOptimizedMarshaller on unsupported JVM version (some of " +
                 "JVM-private APIs required for the marshaller to work are missing).");
     }
 
@@ -117,7 +117,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * @param requireSer Flag to enforce {@link Serializable} interface or not. If {@code true},
      *      then objects will be required to implement {@link Serializable} in order to be
      *      marshalled, if {@code false}, then such requirement will be relaxed.
-     * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
+     * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
     public IgniteOptimizedMarshaller(boolean requireSer) {
         this();
@@ -136,11 +136,11 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * @param clsNames User preregistered class names.
      * @param clsNamesPath Path to a file with user preregistered class names.
      * @param poolSize Object streams pool size.
-     * @throws GridException If an I/O error occurs while writing stream header.
-     * @throws GridRuntimeException If this marshaller is not supported on the current JVM.
+     * @throws IgniteCheckedException If an I/O error occurs while writing stream header.
+     * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
     public IgniteOptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
-                                     @Nullable String clsNamesPath, int poolSize) throws GridException {
+                                     @Nullable String clsNamesPath, int poolSize) throws IgniteCheckedException {
         this(requireSer);
 
         setClassNames(clsNames);
@@ -192,16 +192,16 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * <b>NOTE</b>: this class list must be identical on all nodes and in the same order.
      *
      * @param path Path to a file with user preregistered class names.
-     * @throws GridException If an error occurs while writing stream header.
+     * @throws IgniteCheckedException If an error occurs while writing stream header.
      */
-    public void setClassNamesPath(@Nullable String path) throws GridException {
+    public void setClassNamesPath(@Nullable String path) throws IgniteCheckedException {
         if (path == null)
             return;
 
         URL url = GridUtils.resolveGridGainUrl(path, false);
 
         if (url == null)
-            throw new GridException("Failed to find resource for name: " + path);
+            throw new IgniteCheckedException("Failed to find resource for name: " + path);
 
         List<String> clsNames;
 
@@ -216,7 +216,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             }
         }
         catch (IOException e) {
-            throw new GridException("Failed to read class names from path: " + path, e);
+            throw new IgniteCheckedException("Failed to read class names from path: " + path, e);
         }
 
         setClassNames(clsNames);
@@ -260,7 +260,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(@Nullable Object obj, OutputStream out) throws GridException {
+    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         IgniteOptimizedObjectOutputStream objOut = null;
@@ -275,7 +275,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             objOut.writeObject(obj);
         }
         catch (IOException e) {
-            throw new GridException("Failed to serialize object: " + obj, e);
+            throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
             IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
@@ -283,7 +283,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(@Nullable Object obj) throws GridException {
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         IgniteOptimizedObjectOutputStream objOut = null;
 
         try {
@@ -296,7 +296,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             return objOut.out().array();
         }
         catch (IOException e) {
-            throw new GridException("Failed to serialize object: " + obj, e);
+            throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
             IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
@@ -304,7 +304,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws GridException {
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         IgniteOptimizedObjectInputStream objIn = null;
@@ -319,10 +319,10 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             return (T)objIn.readObject();
         }
         catch (IOException e) {
-            throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find class with given class loader for unmarshalling " +
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same versions of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
         }
@@ -332,7 +332,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws GridException {
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
         IgniteOptimizedObjectInputStream objIn = null;
@@ -347,10 +347,10 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             return (T)objIn.readObject();
         }
         catch (IOException e) {
-            throw new GridException("Failed to deserialize object with given class loader: " + clsLdr, e);
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find class with given class loader for unmarshalling " +
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
         }

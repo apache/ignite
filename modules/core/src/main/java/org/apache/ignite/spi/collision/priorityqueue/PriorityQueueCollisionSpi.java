@@ -101,7 +101,7 @@ import java.util.*;
  *    private GridComputeTaskSession taskSes;
  *
  *    &#64;Override
- *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        ...
  *        // Set low task priority (note that attribute name is used by the SPI
  *        // and should not be changed).
@@ -127,7 +127,7 @@ import java.util.*;
  *    private GridComputeTaskSession taskSes;
  *
  *    &#64;Override
- *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        ...
  *        // Set high task priority (note that attribute name is used by the SPI
  *        // and should not be changed).

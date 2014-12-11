@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.concurrent.*;
 
@@ -38,7 +38,7 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
 
                 return G.start(cfg);
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         assert e.getCause().getMessage().contains(" should not be configured on Windows (configure " +
             GridIpcServerTcpEndpoint.class.getSimpleName() + ")");

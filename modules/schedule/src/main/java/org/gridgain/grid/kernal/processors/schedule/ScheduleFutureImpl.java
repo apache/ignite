@@ -199,7 +199,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
         try {
             parsePatternParameters();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onEnd(resLatch, null, e, true);
         }
     }
@@ -352,9 +352,9 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     /**
      * Parse delay, number of task calls and mere cron expression from extended pattern
      *  that looks like  "{n1,n2} * * * * *".
-     * @throws GridException Thrown if pattern is invalid.
+     * @throws IgniteCheckedException Thrown if pattern is invalid.
      */
-    private void parsePatternParameters() throws GridException {
+    private void parsePatternParameters() throws IgniteCheckedException {
         assert pat != null;
 
         String regEx = "(\\{(\\*|\\d+),\\s*(\\*|\\d+)\\})?(.*)";
@@ -372,7 +372,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
                         delay = Integer.valueOf(delayStr);
                     }
                     catch (NumberFormatException e) {
-                        throw new GridException("Invalid delay parameter in schedule pattern [delay=" +
+                        throw new IgniteCheckedException("Invalid delay parameter in schedule pattern [delay=" +
                             delayStr + ", pattern=" + pat + ']', e);
                     }
 
@@ -388,12 +388,12 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
                         maxCalls0 = Integer.valueOf(numOfCallsStr);
                     }
                     catch (NumberFormatException e) {
-                        throw new GridException("Invalid number of calls parameter in schedule pattern [numOfCalls=" +
+                        throw new IgniteCheckedException("Invalid number of calls parameter in schedule pattern [numOfCalls=" +
                             numOfCallsStr + ", pattern=" + pat + ']', e);
                     }
 
                     if (maxCalls0 <= 0)
-                        throw new GridException("Number of calls must be greater than 0 or must be equal to \"*\"" +
+                        throw new IgniteCheckedException("Number of calls must be greater than 0 or must be equal to \"*\"" +
                             " in schedule pattern [numOfCalls=" + maxCalls0 + ", pattern=" + pat + ']');
                 }
 
@@ -409,10 +409,10 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
 
             // Cron expression should never be empty and should be of correct format.
             if (cron.isEmpty() || !SchedulingPattern.validate(cron))
-                throw new GridException("Invalid cron expression in schedule pattern: " + pat);
+                throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + pat);
         }
         else
-            throw new GridException("Invalid schedule pattern: " + pat);
+            throw new IgniteCheckedException("Invalid schedule pattern: " + pat);
     }
 
     /** {@inheritDoc} */
@@ -436,7 +436,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     }
 
     /** {@inheritDoc} */
-    @Override public long[] nextExecutionTimes(int cnt, long start) throws GridException {
+    @Override public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException {
         assert cnt > 0;
         assert start > 0;
 
@@ -464,7 +464,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     }
 
     /** {@inheritDoc} */
-    @Override public long nextExecutionTime() throws GridException {
+    @Override public long nextExecutionTime() throws IgniteCheckedException {
         return nextExecutionTimes(1, U.currentTimeMillis())[0];
     }
 
@@ -545,7 +545,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     }
 
     /** {@inheritDoc} */
-    @Override public R last() throws GridException {
+    @Override public R last() throws IgniteCheckedException {
         synchronized (mux) {
             if (lastErr != null)
                 throw U.cast(lastErr);
@@ -700,7 +700,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get() throws GridException {
+    @Nullable @Override public R get() throws IgniteCheckedException {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -724,12 +724,12 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get(long timeout) throws GridException {
+    @Nullable @Override public R get(long timeout) throws IgniteCheckedException {
         return get(timeout, MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get(long timeout, TimeUnit unit) throws GridException {
+    @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -801,7 +801,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
         }
 
         /** {@inheritDoc} */
-        @Override public R last() throws GridException {
+        @Override public R last() throws IgniteCheckedException {
             if (err != null)
                 throw U.cast(err);
 
@@ -879,7 +879,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
         }
 
         /** {@inheritDoc} */
-        @Override public long[] nextExecutionTimes(int cnt, long start) throws GridException {
+        @Override public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException {
             return ref.nextExecutionTimes(cnt, start);
         }
 
@@ -894,22 +894,22 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
         }
 
         /** {@inheritDoc} */
-        @Override public long nextExecutionTime() throws GridException {
+        @Override public long nextExecutionTime() throws IgniteCheckedException {
             return ref.nextExecutionTime();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get() throws GridException {
+        @Nullable @Override public R get() throws IgniteCheckedException {
             return ref.get();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get(long timeout) throws GridException {
+        @Nullable @Override public R get(long timeout) throws IgniteCheckedException {
             return ref.get(timeout);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get(long timeout, TimeUnit unit) throws GridException {
+        @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
             return ref.get(timeout, unit);
         }
 

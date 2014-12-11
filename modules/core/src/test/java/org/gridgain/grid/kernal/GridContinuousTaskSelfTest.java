@@ -81,7 +81,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                         assert fut1.get() == 55;
                         assert fut2.get() == 55;
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         assert false : "Test task failed: " + e;
                     }
                 }
@@ -142,7 +142,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) throws IgniteCheckedException {
             assert mapper != null;
             assert arg != null;
 
@@ -163,7 +163,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
             assert mapper != null;
             assert res.getException() == null : "Unexpected exception: " + res.getException();
 
@@ -181,7 +181,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 10 : "Unexpected result count: " + results.size();
 
             log.info("Called reduce() method [results=" + results + ']');
@@ -212,7 +212,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             Integer i = argument(0);
 
             return i != null ? i : 0;
@@ -236,7 +236,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             ses.addAttributeListener(new ComputeTaskSessionAttributeListener() {
                 @Override public void onAttributeSet(Object key, Object val) {
                     if (key instanceof String) {
@@ -249,7 +249,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                                 try {
                                     mapper.send(new SessionChainTestJob(cnt));
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     log.error("Failed to send new job.", e);
                                 }
                             }
@@ -267,7 +267,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assertEquals(JOB_COUNT * JOB_COUNT, results.size());
 
             return null;
@@ -296,7 +296,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             Integer i = argument(0);
 
             int arg = i != null ? i : 0;
@@ -318,14 +318,14 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             mapper.send(new TestJob(++cnt));
 
             try {
                 Thread.sleep(10000);
             }
             catch (InterruptedException e) {
-                throw new GridException("Job has been interrupted.", e);
+                throw new IgniteCheckedException("Job has been interrupted.", e);
             }
 
             mapper.send(new TestJob(++cnt));
@@ -334,7 +334,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return results == null ? 0 : results.size();
         }
     }

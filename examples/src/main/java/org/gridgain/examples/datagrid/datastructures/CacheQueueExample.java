@@ -41,9 +41,9 @@ public class CacheQueueExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache queue example started.");
@@ -69,9 +69,9 @@ public class CacheQueueExample {
      * @param g Grid.
      * @param queueName Name of queue.
      * @return Queue.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private static GridCacheQueue<String> initializeQueue(Ignite g, String queueName) throws GridException {
+    private static GridCacheQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
         // Initialize new FIFO queue.
         GridCacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
 
@@ -89,9 +89,9 @@ public class CacheQueueExample {
      * Read items from head and tail of queue.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void readFromQueue(Ignite g) throws GridException {
+    private static void readFromQueue(Ignite g) throws IgniteCheckedException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
@@ -104,9 +104,9 @@ public class CacheQueueExample {
      * Write items into queue.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void writeToQueue(Ignite g) throws GridException {
+    private static void writeToQueue(Ignite g) throws IgniteCheckedException {
         final String queueName = queue.name();
 
         // Write queue items on each node.
@@ -126,9 +126,9 @@ public class CacheQueueExample {
      * Clear and remove queue.
      *
      * @param g Grid.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private static void clearAndRemoveQueue(Ignite g) throws GridException {
+    private static void clearAndRemoveQueue(Ignite g) throws IgniteCheckedException {
         System.out.println("Queue size before clearing: " + queue.size());
 
         // Clear queue.
@@ -143,7 +143,7 @@ public class CacheQueueExample {
         try {
             queue.poll();
         }
-        catch (GridRuntimeException expected) {
+        catch (IgniteException expected) {
             System.out.println("Expected exception - " + expected.getMessage());
         }
     }
@@ -199,7 +199,7 @@ public class CacheQueueExample {
                         System.out.println("Queue item has been read from queue head: " + queue.poll());
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -582,7 +582,7 @@ public final class GridTestUtils {
             final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory("async-runner");
 
             final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
-                @Override public boolean cancel() throws GridException {
+                @Override public boolean cancel() throws IgniteCheckedException {
                     super.cancel();
 
                     thrFactory.interruptAllThreads();
@@ -926,10 +926,10 @@ public final class GridTestUtils {
      * @param fieldName Field names to get value for.
      * @param <T> Expected field class.
      * @return Field value.
-     * @throws GridRuntimeException In case of error.
+     * @throws IgniteException In case of error.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws GridRuntimeException {
+    public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
@@ -957,7 +957,7 @@ public final class GridTestUtils {
             return (T)obj;
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+            throw new IgniteException("Failed to get object field [obj=" + obj +
                 ", fieldName=" + fieldName + ']', e);
         }
     }
@@ -969,10 +969,10 @@ public final class GridTestUtils {
      * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
      * @param <T> Expected field class.
      * @return Field value.
-     * @throws GridRuntimeException In case of error.
+     * @throws IgniteException In case of error.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public static <T> T getFieldValue(Object obj, String... fieldNames) throws GridRuntimeException {
+    public static <T> T getFieldValue(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
         assert fieldNames.length >= 1;
@@ -1007,7 +1007,7 @@ public final class GridTestUtils {
                     Class<?> innerCls = getInnerClass(cls, fieldName);
 
                     if (innerCls == null)
-                        throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+                        throw new IgniteException("Failed to get object field [obj=" + obj +
                             ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
 
                     obj = innerCls;
@@ -1017,7 +1017,7 @@ public final class GridTestUtils {
             return (T)obj;
         }
         catch (IllegalAccessException e) {
-            throw new GridRuntimeException("Failed to get object field [obj=" + obj +
+            throw new IgniteException("Failed to get object field [obj=" + obj +
                 ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
         }
     }
@@ -1043,10 +1043,10 @@ public final class GridTestUtils {
      * @param obj Object to set field value to.
      * @param fieldName Field name to set value for.
      * @param val New field value.
-     * @throws GridRuntimeException In case of error.
+     * @throws IgniteException In case of error.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public static void setFieldValue(Object obj, String fieldName, Object val) throws GridRuntimeException {
+    public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
@@ -1073,7 +1073,7 @@ public final class GridTestUtils {
             }
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new GridRuntimeException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
+            throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
         }
     }
 

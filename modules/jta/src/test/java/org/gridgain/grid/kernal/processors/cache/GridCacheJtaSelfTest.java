@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.objectweb.jotm.*;
@@ -84,7 +84,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("PublicInnerClass")
     public static class TestTmLookup implements GridCacheTmLookup {
         /** {@inheritDoc} */
-        @Override public TransactionManager getTm() throws GridException {
+        @Override public TransactionManager getTm() throws IgniteCheckedException {
             return jotm.getTransactionManager();
         }
     }

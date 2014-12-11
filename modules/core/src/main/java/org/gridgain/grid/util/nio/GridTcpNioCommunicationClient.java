@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.direct.*;
-import org.jetbrains.annotations.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -54,7 +54,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
@@ -76,14 +76,14 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(byte[] data, int len) throws GridException {
+    @Override public void sendMessage(byte[] data, int len) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ByteBuffer data) throws GridException {
+    @Override public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(data);
 
@@ -92,19 +92,19 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
-        throws GridException {
+        throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
 
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -113,7 +113,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
     }

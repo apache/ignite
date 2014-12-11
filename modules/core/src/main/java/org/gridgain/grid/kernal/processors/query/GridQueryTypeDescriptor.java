@@ -9,8 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query;
 
-
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -45,9 +44,9 @@ public interface GridQueryTypeDescriptor {
      * @param obj Object to get field value from.
      * @param field Field name.
      * @return Value for given field.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public <T> T value(Object obj, String field) throws GridException;
+    public <T> T value(Object obj, String field) throws IgniteCheckedException;
 
     /**
      * Gets indexes for this type.

@@ -29,13 +29,13 @@ public class GridCacheMultiNodeDataStructureTest {
      * Put data to cache and then queries them.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = G.start("examples/config/example-cache.xml")) {
             // All available nodes.
             if (g.cluster().nodes().size() <= 2)
-                throw new GridException("At least 2 nodes must be started.");
+                throw new IgniteCheckedException("At least 2 nodes must be started.");
 
             sample(g, "partitioned");
             sample(g, "replicated");
@@ -47,9 +47,9 @@ public class GridCacheMultiNodeDataStructureTest {
      *
      * @param g Grid.
      * @param cacheName Cache name.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void sample(Ignite g, String cacheName) throws GridException {
+    private static void sample(Ignite g, String cacheName) throws IgniteCheckedException {
         GridCache<Long, Object> cache = g.cache(cacheName);
 
         GridCacheAtomicLong atomicLong = cache.dataStructures().atomicLong("keygen", 0, true);

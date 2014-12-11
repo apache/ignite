@@ -41,7 +41,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private final CIX1<GridCacheProjection<Integer, Integer>> writeClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int kv = RAND.nextInt(KEY_RANGE);
 
@@ -59,7 +59,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private final CIX1<GridCacheProjection<Integer, Integer>> readClos =
         new CIX1<GridCacheProjection<Integer, Integer>>() {
         @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
-            throws GridException {
+            throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int k = RAND.nextInt(KEY_RANGE);
 

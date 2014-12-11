@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -240,13 +240,13 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert !prj.containsKey("k");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 prj.flagsOn(LOCAL).put("key", 1);
             }
         });
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 prj.flagsOn(READ).put("key", 1);
             }
         });
@@ -267,7 +267,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(one, prj.get("key"));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.put("key", 1);
             }
         });
@@ -275,7 +275,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.get("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.get("key");
             }
         });
@@ -283,7 +283,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.getAll(F.asList("key", "key1"));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.getAll(F.asList("key", "key1"));
             }
         });
@@ -291,7 +291,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.remove("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.remove("key");
             }
         });
@@ -301,7 +301,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(one, prj.replace("key", 2));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.replace("key", 3);
             }
         });
@@ -313,7 +313,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.put("key", 1);
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.removeAll(F.asList("key"));
             }
         });
@@ -323,7 +323,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert locPrj.containsKey("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locPrj.reload("key");
             }
         });
@@ -380,7 +380,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prjEntry.remove();
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locEntry.remove();
             }
         });
@@ -390,13 +390,13 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(one, prjEntry.replace(2));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locEntry.replace(3);
             }
         });
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 locEntry.reload();
             }
         });
@@ -433,7 +433,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(one, prj.get("key"));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.put("key", 1);
             }
         });
@@ -441,7 +441,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.remove("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.remove("key");
             }
         });
@@ -451,7 +451,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(one, prj.replace("key", 2));
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.replace("key", 3);
             }
         });
@@ -463,7 +463,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         prj.put("key", 1);
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.removeAll(F.asList("key"));
             }
         });
@@ -485,7 +485,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert prj.containsKey("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.reload("key");
             }
         });
@@ -493,7 +493,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert prj.containsKey("key");
 
         assertFlagException(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 readPrj.promote("key");
             }
         });
@@ -796,7 +796,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     }
 
     /**
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void testTypedProjection() throws Exception {
         GridCache<Object, Object> cache = grid(0).cache(null);

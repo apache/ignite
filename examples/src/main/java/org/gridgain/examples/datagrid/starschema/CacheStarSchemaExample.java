@@ -54,7 +54,7 @@ public class CacheStarSchemaExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Ignite g = Ignition.start("examples/config/example-cache.xml");
@@ -82,9 +82,9 @@ public class CacheStarSchemaExample {
      * Populate cache with {@code 'dimensions'} which in our case are
      * {@link DimStore} and {@link DimProduct} instances.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void populateDimensions() throws GridException {
+    private static void populateDimensions() throws IgniteCheckedException {
         GridCache<Integer, Object> cache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
@@ -105,9 +105,9 @@ public class CacheStarSchemaExample {
     /**
      * Populate cache with {@code 'facts'}, which in our case are {@link FactPurchase} objects.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void populateFacts() throws GridException {
+    private static void populateFacts() throws IgniteCheckedException {
         GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
         GridCache<Integer, Object> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
@@ -129,9 +129,9 @@ public class CacheStarSchemaExample {
      * between {@link DimStore} objects stored in {@code 'replicated'} cache and
      * {@link FactPurchase} objects stored in {@code 'partitioned'} cache.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void queryStorePurchases() throws GridException {
+    private static void queryStorePurchases() throws IgniteCheckedException {
         GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
@@ -153,9 +153,9 @@ public class CacheStarSchemaExample {
      * objects stored in {@code 'replicated'} cache and {@link FactPurchase} objects
      * stored in {@code 'partitioned'} cache.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void queryProductPurchases() throws GridException {
+    private static void queryProductPurchases() throws IgniteCheckedException {
         GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
         GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 

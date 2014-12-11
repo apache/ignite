@@ -132,8 +132,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             return sum;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -291,8 +291,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                 return rmv;
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -318,8 +318,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                     retryRemoveAll(rmvKeys);
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -357,8 +357,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             return it;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
     /**
@@ -369,8 +369,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         try {
             return (R)ctx.dataStructures().retry(call);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -403,10 +403,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /**
      * @param topVer Topology version.
      * @return Nodes where set data request should be sent.
-     * @throws GridException If all cache nodes left grid.
+     * @throws IgniteCheckedException If all cache nodes left grid.
      */
     @SuppressWarnings("unchecked")
-    private Collection<ClusterNode> dataNodes(long topVer) throws GridException {
+    private Collection<ClusterNode> dataNodes(long topVer) throws IgniteCheckedException {
         if (ctx.isLocal() || ctx.isReplicated())
             return Collections.singleton(ctx.localNode());
 
@@ -422,7 +422,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             nodes = CU.affinityNodes(ctx, topVer);
 
         if (nodes.isEmpty())
-            throw new GridException("Failed to get set data, all cache nodes left grid.");
+            throw new IgniteCheckedException("Failed to get set data, all cache nodes left grid.");
 
         return nodes;
     }
@@ -441,7 +441,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                 try {
                     fut.cancel();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Failed to close iterator.", e);
                 }
             }
@@ -471,7 +471,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                 if (fut != null)
                     fut.cancel();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 log.error("Failed to close iterator.", e);
             }
         }
@@ -545,7 +545,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         }
 
         /** {@inheritDoc} */
-        @Override protected T onNext() throws GridException {
+        @Override protected T onNext() throws IgniteCheckedException {
             init();
 
             if (next == null) {
@@ -567,7 +567,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws GridException {
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
             init();
 
             boolean hasNext = next != null;
@@ -579,14 +579,14 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws GridException {
+        @Override protected void onClose() throws IgniteCheckedException {
             fut.cancel();
 
             clearWeakReference();
         }
 
         /** {@inheritDoc} */
-        @Override protected void onRemove() throws GridException {
+        @Override protected void onRemove() throws IgniteCheckedException {
             if (cur == null)
                 throw new NoSuchElementException();
 
@@ -594,9 +594,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         }
 
         /**
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private void init() throws GridException {
+        private void init() throws IgniteCheckedException {
             if (!init) {
                 Map.Entry e = (Map.Entry)fut.next();
 

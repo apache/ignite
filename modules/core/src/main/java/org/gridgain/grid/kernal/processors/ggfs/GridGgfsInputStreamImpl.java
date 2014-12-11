@@ -277,7 +277,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
                     try {
                         fut.get();
                     }
-                    catch (GridException ignore) {
+                    catch (IgniteCheckedException ignore) {
                         // No-op.
                     }
                 }
@@ -302,7 +302,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
                     data.delete(fileInfo);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOError(e); // Something unrecoverable.
         }
         finally {
@@ -406,7 +406,7 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
                 throw new IOException(e.getMessage(), e);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e.getMessage(), e);
         }
     }
@@ -415,9 +415,9 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param blockIdx Block index.
      * @return File block data.
      * @throws IOException If failed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private byte[] block(long blockIdx) throws IOException, GridException {
+    private byte[] block(long blockIdx) throws IOException, IgniteCheckedException {
         assert blockIdx >= 0;
 
         IgniteFuture<byte[]> bytesFut = locCache.get(blockIdx);
@@ -512,9 +512,9 @@ public class GridGgfsInputStreamImpl extends GridGgfsInputStreamAdapter {
      * @param fileInfo File info.
      * @param blockIdx Block index.
      * @return Requested data block or {@code null} if nothing found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected IgniteFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws GridException {
+    @Nullable protected IgniteFuture<byte[]> dataBlock(GridGgfsFileInfo fileInfo, long blockIdx) throws IgniteCheckedException {
         return data.dataBlock(fileInfo, path, blockIdx, secReader);
     }
 

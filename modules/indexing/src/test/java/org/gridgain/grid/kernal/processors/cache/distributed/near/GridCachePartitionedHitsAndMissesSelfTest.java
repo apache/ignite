@@ -126,9 +126,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * Populates cache with data loader.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void realTimePopulate(final Ignite g) throws GridException {
+    private static void realTimePopulate(final Ignite g) throws IgniteCheckedException {
         try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(null)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelLoadOperations(1);
@@ -154,7 +154,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<Integer, Long> cache,
-            Collection<Map.Entry<Integer, Long>> entries) throws GridException {
+            Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.transform(entry.getKey(), INC);
         }

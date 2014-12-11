@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -32,9 +32,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
@@ -137,7 +137,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         pessimisticRecoveryBuf = new GridCachePerThreadTxCommitBuffer<>(cctx);
 
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
@@ -220,11 +220,11 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 try {
                     tx.rollback();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to rollback transaction: " + tx.xidVersion(), e);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to invalidate transaction: " + tx, e);
             }
         }
@@ -232,7 +232,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             try {
                 tx.rollback();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to rollback transaction: " + tx.xidVersion(), e);
             }
         }
@@ -721,14 +721,14 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * Handles prepare stage of 2PC.
      *
      * @param tx Transaction to prepare.
-     * @throws GridException If preparation failed.
+     * @throws IgniteCheckedException If preparation failed.
      */
-    public void prepareTx(GridCacheTxEx<K, V> tx) throws GridException {
+    public void prepareTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.timedOut())
                 throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
 
-            throw new GridException("Transaction is marked for rollback: " + tx);
+            throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
 
         if (tx.remainingTime() == 0) {
@@ -923,7 +923,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                         near.removeEntry(e);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
             }
         }
@@ -1163,7 +1163,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (!(committedVers.contains(tx.xidVersion()) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
 
-            throw new GridRuntimeException("Missing commit version (consider increasing " +
+            throw new IgniteException("Missing commit version (consider increasing " +
                 GG_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() + ", firstVer=" +
                 committedVers.firstx() + ", lastVer=" + committedVers.lastx() + ", tx=" + tx.xid() + ']');
         }
@@ -1481,10 +1481,10 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction.
      * @param entries Entries to lock.
      * @return {@code True} if all keys were locked.
-     * @throws GridException If lock has been cancelled.
+     * @throws IgniteCheckedException If lock has been cancelled.
      */
     private boolean lockMultiple(GridCacheTxEx<K, V> tx, Iterable<GridCacheTxEntry<K, V>> entries)
-        throws GridException {
+        throws IgniteCheckedException {
         assert tx.optimistic();
 
         long remainingTime = U.currentTimeMillis() - (tx.startTime() + tx.timeout());
@@ -1545,7 +1545,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 catch (GridDistributedLockCancelledException ignore) {
                     tx.setRollbackOnly();
 
-                    throw new GridException("Entry lock has been cancelled for transaction: " + tx);
+                    throw new IgniteCheckedException("Entry lock has been cancelled for transaction: " + tx);
                 }
             }
         }
@@ -1938,7 +1938,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             else
                 tx.rollbackAsync();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to prepare pessimistic transaction (will invalidate): " + tx, e);
 
             salvageTx(tx);
@@ -2186,7 +2186,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                 tx.rollbackAsync();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to commit transaction during failover: " + tx, e);
             }
         }

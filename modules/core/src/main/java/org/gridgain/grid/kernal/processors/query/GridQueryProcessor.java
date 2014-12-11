@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
@@ -71,7 +72,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridQueryProcessor(GridKernalContext ctx) throws GridException {
+    public GridQueryProcessor(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
 
         if (idxCls != null) {
@@ -84,7 +85,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         super.start();
 
         if (idx != null) {
@@ -118,7 +119,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
         if (idx != null)
@@ -131,9 +132,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param space Space.
      * @param valType Value type.
      * @return Objects number or -1 if this type is unknown for given SPI and space.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long size(@Nullable String space, Class<?> valType) throws GridException {
+    public long size(@Nullable String space, Class<?> valType) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -178,7 +179,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private IgniteFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
-            return new GridFinishedFuture<>(ctx, new GridException("Indexing is disabled."));
+            return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
 
         if (desc == null || !desc.registered())
             return new GridFinishedFuture<Void>(ctx);
@@ -245,11 +246,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param valBytes Byte array with value data.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
     public <K, V> void store(final String space, final K key, @Nullable byte[] keyBytes, final V val,
-        @Nullable byte[] valBytes, byte[] ver, long expirationTime) throws GridException {
+        @Nullable byte[] valBytes, byte[] ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -376,7 +377,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return;
 
             if (!desc.valueClass().equals(valCls))
-                throw new GridException("Failed to update index due to class name conflict" +
+                throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
@@ -388,11 +389,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkEnabled() throws GridException {
+    private void checkEnabled() throws IgniteCheckedException {
         if (idx == null)
-            throw new GridException("Indexing is disabled.");
+            throw new IgniteCheckedException("Indexing is disabled.");
     }
 
     /**
@@ -402,12 +403,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param resType Result type.
      * @param filters Filters.
      * @return Key/value rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String space, String clause,
         Collection<Object> params, String resType, GridIndexingQueryFilter filters)
-        throws GridException {
+        throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -429,10 +430,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param space Space.
      * @param key Key.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key) throws GridException {
+    public void remove(String space, Object key) throws IgniteCheckedException {
         assert key != null;
 
         ctx.indexing().remove(space, key);
@@ -546,11 +547,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Key/value rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(String space, String clause, String resType,
-        GridIndexingQueryFilter filters) throws GridException {
+        GridIndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -575,10 +576,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param params Parameters collection.
      * @param filters Key and value filters.
      * @return Field rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridQueryFieldsResult queryFields(@Nullable String space, String clause, Collection<Object> params,
-        GridIndexingQueryFilter filters) throws GridException {
+        GridIndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -597,9 +598,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param spaceName Space name.
      * @param key key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String spaceName, Object key) throws GridException {
+    public void onSwap(String spaceName, Object key) throws IgniteCheckedException {
         ctx.indexing().onSwap(spaceName, key);
 
         if (idx == null)
@@ -623,10 +624,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void onUnswap(String spaceName, Object key, Object val, byte[] valBytes)
-        throws GridException {
+        throws IgniteCheckedException {
         ctx.indexing().onUnswap(spaceName, key, val);
 
         if (idx == null)
@@ -648,9 +649,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param space Space name.
      * @param ldr Class loader to undeploy.
-     * @throws GridException If undeploy failed.
+     * @throws IgniteCheckedException If undeploy failed.
      */
-    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws GridException {
+    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -687,15 +688,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class.
      * @param type Type descriptor.
      * @param parent Parent in case of embeddable.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
-        @Nullable ClassProperty parent) throws GridException {
+        @Nullable ClassProperty parent) throws IgniteCheckedException {
         if (U.isJdk(cls))
             return;
 
         if (parent != null && parent.knowsClass(cls))
-            throw new GridException("Recursive reference found in type: " + cls.getName());
+            throw new IgniteCheckedException("Recursive reference found in type: " + cls.getName());
 
         if (parent == null) { // Check class annotation at top level only.
             GridCacheQueryTextField txtAnnCls = cls.getAnnotation(GridCacheQueryTextField.class);
@@ -738,7 +739,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
-                        throw new GridException("Getter with GridCacheQuerySqlField " +
+                        throw new IgniteCheckedException("Getter with GridCacheQuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
                     ClassProperty prop = new ClassProperty(mtd);
@@ -762,10 +763,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class of field or return type for method.
      * @param prop Current property.
      * @param desc Class description.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     static void processAnnotation(boolean key, GridCacheQuerySqlField sqlAnn, GridCacheQueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws GridException {
+        Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws IgniteCheckedException {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, cls, desc, prop);
 
@@ -802,10 +803,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class to process.
      * @param meta Type metadata.
      * @param d Type descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     static void processClassMeta(boolean key, Class<?> cls, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
-        throws GridException {
+        throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
 
@@ -875,10 +876,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key or value flag.
      * @param meta Declared metadata.
      * @param d Type descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     static void processPortableMeta(boolean key, GridCacheQueryTypeMetadata meta, TypeDescriptor d)
-        throws GridException {
+        throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
@@ -967,9 +968,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param pathStr String representing path to the property. May contains dots '.' to identify nested fields.
      * @param resType Expected result type.
      * @return Property instance corresponding to the given path.
-     * @throws GridException If property cannot be created.
+     * @throws IgniteCheckedException If property cannot be created.
      */
-    static ClassProperty buildClassProperty(Class<?> cls, String pathStr, Class<?> resType) throws GridException {
+    static ClassProperty buildClassProperty(Class<?> cls, String pathStr, Class<?> resType) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         ClassProperty res = null;
@@ -991,7 +992,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     tmp = new ClassProperty(cls.getDeclaredField(prop));
                 }
                 catch (NoSuchFieldException ignored) {
-                    throw new GridException("Failed to find getter method or field for property named " +
+                    throw new IgniteCheckedException("Failed to find getter method or field for property named " +
                         "'" + prop + "': " + cls.getName());
                 }
             }
@@ -1004,7 +1005,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!U.box(resType).isAssignableFrom(U.box(res.type())))
-            throw new GridException("Failed to create property for given path (actual property type is not assignable" +
+            throw new IgniteCheckedException("Failed to create property for given path (actual property type is not assignable" +
                 " to declared type [path=" + pathStr + ", actualType=" + res.type().getName() +
                 ", declaredType=" + resType.getName() + ']');
 
@@ -1037,13 +1038,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param space Space name.
      * @param typeName Type name.
      * @return Type.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws GridException {
+    public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws IgniteCheckedException {
         TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
 
         if (type == null || !type.registered())
-            throw new GridException("Failed to find type descriptor for type name: " + typeName);
+            throw new IgniteCheckedException("Failed to find type descriptor for type name: " + typeName);
 
         return type;
     }
@@ -1051,9 +1052,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cls Field type.
      * @return {@code True} if given type is a spatial geometry type based on {@code com.vividsolutions.jts} library.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static boolean isGeometryClass(Class<?> cls) throws GridException { // TODO optimize
+    private static boolean isGeometryClass(Class<?> cls) throws IgniteCheckedException { // TODO optimize
         Class<?> dataTypeCls;
 
         try {
@@ -1069,7 +1070,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return (Boolean)method.invoke(null, cls);
         }
         catch (Exception e) {
-            throw new GridException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
+            throw new IgniteCheckedException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
         }
     }
 
@@ -1082,9 +1083,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          *
          * @param x Object with this property.
          * @return Property value.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        public abstract Object value(Object x) throws GridException;
+        public abstract Object value(Object x) throws IgniteCheckedException;
 
         /**
          * @return Property name.
@@ -1130,7 +1131,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(Object x) throws GridException {
+        @Override public Object value(Object x) throws IgniteCheckedException {
             if (parent != null)
                 x = parent.value(x);
 
@@ -1150,7 +1151,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
             catch (Exception e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
 
@@ -1219,7 +1220,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object value(Object obj) throws GridException {
+        @Override public Object value(Object obj) throws IgniteCheckedException {
             if (parent != null)
                 obj = parent.value(obj);
 
@@ -1227,7 +1228,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return null;
 
             if (!(obj instanceof PortableObject))
-                throw new GridException("Non-portable object received as a result of property extraction " +
+                throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
             return ((PortableObject)obj).field(propName);
@@ -1287,9 +1288,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /**
          * @param c Initialization callable.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        void init(Callable<Void> c) throws GridException {
+        void init(Callable<Void> c) throws IgniteCheckedException {
             initializer.init(c);
         }
 
@@ -1347,14 +1348,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T value(Object obj, String field) throws GridException {
+        @Override public <T> T value(Object obj, String field) throws IgniteCheckedException {
             assert obj != null;
             assert field != null;
 
             Property prop = props.get(field);
 
             if (prop == null)
-                throw new GridException("Failed to find field '" + field + "' in type '" + name + "'.");
+                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
 
             return (T)prop.value(obj);
         }
@@ -1370,13 +1371,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param idxName Index name.
          * @param type Index type.
          * @return Index descriptor.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws GridException {
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
             IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
-                throw new GridException("Index with name '" + idxName + "' already exists.");
+                throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
 
             return idx;
         }
@@ -1388,10 +1389,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param field Field name.
          * @param orderNum Fields order number in index.
          * @param descending Sorting order.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
         public void addFieldToIndex(String idxName, String field, int orderNum,
-            boolean descending) throws GridException {
+            boolean descending) throws IgniteCheckedException {
             IndexDescriptor desc = indexes.get(idxName);
 
             if (desc == null)
@@ -1449,13 +1450,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param key If given property relates to key.
          * @param prop Property.
          * @param failOnDuplicate Fail on duplicate flag.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        public void addProperty(boolean key, Property prop, boolean failOnDuplicate) throws GridException {
+        public void addProperty(boolean key, Property prop, boolean failOnDuplicate) throws IgniteCheckedException {
             String name = prop.name();
 
             if (props.put(name, prop) != null && failOnDuplicate)
-                throw new GridException("Property with name '" + name + "' already exists.");
+                throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
 
             if (key)
                 keyFields.put(name, prop.type());

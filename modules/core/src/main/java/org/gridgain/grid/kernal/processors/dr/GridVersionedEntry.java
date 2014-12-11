@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.dr;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -57,16 +57,16 @@ public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
      * Perform internal marshal of this entry before it will be serialized.
      *
      * @param marsh Marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void marshal(IgniteMarshaller marsh) throws GridException;
+    public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException;
 
     /**
      * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
      * its restored key/value are needed.
      *
      * @param marsh Marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void unmarshal(IgniteMarshaller marsh) throws GridException;
+    public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException;
 }

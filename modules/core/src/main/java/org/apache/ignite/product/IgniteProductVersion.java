@@ -9,7 +9,7 @@
 
 package org.apache.ignite.product;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -273,7 +273,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
-            catch (IllegalStateException | IndexOutOfBoundsException | NumberFormatException | GridException e) {
+            catch (IllegalStateException | IndexOutOfBoundsException | NumberFormatException | IgniteCheckedException e) {
                 throw new IllegalStateException("Failed to parse version: " + verStr, e);
             }
         }

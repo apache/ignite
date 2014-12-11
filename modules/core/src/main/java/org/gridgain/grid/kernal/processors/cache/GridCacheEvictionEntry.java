@@ -123,14 +123,14 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
         try {
             return peek0(SMART, null, cached.context().tm().localTxx());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should never happen.
-            throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+            throw new IgniteException("Unable to perform entry peek() operation.", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         return peek0(modes, CU.<K, V>empty(), cached.context().tm().localTxx());
     }
 
@@ -139,12 +139,12 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
      * @param filter Optional entry filter.
      * @param tx Transaction to peek at (if mode is TX).
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert tx == null || tx.local();
 
         if (mode == null)
@@ -172,10 +172,10 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
      * @param filter Optional entry filter.
      * @param tx Transaction to peek at (if modes contains TX value).
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -199,7 +199,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V reload() throws GridException {
+    @Nullable @Override public V reload() throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -218,7 +218,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
 
             return ctx.evicts().evict(cached, null, false, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to evict entry from cache: " + cached, e);
 
             return false;
@@ -231,12 +231,12 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact() throws GridException {
+    @Override public boolean compact() throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get() throws GridException {
+    @Nullable @Override public V get() throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -246,7 +246,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -256,7 +256,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public boolean setx(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -266,7 +266,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -276,7 +276,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V replace(V val) throws GridException {
+    @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -286,7 +286,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(V oldVal, V newVal) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -306,7 +306,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V setIfAbsent(V val) throws GridException {
+    @Nullable @Override public V setIfAbsent(V val) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -316,7 +316,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setxIfAbsent(V val) throws GridException {
+    @Override public boolean setxIfAbsent(V val) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -326,7 +326,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(V val) throws GridException {
+    @Override public boolean replacex(V val) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -336,7 +336,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Nullable @Override public V remove(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -346,7 +346,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -356,7 +356,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(V val) throws GridException {
+    @Override public boolean remove(V val) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -449,7 +449,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -460,7 +460,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
@@ -485,7 +485,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException{
+    @Override public int memorySize() throws IgniteCheckedException{
         return cached.memorySize();
     }
 

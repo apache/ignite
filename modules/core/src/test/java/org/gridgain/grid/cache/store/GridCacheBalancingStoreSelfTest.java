@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -120,7 +120,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(@Nullable GridCacheTx tx, Integer key) throws GridException {
+        @Nullable @Override public Integer load(@Nullable GridCacheTx tx, Integer key) throws IgniteCheckedException {
             boolean res = locks[key].tryLock();
 
             if (res) {
@@ -139,13 +139,13 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) throws GridException {
+            IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
             for (Integer key : keys) {
                 boolean res = locks[key].tryLock();
 
@@ -163,29 +163,29 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Integer key, Integer val) throws GridException {
+        @Override public void put(@Nullable GridCacheTx tx, Integer key, Integer val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void putAll(@Nullable GridCacheTx tx, Map<? extends Integer, ? extends Integer> map)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(@Nullable GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void removeAll(@Nullable GridCacheTx tx, Collection<? extends Integer> keys)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
             // No-op.
         }
     }

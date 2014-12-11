@@ -9,7 +9,7 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * {@link org.apache.ignite.lang.IgniteClosure}, {@link Callable}, or {@link Runnable} instance passed into
  * any of the {@link org.apache.ignite.IgniteCompute} methods can also throw this exception to force failover.
  */
-public class ComputeJobFailoverException extends GridRuntimeException {
+public class ComputeJobFailoverException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

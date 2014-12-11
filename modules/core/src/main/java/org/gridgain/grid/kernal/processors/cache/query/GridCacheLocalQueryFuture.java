@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
@@ -58,7 +58,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void cancelQuery() throws GridException {
+    @Override protected void cancelQuery() throws IgniteCheckedException {
         if (fut != null)
             fut.cancel();
     }
@@ -97,10 +97,10 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         /**
          * @return Query info.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
         @SuppressWarnings({"unchecked"})
-        private GridCacheQueryInfo localQueryInfo() throws GridException {
+        private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
             IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?

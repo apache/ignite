@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Generic GGFS worker task which could potentially throw an exception.
@@ -18,7 +18,7 @@ public interface GridGgfsFileWorkerTask {
     /**
      * Execute task logic.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void execute() throws GridException;
+    public void execute() throws IgniteCheckedException;
 }

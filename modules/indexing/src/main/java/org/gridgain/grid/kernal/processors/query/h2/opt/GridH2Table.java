@@ -9,8 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
-
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.api.*;
 import org.h2.command.ddl.*;
@@ -95,9 +94,9 @@ public class GridH2Table extends TableBase {
      *
      * @param key Entry key.
      * @return {@code true} If row was found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(Object key) throws GridException {
+    public boolean onSwap(Object key) throws IgniteCheckedException {
         return onSwapUnswap(key, null);
     }
 
@@ -107,9 +106,9 @@ public class GridH2Table extends TableBase {
      * @param key Key.
      * @param val Value.
      * @return {@code true} If row was found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(Object key, Object val) throws GridException {
+    public boolean onUnswap(Object key, Object val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
         return onSwapUnswap(key, val);
@@ -121,10 +120,10 @@ public class GridH2Table extends TableBase {
      * @param key Key.
      * @param val Value for promote or {@code null} if we have to swap.
      * @return {@code true} if row was found and swapped/unswapped.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(Object key, @Nullable Object val) throws GridException {
+    private boolean onSwapUnswap(Object key, @Nullable Object val) throws IgniteCheckedException {
         assert key != null;
 
         GridH2TreeIndex pk = pk();
@@ -198,7 +197,7 @@ public class GridH2Table extends TableBase {
                     break;
             }
             catch (InterruptedException e) {
-                throw new GridRuntimeException("Thread got interrupted while trying to acquire index lock.", e);
+                throw new IgniteException("Thread got interrupted while trying to acquire index lock.", e);
             }
         }
 
@@ -289,9 +288,9 @@ public class GridH2Table extends TableBase {
      * @param val Value.
      * @param expirationTime Expiration time.
      * @return {@code True} if operation succeeded.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean update(Object key, @Nullable Object val, long expirationTime) throws GridException {
+    public boolean update(Object key, @Nullable Object val, long expirationTime) throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row row = desc.createRow(key, val, expirationTime);
@@ -324,10 +323,10 @@ public class GridH2Table extends TableBase {
      * @param row Row.
      * @param del If given row should be deleted from table.
      * @return {@code True} if operation succeeded.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(GridH2Row row, boolean del) throws GridException {
+    boolean doUpdate(GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();

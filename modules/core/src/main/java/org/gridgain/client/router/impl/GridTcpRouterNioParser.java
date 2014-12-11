@@ -9,8 +9,8 @@
 
 package org.gridgain.client.router.impl;
 
+import org.apache.ignite.*;
 import org.gridgain.client.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
 import org.gridgain.grid.util.nio.*;
@@ -43,7 +43,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         sndCnt++;
 
         if (msg instanceof GridRouterResponse) {
@@ -82,7 +82,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
         else if (msg instanceof GridClientPingPacket || msg instanceof GridClientHandshakeResponse)
             return super.encode(ses, msg);
         else
-            throw new GridException("Unsupported message: " + msg);
+            throw new IgniteCheckedException("Unsupported message: " + msg);
     }
 
     /**

@@ -348,11 +348,11 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /**
-     * @throws GridException If query is invalid.
+     * @throws IgniteCheckedException If query is invalid.
      */
-    public void validate() throws GridException {
+    public void validate() throws IgniteCheckedException {
         if (type != SCAN && !cctx.config().isQueryIndexEnabled())
-            throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
+            throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
     /**
@@ -419,7 +419,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 cctx.deploy().registerClasses(filter, rmtReducer, rmtTransform);
                 cctx.deploy().registerClasses(args);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
             }
         }

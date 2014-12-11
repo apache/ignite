@@ -12,6 +12,7 @@ package org.gridgain.client.hadoop;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.client.*;
 import org.gridgain.client.marshaller.optimized.*;
@@ -122,7 +123,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
             else
                 return fut.get();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
         }
     }

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.cloner;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -20,7 +20,7 @@ import org.gridgain.grid.util.typedef.*;
  */
 public class GridCacheBasicCloner implements GridCacheCloner {
     /** {@inheritDoc} */
-    @Override public <T> T cloneValue(T val) throws GridException {
+    @Override public <T> T cloneValue(T val) throws IgniteCheckedException {
         return X.cloneObject(val, false, true);
     }
 }

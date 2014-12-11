@@ -95,7 +95,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public void start(GridRestProtocolHandler hnd) throws GridException {
+    @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getClientConnectionConfiguration() != null;
 
         InetAddress locHost;
@@ -104,7 +104,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             locHost = U.resolveLocalHost(ctx.config().getLocalHost());
         }
         catch (IOException e) {
-            throw new GridException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
+            throw new IgniteCheckedException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
         }
 
         System.setProperty(GG_JETTY_HOST, locHost.getHostAddress());
@@ -142,7 +142,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             host = InetAddress.getByName(connector.getHost());
         }
         catch (UnknownHostException e) {
-            throw new GridException("Failed to resolve Jetty host address: " + connector.getHost(), e);
+            throw new IgniteCheckedException("Failed to resolve Jetty host address: " + connector.getHost(), e);
         }
 
         int initPort = connector.getPort();
@@ -189,11 +189,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return {@code True} if Jetty started.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private boolean startJetty() throws GridException {
+    private boolean startJetty() throws IgniteCheckedException {
         try {
             httpSrv.start();
 
@@ -224,7 +224,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             for (Object obj : e.getThrowables())
                 if (!(obj instanceof SocketException))
-                    throw new GridException("Failed to start Jetty HTTP server.", e);
+                    throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
 
             if (log.isDebugEnabled())
                 log.debug("Failed to bind HTTP server to configured port.");
@@ -234,7 +234,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             return false;
         }
         catch (Exception e) {
-            throw new GridException("Failed to start Jetty HTTP server.", e);
+            throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
         }
     }
 
@@ -242,9 +242,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * Loads jetty configuration from the given URL.
      *
      * @param cfgUrl URL to load configuration from.
-     * @throws GridException if load failed.
+     * @throws IgniteCheckedException if load failed.
      */
-    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws GridException {
+    private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException {
         if (cfgUrl == null) {
             HttpConfiguration httpCfg = new HttpConfiguration();
 
@@ -261,7 +261,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 srvPort = Integer.valueOf(srvPortStr);
             }
             catch (NumberFormatException ignore) {
-                throw new GridException("Failed to start Jetty server because GRIDGAIN_JETTY_PORT system property " +
+                throw new IgniteCheckedException("Failed to start Jetty server because GRIDGAIN_JETTY_PORT system property " +
                     "cannot be cast to integer: " + srvPortStr);
             }
 
@@ -301,7 +301,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 httpSrv = (Server)cfg.configure();
             }
             catch (Exception e) {
-                throw new GridException("Failed to start Jetty HTTP server.", e);
+                throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
             }
         }
 
@@ -317,20 +317,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * and returns it.
      *
      * @return Connector instance.
-     * @throws GridException If no or more than one connectors found.
+     * @throws IgniteCheckedException If no or more than one connectors found.
      */
-    private AbstractNetworkConnector getJettyConnector() throws GridException {
+    private AbstractNetworkConnector getJettyConnector() throws IgniteCheckedException {
         if (httpSrv.getConnectors().length == 1) {
             Connector connector = httpSrv.getConnectors()[0];
 
             if (!(connector instanceof AbstractNetworkConnector))
-                throw new GridException("Error in jetty configuration. Jetty connector should extend " +
+                throw new IgniteCheckedException("Error in jetty configuration. Jetty connector should extend " +
                     "AbstractNetworkConnector class." );
 
             return (AbstractNetworkConnector)connector;
         }
         else
-            throw new GridException("Error in jetty configuration [connectorsFound=" +
+            throw new IgniteCheckedException("Error in jetty configuration [connectorsFound=" +
                 httpSrv.getConnectors().length + "connectorsExpected=1]");
     }
 

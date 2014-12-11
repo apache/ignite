@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
@@ -42,14 +42,14 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
     public void commitError(Throwable e);
 
     /**
-     * @throws GridException If commit failed.
+     * @throws IgniteCheckedException If commit failed.
      */
-    public void userCommit() throws GridException;
+    public void userCommit() throws IgniteCheckedException;
 
     /**
-     * @throws GridException If rollback failed.
+     * @throws IgniteCheckedException If rollback failed.
      */
-    public void userRollback() throws GridException;
+    public void userRollback() throws IgniteCheckedException;
 
     /**
      * @return Group lock entry if this is a group-lock transaction.
@@ -146,9 +146,9 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
      *
      * @param commit {@code True} if commit, {@code false} if rollback.
      * @return {@code True} if state has been changed.
-     * @throws GridException If finish failed.
+     * @throws IgniteCheckedException If finish failed.
      */
-    public boolean finish(boolean commit) throws GridException;
+    public boolean finish(boolean commit) throws IgniteCheckedException;
 
     /**
      * @param async if {@code True}, then loading will happen in a separate thread.

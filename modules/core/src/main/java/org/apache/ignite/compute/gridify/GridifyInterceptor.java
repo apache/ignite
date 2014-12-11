@@ -9,7 +9,8 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
+
 import java.lang.annotation.*;
 
 /**
@@ -27,7 +28,7 @@ public interface GridifyInterceptor {
      * @param gridify Gridify annotation instance that caused the grid-enabling.
      * @param arg Gridify argument.
      * @return {@code True} if method should be grid-enabled, {@code false} otherwise.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public boolean isGridify(Annotation gridify, GridifyArgument arg) throws GridException;
+    public boolean isGridify(Annotation gridify, GridifyArgument arg) throws IgniteCheckedException;
 }

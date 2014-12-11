@@ -47,7 +47,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) throws GridException {
+        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) throws IgniteCheckedException {
             int deleted = 0;
             int notDeleted = 0;
 
@@ -85,7 +85,7 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
                 }
             }
             catch (IOException | IllegalArgumentException ioe) {
-                throw new GridException("Failed to clear profiler logs for GGFS: " + arg, ioe);
+                throw new IgniteCheckedException("Failed to clear profiler logs for GGFS: " + arg, ioe);
             }
 
             return new IgniteBiTuple<>(deleted, notDeleted);

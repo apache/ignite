@@ -87,10 +87,10 @@ public class GridNodeStartUtils {
      *
      * @param file File.
      * @return Tuple with host maps and default values.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public static IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> parseFile(
-        File file) throws GridException {
+        File file) throws IgniteCheckedException {
         assert file != null;
         assert file.exists();
         assert file.isFile();
@@ -126,7 +126,7 @@ public class GridNodeStartUtils {
                 }
                 else if (l.contains("=")) {
                     if (section == null)
-                        throw new GridException("GridGain ini format doesn't support unnamed section.");
+                        throw new IgniteCheckedException("GridGain ini format doesn't support unnamed section.");
 
                     String key = l.substring(0, l.indexOf('='));
                     String val = line.substring(line.indexOf('=') + 1);
@@ -152,7 +152,7 @@ public class GridNodeStartUtils {
                     }
                 }
                 else
-                    throw new GridException("Failed to parse INI file (line " + lineCnt + ").");
+                    throw new IgniteCheckedException("Failed to parse INI file (line " + lineCnt + ").");
             }
 
             Map<String, Object> dfltsTmp = processSection(section, hosts, dflts, props);
@@ -163,7 +163,7 @@ public class GridNodeStartUtils {
             return F.t(hosts, dflts);
         }
         catch (IOException | NumberFormatException e) {
-            throw new GridException("Failed to parse INI file (line " + lineCnt + ").", e);
+            throw new IgniteCheckedException("Failed to parse INI file (line " + lineCnt + ").", e);
         }
         finally {
             U.closeQuiet(br);
@@ -178,16 +178,16 @@ public class GridNodeStartUtils {
      * @param dflts Parsed properties for default section.
      * @param props Current properties.
      * @return Default properties if specified section is default, {@code null} otherwise.
-     * @throws GridException If INI file contains several default sections.
+     * @throws IgniteCheckedException If INI file contains several default sections.
      */
     private static Map<String, Object> processSection(String section, Collection<Map<String, Object>> hosts,
-        Map<String, Object> dflts, Map<String, Object> props) throws GridException {
+        Map<String, Object> dflts, Map<String, Object> props) throws IgniteCheckedException {
         if (section == null || props == null)
             return null;
 
         if (DFLT_SECTION.equalsIgnoreCase(section)) {
             if (dflts != null)
-                throw new GridException("Only one '" + DFLT_SECTION + "' section is allowed.");
+                throw new IgniteCheckedException("Only one '" + DFLT_SECTION + "' section is allowed.");
 
             return props;
         }
@@ -204,11 +204,11 @@ public class GridNodeStartUtils {
      * @param hosts Host configurations.
      * @param dflts Default values.
      * @return Specification grouped by hosts.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public static Map<String, Collection<GridRemoteStartSpecification>> specifications(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts)
-        throws GridException {
+        throws IgniteCheckedException {
         Map<String, Collection<GridRemoteStartSpecification>> specsMap = U.newHashMap(hosts.size());
 
         GridRemoteStartSpecification dfltSpec = processDefaults(dflts);
@@ -232,10 +232,10 @@ public class GridNodeStartUtils {
      *
      * @param dflts Properties.
      * @return Specification.
-     * @throws GridException If properties are invalid.
+     * @throws IgniteCheckedException If properties are invalid.
      */
     private static GridRemoteStartSpecification processDefaults(@Nullable Map<String, Object> dflts)
-        throws GridException {
+        throws IgniteCheckedException {
         int port = DFLT_PORT;
         String uname = System.getProperty("user.name");
         String passwd = null;
@@ -276,10 +276,10 @@ public class GridNodeStartUtils {
         }
 
         if (port <= 0)
-            throw new GridException("Invalid port number: " + port);
+            throw new IgniteCheckedException("Invalid port number: " + port);
 
         if (nodes <= 0)
-            throw new GridException("Invalid number of nodes: " + nodes);
+            throw new IgniteCheckedException("Invalid number of nodes: " + nodes);
 
         return new GridRemoteStartSpecification(null, port, uname, passwd,
             key, nodes, ggHome, cfg, script, log);
@@ -291,15 +291,15 @@ public class GridNodeStartUtils {
      * @param props Properties.
      * @param dfltSpec Default specification.
      * @return Specification.
-     * @throws GridException If properties are invalid.
+     * @throws IgniteCheckedException If properties are invalid.
      */
     private static Collection<GridRemoteStartSpecification> processHost(Map<String, Object> props,
-        GridRemoteStartSpecification dfltSpec) throws GridException {
+        GridRemoteStartSpecification dfltSpec) throws IgniteCheckedException {
         assert props != null;
         assert dfltSpec != null;
 
         if (props.get(HOST) == null)
-            throw new GridException("Host must be specified.");
+            throw new IgniteCheckedException("Host must be specified.");
 
         Set<String> hosts = expandHost((String)props.get(HOST));
         int port = props.get(PORT) != null ? (Integer)props.get(PORT) : dfltSpec.port();
@@ -312,13 +312,13 @@ public class GridNodeStartUtils {
         String script = props.get(SCRIPT) != null ? (String)props.get(SCRIPT) : dfltSpec.script();
 
         if (port<= 0)
-            throw new GridException("Invalid port number: " + port);
+            throw new IgniteCheckedException("Invalid port number: " + port);
 
         if (nodes <= 0)
-            throw new GridException("Invalid number of nodes: " + nodes);
+            throw new IgniteCheckedException("Invalid number of nodes: " + nodes);
 
         if (passwd == null && key == null)
-            throw new GridException("Password or private key file must be specified.");
+            throw new IgniteCheckedException("Password or private key file must be specified.");
 
         if (passwd != null && key != null)
             passwd = null;
@@ -339,9 +339,9 @@ public class GridNodeStartUtils {
      *
      * @param addr Host with or without `~` range.
      * @return Set of individual host names (IPs).
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public static Set<String> expandHost(String addr) throws GridException {
+    public static Set<String> expandHost(String addr) throws IgniteCheckedException {
         assert addr != null;
 
         Set<String> addrs = new HashSet<>();
@@ -350,12 +350,12 @@ public class GridNodeStartUtils {
             String[] parts = addr.split(RANGE_SMB);
 
             if (parts.length != 2)
-                throw new GridException("Invalid IP range: " + addr);
+                throw new IgniteCheckedException("Invalid IP range: " + addr);
 
             int lastDot = parts[0].lastIndexOf('.');
 
             if (lastDot < 0)
-                throw new GridException("Invalid IP range: " + addr);
+                throw new IgniteCheckedException("Invalid IP range: " + addr);
 
             String base = parts[0].substring(0, lastDot);
             String begin = parts[0].substring(lastDot + 1);
@@ -366,13 +366,13 @@ public class GridNodeStartUtils {
                 int b = Integer.valueOf(end);
 
                 if (a > b)
-                    throw new GridException("Invalid IP range: " + addr);
+                    throw new IgniteCheckedException("Invalid IP range: " + addr);
 
                 for (int i = a; i <= b; i++)
                     addrs.add(base + "." + i);
             }
             catch (NumberFormatException e) {
-                throw new GridException("Invalid IP range: " + addr, e);
+                throw new IgniteCheckedException("Invalid IP range: " + addr, e);
             }
         }
         else

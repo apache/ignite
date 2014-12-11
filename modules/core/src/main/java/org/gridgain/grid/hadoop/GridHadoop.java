@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -45,34 +45,34 @@ public interface GridHadoop {
      *
      * @param jobId Job ID to get status for.
      * @return Job execution status or {@code null} in case job with the given ID is not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
+    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Returns job counters.
      *
      * @param jobId Job ID to get counters for.
      * @return Job counters object.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException;
+    public GridHadoopCounters counters(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Gets Hadoop finish future for particular job.
      *
      * @param jobId Job ID.
      * @return Job finish future or {@code null} in case job with the given ID is not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Kills job.
      *
      * @param jobId Job ID.
      * @return {@code True} if job was killed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean kill(GridHadoopJobId jobId) throws GridException;
+    public boolean kill(GridHadoopJobId jobId) throws IgniteCheckedException;
 }

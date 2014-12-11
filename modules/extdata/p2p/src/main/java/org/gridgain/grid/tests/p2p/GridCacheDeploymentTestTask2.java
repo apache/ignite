@@ -25,7 +25,7 @@ import java.util.*;
 public class GridCacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable ClusterNode node) throws GridException {
+        @Nullable ClusterNode node) throws IgniteCheckedException {
         return F.asMap(
             new ComputeJobAdapter() {
                 @IgniteInstanceResource
@@ -43,7 +43,7 @@ public class GridCacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

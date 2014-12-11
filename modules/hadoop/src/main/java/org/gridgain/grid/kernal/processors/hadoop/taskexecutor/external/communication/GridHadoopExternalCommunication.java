@@ -511,20 +511,20 @@ public class GridHadoopExternalCommunication {
     /**
      * Starts communication.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void start() throws GridException {
+    public void start() throws IgniteCheckedException {
         try {
             locHost = U.getLocalHost();
         }
         catch (IOException e) {
-            throw new GridException("Failed to initialize local address.", e);
+            throw new IgniteCheckedException("Failed to initialize local address.", e);
         }
 
         try {
             shmemSrv = resetShmemServer();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.warn(log, "Failed to start shared memory communication server.", e);
         }
 
@@ -533,8 +533,8 @@ public class GridHadoopExternalCommunication {
             // local node was bound to.
             nioSrvr = resetNioServer();
         }
-        catch (GridException e) {
-            throw new GridException("Failed to initialize TCP server: " + locHost, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to initialize TCP server: " + locHost, e);
         }
 
         locProcDesc.address(locHost.getHostAddress());
@@ -579,13 +579,13 @@ public class GridHadoopExternalCommunication {
      * Recreates tpcSrvr socket instance.
      *
      * @return Server instance.
-     * @throws GridException Thrown if it's not possible to create server.
+     * @throws IgniteCheckedException Thrown if it's not possible to create server.
      */
-    private GridNioServer<GridHadoopMessage> resetNioServer() throws GridException {
+    private GridNioServer<GridHadoopMessage> resetNioServer() throws IgniteCheckedException {
         if (boundTcpPort >= 0)
-            throw new GridException("Tcp NIO server was already created on port " + boundTcpPort);
+            throw new IgniteCheckedException("Tcp NIO server was already created on port " + boundTcpPort);
 
-        GridException lastEx = null;
+        IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
         for (int port = locPort; port < locPort + locPortRange; port++) {
@@ -617,7 +617,7 @@ public class GridHadoopExternalCommunication {
 
                 return srvr;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 lastEx = e;
 
                 if (log.isDebugEnabled())
@@ -627,23 +627,23 @@ public class GridHadoopExternalCommunication {
         }
 
         // If free port wasn't found.
-        throw new GridException("Failed to bind to any port within range [startPort=" + locPort +
+        throw new IgniteCheckedException("Failed to bind to any port within range [startPort=" + locPort +
             ", portRange=" + locPortRange + ", locHost=" + locHost + ']', lastEx);
     }
 
     /**
      * Creates new shared memory communication server.
      * @return Server.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws GridException {
+    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
-            throw new GridException("Shared memory server was already created on port " + boundTcpShmemPort);
+            throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
         if (shmemPort == -1 || U.isWindows())
             return null;
 
-        GridException lastEx = null;
+        IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
@@ -667,7 +667,7 @@ public class GridHadoopExternalCommunication {
 
                 return srv;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 lastEx = e;
 
                 if (log.isDebugEnabled())
@@ -677,11 +677,11 @@ public class GridHadoopExternalCommunication {
         }
 
         // If free port wasn't found.
-        throw new GridException("Failed to bind shared memory communication to any port within range [startPort=" +
+        throw new IgniteCheckedException("Failed to bind shared memory communication to any port within range [startPort=" +
             locPort + ", portRange=" + locPortRange + ", locHost=" + locHost + ']', lastEx);
     }
 
-    public void stop() throws GridException {
+    public void stop() throws IgniteCheckedException {
         // Stop TCP server.
         if (nioSrvr != null)
             nioSrvr.stop();
@@ -705,7 +705,7 @@ public class GridHadoopExternalCommunication {
     }
 
     public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) throws
-        GridException {
+        IgniteCheckedException {
         assert desc != null;
         assert msg != null;
 
@@ -741,9 +741,9 @@ public class GridHadoopExternalCommunication {
      *
      * @param desc Node to which client should be open.
      * @return The existing or just created client.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    private GridHadoopCommunicationClient reserveClient(GridHadoopProcessDescriptor desc) throws GridException {
+    private GridHadoopCommunicationClient reserveClient(GridHadoopProcessDescriptor desc) throws IgniteCheckedException {
         assert desc != null;
 
         UUID procId = desc.processId();
@@ -786,10 +786,10 @@ public class GridHadoopExternalCommunication {
     /**
      * @param desc Process descriptor.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected GridHadoopCommunicationClient createNioClient(GridHadoopProcessDescriptor desc)
-        throws  GridException {
+        throws  IgniteCheckedException {
         assert desc != null;
 
         int shmemPort = desc.sharedMemoryPort();
@@ -800,7 +800,7 @@ public class GridHadoopExternalCommunication {
             try {
                 return createShmemClient(desc, shmemPort);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the GridIpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
@@ -817,10 +817,10 @@ public class GridHadoopExternalCommunication {
      * @param desc Process descriptor.
      * @param port Port.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected GridHadoopCommunicationClient createShmemClient(GridHadoopProcessDescriptor desc, int port)
-        throws GridException {
+        throws IgniteCheckedException {
         int attempt = 1;
 
         int connectAttempts = 1;
@@ -833,7 +833,7 @@ public class GridHadoopExternalCommunication {
             try {
                 clientEndpoint = new GridIpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
                 if (connectAttempts < 2 && X.hasCause(e, ConnectException.class)) {
                     connectAttempts++;
@@ -909,9 +909,9 @@ public class GridHadoopExternalCommunication {
      *
      * @param desc Process descriptor.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected GridHadoopCommunicationClient createTcpClient(GridHadoopProcessDescriptor desc) throws GridException {
+    protected GridHadoopCommunicationClient createTcpClient(GridHadoopProcessDescriptor desc) throws IgniteCheckedException {
         String addr = desc.address();
 
         int port = desc.tcpPort();
@@ -921,7 +921,7 @@ public class GridHadoopExternalCommunication {
 
         boolean conn = false;
         GridHadoopTcpNioCommunicationClient client = null;
-        GridException errs = null;
+        IgniteCheckedException errs = null;
 
         int connectAttempts = 1;
 
@@ -979,7 +979,7 @@ public class GridHadoopExternalCommunication {
                             ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                     if (errs == null)
-                        errs = new GridException("Failed to connect to remote Hadoop process " +
+                        errs = new IgniteCheckedException("Failed to connect to remote Hadoop process " +
                             "(is process still running?) [desc=" + desc + ", addrs=" + addr + ']');
 
                     errs.addSuppressed(e);
@@ -1010,7 +1010,7 @@ public class GridHadoopExternalCommunication {
                         "configuration property) [addr=" + addr + ", port=" + port + ']');
 
                 if (errs == null)
-                    errs = new GridException("Failed to connect to remote Hadoop process (is process still running?) " +
+                    errs = new IgniteCheckedException("Failed to connect to remote Hadoop process (is process still running?) " +
                         "[desc=" + desc + ", addrs=" + addr + ']');
 
                 errs.addSuppressed(e);
@@ -1092,7 +1092,7 @@ public class GridHadoopExternalCommunication {
                     new IgniteThread(e).start();
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!isCancelled())
                     U.error(log, "Shmem server failed.", e);
             }
@@ -1219,7 +1219,7 @@ public class GridHadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionOpened(final GridNioSession ses) throws GridException {
+        @Override public void onSessionOpened(final GridNioSession ses) throws IgniteCheckedException {
             if (ses.accepted()) {
                 if (log.isDebugEnabled())
                     log.debug("Accepted connection, initiating handshake: " + ses);
@@ -1231,7 +1231,7 @@ public class GridHadoopExternalCommunication {
                             // Make sure there were no errors.
                             fut.get();
                         }
-                        catch (GridException | IOException e) {
+                        catch (IgniteCheckedException | IOException e) {
                             log.warning("Failed to send handshake message, will close session: " + ses, e);
 
                             ses.close();
@@ -1242,17 +1242,17 @@ public class GridHadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+        @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionClosed(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
@@ -1260,7 +1260,7 @@ public class GridHadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
             GridHadoopProcessDescriptor desc = ses.meta(PROCESS_META);
 
             UUID rmtProcId = desc == null ? null : desc.processId();
@@ -1350,17 +1350,17 @@ public class GridHadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
             return proceedSessionClose(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionIdleTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionWriteTimeout(ses);
         }
     }

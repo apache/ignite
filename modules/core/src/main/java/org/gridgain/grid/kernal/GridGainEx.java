@@ -399,10 +399,10 @@ public class GridGainEx {
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
-     * @throws GridException If default grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Ignite start() throws GridException {
+    public static Ignite start() throws IgniteCheckedException {
         return start((GridSpringResourceContext)null);
     }
 
@@ -416,10 +416,10 @@ public class GridGainEx {
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid.
-     * @throws GridException If default grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
      *      also if default grid has already been started.
      */
-    public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         URL url = U.resolveGridGainUrl(DFLT_CFG);
 
         if (url != null)
@@ -436,10 +436,10 @@ public class GridGainEx {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * @return Started grid.
-     * @throws GridException If grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
         return start(cfg, null);
     }
 
@@ -453,10 +453,10 @@ public class GridGainEx {
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid.
-     * @throws GridException If grid could not be started. This exception will be thrown
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws GridException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx)).grid();
@@ -474,11 +474,11 @@ public class GridGainEx {
      * @param springCfgPath Spring XML configuration file path or URL.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath) throws IgniteCheckedException {
         return springCfgPath == null ? start() : start(springCfgPath, null);
     }
 
@@ -495,11 +495,11 @@ public class GridGainEx {
      * @param gridName Grid name that will override default.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws GridException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -519,10 +519,10 @@ public class GridGainEx {
      * @param gridName Grid name.
      * @param envPtr Environment pointer.
      * @return Started Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
-        throws GridException {
+        throws IgniteCheckedException {
         GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
 
         return start(springCfgPath, gridName);
@@ -537,12 +537,12 @@ public class GridGainEx {
      *
      * @param springCfgUrl Spring XML configuration file path or URL. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL springCfgUrl) throws GridException {
+        URL springCfgUrl) throws IgniteCheckedException {
         GridSpringProcessor spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
@@ -557,12 +557,12 @@ public class GridGainEx {
      *
      * @param springCfgPath Spring XML configuration file path. This cannot be {@code null}.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        String springCfgPath) throws GridException {
+        String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -574,7 +574,7 @@ public class GridGainEx {
             url = U.resolveGridGainUrl(springCfgPath);
 
             if (url == null)
-                throw new GridException("Spring XML configuration path is invalid: " + springCfgPath +
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
         }
@@ -591,12 +591,12 @@ public class GridGainEx {
      *
      * @param springCfgUrl Spring XML configuration file path or URL. This cannot be {@code null}.
      * @return First found configuration and Spring context used to load it.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
-        throws GridException {
+        throws IgniteCheckedException {
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
@@ -611,12 +611,12 @@ public class GridGainEx {
      *
      * @param springCfgPath Spring XML configuration file path. This cannot be {@code null}.
      * @return First found configuration and Spring context used to load it.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(String springCfgPath)
-        throws GridException {
+        throws IgniteCheckedException {
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
             loadConfigurations(springCfgPath);
 
@@ -640,12 +640,12 @@ public class GridGainEx {
      *      {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath, @Nullable String gridName,
-        @Nullable GridSpringResourceContext springCtx) throws GridException {
+        @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -657,7 +657,7 @@ public class GridGainEx {
             url = U.resolveGridGainUrl(springCfgPath);
 
             if (url == null)
-                throw new GridException("Spring XML configuration path is invalid: " + springCfgPath +
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
         }
@@ -677,11 +677,11 @@ public class GridGainEx {
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(URL springCfgUrl) throws GridException {
+    public static Ignite start(URL springCfgUrl) throws IgniteCheckedException {
         return start(springCfgUrl, null, null);
     }
 
@@ -702,12 +702,12 @@ public class GridGainEx {
      *      {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @GridSpringApplicationContextResource} annotation.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable String gridName,
-        @Nullable GridSpringResourceContext springCtx) throws GridException {
+        @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
@@ -752,7 +752,7 @@ public class GridGainEx {
                     grids.add(grid);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Stop all instances started so far.
             for (GridNamedInstance grid : grids) {
                 try {
@@ -777,15 +777,15 @@ public class GridGainEx {
      *
      * @param startCtx Start context.
      * @return Started grid.
-     * @throws GridException If grid could not be started.
+     * @throws IgniteCheckedException If grid could not be started.
      */
-    private static GridNamedInstance start0(GridStartContext startCtx) throws GridException {
+    private static GridNamedInstance start0(GridStartContext startCtx) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
 
         if (name != null && name.isEmpty())
-            throw new GridException("Non default grid instances cannot have empty string name.");
+            throw new IgniteCheckedException("Non default grid instances cannot have empty string name.");
 
         GridNamedInstance grid = new GridNamedInstance(name);
 
@@ -804,9 +804,9 @@ public class GridGainEx {
 
         if (old != null) {
             if (name == null)
-                throw new GridException("Default grid instance has already been started.");
+                throw new IgniteCheckedException("Default grid instance has already been started.");
             else
-                throw new GridException("Grid instance with this name has already been started: " + name);
+                throw new IgniteCheckedException("Grid instance with this name has already been started: " + name);
         }
 
         if (startCtx.config().getWarmupClosure() != null)
@@ -839,7 +839,7 @@ public class GridGainEx {
         }
 
         if (grid == null)
-            throw new GridException("Failed to start grid with provided configuration.");
+            throw new IgniteCheckedException("Failed to start grid with provided configuration.");
 
         return grid;
     }
@@ -1243,22 +1243,22 @@ public class GridGainEx {
 
         /**
          * @param spi SPI implementation.
-         * @throws GridException Thrown in case if multi-instance is not supported.
+         * @throws IgniteCheckedException Thrown in case if multi-instance is not supported.
          */
-        private void ensureMultiInstanceSupport(IgniteSpi spi) throws GridException {
+        private void ensureMultiInstanceSupport(IgniteSpi spi) throws IgniteCheckedException {
             IgniteSpiMultipleInstancesSupport ann = U.getAnnotation(spi.getClass(),
                 IgniteSpiMultipleInstancesSupport.class);
 
             if (ann == null || !ann.value())
-                throw new GridException("SPI implementation doesn't support multiple grid instances in " +
+                throw new IgniteCheckedException("SPI implementation doesn't support multiple grid instances in " +
                     "the same VM: " + spi);
         }
 
         /**
          * @param spis SPI implementations.
-         * @throws GridException Thrown in case if multi-instance is not supported.
+         * @throws IgniteCheckedException Thrown in case if multi-instance is not supported.
          */
-        private void ensureMultiInstanceSupport(IgniteSpi[] spis) throws GridException {
+        private void ensureMultiInstanceSupport(IgniteSpi[] spis) throws IgniteCheckedException {
             for (IgniteSpi spi : spis)
                 ensureMultiInstanceSupport(spi);
         }
@@ -1267,9 +1267,9 @@ public class GridGainEx {
          * Starts grid with given configuration.
          *
          * @param startCtx Starting context.
-         * @throws GridException If start failed.
+         * @throws IgniteCheckedException If start failed.
          */
-        synchronized void start(GridStartContext startCtx) throws GridException {
+        synchronized void start(GridStartContext startCtx) throws IgniteCheckedException {
             if (startGuard.compareAndSet(false, true)) {
                 try {
                     starterThread = Thread.currentThread();
@@ -1292,10 +1292,10 @@ public class GridGainEx {
 
         /**
          * @param startCtx Starting context.
-         * @throws GridException If start failed.
+         * @throws IgniteCheckedException If start failed.
          */
         @SuppressWarnings({"unchecked", "TooBroadScope"})
-        private void start0(GridStartContext startCtx) throws GridException {
+        private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
             IgniteConfiguration cfg = startCtx.config();
@@ -1350,7 +1350,7 @@ public class GridGainEx {
                 File ggHomeFile = new File(ggHome);
 
                 if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new GridException("Invalid GridGain installation home folder: " + ggHome);
+                    throw new IgniteCheckedException("Invalid GridGain installation home folder: " + ggHome);
             }
 
             myCfg.setGridGainHome(ggHome);
@@ -1446,7 +1446,7 @@ public class GridGainEx {
                             myCfg.setDeploymentMode(depMode);
                     }
                     catch (IllegalArgumentException e) {
-                        throw new GridException("Failed to override deployment mode using system property " +
+                        throw new IgniteCheckedException("Failed to override deployment mode using system property " +
                             "(are there any misspellings?)" +
                             "[name=" + GG_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
                     }
@@ -1816,17 +1816,17 @@ public class GridGainEx {
 
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
-                    throw new GridException("Discovery SPI implementation does not support node ordering and " +
+                    throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
                         "like GridTcpDiscoverySpi)");
 
                 for (GridCacheConfiguration ccfg : cacheCfgs) {
                     if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
                     if (CU.isUtilityCache(ccfg.getName()))
-                        throw new GridException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
+                        throw new IgniteCheckedException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
@@ -1906,7 +1906,7 @@ public class GridGainEx {
 
                 started = true;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 unregisterFactoryMBean();
 
                 throw e;
@@ -1915,7 +1915,7 @@ public class GridGainEx {
             catch (Throwable e) {
                 unregisterFactoryMBean();
 
-                throw new GridException("Unexpected exception when starting grid.", e);
+                throw new IgniteCheckedException("Unexpected exception when starting grid.", e);
             }
             finally {
                 if (!started)
@@ -1941,7 +1941,7 @@ public class GridGainEx {
                 catch (IllegalStateException e) {
                     stop(true);
 
-                    throw new GridException("Failed to install shutdown hook.", e);
+                    throw new IgniteCheckedException("Failed to install shutdown hook.", e);
                 }
             }
             else {
@@ -1955,9 +1955,9 @@ public class GridGainEx {
          * @param cfgLog Configured logger.
          * @param nodeId Local node ID.
          * @return Initialized logger.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws GridException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
                 if (cfgLog == null) {
                     Class<?> log4jCls;
@@ -2014,7 +2014,7 @@ public class GridGainEx {
                 return cfgLog;
             }
             catch (Exception e) {
-                throw new GridException("Failed to create logger.", e);
+                throw new IgniteCheckedException("Failed to create logger.", e);
             }
         }
 
@@ -2183,9 +2183,9 @@ public class GridGainEx {
          * Registers delegate Mbean instance for {@link org.apache.ignite.Ignition}.
          *
          * @param srv MBeanServer where mbean should be registered.
-         * @throws GridException If registration failed.
+         * @throws IgniteCheckedException If registration failed.
          */
-        private void registerFactoryMbean(MBeanServer srv) throws GridException {
+        private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
             synchronized (mbeans) {
                 GridMBeanServerData data = mbeans.get(srv);
 
@@ -2201,7 +2201,7 @@ public class GridGainEx {
 
                         // Make check if MBean was already registered.
                         if (!srv.queryMBeans(objName, null).isEmpty())
-                            throw new GridException("MBean was already registered: " + objName);
+                            throw new IgniteCheckedException("MBean was already registered: " + objName);
                         else {
                             objName = U.registerMBean(
                                 srv,
@@ -2221,7 +2221,7 @@ public class GridGainEx {
                         }
                     }
                     catch (JMException e) {
-                        throw new GridException("Failed to register MBean.", e);
+                        throw new IgniteCheckedException("Failed to register MBean.", e);
                     }
                 }
 

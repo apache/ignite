@@ -276,10 +276,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is primary.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected Integer primaryKey(GridCacheProjection<Integer, ?> cache)
-        throws GridException {
+        throws IgniteCheckedException {
         return primaryKeys(cache, 1, 1).get(0);
     }
 
@@ -287,10 +287,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> primaryKeys(GridCacheProjection<Integer, ?> cache, int cnt)
-        throws GridException {
+        throws IgniteCheckedException {
         return primaryKeys(cache, cnt, 1);
     }
 
@@ -299,10 +299,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> primaryKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
-        throws GridException {
+        throws IgniteCheckedException {
         List<Integer> found = new ArrayList<>(cnt);
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
@@ -320,16 +320,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new GridException("Unable to find " + cnt + " keys as primary for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
     }
 
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected Integer backupKey(GridCacheProjection<Integer, ?> cache)
-        throws GridException {
+        throws IgniteCheckedException {
         return backupKeys(cache, 1, 1).get(0);
     }
 
@@ -337,10 +337,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> backupKeys(GridCacheProjection<Integer, ?> cache, int cnt)
-        throws GridException {
+        throws IgniteCheckedException {
         return backupKeys(cache, cnt, 1);
     }
 
@@ -349,10 +349,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> backupKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
-        throws GridException {
+        throws IgniteCheckedException {
         List<Integer> found = new ArrayList<>(cnt);
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
@@ -370,16 +370,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
     }
 
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is neither primary nor backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected Integer nearKey(GridCacheProjection<Integer, ?> cache)
-        throws GridException {
+        throws IgniteCheckedException {
         return nearKeys(cache, 1, 1).get(0);
     }
 
@@ -387,10 +387,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is neither primary nor backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> nearKeys(GridCacheProjection<Integer, ?> cache, int cnt)
-        throws GridException {
+        throws IgniteCheckedException {
         return nearKeys(cache, cnt, 1);
     }
 
@@ -399,10 +399,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is neither primary nor backup.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<Integer> nearKeys(GridCacheProjection<Integer, ?> cache, int cnt, int startFrom)
-        throws GridException {
+        throws IgniteCheckedException {
         List<Integer> found = new ArrayList<>(cnt);
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
@@ -420,7 +420,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
         }
 
-        throw new GridException("Unable to find " + cnt + " keys as backup for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
     }
 
     /**
@@ -428,10 +428,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param task Task.
      * @param arg Task argument.
      * @return Task future.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
-        throws GridException {
+        throws IgniteCheckedException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(task, arg));
@@ -448,10 +448,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param taskName Task name.
      * @param arg Task argument.
      * @return Task future.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
-        throws GridException {
+        throws IgniteCheckedException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskName, arg));
@@ -468,11 +468,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param taskCls Task class.
      * @param arg Task argument.
      * @return Task future.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
-        throws GridException {
+        throws IgniteCheckedException {
         comp = comp.enableAsync();
 
         assertNull(comp.execute(taskCls, arg));
@@ -489,10 +489,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param filter Filter.
      * @param types Events types.
      * @return Future.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected <T extends IgniteEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
-        @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws GridException {
+        @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
         evts = evts.enableAsync();
 
         assertTrue(evts.isAsync());

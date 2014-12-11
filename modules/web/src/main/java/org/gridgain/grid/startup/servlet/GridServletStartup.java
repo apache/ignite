@@ -153,7 +153,7 @@ public class GridServletStartup extends HttpServlet {
                     gridNames.add(ignite.name());
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Stop started grids only.
             for (String name: gridNames)
                 G.stop(name, true);

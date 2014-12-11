@@ -41,7 +41,7 @@ public class GridSessionLoadTestJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws GridException {
+    @Override public Serializable execute() throws IgniteCheckedException {
         assert taskSes != null;
 
         Object arg = argument(0);

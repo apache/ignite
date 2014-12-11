@@ -23,7 +23,7 @@ public class GridClientPutPortableTask extends GridTaskSingleJobSplitAdapter {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, Object arg) throws GridException {
+    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
         String cacheName = (String)arg;
 
         GridCache<Object, Object> cache = ignite.cache(cacheName);

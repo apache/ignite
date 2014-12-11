@@ -152,7 +152,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             info("Committed transaction: " + tx);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             tx.rollback();
 
             throw e;
@@ -192,7 +192,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             info("Committed transaction: " + tx);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             tx.rollback();
 
             throw e;
@@ -368,7 +368,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
                 return null;
             }
-        }, GridRuntimeException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**

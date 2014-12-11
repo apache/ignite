@@ -772,7 +772,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      *
      */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         GridCacheTxState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
@@ -795,9 +795,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      * Awaits transaction completion.
      *
-     * @throws GridException If waiting failed.
+     * @throws IgniteCheckedException If waiting failed.
      */
-    protected void awaitCompletion() throws GridException {
+    protected void awaitCompletion() throws IgniteCheckedException {
         lock();
 
         try {
@@ -808,7 +808,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
             Thread.currentThread().interrupt();
 
             if (!done())
-                throw new GridException("Got interrupted while waiting for transaction to complete: " + this, e);
+                throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " + this, e);
         }
         finally {
             unlock();
@@ -1107,11 +1107,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param txEntry Entry to process.
      * @param metrics {@code True} if metrics should be updated.
      * @return Tuple containing transformation results.
-     * @throws GridException If failed to get previous value for transform.
+     * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
      */
     protected GridTuple3<GridCacheOperation, V, byte[]> applyTransformClosures(GridCacheTxEntry<K, V> txEntry,
-        boolean metrics) throws GridCacheEntryRemovedException, GridException {
+        boolean metrics) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1143,7 +1143,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         val = clos.apply(val);
                 }
                 catch (Throwable e) {
-                    throw new GridRuntimeException("Transform closure must not throw any exceptions " +
+                    throw new IgniteException("Transform closure must not throw any exceptions " +
                         "(transaction will be invalidated)", e);
                 }
 
@@ -1213,9 +1213,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param e Entry to evict if it qualifies for eviction.
      * @param primaryOnly Flag to try to evict only on primary node.
      * @return {@code True} if attempt was made to evict the entry.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected boolean evictNearEntry(GridCacheTxEntry<K, V> e, boolean primaryOnly) throws GridException {
+    protected boolean evictNearEntry(GridCacheTxEntry<K, V> e, boolean primaryOnly) throws IgniteCheckedException {
         assert e != null;
 
         if (isNearLocallyMapped(e, primaryOnly)) {

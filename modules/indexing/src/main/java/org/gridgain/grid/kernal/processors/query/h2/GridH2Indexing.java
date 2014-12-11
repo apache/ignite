@@ -206,7 +206,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             catch (SQLException e) {
                 U.close(c, log);
 
-                throw new GridRuntimeException("Failed to initialize DB connection: " + dbUrl, e);
+                throw new IgniteException("Failed to initialize DB connection: " + dbUrl, e);
             }
         }
     };
@@ -222,13 +222,13 @@ public class GridH2Indexing implements GridQueryIndexing {
      *
      * @param schema Whether to set schema for connection or not.
      * @return DB connection.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private Connection connectionForThread(@Nullable String schema) throws GridException {
+    private Connection connectionForThread(@Nullable String schema) throws IgniteCheckedException {
         ConnectionWrapper c = connCache.get();
 
         if (c == null)
-            throw new GridException("Failed to get DB connection for thread (check log for details).");
+            throw new IgniteCheckedException("Failed to get DB connection for thread (check log for details).");
 
         if (schema != null && !F.eq(c.schema(), schema)) {
             Statement stmt = null;
@@ -244,7 +244,7 @@ public class GridH2Indexing implements GridQueryIndexing {
                 c.schema(schema);
             }
             catch (SQLException e) {
-                throw new GridException("Failed to set schema for DB connection for thread [schema=" +
+                throw new IgniteCheckedException("Failed to set schema for DB connection for thread [schema=" +
                     schema + "]", e);
             }
             finally {
@@ -259,9 +259,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      * Creates DB schema if it has not been created yet.
      *
      * @param schema Schema name.
-     * @throws GridException If failed to create db schema.
+     * @throws IgniteCheckedException If failed to create db schema.
      */
-    private void createSchemaIfAbsent(String schema) throws GridException {
+    private void createSchemaIfAbsent(String schema) throws IgniteCheckedException {
         executeStatement("CREATE SCHEMA IF NOT EXISTS \"" + schema + '"');
 
         if (log.isDebugEnabled())
@@ -270,9 +270,9 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /**
      * @param sql SQL statement.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void executeStatement(String sql) throws GridException {
+    private void executeStatement(String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
         try {
@@ -285,7 +285,7 @@ public class GridH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridException("Failed to execute statement: " + sql, e);
+            throw new IgniteCheckedException("Failed to execute statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
@@ -298,10 +298,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param spaceName Space name.
      * @param key Key.
      * @param tblToUpdate Table to update.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private void removeKey(@Nullable String spaceName, Object key, TableDescriptor tblToUpdate)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
 
@@ -322,7 +322,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             }
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove key: " + key, e);
+            throw new IgniteCheckedException("Failed to remove key: " + key, e);
         }
     }
 
@@ -332,9 +332,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param stmt SQL statement.
      * @param idx Index.
      * @param obj Value to store.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws GridException {
+    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
         try {
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
@@ -342,7 +342,7 @@ public class GridH2Indexing implements GridQueryIndexing {
                 stmt.setObject(idx, obj);
         }
         catch (SQLException e) {
-            throw new GridException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
+            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
         }
     }
 
@@ -364,7 +364,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, Object k, Object v, byte[] ver,
-        long expirationTime) throws GridException {
+        long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -389,7 +389,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key) throws GridException {
+    @Override public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
 
@@ -413,7 +413,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, Object key) throws GridException {
+    @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException {
         Schema schema = schemas.get(schema(spaceName));
 
         if (schema == null)
@@ -428,8 +428,8 @@ public class GridH2Indexing implements GridQueryIndexing {
                         if (tbl.tbl.onSwap(key))
                             return;
                     }
-                    catch (GridException e) {
-                        throw new GridException(e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteCheckedException(e);
                     }
                 }
             }
@@ -441,7 +441,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
-        throws GridException {
+        throws IgniteCheckedException {
         localSpi.set(this);
 
         try {
@@ -451,8 +451,8 @@ public class GridH2Indexing implements GridQueryIndexing {
                         if (tbl.tbl.onUnswap(key, val))
                             return;
                     }
-                    catch (GridException e) {
-                        throw new GridException(e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteCheckedException(e);
                     }
                 }
             }
@@ -466,9 +466,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      * Drops table form h2 database and clear all related indexes (h2 text, lucene).
      *
      * @param tbl Table to unregister.
-     * @throws GridException If failed to unregister.
+     * @throws IgniteCheckedException If failed to unregister.
      */
-    private void removeTable(TableDescriptor tbl) throws GridException {
+    private void removeTable(TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -495,7 +495,7 @@ public class GridH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridException("Failed to drop database index table [type=" + tbl.type().name() +
+            throw new IgniteCheckedException("Failed to drop database index table [type=" + tbl.type().name() +
                 ", table=" + tbl.fullTableName() + "]", e);
         }
         finally {
@@ -517,7 +517,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(
         @Nullable String spaceName, String qry, GridQueryTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws GridException {
+        GridIndexingQueryFilter filters) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null && tbl.luceneIdx != null)
@@ -528,7 +528,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type)
-        throws GridException {
+        throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null)
@@ -539,7 +539,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
-        throws GridException {
+        throws IgniteCheckedException {
         localSpi.set(this);
 
         setFilters(filters);
@@ -607,10 +607,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private ResultSet executeSqlQuery(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws GridException {
+        @Nullable Collection<Object> params) throws IgniteCheckedException {
         PreparedStatement stmt;
 
         try {
@@ -620,7 +620,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             if (e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1)
                 return null;
 
-            throw new GridException("Failed to parse SQL query: " + sql, e);
+            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
         switch (commandType(stmt)) {
@@ -630,7 +630,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             case CommandInterface.ANALYZE:
                 break;
             default:
-                throw new GridException("Failed to execute non-query SQL statement: " + sql);
+                throw new IgniteCheckedException("Failed to execute non-query SQL statement: " + sql);
         }
 
         bindParameters(stmt, params);
@@ -639,7 +639,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             return stmt.executeQuery();
         }
         catch (SQLException e) {
-            throw new GridException("Failed to execute SQL query.", e);
+            throw new IgniteCheckedException("Failed to execute SQL query.", e);
         }
     }
 
@@ -650,10 +650,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param sql Sql query.
      * @param params Parameters.
      * @return Result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQueryWithTimer(Connection conn, String sql,
-        @Nullable Collection<Object> params) throws GridException {
+        @Nullable Collection<Object> params) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -690,7 +690,7 @@ public class GridH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -701,10 +701,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param params Query parameters.
      * @param tbl Target table of query to generate select.
      * @return Result set.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeQuery(String qry, @Nullable Collection<Object> params,
-        @Nullable TableDescriptor tbl) throws GridException {
+        @Nullable TableDescriptor tbl) throws IgniteCheckedException {
         Connection conn = connectionForThread(tbl != null ? tbl.schema() : "PUBLIC");
 
         String sql = generateQuery(qry, tbl);
@@ -717,9 +717,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      *
      * @param stmt Prepared statement.
      * @param params Parameters collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws GridException {
+    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -738,12 +738,12 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param type Query return type.
      * @param filters Space name and key filters.
      * @return Queried rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
-        final GridIndexingQueryFilter filters) throws GridException {
+        final GridIndexingQueryFilter filters) throws IgniteCheckedException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -782,9 +782,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param qry Query string.
      * @param tbl Table to use.
      * @return Prepared statement.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private String generateQuery(String qry, @Nullable TableDescriptor tbl) throws GridException {
+    private String generateQuery(String qry, @Nullable TableDescriptor tbl) throws IgniteCheckedException {
         boolean needSelect = tbl != null;
 
         String str = qry.trim().toUpperCase();
@@ -803,12 +803,12 @@ public class GridH2Indexing implements GridQueryIndexing {
                         String from = st.nextToken();
 
                         if (!"*".equals(wildcard) || !"FROM".equals(from))
-                            throw new GridException(errMsg);
+                            throw new IgniteCheckedException(errMsg);
 
                         needSelect = false;
                     }
                     else
-                        throw new GridException(errMsg);
+                        throw new IgniteCheckedException(errMsg);
                 }
             }
             else {
@@ -832,10 +832,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * This implementation doesn't support type reregistration.
      *
      * @param type Type description.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @Override public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor type)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!validateTypeDescriptor(spaceName, type))
             return false;
 
@@ -843,7 +843,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             // Need to compare class names rather than classes to define
             // whether a class was previously undeployed.
             if (table.type().valueClass().getClass().getName().equals(type.valueClass().getName()))
-                throw new GridException("Failed to register type in query index because" +
+                throw new IgniteCheckedException("Failed to register type in query index because" +
                     " class is already registered (most likely that class with the same name" +
                     " was not properly undeployed): " + type);
 
@@ -870,7 +870,7 @@ public class GridH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             onSqlException();
 
-            throw new GridException("Failed to register query type: " + type, e);
+            throw new IgniteCheckedException("Failed to register query type: " + type, e);
         }
 
         return true;
@@ -893,10 +893,10 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param spaceName Space name.
      * @param type Type descriptor.
      * @return True if type is valid.
-     * @throws GridException If validation failed.
+     * @throws IgniteCheckedException If validation failed.
      */
     private boolean validateTypeDescriptor(@Nullable String spaceName, GridQueryTypeDescriptor type)
-        throws GridException {
+        throws IgniteCheckedException {
         assert type != null;
 
         boolean keyPrimitive = isPrimitive(type.keyClass());
@@ -914,14 +914,14 @@ public class GridH2Indexing implements GridQueryIndexing {
         names.addAll(type.valueFields().keySet());
 
         if (names.size() < type.keyFields().size() + type.valueFields().size())
-            throw new GridException("Found duplicated properties with the same name [keyType=" +
+            throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
 
         for (String name : names) {
             if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
-                throw new GridException(MessageFormat.format(ptrn, name));
+                throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
 
         return true;
@@ -1087,7 +1087,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public long size(@Nullable String spaceName, GridQueryTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws GridException {
+        GridIndexingQueryFilter filters) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -1101,7 +1101,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonThreadSafeLazyInitialization")
-    @Override public void start(GridKernalContext ctx) throws GridException {
+    @Override public void start(GridKernalContext ctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
@@ -1148,7 +1148,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             Class.forName("org.h2.Driver");
         }
         catch (ClassNotFoundException e) {
-            throw new GridException("Failed to find org.h2.Driver class", e);
+            throw new IgniteCheckedException("Failed to find org.h2.Driver class", e);
         }
 
         for (String schema : schemaNames)
@@ -1175,7 +1175,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             }
         }
         catch (SQLException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
 //        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
@@ -1199,10 +1199,10 @@ public class GridH2Indexing implements GridQueryIndexing {
     /**
      * Runs initial script.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws SQLException If failed.
      */
-    private void runInitScript() throws GridException, SQLException {
+    private void runInitScript() throws IgniteCheckedException, SQLException {
         String initScriptPath = cfg.getInitialScriptPath();
 
         if (initScriptPath == null)
@@ -1219,9 +1219,9 @@ public class GridH2Indexing implements GridQueryIndexing {
      * Registers SQL functions.
      *
      * @throws SQLException If failed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void createSqlFunctions() throws SQLException, GridException {
+    private void createSqlFunctions() throws SQLException, IgniteCheckedException {
         Class<?>[] idxCustomFuncClss = cfg.getIndexCustomFunctionClasses();
 
         if (F.isEmpty(idxCustomFuncClss))
@@ -1235,7 +1235,7 @@ public class GridH2Indexing implements GridQueryIndexing {
                     int modifiers = m.getModifiers();
 
                     if (!Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers))
-                        throw new GridException("Method " + m.getName() + " must be public static.");
+                        throw new IgniteCheckedException("Method " + m.getName() + " must be public static.");
 
                     String alias = ann.alias().isEmpty() ? m.getName() : ann.alias();
 
@@ -1262,7 +1262,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws GridException {
+    @Override public void stop() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
@@ -1289,7 +1289,7 @@ public class GridH2Indexing implements GridQueryIndexing {
                 stmt.execute("SHUTDOWN");
             }
             catch (SQLException e) {
-                throw new GridException("Failed to shutdown database.", e);
+                throw new IgniteCheckedException("Failed to shutdown database.", e);
             }
             finally {
                 U.close(stmt, log);
@@ -1631,8 +1631,8 @@ public class GridH2Indexing implements GridQueryIndexing {
                 try {
                     luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
                 }
-                catch (GridException e1) {
-                    throw new GridRuntimeException(e1);
+                catch (IgniteCheckedException e1) {
+                    throw new IgniteException(e1);
                 }
             }
 
@@ -1644,8 +1644,8 @@ public class GridH2Indexing implements GridQueryIndexing {
                     try {
                         luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
                     }
-                    catch (GridException e1) {
-                        throw new GridRuntimeException(e1);
+                    catch (IgniteCheckedException e1) {
+                        throw new IgniteException(e1);
                     }
                 }
                 else {
@@ -1686,9 +1686,9 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         /**
          * @param data Data.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected FieldsIterator(ResultSet data) throws GridException {
+        protected FieldsIterator(ResultSet data) throws IgniteCheckedException {
             super(data);
         }
 
@@ -1711,9 +1711,9 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         /**
          * @param data Data array.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected KeyValIterator(ResultSet data) throws GridException {
+        protected KeyValIterator(ResultSet data) throws IgniteCheckedException {
             super(data);
         }
 
@@ -1919,14 +1919,14 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
-            throws GridException {
+            throws IgniteCheckedException {
             try {
                 return offheap == null ?
                     new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
                     new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
             }
             catch (ClassCastException e) {
-                throw new GridException("Failed to convert key to SQL type. " +
+                throw new IgniteCheckedException("Failed to convert key to SQL type. " +
                     "Please make sure that you always store each value type with the same key type or disable " +
                     "'defaultIndexFixedTyping' property.", e);
             }
@@ -1934,7 +1934,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Object readFromSwap(Object key) throws GridException {
+        @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
             GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
             GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
@@ -1967,7 +1967,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             try {
                 return type.value(obj, fields[col]);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
             }
         }

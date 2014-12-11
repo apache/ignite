@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -117,9 +117,9 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return Client.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private GridTestBinaryClient client() throws GridException {
+    private GridTestBinaryClient client() throws IgniteCheckedException {
         return new GridTestBinaryClient(HOST, PORT);
     }
 
@@ -195,7 +195,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
                         return client.cacheGet(null, "key");
                     }
                 },
-                GridException.class,
+                IgniteCheckedException.class,
                 "Failed to process client request: Failed to find registered handler for command: CACHE_GET");
         }
         finally {
@@ -579,7 +579,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             null
         );
     }
@@ -590,7 +590,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args)
-            throws GridException {
+            throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(args.size());
 
             for (final Object arg : args) {
@@ -613,7 +613,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             int sum = 0;
 
             for (ComputeJobResult res : results)

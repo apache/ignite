@@ -482,7 +482,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                 reply(node, d, s);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send partition supply message to node: " + node.id(), e);
 
                 // Removing current topic because of request must fail with timeout and
@@ -500,10 +500,10 @@ class GridDhtPartitionSupplyPool<K, V> {
          * @param d Demand message.
          * @param s Supply message.
          * @return {@code True} if message was sent, {@code false} if recipient left grid.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
         private boolean reply(ClusterNode n, GridDhtPartitionDemandMessage<K, V> d, GridDhtPartitionSupplyMessage<K, V> s)
-            throws GridException {
+            throws IgniteCheckedException {
             try {
                 if (log.isDebugEnabled())
                     log.debug("Replying to partition demand [node=" + n.id() + ", demand=" + d + ", supply=" + s + ']');

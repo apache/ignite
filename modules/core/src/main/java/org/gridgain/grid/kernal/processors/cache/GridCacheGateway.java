@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -89,8 +89,8 @@ public class GridCacheGateway<K, V> {
 
             preldr.startFuture().get();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Failed to wait for cache preloader start [cacheName=" +
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for cache preloader start [cacheName=" +
                 ctx.name() + "]", e);
         }
 

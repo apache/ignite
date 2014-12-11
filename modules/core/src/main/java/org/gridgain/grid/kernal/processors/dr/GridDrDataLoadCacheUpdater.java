@@ -30,7 +30,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
 
     /** {@inheritDoc} */
     @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
-        throws GridException {
+        throws IgniteCheckedException {
         String cacheName = cache0.name();
 
         GridKernalContext ctx = ((GridKernal)cache0.gridProjection().ignite()).context();

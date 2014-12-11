@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.query.h2.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
@@ -30,17 +30,17 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param val Value.
      * @param expirationTime Expiration time in millis.
      * @return Row.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * @param key Cache key.
      * @return Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Object readFromSwap(Object key) throws GridException;
+    public Object readFromSwap(Object key) throws IgniteCheckedException;
 
     /**
      * @return Value type.

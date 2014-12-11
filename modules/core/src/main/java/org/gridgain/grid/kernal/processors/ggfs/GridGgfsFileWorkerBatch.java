@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -41,7 +42,7 @@ public class GridGgfsFileWorkerBatch {
     private final OutputStream out;
 
     /** Caught exception. */
-    private volatile GridException err;
+    private volatile IgniteCheckedException err;
 
     /** Last task marker. */
     private boolean lastTask;
@@ -68,12 +69,12 @@ public class GridGgfsFileWorkerBatch {
      */
     boolean write(final byte[] data) {
         return addTask(new GridGgfsFileWorkerTask() {
-            @Override public void execute() throws GridException {
+            @Override public void execute() throws IgniteCheckedException {
                 try {
                     out.write(data);
                 }
                 catch (IOException e) {
-                    throw new GridException("Failed to write data to the file due to secondary file system " +
+                    throw new IgniteCheckedException("Failed to write data to the file due to secondary file system " +
                         "exception: " + path, e);
                 }
             }
@@ -99,7 +100,7 @@ public class GridGgfsFileWorkerBatch {
                     if (lastTask)
                         cancelled = true;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     err = e;
 
                     cancelled = true;
@@ -149,9 +150,9 @@ public class GridGgfsFileWorkerBatch {
     /**
      * Await for that worker batch to complete.
      *
-     * @throws GridException In case any exception has occurred during batch tasks processing.
+     * @throws IgniteCheckedException In case any exception has occurred during batch tasks processing.
      */
-    void await() throws GridException {
+    void await() throws IgniteCheckedException {
         try {
             completeLatch.await();
         }
@@ -161,7 +162,7 @@ public class GridGgfsFileWorkerBatch {
             throw new GridInterruptedException(e);
         }
 
-        GridException err0 = err;
+        IgniteCheckedException err0 = err;
 
         if (err0 != null)
             throw err0;
@@ -170,9 +171,9 @@ public class GridGgfsFileWorkerBatch {
     /**
      * Await for that worker batch to complete in case it was marked as finished.
      *
-     * @throws GridException In case any exception has occurred during batch tasks processing.
+     * @throws IgniteCheckedException In case any exception has occurred during batch tasks processing.
      */
-    void awaitIfFinished() throws GridException {
+    void awaitIfFinished() throws IgniteCheckedException {
         if (finishGuard.get())
             await();
     }

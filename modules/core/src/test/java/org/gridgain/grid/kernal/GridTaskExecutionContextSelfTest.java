@@ -85,7 +85,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      */
     public void testWithNoFailoverClosure() throws Exception {
         final Runnable r = new GridAbsClosureX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 CNT.incrementAndGet();
 
                 throw new ComputeExecutionRejectedException("Expected error.");
@@ -147,12 +147,12 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
             return F.asSet(new ComputeJobAdapter() {
                 @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
 
-                @Override public Object execute() throws GridException {
+                @Override public Object execute() throws IgniteCheckedException {
                     CNT.incrementAndGet();
 
                     if (fail)
@@ -164,7 +164,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return F.first(results).getData();
         }
     }

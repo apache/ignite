@@ -95,7 +95,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         super.beforeTestsStarted();
 
         if (GRID_CNT < 2)
-            throw new GridException("GRID_CNT must not be less than 2.");
+            throw new IgniteCheckedException("GRID_CNT must not be less than 2.");
 
         startGridsMultiThreaded(GRID_CNT);
     }

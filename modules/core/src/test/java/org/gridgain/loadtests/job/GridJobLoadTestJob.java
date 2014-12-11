@@ -74,7 +74,7 @@ public class GridJobLoadTestJob implements ComputeJob {
     }
 
     /**{@inheritDoc}*/
-    @Override public Integer execute() throws GridException {
+    @Override public Integer execute() throws IgniteCheckedException {
         try {
             if (log.isInfoEnabled())
                 log.info("Job started " + getJobInfo());
@@ -115,7 +115,7 @@ public class GridJobLoadTestJob implements ComputeJob {
                 try {
                     taskSes.setAttribute(String.valueOf(i), i);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Set attribute failed.", e);
                 }
 

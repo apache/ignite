@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -301,9 +301,9 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * and {@link GridCacheMode#REPLICATED REPLICATED} caches
      * query will be always executed locally.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void execute() throws GridException;
+    public void execute() throws IgniteCheckedException;
 
     /**
      * Starts continuous query execution on provided set of nodes.
@@ -316,9 +316,9 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * query will be always executed locally.
      *
      * @param prj Grid projection.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void execute(@Nullable ClusterGroup prj) throws GridException;
+    public void execute(@Nullable ClusterGroup prj) throws IgniteCheckedException;
 
     /**
      * Stops continuous query execution.
@@ -328,7 +328,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * If you need to repeat execution, use {@link GridCacheQueries#createContinuousQuery()}
      * method to create new query.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 }

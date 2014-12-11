@@ -11,14 +11,16 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.JobID;
+import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapred.TaskID;
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.JobSubmissionFiles;
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.TaskType;
-import org.gridgain.grid.*;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
@@ -90,7 +92,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
      * @param jobConfDataInput DataInput for read JobConf.
      */
     public GridHadoopV2TaskContext(GridHadoopTaskInfo taskInfo, GridHadoopJob job, GridHadoopJobId jobId,
-        @Nullable UUID locNodeId, DataInput jobConfDataInput) throws GridException {
+        @Nullable UUID locNodeId, DataInput jobConfDataInput) throws IgniteCheckedException {
         super(taskInfo, job);
         this.locNodeId = locNodeId;
 
@@ -104,7 +106,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
                 jobConf.readFields(jobConfDataInput);
             }
             catch (IOException e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
 
             // For map-reduce jobs prefer local writes.
@@ -165,7 +167,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void run() throws GridException {
+    @Override public void run() throws IgniteCheckedException {
         try {
             Thread.currentThread().setContextClassLoader(jobConf().getClassLoader());
 
@@ -204,7 +206,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareTaskEnvironment() throws GridException {
+    @Override public void prepareTaskEnvironment() throws IgniteCheckedException {
         File locDir;
 
         switch(taskInfo().type()) {
@@ -240,7 +242,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupTaskEnvironment() throws GridException {
+    @Override public void cleanupTaskEnvironment() throws IgniteCheckedException {
         job().cleanupTaskEnvironment(taskInfo());
     }
 
@@ -298,7 +300,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopPartitioner partitioner() throws GridException {
+    @Override public GridHadoopPartitioner partitioner() throws IgniteCheckedException {
         Class<?> partClsOld = jobConf().getClass("mapred.partitioner.class", null);
 
         if (partClsOld != null)
@@ -308,7 +310,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
             return new GridHadoopV2Partitioner(jobCtx.getPartitionerClass(), jobConf());
         }
         catch (ClassNotFoundException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -320,7 +322,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
      * @return Appropriate serializer.
      */
     @SuppressWarnings("unchecked")
-    private GridHadoopSerialization getSerialization(Class<?> cls, Configuration jobConf) throws GridException {
+    private GridHadoopSerialization getSerialization(Class<?> cls, Configuration jobConf) throws IgniteCheckedException {
         A.notNull(cls, "cls");
 
         SerializationFactory factory = new SerializationFactory(jobConf);
@@ -328,7 +330,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
         Serialization<?> serialization = factory.getSerialization(cls);
 
         if (serialization == null)
-            throw new GridException("Failed to find serialization for: " + cls.getName());
+            throw new IgniteCheckedException("Failed to find serialization for: " + cls.getName());
 
         if (serialization.getClass() == WritableSerialization.class)
             return new GridHadoopWritableSerialization((Class<? extends Writable>)cls);
@@ -337,12 +339,12 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopSerialization keySerialization() throws GridException {
+    @Override public GridHadoopSerialization keySerialization() throws IgniteCheckedException {
         return getSerialization(jobCtx.getMapOutputKeyClass(), jobConf());
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopSerialization valueSerialization() throws GridException {
+    @Override public GridHadoopSerialization valueSerialization() throws IgniteCheckedException {
         return getSerialization(jobCtx.getMapOutputValueClass(), jobConf());
     }
 
@@ -380,10 +382,10 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /**
      * @param split Split.
      * @return Native Hadoop split.
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    public Object getNativeSplit(GridHadoopInputSplit split) throws GridException {
+    public Object getNativeSplit(GridHadoopInputSplit split) throws IgniteCheckedException {
         if (split instanceof GridHadoopExternalSplit)
             return readExternalSplit((GridHadoopExternalSplit)split);
 
@@ -396,10 +398,10 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
     /**
      * @param split External split.
      * @return Native input split.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private Object readExternalSplit(GridHadoopExternalSplit split) throws GridException {
+    private Object readExternalSplit(GridHadoopExternalSplit split) throws IgniteCheckedException {
         Path jobDir = new Path(jobConf().get(MRJobConfig.MAPREDUCE_JOB_DIR));
 
         try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf());
@@ -428,7 +430,7 @@ public class GridHadoopV2TaskContext extends GridHadoopTaskContext {
             return res;
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 }

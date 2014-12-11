@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
 
 import java.util.*;
@@ -27,11 +27,11 @@ public interface GridIterator<T> extends Iterable<T>, GridSerializableIterator<T
      * just returning {@code false} out of {@link #hasNext()} method.
      *
      * @return {@code True} if iterator contains more elements.
-     * @throws GridException If no more elements can be returned due
+     * @throws IgniteCheckedException If no more elements can be returned due
      *      to some failure, like a network error for example.
      * @see Iterator#hasNext()
      */
-    public boolean hasNextX() throws GridException;
+    public boolean hasNextX() throws IgniteCheckedException;
 
     /**
      * This method is the same as {@link #next()}, but allows for failure
@@ -43,17 +43,17 @@ public interface GridIterator<T> extends Iterable<T>, GridSerializableIterator<T
      * @return {@code True} if iterator contains more elements.
      * @throws NoSuchElementException If there are no more elements to
      *      return.
-     * @throws GridException If no more elements can be returned due
+     * @throws IgniteCheckedException If no more elements can be returned due
      *      to some failure, like a network error for example.
      * @see Iterator#next()
      */
-    public T nextX() throws GridException;
+    public T nextX() throws IgniteCheckedException;
 
     /**
      * This method is the same as {@link #remove()}, but allows for failure
      * with exception.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void removeX() throws GridException;
+    public void removeX() throws IgniteCheckedException;
 }

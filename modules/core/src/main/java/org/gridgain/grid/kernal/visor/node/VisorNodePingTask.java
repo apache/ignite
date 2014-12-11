@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.node;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.lang.*;
@@ -34,7 +34,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
         try {
             return super.reduce0(results);
         }
@@ -59,7 +59,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
         }
 
         /** {@inheritDoc} */
-        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) throws GridException {
+        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) throws IgniteCheckedException {
             long start = System.currentTimeMillis();
 
             return new GridTuple3<>(g.pingNode(nodeToPing), start, System.currentTimeMillis());

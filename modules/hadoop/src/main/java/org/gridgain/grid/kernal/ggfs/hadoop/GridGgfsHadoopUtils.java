@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -84,7 +85,7 @@ public class GridGgfsHadoopUtils {
      * @param e Exception to cast.
      * @return Casted exception.
      */
-    public static IOException cast(GridException e) {
+    public static IOException cast(IgniteCheckedException e) {
         return cast(e, null);
     }
 
@@ -96,7 +97,7 @@ public class GridGgfsHadoopUtils {
      * @return Casted exception.
      */
     @SuppressWarnings("unchecked")
-    public static IOException cast(GridException e, @Nullable String path) {
+    public static IOException cast(IgniteCheckedException e, @Nullable String path) {
         assert e != null;
 
         // First check for any nested IOException; if exists - re-throw it.

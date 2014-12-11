@@ -223,9 +223,9 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
     /**
      * @param key Removed key.
      * @param ver Removed version.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onDeferredDelete(K key, GridCacheVersion ver) throws GridException {
+    public void onDeferredDelete(K key, GridCacheVersion ver) throws IgniteCheckedException {
         try {
             T2<K, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
 
@@ -492,7 +492,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear swap for evicted partition: " + this, e);
         }
     }
@@ -539,7 +539,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
                     }
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
         }

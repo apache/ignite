@@ -9,8 +9,8 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -153,7 +153,7 @@ import java.util.*;
  *     GridComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
- *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
+ *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
  *         Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
  *
  *         // In more complex cases, you can actually do
@@ -167,7 +167,7 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
@@ -192,7 +192,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
- *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {
@@ -205,7 +205,7 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
@@ -239,10 +239,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      over time should result into all nodes being used equally.
      * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
      *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
-     * @throws GridException If mapping could not complete successfully. This exception will be
+     * @throws IgniteCheckedException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws GridException;
+    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteCheckedException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is
@@ -256,10 +256,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
-     * @throws GridException If handling a job result caused an error. This exception will
+     * @throws IgniteCheckedException If handling a job result caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException;
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -272,8 +272,8 @@ public interface ComputeTask<T, R> extends Serializable {
      * @param results Received results of broadcasted remote executions. Note that if task class has
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Grid job result constructed from results of remote executions.
-     * @throws GridException If reduction or results caused an error. This exception will
+     * @throws IgniteCheckedException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<ComputeJobResult> results) throws GridException;
+    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException;
 }

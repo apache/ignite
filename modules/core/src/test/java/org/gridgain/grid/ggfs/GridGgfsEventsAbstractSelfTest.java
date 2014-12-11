@@ -79,7 +79,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return GGFS configuration for this test.
      */
-    protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+    protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -510,7 +510,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         try {
             ggfs.delete(dir.parent(), false); // Will generate no events.
         }
-        catch (GridException ignore) {
+        catch (IgniteCheckedException ignore) {
             // No-op.
         }
 

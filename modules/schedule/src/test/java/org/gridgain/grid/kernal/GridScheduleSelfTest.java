@@ -225,18 +225,18 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             try {
                 fut.get();
 
-                fail("GridException must have been thrown");
+                fail("IgniteCheckedException must have been thrown");
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Caught expected exception: " + e);
             }
 
             try {
                 fut.get(500, SECONDS);
 
-                fail("GridException must have been thrown");
+                fail("IgniteCheckedException must have been thrown");
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -262,9 +262,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid delay.
             grid(0).scheduler().scheduleLocal(run, "{sdf, *} * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -272,9 +272,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid delay.
             grid(0).scheduler().scheduleLocal(run, "{**, *} * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -282,9 +282,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid number of executions.
             grid(0).scheduler().scheduleLocal(run, "{1, ghd} * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -292,9 +292,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Number of executions in pattern must be greater than zero or equal to "*".
             grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -302,9 +302,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid cron expression.
             grid(0).scheduler().scheduleLocal(run, "{2, 6} * * * * * * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -312,9 +312,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid both delay and number of calls.
             grid(0).scheduler().scheduleLocal(run, "{-2, -6} * * * * *").get();
 
-            fail("GridException must have been thrown");
+            fail("IgniteCheckedException must have been thrown");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

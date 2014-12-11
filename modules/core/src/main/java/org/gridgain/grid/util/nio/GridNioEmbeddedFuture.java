@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -50,7 +50,7 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
                 try {
                     onDone(t.get());
                 }
-                catch (IOException | GridException e) {
+                catch (IOException | IgniteCheckedException e) {
                     onDone(e);
                 }
             }

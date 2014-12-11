@@ -163,7 +163,7 @@ public class GridNioServer<T> {
      * @param metricsLsnr Metrics listener.
      * @param msgWriter Message writer.
      * @param filters Filters for this server.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridNioServer(
         InetAddress addr,
@@ -183,7 +183,7 @@ public class GridNioServer<T> {
         GridNioMetricsListener metricsLsnr,
         GridNioMessageWriter msgWriter,
         GridNioFilter... filters
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
         A.notNull(lsnr, "lsnr");
         A.notNull(log, "log");
@@ -460,9 +460,9 @@ public class GridNioServer<T> {
      *
      * @param addr Local address to listen on.
      * @return Created selector.
-     * @throws GridException If selector could not be created or port is already in use.
+     * @throws IgniteCheckedException If selector could not be created or port is already in use.
      */
-    private Selector createSelector(@Nullable SocketAddress addr) throws GridException {
+    private Selector createSelector(@Nullable SocketAddress addr) throws IgniteCheckedException {
         Selector selector = null;
 
         ServerSocketChannel srvrCh = null;
@@ -494,7 +494,7 @@ public class GridNioServer<T> {
             U.close(srvrCh, log);
             U.close(selector, log);
 
-            throw new GridException("Failed to initialize NIO selector.", e);
+            throw new IgniteCheckedException("Failed to initialize NIO selector.", e);
         }
     }
 
@@ -527,10 +527,10 @@ public class GridNioServer<T> {
          * @param gridName Grid name.
          * @param name Worker name.
          * @param log Logger.
-         * @throws GridException If selector could not be created.
+         * @throws IgniteCheckedException If selector could not be created.
          */
         protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
-            throws GridException {
+            throws IgniteCheckedException {
             super(idx, gridName, name, log);
 
             readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
@@ -590,7 +590,7 @@ public class GridNioServer<T> {
                     readBuf.clear();
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 close(ses, e);
             }
         }
@@ -672,10 +672,10 @@ public class GridNioServer<T> {
          * @param gridName Grid name.
          * @param name Worker name.
          * @param log Logger.
-         * @throws GridException If selector could not be created.
+         * @throws IgniteCheckedException If selector could not be created.
          */
         protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
-            throws GridException {
+            throws IgniteCheckedException {
             super(idx, gridName, name, log);
         }
 
@@ -728,7 +728,7 @@ public class GridNioServer<T> {
                 else
                     readBuf.clear();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 close(ses, e);
             }
         }
@@ -1035,10 +1035,10 @@ public class GridNioServer<T> {
          * @param gridName Grid name.
          * @param name Worker name.
          * @param log Logger.
-         * @throws GridException If selector could not be created.
+         * @throws IgniteCheckedException If selector could not be created.
          */
         protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
-            throws GridException {
+            throws IgniteCheckedException {
             super(gridName, name, log);
 
             selector = createSelector(null);
@@ -1057,7 +1057,7 @@ public class GridNioServer<T> {
 
                         bodyInternal();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
                             U.error(log, "Failed to read data from remote connection (will wait for " +
                                 ERR_WAIT_TIME + "ms).", e);
@@ -1088,10 +1088,10 @@ public class GridNioServer<T> {
         /**
          * Processes read and write events and registration requests.
          *
-         * @throws GridException If IOException occurred or thread was unable to add worker to workers pool.
+         * @throws IgniteCheckedException If IOException occurred or thread was unable to add worker to workers pool.
          */
         @SuppressWarnings("unchecked")
-        private void bodyInternal() throws GridException {
+        private void bodyInternal() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen()) {
                     NioOperationFuture req;
@@ -1179,10 +1179,10 @@ public class GridNioServer<T> {
                     log.debug("Closing selector due to thread interruption: " + e.getMessage());
             }
             catch (ClosedSelectorException e) {
-                throw new GridException("Selector got closed while active.", e);
+                throw new IgniteCheckedException("Selector got closed while active.", e);
             }
             catch (IOException e) {
-                throw new GridException("Failed to select events on selector.", e);
+                throw new IgniteCheckedException("Failed to select events on selector.", e);
             }
             finally {
                 if (selector.isOpen()) {
@@ -1279,7 +1279,7 @@ public class GridNioServer<T> {
                         ses.bytesReceived(0);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     close(ses,  e);
                 }
             }
@@ -1335,7 +1335,7 @@ public class GridNioServer<T> {
 
                     req.onDone(ses);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     close(ses, e);
 
                     req.onDone(e);
@@ -1357,7 +1357,7 @@ public class GridNioServer<T> {
          * @param e Exception to be passed to the listener, if any.
          * @return {@code True} if this call closed the ses.
          */
-        protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final GridException e) {
+        protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
@@ -1409,7 +1409,7 @@ public class GridNioServer<T> {
                 try {
                     filterChain.onSessionClosed(ses);
                 }
-                catch (GridException e1) {
+                catch (IgniteCheckedException e1) {
                     filterChain.onExceptionCaught(ses, e1);
                 }
 
@@ -1492,7 +1492,7 @@ public class GridNioServer<T> {
 
                         accept();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
                             U.error(log, "Failed to accept remote connection (will wait for " + ERR_WAIT_TIME + "ms).",
                                 e);
@@ -1512,9 +1512,9 @@ public class GridNioServer<T> {
         /**
          * Accepts connections and schedules them for processing by one of read workers.
          *
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private void accept() throws GridException {
+        private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
                     // Wake up every 2 seconds to check if closed.
@@ -1530,10 +1530,10 @@ public class GridNioServer<T> {
                         ", err=" + e.getMessage() + ']');
             }
             catch (ClosedSelectorException e) {
-                throw new GridException("Selector got closed while active: " + this, e);
+                throw new IgniteCheckedException("Selector got closed while active: " + this, e);
             }
             catch (IOException e) {
-                throw new GridException("Failed to accept connection: " + this, e);
+                throw new IgniteCheckedException("Failed to accept connection: " + this, e);
             }
             finally {
                 closeSelector();
@@ -1816,7 +1816,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+        @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
             if (directMode && sslFilter != null)
                 ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedDeque8<>());
 
@@ -1824,12 +1824,12 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+        @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionClosed(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 
@@ -1858,7 +1858,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
             proceedMessageReceived(ses, msg);
         }
 
@@ -1868,22 +1868,22 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionIdleTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
             proceedSessionWriteTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
             return pauseResumeReads(ses, NioOperation.PAUSE_READ);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             return pauseResumeReads(ses, NioOperation.RESUME_READ);
         }
     }
@@ -1957,9 +1957,9 @@ public class GridNioServer<T> {
          * Finishes building the instance.
          *
          * @return Final instance of {@link GridNioServer}.
-         * @throws GridException If NIO client worker creation failed or address is already in use.
+         * @throws IgniteCheckedException If NIO client worker creation failed or address is already in use.
          */
-        public GridNioServer<T> build() throws GridException {
+        public GridNioServer<T> build() throws IgniteCheckedException {
             GridNioServer<T> ret = new GridNioServer<>(
                 addr,
                 port,

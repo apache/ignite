@@ -333,9 +333,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testAtomicOps() throws GridException {
+    public void testAtomicOps() throws IgniteCheckedException {
         GridCacheProjectionEx<String, Integer> c = (GridCacheProjectionEx<String, Integer>)cache();
 
         final int cnt = 10;
@@ -861,7 +861,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> c) throws GridException {
+                public void applyx(GridCacheProjection<String, Integer> c) throws IgniteCheckedException {
                     c.transformAll(F.asSet("key1", "key2", "key3"), INCR_CLOS);
                 }
             });
@@ -3243,7 +3243,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache().isLockedByThread("key");
 
             assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
-                @Override public Boolean call() throws GridException {
+                @Override public Boolean call() throws IgniteCheckedException {
                     return cache().lock("key", 100);
                 }
             });
@@ -3271,7 +3271,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e.isLocked();
 
             assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
-                @Override public Boolean call() throws GridException {
+                @Override public Boolean call() throws IgniteCheckedException {
                     return e.lock(100);
                 }
             });
@@ -3357,7 +3357,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             ClusterNode node = F.first(cache().affinity().mapKeyToPrimaryAndBackups("key"));
 
             if (node == null)
-                throw new GridException("Failed to map key.");
+                throw new IgniteCheckedException("Failed to map key.");
 
             GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
@@ -4282,7 +4282,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
-            @Override public boolean applyx() throws GridException {
+            @Override public boolean applyx() throws IgniteCheckedException {
                 try {
                     if (c.get(key) != null)
                         return false;
@@ -4639,7 +4639,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws GridException {
+                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.putx("key" + i, i));
                 }
@@ -4647,7 +4647,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws GridException {
+                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertEquals(new Integer(i), cache.get("key" + i));
                 }
@@ -4655,7 +4655,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws GridException {
+                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.removex("key" + i));
                 }
@@ -5021,7 +5021,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         ClusterNode node = cache().affinity().mapKeyToNode(key);
 
         if (node == null)
-            throw new GridException("Failed to find primary node.");
+            throw new IgniteCheckedException("Failed to find primary node.");
 
         UUID nodeId = node.id();
 
@@ -5044,10 +5044,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<String> primaryKeysForCache(GridCacheProjection<String, Integer> cache, int cnt)
-        throws GridException {
+        throws IgniteCheckedException {
         return primaryKeysForCache(cache, cnt, 1);
     }
 
@@ -5056,10 +5056,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected List<String> primaryKeysForCache(GridCacheProjection<String, Integer> cache, int cnt, int startFrom)
-        throws GridException {
+        throws IgniteCheckedException {
         List<String> found = new ArrayList<>(cnt);
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
@@ -5073,6 +5073,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }
 
-        throw new GridException("Unable to find " + cnt + " keys as primary for cache.");
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
     }
 }

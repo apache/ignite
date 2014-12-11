@@ -94,7 +94,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {
-            @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws GridException {
+            @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws IgniteCheckedException {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
                 attrs.remove(createSpiAttributeName(ATTR_PORT));
 

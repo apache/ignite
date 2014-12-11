@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.communication;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -117,7 +118,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                     try {
                         rcv.send(sndNode, topic, (GridTcpCommunicationMessageAdapter)msg, PUBLIC_POOL);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
                     }
                 }
@@ -162,7 +163,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                         snd.send(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     X.println("Message send failed", e);
                 }
                 catch (InterruptedException ignored) {
@@ -211,7 +212,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                     try {
                         rcv.send(sndNode, topic, (GridTcpCommunicationMessageAdapter)msg, PUBLIC_POOL);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
                     }
                 }
@@ -260,7 +261,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                         msgCntr.increment();
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     X.println("Message send failed", e);
                 }
                 catch (InterruptedException ignored) {
@@ -311,7 +312,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                     try {
                         rcv.send(sndNode, topic, (GridTcpCommunicationMessageAdapter)msg, PUBLIC_POOL);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
                     }
                 }
@@ -381,7 +382,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
                         }
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     X.println("Message send failed", e);
                 }
 

@@ -254,7 +254,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                         cctx.io().send(n, req);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyException)
                             fut.onResult((ClusterTopologyException)e);
@@ -508,7 +508,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                                     false, null, null, null);
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         onDone(e);
 
                         return;

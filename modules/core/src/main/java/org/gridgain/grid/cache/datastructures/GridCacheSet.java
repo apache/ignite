@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * Set implementation based on on In-Memory Data Grid.
  * <h1 class="header">Overview</h1>
  * Cache set implements {@link Set} interface and provides all methods from collections.
- * Note that all {@link Collection} methods in the set may throw {@link GridRuntimeException} in case of failure
+ * Note that all {@link Collection} methods in the set may throw {@link IgniteException} in case of failure
  * or if set was removed.
  * <h1 class="header">Collocated vs Non-collocated</h1>
  * Set items can be placed on one node or distributed throughout grid nodes
@@ -40,9 +40,9 @@ public interface GridCacheSet<T> extends Set<T> {
      * Returns {@code false} if this set can be kept on the many nodes.
      *
      * @return {@code True} if this set is in {@code collocated} mode {@code false} otherwise.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean collocated() throws GridException;
+    public boolean collocated() throws IgniteCheckedException;
 
     /**
      * Gets status of set.

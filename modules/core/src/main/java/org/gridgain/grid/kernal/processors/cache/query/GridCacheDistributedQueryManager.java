@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -26,8 +27,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 
 /**
@@ -68,7 +69,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     };
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
         assert cctx.config().getCacheMode() != LOCAL;
@@ -148,7 +149,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     GridCacheQueryResponse res = new GridCacheQueryResponse(
                         cctx.cacheId(),
                         req.id(),
-                        new GridException("Received request for incorrect cache [expected=" + cctx.name() +
+                        new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
                             ", actual=" + req.cacheName()));
 
                     sendQueryResponse(sndId, res, 0);
@@ -251,7 +252,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         int attempt = 1;
 
-        GridException err = null;
+        IgniteCheckedException err = null;
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
@@ -276,7 +277,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 return false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (err == null)
                     err = e;
 
@@ -372,7 +373,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             try {
                 fut.cancel();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cancel running query future: " + fut, e);
             }
 
@@ -388,7 +389,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             try {
                 fut.get();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Received query error while waiting for query to finish [queryFuture= " + fut +
                         ", error= " + e + ']');
@@ -485,7 +486,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             fut.execute();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -544,7 +545,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             sendRequest(fut, req, nodes);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -576,7 +577,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             sendRequest(fut, req, nodes);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
     }
@@ -595,7 +596,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             fut.execute();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -653,7 +654,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             sendRequest(fut, req, nodes);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -666,7 +667,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param fut Distributed future.
      * @param req Request.
      * @param nodes Nodes.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @deprecated Need to remove nodes filtration after breaking compatibility.
      */
     @Deprecated
@@ -675,7 +676,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
         final GridCacheQueryRequest<K, V> req,
         Collection<ClusterNode> nodes
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert fut != null;
         assert req != null;
         assert nodes != null;

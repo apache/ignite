@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.dataload;
 
+import org.apache.ignite.*;
 import org.apache.ignite.dataload.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -87,10 +87,10 @@ public class GridDataLoadCacheUpdaters {
      * @param cache Cache.
      * @param rmvCol Keys to remove.
      * @param putMap Entries to put.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected static <K, V> void updateAll(GridCacheProjection<K,V> cache, @Nullable Collection<K> rmvCol,
-        Map<K, V> putMap) throws GridException {
+        Map<K, V> putMap) throws IgniteCheckedException {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
@@ -110,7 +110,7 @@ public class GridDataLoadCacheUpdaters {
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws GridException {
+            throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -138,7 +138,7 @@ public class GridDataLoadCacheUpdaters {
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws GridException {
+            throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -179,7 +179,7 @@ public class GridDataLoadCacheUpdaters {
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws GridException {
+            throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -220,7 +220,7 @@ public class GridDataLoadCacheUpdaters {
 
         /** {@inheritDoc} */
         @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws GridException {
+            throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
 

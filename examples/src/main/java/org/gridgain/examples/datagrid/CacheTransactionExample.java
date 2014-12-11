@@ -36,9 +36,9 @@ public class CacheTransactionExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
@@ -75,9 +75,9 @@ public class CacheTransactionExample {
      *
      * @param acctId Account ID.
      * @param amount Amount to deposit.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void deposit(int acctId, double amount) throws GridException {
+    private static void deposit(int acctId, double amount) throws IgniteCheckedException {
         // Clone every object we get from cache, so we can freely update it.
         GridCacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 

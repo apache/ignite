@@ -353,7 +353,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 try {
                     cctx.io().send(n, req);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyException)
                         fut.onResult((ClusterTopologyException)e);
@@ -455,7 +455,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onDone(e);
 
                 break;
@@ -508,7 +508,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 return map;
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Fail.
             onDone(e);
         }
@@ -636,7 +636,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 if (rmtTopVer <= topVer) {
                     // Fail the whole get future.
-                    onDone(new GridException("Failed to process invalid partitions response (remote node reported " +
+                    onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                         "invalid partitions but remote topology version does not differ from local) " +
                         "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", invalidParts=" + invalidParts +
                         ", nodeId=" + node.id() + ']'));
@@ -652,7 +652,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 topFut.listenAsync(new CIX1<IgniteFuture<Long>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(IgniteFuture<Long> fut) throws GridException {
+                    @Override public void applyx(IgniteFuture<Long> fut) throws IgniteCheckedException {
                         long topVer = fut.get();
 
                         // This will append new futures to compound list.

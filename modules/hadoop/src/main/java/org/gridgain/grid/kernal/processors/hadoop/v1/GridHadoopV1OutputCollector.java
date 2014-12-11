@@ -13,6 +13,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.OutputFormat;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
@@ -68,7 +69,7 @@ public class GridHadoopV1OutputCollector implements OutputCollector {
             try {
                 taskCtx.output().write(key, val);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException(e);
             }
         }

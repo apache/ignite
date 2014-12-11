@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -273,7 +273,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                 return true;
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to commit remote transaction: " + this, e);
         }
 
@@ -413,9 +413,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     /**
      * Prepare phase.
      *
-     * @throws GridException If prepare failed.
+     * @throws IgniteCheckedException If prepare failed.
      */
-    @Override public void prepare() throws GridException {
+    @Override public void prepare() throws IgniteCheckedException {
         // If another thread is doing prepare or rollback.
         if (!state(PREPARING)) {
             // In optimistic mode prepare may be called multiple times.
@@ -433,7 +433,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
             if (pessimistic() || isSystemInvalidate())
                 state(PREPARED);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             throw e;
@@ -441,10 +441,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /**
-     * @throws GridException If commit failed.
+     * @throws IgniteCheckedException If commit failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void commitIfLocked() throws GridException {
+    private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
             for (GridCacheTxEntry<K, V> txEntry : writeMap.values()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
@@ -479,7 +479,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
             // Only one thread gets to commit.
             if (commitAllowed.compareAndSet(false, true)) {
-                GridException err = null;
+                IgniteCheckedException err = null;
 
                 if (!F.isEmpty(writeMap)) {
                     // Register this transaction as completed prior to write-phase to
@@ -669,8 +669,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
-                            err = ex instanceof GridException ? (GridException)ex :
-                                new GridException("Commit produced a runtime exception: " + this, ex);
+                            err = ex instanceof IgniteCheckedException ? (IgniteCheckedException)ex :
+                                new IgniteCheckedException("Commit produced a runtime exception: " + this, ex);
                         }
                     }
                 }
@@ -689,7 +689,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws GridException {
+    @Override public void commit() throws IgniteCheckedException {
         if (optimistic())
             state(PREPARED);
 
@@ -706,7 +706,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
             setRollbackOnly();
 
             if (!isSystemInvalidate())
-                throw new GridException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
+                throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
 
             rollback();
         }
@@ -717,9 +717,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     /**
      * Forces commit for this tx.
      *
-     * @throws GridException If commit failed.
+     * @throws IgniteCheckedException If commit failed.
      */
-    public void forceCommit() throws GridException {
+    public void forceCommit() throws IgniteCheckedException {
         commitIfLocked();
     }
 
@@ -730,7 +730,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
             return new GridFinishedFutureEx<GridCacheTx>(this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFutureEx<>(e);
         }
     }

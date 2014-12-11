@@ -83,7 +83,7 @@ import java.lang.annotation.*;
  *        }));
  *    }
  *
- *    public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *    public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *        return results.size() - 1 + F.sum(F.&lt;Integer&gt;jobResults(results));
  *    }
  * }

@@ -35,13 +35,13 @@ import org.jetbrains.annotations.*;
  *     private int multiplier = 3;
  *
  *     &#64;Override
- *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, final String arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, final String arg) throws IgniteCheckedException {
  *         List&lt;GridComputeJobAdapter&lt;String&gt;&gt; jobs = new ArrayList&lt;GridComputeJobAdapter&lt;String&gt;&gt;(gridSize);
  *
  *         for (int i = 0; i < gridSize; i++) {
  *             jobs.add(new GridComputeJobAdapter() {
  *                 // Job execution logic.
- *                 public Object execute() throws GridException {
+ *                 public Object execute() throws IgniteCheckedException {
  *                     return multiplier * arg.length();
  *                 }
  *             });
@@ -52,7 +52,7 @@ import org.jetbrains.annotations.*;
  *
  *     // Aggregate multiple job results into
  *     // one task result.
- *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         int sum = 0;
  *
  *         // For the sake of this example, let's sum all results.

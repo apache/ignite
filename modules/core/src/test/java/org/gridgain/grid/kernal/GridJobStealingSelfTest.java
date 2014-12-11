@@ -71,9 +71,9 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * Test 2 jobs on 1 node.
      *
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testTwoJobs() throws GridException {
+    public void testTwoJobs() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
@@ -85,10 +85,10 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * Test 2 jobs on 1 node with null predicate.
      *
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
-    public void testTwoJobsNullPredicate() throws GridException {
+    public void testTwoJobsNullPredicate() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), new JobStealingSingleNodeTask(2), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
@@ -100,10 +100,10 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * Test 2 jobs on 1 node with null predicate using string task name.
      *
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     @SuppressWarnings("NullArgumentToVariableArgMethod")
-    public void testTwoJobsTaskNameNullPredicate() throws GridException {
+    public void testTwoJobsTaskNameNullPredicate() throws IgniteCheckedException {
         executeAsync(ignite1.compute(), JobStealingSingleNodeTask.class.getName(), null).get(TASK_EXEC_TIMEOUT_MS);
 
         // Verify that 1 job was stolen by second node.
@@ -115,10 +115,10 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * Test 2 jobs on 1 node when one of the predicates is null.
      *
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     @SuppressWarnings("unchecked")
-    public void testTwoJobsPartiallyNullPredicate() throws GridException {
+    public void testTwoJobsPartiallyNullPredicate() throws IgniteCheckedException {
         IgnitePredicate<ClusterNode> topPred =  new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode e) {
                     return ignite2.cluster().localNode().id().equals(e.id()); // Limit projection with only grid2.
@@ -315,7 +315,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws GridException {
+            @Nullable Object arg) throws IgniteCheckedException {
             //assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -335,7 +335,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             for (ComputeJobResult res : results) {
                 log.info("Job result: " + res.getData());
             }
@@ -365,7 +365,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws GridException {
+            @Nullable Object arg) throws IgniteCheckedException {
             assert subgrid.size() > 1 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -398,7 +398,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             if (!jobDistrMap.containsKey(ignite.cluster().localNode().id())) {
@@ -420,7 +420,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             catch (InterruptedException e) {
                 log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
 
-                throw new GridException("Job got interrupted.", e);
+                throw new IgniteCheckedException("Job got interrupted.", e);
             }
             finally {
                 log.info("Job finished on node: " + ignite.cluster().localNode().id());

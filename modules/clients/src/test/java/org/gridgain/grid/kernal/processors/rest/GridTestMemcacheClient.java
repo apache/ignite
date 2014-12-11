@@ -84,9 +84,9 @@ final class GridTestMemcacheClient {
      *
      * @param host Hostname.
      * @param port Port number.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    GridTestMemcacheClient(String host, int port) throws GridException {
+    GridTestMemcacheClient(String host, int port) throws IgniteCheckedException {
         assert host != null;
         assert port > 0;
 
@@ -94,7 +94,7 @@ final class GridTestMemcacheClient {
             sock = new Socket(host, port);
         }
         catch (IOException e) {
-            throw new GridException("Failed to establish connection.", e);
+            throw new IgniteCheckedException("Failed to establish connection.", e);
         }
 
         // Start socket reader thread.
@@ -236,7 +236,7 @@ final class GridTestMemcacheClient {
     }
 
     /** {@inheritDoc} */
-    public void shutdown() throws GridException {
+    public void shutdown() throws IgniteCheckedException {
         try {
             if (rdr != null) {
                 rdr.interrupt();
@@ -247,7 +247,7 @@ final class GridTestMemcacheClient {
             }
         }
         catch (InterruptedException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -260,7 +260,7 @@ final class GridTestMemcacheClient {
      * @param val Value.
      * @param extras Extras.
      * @return Response.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private Response makeRequest(
         Command cmd,
@@ -268,7 +268,7 @@ final class GridTestMemcacheClient {
         @Nullable Object key,
         @Nullable Object val,
         @Nullable Long... extras
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert cmd != null;
 
         int opaque = opaqueCntr.getAndIncrement();
@@ -278,7 +278,7 @@ final class GridTestMemcacheClient {
             sock.getOutputStream().write(createPacket(cmd, cacheName, key, val, opaque, extras));
         }
         catch (IOException e) {
-            throw new GridException("Failed to send packet.", e);
+            throw new IgniteCheckedException("Failed to send packet.", e);
         }
 
         // Wait for response.
@@ -293,7 +293,7 @@ final class GridTestMemcacheClient {
                 // Check opaque value.
                 if (res.getOpaque() == opaque) {
                     if (!res.isSuccess() && res.getObject() != null)
-                        throw new GridException((String)res.getObject());
+                        throw new IgniteCheckedException((String)res.getObject());
                     else
                         return res;
                 }
@@ -302,7 +302,7 @@ final class GridTestMemcacheClient {
                     queue.add(res);
             }
             catch (InterruptedException e) {
-                throw new GridException("Interrupted while waiting for response.", e);
+                throw new IgniteCheckedException("Interrupted while waiting for response.", e);
             }
         }
     }
@@ -316,7 +316,7 @@ final class GridTestMemcacheClient {
      * @param val Value.
      * @param extras Extras.
      * @return Response.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private List<Response> makeMultiRequest(
         Command cmd,
@@ -324,7 +324,7 @@ final class GridTestMemcacheClient {
         @Nullable Object key,
         @Nullable Object val,
         @Nullable Long... extras
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert cmd != null;
 
         int opaque = opaqueCntr.getAndIncrement();
@@ -336,7 +336,7 @@ final class GridTestMemcacheClient {
             sock.getOutputStream().write(createPacket(cmd, cacheName, key, val, opaque, extras));
         }
         catch (IOException e) {
-            throw new GridException("Failed to send packet.", e);
+            throw new IgniteCheckedException("Failed to send packet.", e);
         }
 
         // Wait for response.
@@ -351,7 +351,7 @@ final class GridTestMemcacheClient {
                 // Check opaque value.
                 if (res.getOpaque() == opaque) {
                     if (!res.isSuccess() && res.getObject() != null)
-                        throw new GridException((String)res.getObject());
+                        throw new IgniteCheckedException((String)res.getObject());
                     else {
                         if (res.getObject() == null)
                             return resList;
@@ -364,7 +364,7 @@ final class GridTestMemcacheClient {
                     queue.add(res);
             }
             catch (InterruptedException e) {
-                throw new GridException("Interrupted while waiting for response.", e);
+                throw new IgniteCheckedException("Interrupted while waiting for response.", e);
             }
         }
     }
@@ -378,7 +378,7 @@ final class GridTestMemcacheClient {
      * @param val Value.
      * @param opaque Opaque.
      * @param extras Extras.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @return Packet.
      */
     private byte[] createPacket(
@@ -388,7 +388,7 @@ final class GridTestMemcacheClient {
         @Nullable Object val,
         int opaque,
         @Nullable Long[] extras
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert cmd != null;
         assert opaque >= 0;
 
@@ -447,10 +447,10 @@ final class GridTestMemcacheClient {
      * @param key Key.
      * @param val Value.
      * @return If value was actually put.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cachePut(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -461,10 +461,10 @@ final class GridTestMemcacheClient {
      * @param cacheName Cache name.
      * @param key Key.
      * @return Value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> V cacheGet(@Nullable String cacheName, K key)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         return makeRequest(Command.GET, cacheName, key, null).getObject();
@@ -474,9 +474,9 @@ final class GridTestMemcacheClient {
      * @param cacheName Cache name.
      * @param key Key.
      * @return Whether entry was actually removed.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws GridException {
+    public <K> boolean cacheRemove(@Nullable String cacheName, K key) throws IgniteCheckedException {
         assert key != null;
 
         return makeRequest(Command.REMOVE, cacheName, key, null).isSuccess();
@@ -487,10 +487,10 @@ final class GridTestMemcacheClient {
      * @param key Key.
      * @param val Value.
      * @return Whether entry was added.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cacheAdd(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -502,10 +502,10 @@ final class GridTestMemcacheClient {
      * @param key Key.
      * @param val Value.
      * @return Whether value was actually replaced.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K, V> boolean cacheReplace(@Nullable String cacheName, K key, V val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -514,9 +514,9 @@ final class GridTestMemcacheClient {
 
     /**
      * @param cacheName Cache name.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws GridException {
+    public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws IgniteCheckedException {
         List<Response> raw = makeMultiRequest(Command.CACHE_METRICS, cacheName, null, null);
 
         Map<String, Long> res = new HashMap<>(raw.size());
@@ -533,10 +533,10 @@ final class GridTestMemcacheClient {
      * @param init Initial value (optional).
      * @param incr Amount to add.
      * @return New value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K> long cacheIncrement(@Nullable String cacheName, K key, @Nullable Long init, long incr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         return makeRequest(Command.INCREMENT, cacheName, key, null, incr, init).<Long>getObject();
@@ -548,10 +548,10 @@ final class GridTestMemcacheClient {
      * @param init Initial value (optional).
      * @param decr Amount to subtract.
      * @return New value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K> long cacheDecrement(@Nullable String cacheName, K key, @Nullable Long init, long decr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
 
         return makeRequest(Command.DECREMENT, cacheName, key, null, decr, init).<Long>getObject();
@@ -562,10 +562,10 @@ final class GridTestMemcacheClient {
      * @param key Key.
      * @param val Value to append.
      * @return Whether operation succeeded.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K> boolean cacheAppend(@Nullable String cacheName, K key, String val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -577,10 +577,10 @@ final class GridTestMemcacheClient {
      * @param key Key.
      * @param val Value to prepend.
      * @return Whether operation succeeded.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public <K> boolean cachePrepend(@Nullable String cacheName, K key, String val)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -589,16 +589,16 @@ final class GridTestMemcacheClient {
 
     /**
      * @return Version.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public String version() throws GridException {
+    public String version() throws IgniteCheckedException {
         return makeRequest(Command.VERSION, null, null, null).getObject();
     }
 
     /**
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void noop() throws GridException {
+    public void noop() throws IgniteCheckedException {
         Response res = makeRequest(Command.NOOP, null, null, null);
 
         assert res != null;
@@ -607,9 +607,9 @@ final class GridTestMemcacheClient {
     }
 
     /**
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void quit() throws GridException {
+    public void quit() throws IgniteCheckedException {
         makeRequest(Command.QUIT, null, null, null);
 
         assert sock.isClosed();
@@ -620,9 +620,9 @@ final class GridTestMemcacheClient {
      *
      * @param obj Object.
      * @return Encoded data.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public Data encode(@Nullable Object obj) throws GridException {
+    public Data encode(@Nullable Object obj) throws IgniteCheckedException {
         if (obj == null)
             return new Data(null, (short)0);
 
@@ -684,9 +684,9 @@ final class GridTestMemcacheClient {
      * @param bytes Byte array to decode.
      * @param flags Flags.
      * @return Decoded value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public Object decode(byte[] bytes, short flags) throws GridException {
+    public Object decode(byte[] bytes, short flags) throws IgniteCheckedException {
         assert bytes != null;
         assert flags >= 0;
 

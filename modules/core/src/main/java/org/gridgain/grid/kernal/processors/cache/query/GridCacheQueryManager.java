@@ -77,7 +77,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         idxProc = cctx.kernalContext().query();
         space = cctx.name();
         maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
@@ -93,7 +93,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         final Object recipient = recipient(nodeId, entry.getKey());
 
                         entry.getValue().listenAsync(new CIX1<IgniteFuture<QueryResult<K, V>>>() {
-                            @Override public void applyx(IgniteFuture<QueryResult<K, V>> f) throws GridException {
+                            @Override public void applyx(IgniteFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
                         });
@@ -108,7 +108,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         entry.getValue().listenAsync(new CIX1<IgniteFuture<FieldsResult>>() {
                             @Override public void applyx(IgniteFuture<FieldsResult> f)
-                                throws GridException {
+                                throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
                         });
@@ -158,9 +158,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param valType Value type.
      * @return Number of objects or -1 if type was not indexed at all.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long size(Class<?> valType) throws GridException {
+    public long size(Class<?> valType) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to get size (grid is stopping).");
 
@@ -255,9 +255,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param swapSpaceName Swap space name.
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String swapSpaceName, K key) throws GridException {
+    public void onSwap(String swapSpaceName, K key) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -275,9 +275,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param key Key.
      * @param val Value
      * @param valBytes Value bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(K key, V val, byte[] valBytes) throws GridException {
+    public void onUnswap(K key, V val, byte[] valBytes) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -306,11 +306,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param valBytes Value bytes.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void store(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
         GridCacheVersion ver, long expirationTime)
-        throws GridException {
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null || valBytes != null;
 
@@ -336,10 +336,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param key Key.
      * @param keyBytes Byte array with key value.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(K key, @Nullable byte[] keyBytes) throws GridException {
+    public void remove(K key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
         if (!cctx.config().isQueryIndexEnabled() && !(key instanceof GridCacheInternal))
@@ -370,8 +370,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             idxProc.onUndeploy(space, ldr);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             invalidateResultCache();
@@ -434,15 +434,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param taskName Task name.
      * @param recipient ID of the recipient.
      * @return Collection of found keys.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private QueryResult<K, V> executeQuery(GridCacheQueryAdapter<?> qry,
         @Nullable Object[] args, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object recipient)
-        throws GridException {
+        throws IgniteCheckedException {
         if (qry.type() == null) {
             assert !loc;
 
-            throw new GridException("Received next page request after iterator was removed. " +
+            throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                 "Consider increasing maximum number of stored iterators (see " +
                 "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
         }
@@ -544,7 +544,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     assert false : "SQL fields query is incorrectly processed.";
 
                 default:
-                    throw new GridException("Unknown query type: " + qry.type());
+                    throw new IgniteCheckedException("Unknown query type: " + qry.type());
             }
 
             res.onDone(iter);
@@ -570,10 +570,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param taskName Task name.
      * @param recipient ID of the recipient.
      * @return Collection of found keys.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private FieldsResult executeFieldsQuery(GridCacheQueryAdapter<?> qry, @Nullable Object[] args,
-        boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object recipient) throws GridException {
+        boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object recipient) throws IgniteCheckedException {
         assert qry != null;
 
         FieldsResult res;
@@ -584,7 +584,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (qry.clause() == null) {
                 assert !loc;
 
-                throw new GridException("Received next page request after iterator was removed. " +
+                throw new IgniteCheckedException("Received next page request after iterator was removed. " +
                     "Consider increasing maximum number of stored iterators (see " +
                     "GridCacheConfiguration.getMaximumQueryIteratorCount() configuration property).");
             }
@@ -720,11 +720,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param qry Query.
      * @return Full-scan row iterator.
-     * @throws GridException If failed to get iterator.
+     * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
-        throws GridException {
+        throws IgniteCheckedException {
         IgnitePredicate<GridCacheEntry<K, V>> filter = null;
 
         if (qry.projectionFilter() != null) {
@@ -846,10 +846,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param qry Query.
      * @return Swap iterator.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridIterator<IgniteBiTuple<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
-        throws GridException {
+        throws IgniteCheckedException {
         IgnitePredicate<GridCacheEntry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
@@ -952,9 +952,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param o Object to inject resources to.
-     * @throws GridException If failure occurred while injecting resources.
+     * @throws IgniteCheckedException If failure occurred while injecting resources.
      */
-    private void injectResources(@Nullable Object o) throws GridException {
+    private void injectResources(@Nullable Object o) throws IgniteCheckedException {
         if (o != null) {
             GridKernalContext ctx = cctx.kernalContext();
 
@@ -1102,7 +1102,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         Collections.singletonList(rdc.reduce()), true, null);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
                     U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + ']', e);
                 else {
@@ -1378,9 +1378,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param qryInfo Info.
      * @return Iterator.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private QueryResult<K, V> queryResult(GridCacheQueryInfo qryInfo, String taskName) throws GridException {
+    private QueryResult<K, V> queryResult(GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         final UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
@@ -1397,7 +1397,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         try {
                             e.getValue().get().closeIfNotShared(recipient(sndId, e.getKey()));
                         }
-                        catch (GridException ex) {
+                        catch (IgniteCheckedException ex) {
                             U.error(log, "Failed to close query iterator.", ex);
                         }
                     }
@@ -1419,12 +1419,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param futs Futures map.
      * @param qryInfo Info.
      * @return Iterator.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private QueryResult<K, V> queryResult(Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs,
-        GridCacheQueryInfo qryInfo, String taskName) throws GridException {
+        GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert futs != null;
         assert qryInfo != null;
 
@@ -1482,7 +1482,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 try {
                     fut.get().closeIfNotShared(recipient(sndId, reqId));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to close iterator.", e);
                 }
             }
@@ -1503,10 +1503,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param qryInfo Info.
      * @return Iterator.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private FieldsResult fieldsQueryResult(GridCacheQueryInfo qryInfo, String taskName)
-        throws GridException {
+        throws IgniteCheckedException {
         final UUID sndId = qryInfo.senderId();
 
         assert sndId != null;
@@ -1523,7 +1523,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         try {
                             e.getValue().get().closeIfNotShared(recipient(sndId, e.getKey()));
                         }
-                        catch (GridException ex) {
+                        catch (IgniteCheckedException ex) {
                             U.error(log, "Failed to close fields query iterator.", ex);
                         }
                     }
@@ -1549,12 +1549,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param resMap Results map.
      * @param qryInfo Info.
      * @return Fields query result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private FieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<FieldsResult>> resMap,
-        GridCacheQueryInfo qryInfo, String taskName) throws GridException {
+        GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert resMap != null;
         assert qryInfo != null;
 
@@ -1578,7 +1578,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
                     qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 fut.onDone(e);
             }
         }
@@ -1610,7 +1610,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 try {
                     fut.get().closeIfNotShared(recipient(sndId, reqId));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to close iterator.", e);
                 }
             }
@@ -1674,9 +1674,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Gets SQL metadata.
      *
      * @return SQL metadata.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
@@ -2224,7 +2224,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @return Metadata.
          */
-        public List<GridQueryFieldMetadata> metaData() throws GridException {
+        public List<GridQueryFieldMetadata> metaData() throws IgniteCheckedException {
             get(); // Ensure that result is ready.
 
             return meta;
@@ -2255,9 +2255,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @return Value.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected abstract V unmarshalValue() throws GridException;
+        protected abstract V unmarshalValue() throws IgniteCheckedException;
 
         /**
          * @return Key.
@@ -2271,8 +2271,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 return key;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 
@@ -2288,8 +2288,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 return val;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 
@@ -2330,7 +2330,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @SuppressWarnings("IfMayBeConditional")
-        @Override protected V unmarshalValue() throws GridException {
+        @Override protected V unmarshalValue() throws IgniteCheckedException {
             byte[] bytes = e.getValue();
 
             byte[] val = GridCacheSwapEntryImpl.getValueIfByteArray(bytes);
@@ -2393,7 +2393,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override protected V unmarshalValue() throws GridException {
+        @Override protected V unmarshalValue() throws IgniteCheckedException {
             long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
 
             V val = (V)cctx.portable().unmarshal(ptr, false);
@@ -2455,7 +2455,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Nullable @Override public IgniteBiTuple<K, V> applyx(T2<Long, Integer> keyPtr,
             T2<Long, Integer> valPtr)
-            throws GridException {
+            throws IgniteCheckedException {
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
 
             if (prjPred != null) {
@@ -2506,7 +2506,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNextX() throws GridException {
+        @Override public boolean hasNextX() throws IgniteCheckedException {
             if (iter.hasNextX())
                 return true;
 
@@ -2525,7 +2525,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public T nextX() throws GridException {
+        @Override public T nextX() throws IgniteCheckedException {
             if (!hasNextX())
                 throw new NoSuchElementException();
 
@@ -2533,7 +2533,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void removeX() throws GridException {
+        @Override public void removeX() throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
     }
@@ -2591,7 +2591,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+        @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
             return null;
         }
 
@@ -2753,7 +2753,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean remove(V val) throws GridException {
+        @Override public boolean remove(V val) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
@@ -2902,9 +2902,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * Close if this result does not have any other recipients.
          *
          * @param recipient ID of the recipient.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        public void closeIfNotShared(Object recipient) throws GridException {
+        public void closeIfNotShared(Object recipient) throws IgniteCheckedException {
             assert isDone();
 
             synchronized (recipients) {
@@ -2969,9 +2969,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @param recipient ID of the recipient.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        public IgniteSpiCloseableIterator<R> iterator(Object recipient) throws GridException {
+        public IgniteSpiCloseableIterator<R> iterator(Object recipient) throws IgniteCheckedException {
             assert recipient != null;
 
             IgniteSpiCloseableIterator<R> it = get();
@@ -3019,7 +3019,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             /** {@inheritDoc} */
-            @Override public void close() throws GridException {
+            @Override public void close() throws IgniteCheckedException {
                 closeIfNotShared(recipient);
             }
 
@@ -3045,8 +3045,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 try {
                     it = get();
                 }
-                catch (GridException e) {
-                    throw new GridRuntimeException(e);
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
 
                 synchronized (recipients) {

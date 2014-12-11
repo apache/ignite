@@ -145,7 +145,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
                     catch (ComputeTaskTimeoutException ignored) {
                         // Expected.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new IllegalStateException(e); //shouldn't happen
                     }
                     finally {
@@ -172,7 +172,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      */
     private static class GridTaskTimeoutTestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             Collection<GridTaskTimeoutTestJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 0; i < SPLIT_COUNT; i++) {
@@ -187,7 +187,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

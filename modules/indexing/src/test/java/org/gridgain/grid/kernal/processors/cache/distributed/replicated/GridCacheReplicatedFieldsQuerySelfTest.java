@@ -145,6 +145,6 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
                 return null;
             }
-        }, GridRuntimeException.class, null);
+        }, IgniteException.class, null);
     }
 }

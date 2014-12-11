@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.*;
@@ -62,7 +62,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R get() throws GridException {
+    @Override public R get() throws IgniteCheckedException {
         try {
             if (doneLatch.getCount() > 0)
                 doneLatch.await();
@@ -70,14 +70,14 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridException("Operation was interrupted.", e);
+            throw new IgniteCheckedException("Operation was interrupted.", e);
         }
 
         return getResult();
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws GridException {
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         try {
@@ -87,7 +87,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridException("Operation was interrupted.", e);
+            throw new IgniteCheckedException("Operation was interrupted.", e);
         }
 
         return getResult();
@@ -97,9 +97,9 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
      * Get future result.
      *
      * @return Future result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private R getResult() throws GridException {
+    private R getResult() throws IgniteCheckedException {
         assert doneLatch.getCount() == 0;
 
         if (err == null)
@@ -108,10 +108,10 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
         if (err instanceof Error)
             throw (Error)err;
 
-        if (err instanceof GridException)
-            throw (GridException)err;
+        if (err instanceof IgniteCheckedException)
+            throw (IgniteCheckedException)err;
 
-        throw new GridException(err);
+        throw new IgniteCheckedException(err);
     }
 
     /** {@inheritDoc} */
@@ -275,7 +275,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
                 if (chainedFut != null)
                     chainedFut.onDone(res);
             }
-            catch (GridException | RuntimeException e) {
+            catch (IgniteCheckedException | RuntimeException e) {
                 if (chainedFut != null)
                     chainedFut.onDone(e);
             }

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.managers.indexing;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.kernal.managers.*;
-import org.apache.ignite.spi.indexing.*;
 
 import java.util.*;
 
@@ -34,9 +34,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -58,9 +58,9 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     }
 
     /**
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -77,10 +77,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param key Key.
      * @param val Value.
      * @param expirationTime Expiration time or 0 if never expires.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void store(final String space, final K key, final V val, long expirationTime) throws GridException {
+    public <K, V> void store(final String space, final K key, final V val, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -104,10 +104,10 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
     /**
      * @param space Space.
      * @param key Key.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key) throws GridException {
+    public void remove(String space, Object key) throws IgniteCheckedException {
         assert key != null;
 
         if (!enabled())
@@ -129,13 +129,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
      * @param params Parameters collection.
      * @param filters Filters.
      * @return Query result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public IgniteSpiCloseableIterator<?> query(String space, Collection<Object> params, GridIndexingQueryFilter filters)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!enabled())
-            throw new GridException("Indexing SPI is not configured.");
+            throw new IgniteCheckedException("Indexing SPI is not configured.");
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -147,13 +147,13 @@ public class GridIndexingManager extends GridManagerAdapter<GridIndexingSpi> {
                 return new GridEmptyCloseableIterator<>();
 
             return new IgniteSpiCloseableIterator<Object>() {
-                @Override public void close() throws GridException {
+                @Override public void close() throws IgniteCheckedException {
                     if (res instanceof AutoCloseable) {
                         try {
                             ((AutoCloseable)res).close();
                         }
                         catch (Exception e) {
-                            throw new GridException(e);
+                            throw new IgniteCheckedException(e);
                         }
                     }
                 }

@@ -13,6 +13,7 @@ import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
@@ -37,7 +38,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         OutputFormat outputFormat = null;
         Exception err = null;
 
@@ -68,7 +69,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
         catch (Exception e) {
             err = e;
 
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             if (err != null)

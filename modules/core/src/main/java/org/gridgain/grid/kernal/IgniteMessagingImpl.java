@@ -59,7 +59,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Object msg) throws GridException {
+    @Override public void send(@Nullable Object topic, Object msg) throws IgniteCheckedException {
         A.notNull(msg, "msg");
 
         guard();
@@ -78,7 +78,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Collection<?> msgs) throws GridException {
+    @Override public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteCheckedException {
         A.ensure(!F.isEmpty(msgs), "msgs cannot be null or empty");
 
         guard();
@@ -101,7 +101,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws GridException {
+    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteCheckedException {
         A.notNull(msg, "msg");
 
         guard();
@@ -151,7 +151,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws GridException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException {
         A.notNull(p, "p");
 
         guard();
@@ -167,7 +167,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) throws GridException {
+    @Override public void stopRemoteListen(UUID opId) throws IgniteCheckedException {
         A.notNull(opId, "opId");
 
         saveOrGet(ctx.continuous().stopRoutine(opId));

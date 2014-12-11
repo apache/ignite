@@ -88,7 +88,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, READ_COMMITTED);
@@ -97,7 +97,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, REPEATABLE_READ);
@@ -106,7 +106,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, SERIALIZABLE);
@@ -115,7 +115,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, READ_COMMITTED);
@@ -124,7 +124,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, REPEATABLE_READ);
@@ -133,7 +133,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, SERIALIZABLE);
@@ -142,7 +142,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, READ_COMMITTED);
@@ -151,7 +151,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, REPEATABLE_READ);
@@ -160,7 +160,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, SERIALIZABLE);
@@ -169,7 +169,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, READ_COMMITTED);
@@ -178,7 +178,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, REPEATABLE_READ);
@@ -187,7 +187,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, SERIALIZABLE);

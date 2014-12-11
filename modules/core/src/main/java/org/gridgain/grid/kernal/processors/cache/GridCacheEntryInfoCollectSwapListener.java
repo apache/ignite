@@ -67,7 +67,7 @@ public class GridCacheEntryInfoCollectSwapListener<K, V> implements GridCacheSwa
 
             swappedEntries.put(key, info);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to process unswapped entry", e);
         }
     }

@@ -576,22 +576,22 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V get(String cacheName, K key) throws GridException {
+        @Override public <K, V> V get(String cacheName, K key) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V put(String cacheName, K key, V val, long ttl) throws GridException {
+        @Override public <K, V> V put(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws GridException {
+        @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V remove(String cacheName, K key) throws GridException {
+        @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {
             return null;
         }
 
@@ -602,32 +602,32 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-            @Nullable ClassLoader ldr) throws GridException {
+            @Nullable ClassLoader ldr) throws IgniteCheckedException {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
         @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-            @Nullable ClassLoader ldr) throws GridException {
+            @Nullable ClassLoader ldr) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes) throws GridException {
+            @Nullable byte[] keyBytes) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
         @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
             @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
@@ -638,7 +638,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
@@ -709,18 +709,18 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+        @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
             return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
-        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-            @Nullable ClassLoader ldr) throws GridException {
+            @Nullable ClassLoader ldr) throws IgniteCheckedException {
             return null;
         }
 

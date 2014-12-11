@@ -8,8 +8,8 @@
  */
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -48,7 +48,7 @@ public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R get() throws IOException, GridException {
+    @Override public R get() throws IOException, IgniteCheckedException {
         if (err != null) {
             if (err instanceof IOException)
                 throw (IOException)err;
@@ -60,17 +60,17 @@ public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout) throws IOException, GridException {
+    @Override public R get(long timeout) throws IOException, IgniteCheckedException {
         return get();
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws IOException, GridException {
+    @Override public R get(long timeout, TimeUnit unit) throws IOException, IgniteCheckedException {
         return get();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         return false;
     }
 

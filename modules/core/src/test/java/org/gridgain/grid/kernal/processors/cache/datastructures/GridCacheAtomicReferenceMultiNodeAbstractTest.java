@@ -89,7 +89,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<Object>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
 
                 assertEquals(val, ref.get());
@@ -102,7 +102,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
 
                 assertEquals(val, ref.get());
@@ -115,7 +115,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
 
                 assertEquals(newVal, ref.get());
@@ -150,7 +150,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
                     .atomicStamped(stampedName, val, stamp, true);
 
@@ -165,7 +165,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
                     .atomicStamped(stampedName, val, stamp, true);
 
@@ -180,7 +180,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
-            @Override public String call() throws GridException {
+            @Override public String call() throws IgniteCheckedException {
                 GridCacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
                     .atomicStamped(stampedName, val, stamp, true);
 

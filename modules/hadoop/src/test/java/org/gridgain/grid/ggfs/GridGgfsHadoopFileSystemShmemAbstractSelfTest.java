@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.ipc.*;
@@ -50,7 +51,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
         final Collection<GridIpcEndpoint> eps = new LinkedList<>();
 
         try {
-            GridException e = (GridException)GridTestUtils.assertThrows(log, new Callable<Object>() {
+            IgniteCheckedException e = (IgniteCheckedException)GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @SuppressWarnings("InfiniteLoopStatement")
                 @Override public Object call() throws Exception {
                     while (true) {
@@ -59,7 +60,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
                         eps.add(ep);
                     }
                 }
-            }, GridException.class, null);
+            }, IgniteCheckedException.class, null);
 
             assertNotNull(e);
 

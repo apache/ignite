@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -15,47 +15,54 @@ import org.jetbrains.annotations.*;
 import static org.gridgain.grid.util.GridUtils.*;
 
 /**
- * Common runtime exception for grid. Thrown by all components wherever
- * runtime exception is needed.
+ * General grid exception. This exception is used to indicate any error condition
+ * within Grid.
  */
-public class GridRuntimeException extends RuntimeException {
+public class IgniteCheckedException extends Exception {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Constructs runtime grid exception with given message and cause.
-     *
-     * @param msg Exception message.
-     * @param cause Exception cause.
+     * Create empty exception.
      */
-    public GridRuntimeException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
+    public IgniteCheckedException() {
+        // No-op.  +7(960)249-38-88
     }
 
     /**
-     * Creates new runtime grid exception given throwable as a cause and
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteCheckedException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates new grid exception with given throwable as a cause and
      * source of error message.
      *
      * @param cause Non-null throwable cause.
      */
-    public GridRuntimeException(Throwable cause) {
+    public IgniteCheckedException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
     /**
-     * Constructs runtime grid exception with given message.
+     * Creates new exception with given error message and optional nested exception.
      *
-     * @param msg Exception message.
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridRuntimeException(String msg) {
-        super(msg);
+    public IgniteCheckedException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 
     /**
      * Checks if this exception has given class in {@code 'cause'} hierarchy.
      *
-     * @param cls Cause class to check (if {@code null}, {@code false} is returned)..
-     * @return {@code True} if one of the causing exception is an instance of passed in class,
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
     public boolean hasCause(@Nullable Class<? extends Throwable>... cls) {
@@ -72,10 +79,26 @@ public class GridRuntimeException extends RuntimeException {
         return X.cause(this, cls);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Adds troubleshooting links if they where not added by below in {@code cause} hierarchy.
+     */
     @Override public String getMessage() {
-        return X.hasCauseExcludeRoot(this, GridException.class, GridRuntimeException.class) ?
+        return X.hasCauseExcludeRoot(this, IgniteCheckedException.class, IgniteException.class) ?
             super.getMessage() : errorMessageWithHelpUrls(super.getMessage());
+    }
+
+    /**
+     * Returns exception message.
+     * <p>
+     * Unlike {@link #getMessage()} this method never include troubleshooting links
+     * to the result string.
+     *
+     * @return Original message.
+     */
+    public String getOriginalMessage() {
+        return super.getMessage();
     }
 
     /** {@inheritDoc} */

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -118,7 +118,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteCheckedException {
         if (!isTaskNode()) {
             Collection<ComputeJobSibling> sibs = ctx.job().requestJobSiblings(this);
 
@@ -139,7 +139,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> getJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() throws IgniteCheckedException {
         Collection<ComputeJobSibling> sibs = ses.getJobSiblings();
 
         if (sibs == null) {
@@ -160,7 +160,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteCheckedException {
         for (ComputeJobSibling sib : getJobSiblings())
             if (sib.getJobId().equals(jobId))
                 return sib;
@@ -169,7 +169,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttribute(Object key, @Nullable Object val) throws GridException {
+    @Override public void setAttribute(Object key, @Nullable Object val) throws IgniteCheckedException {
         setAttributes(Collections.singletonMap(key, val));
     }
 
@@ -180,7 +180,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttributes(Map<?, ?> attrs) throws GridException {
+    @Override public void setAttributes(Map<?, ?> attrs) throws IgniteCheckedException {
         ses.setAttributes(attrs);
 
         if (!isTaskNode())
@@ -226,30 +226,30 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws GridException {
+    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
         saveCheckpoint(key, state, ComputeTaskSessionScope.SESSION_SCOPE, 0);
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws GridException {
+        throws IgniteCheckedException {
         saveCheckpoint(key, state, scope, timeout, true);
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean overwrite) throws GridException {
+        long timeout, boolean overwrite) throws IgniteCheckedException {
         ses.saveCheckpoint0(this, key, state, scope, timeout, overwrite);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T loadCheckpoint(String key) throws GridException {
+    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
         return ses.loadCheckpoint0(this, key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws GridException {
+    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
         return ses.removeCheckpoint0(this, key);
     }
 

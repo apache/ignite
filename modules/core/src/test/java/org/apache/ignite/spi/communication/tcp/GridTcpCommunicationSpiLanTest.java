@@ -10,8 +10,8 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import mx4j.tools.adaptor.http.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -168,7 +168,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
                         spi.sendMessage(remoteNode, msg);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fail("Unable to send message: " + e.getMessage());
                 }
             }

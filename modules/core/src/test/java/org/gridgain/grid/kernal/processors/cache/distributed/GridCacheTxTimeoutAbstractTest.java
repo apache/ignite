@@ -61,42 +61,42 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommitted() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, READ_COMMITTED);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializable() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, SERIALIZABLE);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommitted() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, READ_COMMITTED);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializable() throws Exception {
         checkTransactionTimeout(OPTIMISTIC, SERIALIZABLE);
@@ -105,7 +105,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     private void checkTransactionTimeout(GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation) throws Exception {

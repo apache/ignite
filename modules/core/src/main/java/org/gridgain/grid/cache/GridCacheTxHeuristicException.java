@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown whenever grid transaction enters an unknown state.
@@ -18,7 +18,7 @@ import org.gridgain.grid.*;
  * integrity, by invalidating all values participating in this transaction
  * on remote nodes.
  */
-public class GridCacheTxHeuristicException extends GridException {
+public class GridCacheTxHeuristicException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -9,6 +9,7 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.springframework.beans.factory.xml.*;
@@ -45,7 +46,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
         System.out.println("Split is called: " + this);
 
         return null;
@@ -54,7 +55,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         System.out.println("Reduce is called.");
 
         return null;

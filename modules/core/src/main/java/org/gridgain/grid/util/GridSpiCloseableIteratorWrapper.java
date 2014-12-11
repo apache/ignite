@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
@@ -33,17 +33,17 @@ public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAda
     }
 
     /** {@inheritDoc} */
-    @Override protected T onNext() throws GridException {
+    @Override protected T onNext() throws IgniteCheckedException {
         return iter.next();
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onHasNext() throws GridException {
+    @Override protected boolean onHasNext() throws IgniteCheckedException {
         return iter.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override protected void onClose() throws GridException {
+    @Override protected void onClose() throws IgniteCheckedException {
         iter.close();
     }
 }

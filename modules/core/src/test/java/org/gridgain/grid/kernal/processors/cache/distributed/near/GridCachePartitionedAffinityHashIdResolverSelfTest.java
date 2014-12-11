@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -83,7 +83,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
 
                 return null;
             }
-        }, GridException.class, "Failed to start manager: GridManagerAdapter [enabled=true, name=" +
+        }, IgniteCheckedException.class, "Failed to start manager: GridManagerAdapter [enabled=true, name=" +
             "org.gridgain.grid.kernal.managers.discovery.GridDiscoveryManager]");
     }
 }

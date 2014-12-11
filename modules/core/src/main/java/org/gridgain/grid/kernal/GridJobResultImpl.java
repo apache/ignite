@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
@@ -37,7 +38,7 @@ public class GridJobResultImpl implements ComputeJobResult {
     private Object data;
 
     /** */
-    private GridException ex;
+    private IgniteCheckedException ex;
 
     /** */
     private boolean hasRes;
@@ -96,7 +97,7 @@ public class GridJobResultImpl implements ComputeJobResult {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized GridException getException() {
+    @Override public synchronized IgniteCheckedException getException() {
         return ex;
     }
 
@@ -118,7 +119,7 @@ public class GridJobResultImpl implements ComputeJobResult {
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      */
-    public synchronized void onResponse(@Nullable Object data, @Nullable GridException ex,
+    public synchronized void onResponse(@Nullable Object data, @Nullable IgniteCheckedException ex,
         @Nullable Map<Object, Object> jobAttrs, boolean isCancelled) {
         this.data = data;
         this.ex = ex;

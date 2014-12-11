@@ -36,7 +36,7 @@ public class EventsExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -57,7 +57,7 @@ public class EventsExample {
     /**
      * Listen to events that happen only on local node.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private static void localListen() throws Exception {
         System.out.println();
@@ -90,9 +90,9 @@ public class EventsExample {
     /**
      * Listen to events coming from all grid nodes.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void remoteListen() throws GridException {
+    private static void remoteListen() throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Remote event listener example.");
 

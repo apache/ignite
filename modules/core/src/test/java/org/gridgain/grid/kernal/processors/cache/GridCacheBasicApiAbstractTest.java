@@ -82,9 +82,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testSingleLockReentry() throws GridException {
+    public void testSingleLockReentry() throws IgniteCheckedException {
         GridCache<Integer, String> cache = ignite.cache(null);
 
         assert cache.lock(1, 0);
@@ -145,9 +145,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testManyLockReentries() throws GridException {
+    public void testManyLockReentries() throws IgniteCheckedException {
         GridCache<Integer, String> cache = ignite.cache(null);
 
         Integer key = 1;
@@ -464,9 +464,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testGetPutRemove() throws GridException {
+    public void testGetPutRemove() throws IgniteCheckedException {
         GridCache<Integer, String> cache = ignite.cache(null);
 
         int key = (int)System.currentTimeMillis();

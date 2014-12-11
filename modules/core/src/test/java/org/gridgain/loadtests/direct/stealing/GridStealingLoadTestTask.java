@@ -9,10 +9,10 @@
 
 package org.gridgain.loadtests.direct.stealing;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -31,7 +31,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     private int stolenJobs;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
         assert arg != null;
         assert subgrid.size() > 1: "Test requires at least 2 nodes. One with load and another one to steal.";
 
@@ -75,7 +75,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results != null;
 
         for (ComputeJobResult res : results) {

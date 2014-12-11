@@ -9,12 +9,12 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.ftp;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * An exception occurred during URI FTP deployment.
  */
-class GridUriDeploymentFtpException extends GridException {
+class GridUriDeploymentFtpException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

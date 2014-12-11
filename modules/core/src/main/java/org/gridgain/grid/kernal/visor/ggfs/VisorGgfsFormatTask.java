@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -43,12 +43,12 @@ public class VisorGgfsFormatTask extends VisorOneNodeTask<String, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String ggfsName) throws GridException {
+        @Override protected Void run(String ggfsName) throws IgniteCheckedException {
             try {
                 g.fileSystem(ggfsName).format();
             }
             catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to format GGFS: " + ggfsName, iae);
+                throw new IgniteCheckedException("Failed to format GGFS: " + ggfsName, iae);
             }
 
             return null;

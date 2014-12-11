@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -107,7 +108,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert ctx != null;
@@ -177,7 +178,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                             ctx.continuous().addNotification(nodeId, routineId, e, topic);
                         }
-                        catch (GridException ex) {
+                        catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
                         }
                     }
@@ -306,7 +307,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 try {
                     qe.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
                 }
-                catch (GridException ex) {
+                catch (IgniteCheckedException ex) {
                     U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
                 }
             }
@@ -317,7 +318,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pMarshal(GridKernalContext ctx) throws GridException {
+    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
@@ -329,7 +330,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws GridException {
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
@@ -431,9 +432,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         /**
          * @param obj Object.
          * @param ctx Kernal context.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        private DeployableObject(Object obj, GridKernalContext ctx) throws GridException {
+        private DeployableObject(Object obj, GridKernalContext ctx) throws IgniteCheckedException {
             assert obj != null;
             assert ctx != null;
 
@@ -455,9 +456,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
          * @param nodeId Node ID.
          * @param ctx Kernal context.
          * @return Deserialized object.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        <T> T unmarshal(UUID nodeId, GridKernalContext ctx) throws GridException {
+        <T> T unmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
             assert ctx != null;
 
             GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,

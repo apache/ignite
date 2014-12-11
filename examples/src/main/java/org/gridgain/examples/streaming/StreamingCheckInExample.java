@@ -94,7 +94,7 @@ public class StreamingCheckInExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("check-in-query-worker");
@@ -214,7 +214,7 @@ public class StreamingCheckInExample {
 
                     System.out.print(sb.toString());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -228,10 +228,10 @@ public class StreamingCheckInExample {
      * Streams check-in events into the system.
      *
      * @param streamer Streamer.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("BusyWait")
-    private static void streamData(IgniteStreamer streamer) throws GridException {
+    private static void streamData(IgniteStreamer streamer) throws IgniteCheckedException {
         try {
             for (int i = 0; i < CNT; i++) {
                 CheckInEvent evt = new CheckInEvent(
@@ -424,7 +424,7 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(
-            StreamerContext ctx, Collection<CheckInEvent> evts) throws GridException {
+            StreamerContext ctx, Collection<CheckInEvent> evts) throws IgniteCheckedException {
             StreamerWindow<CheckInEvent> win = ctx.window(name());
 
             assert win != null;
@@ -440,7 +440,7 @@ public class StreamingCheckInExample {
 
                     evts0.add(evt);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (e.getMessage().contains("Index unique key violation"))
                         System.err.println("Cannot check-in twice within the specified period of time [evt=" + evt + ']');
                     else
@@ -472,7 +472,7 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx,
-            Collection<CheckInEvent> evts) throws GridException {
+            Collection<CheckInEvent> evts) throws IgniteCheckedException {
             StreamerWindow<LocationInfo> win = ctx.window(name());
 
             assert win != null;
@@ -530,7 +530,7 @@ public class StreamingCheckInExample {
         /** {@inheritDoc} */
         @Nullable @Override public Location onAdded(
             StreamerIndexEntry<CheckInEvent, String, Location> entry,
-            CheckInEvent evt) throws GridException {
+            CheckInEvent evt) throws IgniteCheckedException {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 
@@ -561,7 +561,7 @@ public class StreamingCheckInExample {
         /** {@inheritDoc} */
         @Nullable @Override public Place onAdded(
             StreamerIndexEntry<LocationInfo, String, Place> entry,
-            LocationInfo evt) throws GridException {
+            LocationInfo evt) throws IgniteCheckedException {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 

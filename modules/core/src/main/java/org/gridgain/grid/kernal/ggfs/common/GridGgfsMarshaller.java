@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -68,9 +68,9 @@ public class GridGgfsMarshaller {
      * @param msg Message.
      * @param hdr Message header.
      * @param out Output.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void marshall(GridGgfsMessage msg, byte[] hdr, ObjectOutput out) throws GridException {
+    public void marshall(GridGgfsMessage msg, byte[] hdr, ObjectOutput out) throws IgniteCheckedException {
         assert hdr != null;
         assert hdr.length == HEADER_SIZE;
 
@@ -175,7 +175,7 @@ public class GridGgfsMarshaller {
             }
         }
         catch (IOException e) {
-            throw new GridException("Failed to send message to GGFS data node (is data node up and running?)", e);
+            throw new IgniteCheckedException("Failed to send message to GGFS data node (is data node up and running?)", e);
         }
     }
 
@@ -184,9 +184,9 @@ public class GridGgfsMarshaller {
      * @param hdr Header.
      * @param in Input.
      * @return Message.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsMessage unmarshall(GridGgfsIpcCommand cmd, byte[] hdr, ObjectInput in) throws GridException {
+    public GridGgfsMessage unmarshall(GridGgfsIpcCommand cmd, byte[] hdr, ObjectInput in) throws IgniteCheckedException {
         assert hdr != null;
         assert hdr.length == HEADER_SIZE;
 
@@ -297,7 +297,7 @@ public class GridGgfsMarshaller {
             return msg;
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new GridException("Failed to unmarshal client message: " + cmd, e);
+            throw new IgniteCheckedException("Failed to unmarshal client message: " + cmd, e);
         }
     }
 

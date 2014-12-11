@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -54,7 +54,7 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws GridException {
+    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this);

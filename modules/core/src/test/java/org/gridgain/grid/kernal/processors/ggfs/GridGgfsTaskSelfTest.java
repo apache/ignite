@@ -231,12 +231,12 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) throws GridException {
+            IgniteFsTaskArgs<String> args) throws IgniteCheckedException {
             return new Job();
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws GridException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws IgniteCheckedException {
             long totalLen = 0;
             int argCnt = 0;
 
@@ -268,7 +268,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
-            throws GridException, IOException {
+            throws IgniteCheckedException, IOException {
             assert ignite != null;
             assert ses != null;
             assert ctx != null;

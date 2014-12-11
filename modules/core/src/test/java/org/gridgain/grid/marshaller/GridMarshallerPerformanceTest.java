@@ -11,12 +11,12 @@ package org.gridgain.grid.marshaller;
 
 import com.esotericsoftware.kryo.*;
 import com.esotericsoftware.kryo.io.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -45,7 +45,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
-            @Override public void applyx(TestObject obj) throws GridException {
+            @Override public void applyx(TestObject obj) throws IgniteCheckedException {
                 out.reset();
 
                 ObjectOutputStream objOut = null;
@@ -56,7 +56,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
                     objOut.writeObject(obj);
                 }
                 catch (IOException e) {
-                    throw new GridException(e);
+                    throw new IgniteCheckedException(e);
                 }
                 finally {
                     U.close(objOut, log);
@@ -65,7 +65,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
         };
 
         IgniteOutClosure<TestObject> reader = new COX<TestObject>() {
-            @Override public TestObject applyx() throws GridException {
+            @Override public TestObject applyx() throws IgniteCheckedException {
                 ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
                 ObjectInputStream objIn = null;
@@ -76,7 +76,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
                     return (TestObject)objIn.readObject();
                 }
                 catch (ClassNotFoundException | IOException e) {
-                    throw new GridException(e);
+                    throw new IgniteCheckedException(e);
                 } finally {
                     U.close(objIn, log);
                 }
@@ -97,13 +97,13 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
         marsh.setClassNames(Arrays.asList(TestObject.class.getName()));
 
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
-            @Override public void applyx(TestObject obj) throws GridException {
+            @Override public void applyx(TestObject obj) throws IgniteCheckedException {
                 tuple.set(marsh.marshal(obj));
             }
         };
 
         IgniteOutClosure<TestObject> reader = new COX<TestObject>() {
-            @Override public TestObject applyx() throws GridException {
+            @Override public TestObject applyx() throws IgniteCheckedException {
                 return marsh.unmarshal(tuple.get(), null);
             }
         };

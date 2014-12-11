@@ -8,8 +8,8 @@
  */
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -40,44 +40,44 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadOptimisticReadCommitted() throws GridException {
+    public void testTxReadOptimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.READ_COMMITTED);
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadOptimisticRepeatableRead() throws GridException {
+    public void testTxReadOptimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadOptimisticSerializable() throws GridException {
+    public void testTxReadOptimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.SERIALIZABLE);
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadPessimisticReadCommitted() throws GridException {
+    public void testTxReadPessimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.READ_COMMITTED);
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadPessimisticRepeatableRead() throws GridException {
+    public void testTxReadPessimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void testTxReadPessimisticSerializable() throws GridException {
+    public void testTxReadPessimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.SERIALIZABLE);
     }
 
@@ -85,10 +85,10 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      * Tests sequential value write and read inside transaction.
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
     protected void checkTransactionalRead(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCache<String, Integer> cache = cache(0);
 
         cache.clearAll();

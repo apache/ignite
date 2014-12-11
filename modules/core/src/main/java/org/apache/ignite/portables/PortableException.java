@@ -9,13 +9,13 @@
 
 package org.apache.ignite.portables;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Exception indicating portable object serialization error.
  */
-public class PortableException extends GridRuntimeException {
+public class PortableException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

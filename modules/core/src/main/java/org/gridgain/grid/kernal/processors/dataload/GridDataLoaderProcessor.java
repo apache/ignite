@@ -68,7 +68,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -123,7 +123,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             catch (GridInterruptedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to close data loader: " + ldr, e);
             }
         }
@@ -193,7 +193,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             try {
                 topic = marsh.unmarshal(req.responseTopicBytes(), null);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal topic from request: " + req, e);
 
                 return;
@@ -218,7 +218,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                     sendResponse(nodeId,
                         topic,
                         req.requestId(),
-                        new GridException("Failed to get deployment for request [sndId=" + nodeId +
+                        new IgniteCheckedException("Failed to get deployment for request [sndId=" + nodeId +
                             ", req=" + req + ']'),
                         false);
 
@@ -235,7 +235,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                 col = marsh.unmarshal(req.collectionBytes(), clsLdr);
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal message [nodeId=" + nodeId + ", req=" + req + ']', e);
 
                 sendResponse(nodeId, topic, req.requestId(), e, false);
@@ -278,7 +278,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         try {
             errBytes = err != null ? marsh.marshal(err) : null;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to marshal message.", e);
 
             return;
@@ -289,7 +289,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         try {
             ctx.io().send(nodeId, resTopic, res, PUBLIC_POOL);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (ctx.discovery().alive(nodeId))
                 U.error(log, "Failed to respond to node [nodeId=" + nodeId + ", res=" + res + ']', e);
             else if (log.isDebugEnabled())

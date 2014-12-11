@@ -46,7 +46,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public TransactionManager getTm() throws GridException {
+        @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
             return null;
         }
     }

@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -75,7 +75,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws GridException {
+            @Nullable Void arg) throws IgniteCheckedException {
             return F.asMap(new ComputeJobAdapter() {
                 @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
@@ -88,12 +88,12 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws GridException {
+            throws IgniteCheckedException {
             return WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return F.first(results).getData();
         }
     }

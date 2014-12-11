@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 import java.io.*;
@@ -53,9 +54,9 @@ public abstract class GridHadoopTask {
      *
      * @param taskCtx Context.
      * @throws GridInterruptedException If interrupted.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void run(GridHadoopTaskContext taskCtx) throws GridException;
+    public abstract void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException;
 
     /**
      * Interrupts task execution.

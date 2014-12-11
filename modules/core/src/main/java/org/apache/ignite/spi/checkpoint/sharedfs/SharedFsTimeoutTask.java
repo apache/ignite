@@ -106,7 +106,7 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
                         if (timeData.getLastAccessTime() != file.lastModified())
                             timeData.setExpireTime(SharedFsUtils.read(file, marshaller, log).getExpireTime());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal/unmarshal in checkpoint file: " + file.getAbsolutePath(), e);
 
                         continue;

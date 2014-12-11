@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.GridGainEx;
+import org.apache.ignite.*;
+import org.gridgain.grid.kernal.*;
 
 /**
  * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
@@ -33,8 +33,8 @@ public interface GridSpringResourceContext {
      *
      * @param target Target object.
      * @return Original object wrapped by proxy.
-     * @throws org.gridgain.grid.GridException If unwrap failed.
+     * @throws IgniteCheckedException If unwrap failed.
      */
-    public Object unwrapTarget(Object target) throws GridException;
+    public Object unwrapTarget(Object target) throws IgniteCheckedException;
 }
 

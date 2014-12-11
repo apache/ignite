@@ -73,7 +73,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                 X.println("Warming up...");
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
-                    @Override public Object call() throws GridException {
+                    @Override public Object call() throws IgniteCheckedException {
                         g.compute().execute(GridJobExecutionLoadTestTask.class, null);
 
                         return null;
@@ -97,7 +97,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                                 catch (ComputeTaskCancelledException ignored) {
                                     // No-op.
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -198,17 +198,17 @@ public class GridJobExecutionSingleNodeLoadTest {
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
-            throws GridException {
+            throws IgniteCheckedException {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
             return REDUCE;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -218,7 +218,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestJob implements ComputeJob {
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             return null;
         }
 

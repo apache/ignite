@@ -152,9 +152,9 @@ public class GridCacheAffinityTransactionsOffHeapTest {
     }
 
     /**
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void startNodes() throws GridException {
+    private static void startNodes() throws IgniteCheckedException {
         for (int i = 0; i < NODE_CNT; i++)
             Ignition.start(getConfiguration("grid-" + i));
     }

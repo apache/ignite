@@ -327,7 +327,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     latency.addAndGet(t1 - t0);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -646,16 +646,16 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     stopTimer("commit");
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
         }
 
         /**
          * @return New ID.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private long getId() throws GridException {
+        private long getId() throws IgniteCheckedException {
             GridCacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
             return seq.incrementAndGet();
         }
@@ -681,7 +681,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                 return entry.getValue();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
 
                 return null;
@@ -692,9 +692,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param o Object to put.
          * @param cacheKey Cache key.
          * @param terminalId Terminal ID.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private void put(Object o, String cacheKey, String terminalId) throws GridException {
+        private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
             GridCache<GridCacheAffinityKey<String>, Object> cache = ignite.cache(null);
 
             GridCacheAffinityKey<String> affinityKey = new GridCacheAffinityKey<>(cacheKey, terminalId);
@@ -708,10 +708,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param cacheKey Cache key.
          * @param terminalId Terminal ID.
          * @return Cached object.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings({"RedundantCast"})
-        private <T> Object get(String cacheKey, String terminalId) throws GridException {
+        private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
             Object key = new GridCacheAffinityKey<>(cacheKey, terminalId);
 
             return (T) ignite.cache(null).get(key);
@@ -821,12 +821,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings( {"UnusedDeclaration"})
     private static class ResponseTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws IgniteCheckedException {
             return Collections.singletonList(new PerfJob(msg));
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -836,12 +836,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class RequestTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws IgniteCheckedException {
             return Collections.singletonList(new PerfJob(msg));
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

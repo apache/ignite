@@ -110,7 +110,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private ComputeJobContext jobCtx;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert log != null;
             assert rsrc != null;
             assert springBean != null;
@@ -180,7 +180,7 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert log != null;
             assert rsrc != null;
 

@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -70,7 +70,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param ctx Cache registry.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
         ClassLoader ldr,
@@ -89,7 +89,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
@@ -244,9 +244,9 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      *
      * @param ldr Class loader.
      * @param entries Entries to add.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addEntries(ClassLoader ldr, Iterable<GridCacheTxEntry<K, V>> entries) throws GridException {
+    public void addEntries(ClassLoader ldr, Iterable<GridCacheTxEntry<K, V>> entries) throws IgniteCheckedException {
         for (GridCacheTxEntry<K, V> entry : entries) {
             entry.unmarshal(cctx, true, ldr);
 
@@ -256,10 +256,10 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
 
     /**
      * @param entry Entry to enlist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry was enlisted.
      */
-    private boolean addEntry(GridCacheTxEntry<K, V> entry) throws GridException {
+    private boolean addEntry(GridCacheTxEntry<K, V> entry) throws IgniteCheckedException {
         checkInternal(entry.txKey());
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -311,7 +311,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param val Value.
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
      */
     public boolean addEntry(
@@ -322,7 +322,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
         V val,
         byte[] valBytes,
         @Nullable GridCacheVersion drVer
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         checkInternal(key);
 
         GridNearCacheEntry<K, V> cached = cacheCtx.near().peekExx(key.key());

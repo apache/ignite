@@ -114,7 +114,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridHadoopInputSplit> input() throws GridException {
+    @Override public Collection<GridHadoopInputSplit> input() throws IgniteCheckedException {
         Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
 
         try {
@@ -135,7 +135,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
                     jobDir);
 
                 if (F.isEmpty(metaInfos))
-                    throw new GridException("No input splits found.");
+                    throw new IgniteCheckedException("No input splits found.");
 
                 Path splitsFile = JobSubmissionFiles.getJobSplitFile(jobDir);
 
@@ -172,7 +172,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
+    @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws IgniteCheckedException {
         T2<GridHadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
         GridFutureAdapter<GridHadoopTaskContext> fut = ctxs.get(locTaskId);
@@ -217,7 +217,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
             return res;
         }
         catch (Throwable e) {
-            GridException te = transformException(e);
+            IgniteCheckedException te = transformException(e);
 
             fut.onDone(te);
 
@@ -226,7 +226,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(boolean external, UUID locNodeId) throws GridException {
+    @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
         this.locNodeId = locNodeId;
 
         Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
@@ -240,7 +240,7 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void dispose(boolean external) throws GridException {
+    @Override public void dispose(boolean external) throws IgniteCheckedException {
         if (rsrcMgr != null && !external) {
             File jobLocDir = jobLocalDir(locNodeId, jobId);
 
@@ -250,12 +250,12 @@ public class GridHadoopV2Job implements GridHadoopJob {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+    @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException {
         rsrcMgr.prepareTaskWorkDir(taskLocalDir(locNodeId, info));
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+    @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException {
         GridHadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
 
         taskCtxClsPool.offer(ctx.getClass());

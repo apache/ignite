@@ -9,12 +9,16 @@
 
 package org.gridgain.grid.kernal.managers.discovery;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -25,9 +29,6 @@ import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.jobmetrics.*;
 import org.gridgain.grid.kernal.processors.service.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -46,8 +47,8 @@ import java.util.zip.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Discovery SPI manager.
@@ -206,7 +207,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         discoOrdered = discoOrdered();
 
         histSupported = historySupported();
@@ -219,7 +220,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (hasRslvrs) {
             if (segChkFreq < 0)
-                throw new GridException("Segment check frequency cannot be negative: " + segChkFreq);
+                throw new IgniteCheckedException("Segment check frequency cannot be negative: " + segChkFreq);
 
             if (segChkFreq > 0 && segChkFreq < 2000)
                 U.warn(log, "Configuration parameter 'segmentCheckFrequency' is too low " +
@@ -234,7 +235,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
             @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
-                throws GridException {
+                throws IgniteCheckedException {
                 return ctx.security().authenticateNode(node, cred);
             }
 
@@ -584,9 +585,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Checks segment on start waiting for correct segment if necessary.
      *
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
-    private void checkSegmentOnStart() throws GridException {
+    private void checkSegmentOnStart() throws IgniteCheckedException {
         assert hasRslvrs;
 
         if (log.isDebugEnabled())
@@ -603,7 +604,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.sleep(2000);
             }
             else
-                throw new GridException("Failed to check network segment.");
+                throw new IgniteCheckedException("Failed to check network segment.");
         }
 
         if (log.isDebugEnabled())
@@ -614,9 +615,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Checks whether attributes of the local node are consistent with remote nodes.
      *
      * @param nodes List of remote nodes to check attributes on.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private void checkAttributes(Iterable<ClusterNode> nodes) throws GridException {
+    private void checkAttributes(Iterable<ClusterNode> nodes) throws IgniteCheckedException {
         ClusterNode locNode = getSpi().getLocalNode();
 
         assert locNode != null;
@@ -652,7 +653,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Object rmtMode = n.attribute(ATTR_DEPLOYMENT_MODE);
 
                 if (!locMode.equals(rmtMode))
-                    throw new GridException("Remote node has deployment mode different from local " +
+                    throw new IgniteCheckedException("Remote node has deployment mode different from local " +
                         "[locId8=" + U.id8(locNode.id()) + ", locMode=" + locMode +
                         ", rmtId8=" + U.id8(n.id()) + ", rmtMode=" + rmtMode +
                         ", rmtAddrs=" + U.addressesAsString(n) + ']');
@@ -660,7 +661,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 boolean rmtP2pEnabled = n.attribute(ATTR_PEER_CLASSLOADING);
 
                 if (locP2pEnabled != rmtP2pEnabled)
-                    throw new GridException("Remote node has peer class loading enabled flag different from local " +
+                    throw new IgniteCheckedException("Remote node has peer class loading enabled flag different from local " +
                         "[locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
                         ", rmtId8=" + U.id8(n.id()) + ", rmtPeerClassLoading=" + rmtP2pEnabled +
                         ", rmtAddrs=" + U.addressesAsString(n) + ']');
@@ -797,11 +798,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoinEvt.isDone())
-            locJoinEvt.onDone(new GridException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoinEvt.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // Stop receiving notifications.
         getSpi().setListener(null);
 
@@ -1128,7 +1129,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (cache == null) {
-            throw new GridRuntimeException("Failed to resolve nodes topology [cacheName=" + cacheName +
+            throw new IgniteException("Failed to resolve nodes topology [cacheName=" + cacheName +
                 ", topVer=" + topVer + ", history=" + discoCacheHist.keySet() +
                 ", locNode=" + ctx.discovery().localNode() + ']');
         }
@@ -1172,8 +1173,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         try {
             return locJoinEvt.get();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -1411,7 +1412,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     try {
                         checkAttributes(F.asList(node));
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                     }
 
@@ -1630,7 +1631,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             try {
                 cpuTime = U.<Long>property(os, "processCpuTime");
             }
-            catch (GridRuntimeException ignored) {
+            catch (IgniteException ignored) {
                 return -1;
             }
 

@@ -81,7 +81,7 @@ public class GridHadoopChildProcessRunner {
      */
     public void start(GridHadoopExternalCommunication comm, GridHadoopProcessDescriptor nodeDesc,
         ExecutorService msgExecSvc, IgniteLogger parentLog)
-        throws GridException {
+        throws IgniteCheckedException {
         this.comm = comm;
         this.nodeDesc = nodeDesc;
         this.msgExecSvc = msgExecSvc;
@@ -123,7 +123,7 @@ public class GridHadoopChildProcessRunner {
 
                 initFut.onDone(null, null);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize process: " + req, e);
 
                 initFut.onDone(e);
@@ -173,18 +173,18 @@ public class GridHadoopChildProcessRunner {
                             }
 
                             @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext ctx)
-                                throws GridException {
+                                throws IgniteCheckedException {
                                 return shuffleJob.input(ctx);
                             }
 
                             @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx)
-                                throws GridException {
+                                throws IgniteCheckedException {
                                 return shuffleJob.output(ctx);
                             }
                         });
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     for (GridHadoopTaskInfo info : req.tasks())
                         notifyTaskFinished(info, new GridHadoopTaskStatus(GridHadoopTaskState.FAILED, e), false);
                 }
@@ -223,7 +223,7 @@ public class GridHadoopChildProcessRunner {
                         shuffleJob.startSending("external",
                             new IgniteInClosure2X<GridHadoopProcessDescriptor, GridHadoopShuffleMessage>() {
                                 @Override public void applyx(GridHadoopProcessDescriptor dest,
-                                    GridHadoopShuffleMessage msg) throws GridException {
+                                    GridHadoopShuffleMessage msg) throws IgniteCheckedException {
                                     comm.sendMessage(dest, msg);
                                 }
                             });
@@ -246,7 +246,7 @@ public class GridHadoopChildProcessRunner {
         try {
             job.dispose(true);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to dispose job.", e);
         }
     }
@@ -293,7 +293,7 @@ public class GridHadoopChildProcessRunner {
 
                 comm.sendMessage(nodeDesc, new GridHadoopTaskFinishedMessage(taskInfo, status));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 log.error("Failed to send message to parent node (will terminate child process).", e);
 
                 shutdown();
@@ -323,7 +323,7 @@ public class GridHadoopChildProcessRunner {
 
                             notifyTaskFinished(taskInfo, status, false);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                                 ", state=" + state + ", err=" + err + ']', e);
 
@@ -333,7 +333,7 @@ public class GridHadoopChildProcessRunner {
                     }
                 });
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 log.error("Failed to flush shuffle messages (will fail the task) [taskInfo=" + taskInfo +
                     ", state=" + state + ", err=" + err + ']', e);
 
@@ -398,7 +398,7 @@ public class GridHadoopChildProcessRunner {
 
                             comm.sendMessage(desc, new GridHadoopShuffleAck(m.id(), m.jobId()));
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process hadoop shuffle message [desc=" + desc + ", msg=" + msg + ']', e);
                         }
                     }

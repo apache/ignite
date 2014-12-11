@@ -9,6 +9,7 @@
 
 package org.gridgain.loadtests.communication;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -89,9 +90,9 @@ public class GridIoManagerBenchmark {
 
     /**
      * @param args Command line arguments.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         int threads = args.length > 0 ? Integer.parseInt(args[0]) : DFLT_THREADS;
         int duration =  args.length > 1 ? Integer.parseInt(args[1]) : 0;
         String outputFilename = args.length > 2 ? args[2] : null;
@@ -232,7 +233,7 @@ public class GridIoManagerBenchmark {
                 try {
                     io.send(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -284,7 +285,7 @@ public class GridIoManagerBenchmark {
                         throw new RuntimeException("Failed to await latch.");
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
             }
             catch (InterruptedException ignored) {

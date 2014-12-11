@@ -10,12 +10,12 @@
 package org.gridgain.grid.kernal.managers.communication;
 
 import org.apache.commons.collections.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -103,7 +103,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         try {
             ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg);
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // No-op. We are using mocks so real sending is impossible.
         }
 
@@ -127,7 +127,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         try {
             ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_GGFS, false, 123L);
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // No-op. We are using mocks so real sending is impossible.
         }
 
@@ -177,7 +177,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void send(ClusterNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
-            GridIoPolicy plc) throws GridException {
+            GridIoPolicy plc) throws IgniteCheckedException {
             // No-op.
         }
     }

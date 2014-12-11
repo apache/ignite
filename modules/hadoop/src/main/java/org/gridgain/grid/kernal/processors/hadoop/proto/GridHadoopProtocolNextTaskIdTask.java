@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -22,7 +23,7 @@ public class GridHadoopProtocolNextTaskIdTask extends GridHadoopProtocolTaskAdap
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobId run(ComputeJobContext jobCtx, GridHadoop hadoop,
-        GridHadoopProtocolTaskArguments args) throws GridException {
+        GridHadoopProtocolTaskArguments args) throws IgniteCheckedException {
         return hadoop.nextJobId();
     }
 }

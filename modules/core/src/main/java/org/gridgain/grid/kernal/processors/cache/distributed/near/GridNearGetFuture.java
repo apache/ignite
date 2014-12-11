@@ -356,7 +356,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 try {
                     cctx.io().send(n, req);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyException)
                         fut.onResult((ClusterTopologyException)e);
@@ -503,7 +503,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onDone(e);
 
                 break;
@@ -596,7 +596,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry while processing get response (will not retry).");
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // Fail.
                     onDone(e);
 
@@ -742,7 +742,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 if (rmtTopVer <= topVer) {
                     // Fail the whole get future.
-                    onDone(new GridException("Failed to process invalid partitions response (remote node reported " +
+                    onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                         "invalid partitions but remote topology version does not differ from local) " +
                         "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", invalidParts=" + invalidParts +
                         ", nodeId=" + node.id() + ']'));
@@ -757,7 +757,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 IgniteFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
 
                 topFut.listenAsync(new CIX1<IgniteFuture<Long>>() {
-                    @Override public void applyx(IgniteFuture<Long> fut) throws GridException {
+                    @Override public void applyx(IgniteFuture<Long> fut) throws IgniteCheckedException {
                         long readyTopVer = fut.get();
 
                         // This will append new futures to compound list.
@@ -792,13 +792,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             private long topVer;
 
             /** Exception cause. */
-            private GridException e;
+            private IgniteCheckedException e;
 
             /**
              * @param timeout Timeout.
              * @param topVer Topology version timeout was created on.
              */
-            private RemapTimeoutObject(long timeout, long topVer, GridException e) {
+            private RemapTimeoutObject(long timeout, long topVer, IgniteCheckedException e) {
                 super(timeout);
 
                 this.topVer = topVer;
@@ -809,7 +809,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             @Override public void onTimeout() {
                 if (finish())
                     // Fail the whole get future.
-                    onDone(new GridException("Failed to wait for topology version to change: " + (topVer + 1), e));
+                    onDone(new IgniteCheckedException("Failed to wait for topology version to change: " + (topVer + 1), e));
                 // else remap happened concurrently.
             }
 

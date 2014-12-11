@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.lang.*;
@@ -79,7 +79,7 @@ public abstract class GridCacheAbstractTtlSelfTest extends GridCacheAbstractSelf
      */
     private void checkKeyIsRetired(final String key, int ttl) throws Exception {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @Override public boolean applyx() throws GridException {
+            @Override public boolean applyx() throws IgniteCheckedException {
                 for (int i = 0; i < gridCount(); i++) {
                     if (cache(i).get(key) != null) {
                         info("Key is still in cache of grid " + i);

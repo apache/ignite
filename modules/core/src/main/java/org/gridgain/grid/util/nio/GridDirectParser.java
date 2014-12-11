@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +44,7 @@ public class GridDirectParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException {
+    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
         if (msgFactory == null)
             msgFactory = spi.getSpiContext().messageFactory();
 
@@ -69,7 +69,7 @@ public class GridDirectParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         // No encoding needed for direct messages.
         throw new UnsupportedEncodingException();
     }

@@ -236,7 +236,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /**
      *
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
@@ -269,7 +269,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
                 tx.commit();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 tx.rollback();
 
                 throw e;

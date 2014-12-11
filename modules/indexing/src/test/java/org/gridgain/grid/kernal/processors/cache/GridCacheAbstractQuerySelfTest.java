@@ -231,9 +231,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * Tests UDFs.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testUserDefinedFunction() throws GridException {
+    public void testUserDefinedFunction() throws IgniteCheckedException {
         // Without alias.
         GridCacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
             projection(ignite.cluster());
@@ -275,7 +275,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             null
         );
     }
@@ -1110,9 +1110,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testBadHashObjectKey() throws GridException {
+    public void testBadHashObjectKey() throws IgniteCheckedException {
         GridCache<BadHashKeyObject, Integer> cache = ignite.cache(null);
 
         cache.put(new BadHashKeyObject("test_key1"), 9);
@@ -1124,9 +1124,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testTextIndexedKey() throws GridException {
+    public void testTextIndexedKey() throws IgniteCheckedException {
         GridCache<ObjectValue, Integer> cache = ignite.cache(null);
 
         cache.put(new ObjectValue("test_key1", 10), 19);
@@ -1683,9 +1683,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @param cls Class to check index table for.
      * @param qryMgr Query manager.
      * @return {@code true} if index has a table for given class.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr) throws GridException {
+    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr) throws IgniteCheckedException {
         return qryMgr.size(cls) != -1;
     }
 
@@ -2003,18 +2003,18 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Object key, @Nullable Object val)
-            throws GridException {
+            throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

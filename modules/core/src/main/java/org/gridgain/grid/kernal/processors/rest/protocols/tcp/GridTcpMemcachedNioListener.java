@@ -161,7 +161,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
         IgniteFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
 
         f.listenAsync(new CIX1<IgniteFuture<GridRestResponse>>() {
-            @Override public void applyx(IgniteFuture<GridRestResponse> f) throws GridException {
+            @Override public void applyx(IgniteFuture<GridRestResponse> f) throws IgniteCheckedException {
                 GridRestResponse restRes = f.get();
 
                 // Handle 'Stat' command (special case because several packets are included in response).
@@ -243,7 +243,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
             return ses.send(wrapper);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to marshal response: " + res, e);
 
             ses.close();

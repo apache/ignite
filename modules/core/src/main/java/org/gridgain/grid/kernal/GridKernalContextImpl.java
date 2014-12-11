@@ -333,7 +333,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
         try {
             spring = SPRING.create(false);
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             if (log != null && log.isDebugEnabled())
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/gridgain.xml.");

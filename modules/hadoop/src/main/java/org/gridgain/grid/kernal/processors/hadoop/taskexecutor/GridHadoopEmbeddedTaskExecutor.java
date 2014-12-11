@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
@@ -33,7 +34,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopExecutorService exec;
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
         jobTracker = ctx.jobTracker();
@@ -61,7 +62,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws GridException {
+    @Override public void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
@@ -93,11 +94,11 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
                     jobTracker.onTaskFinished(info, status);
                 }
 
-                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext taskCtx) throws GridException {
+                @Override protected GridHadoopTaskInput createInput(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
                     return ctx.shuffle().input(taskCtx);
                 }
 
-                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext taskCtx) throws GridException {
+                @Override protected GridHadoopTaskOutput createOutput(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
                     return ctx.shuffle().output(taskCtx);
                 }
             };
@@ -128,7 +129,7 @@ public class GridHadoopEmbeddedTaskExecutor extends GridHadoopTaskExecutorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onJobStateChanged(GridHadoopJobMetadata meta) throws GridException {
+    @Override public void onJobStateChanged(GridHadoopJobMetadata meta) throws IgniteCheckedException {
         if (meta.phase() == GridHadoopJobPhase.PHASE_COMPLETE) {
             Collection<GridHadoopRunnableTask> executedTasks = jobs.remove(meta.jobId());
 

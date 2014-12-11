@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -30,9 +31,9 @@ public class GridHadoopV1Splitter {
     /**
      * @param jobConf Job configuration.
      * @return Collection of mapped splits.
-     * @throws GridException If mapping failed.
+     * @throws IgniteCheckedException If mapping failed.
      */
-    public static Collection<GridHadoopInputSplit> splitJob(JobConf jobConf) throws GridException {
+    public static Collection<GridHadoopInputSplit> splitJob(JobConf jobConf) throws IgniteCheckedException {
         try {
             InputFormat<?, ?> format = jobConf.getInputFormat();
 
@@ -57,7 +58,7 @@ public class GridHadoopV1Splitter {
             return res;
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -66,10 +67,10 @@ public class GridHadoopV1Splitter {
      * @param in Input stream.
      * @param hosts Optional hosts.
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public static GridHadoopFileBlock readFileBlock(String clsName, FSDataInputStream in,
-        @Nullable String[] hosts) throws GridException {
+        @Nullable String[] hosts) throws IgniteCheckedException {
         if (!FileSplit.class.getName().equals(clsName))
             return null;
 
@@ -79,7 +80,7 @@ public class GridHadoopV1Splitter {
             split.readFields(in);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         if (hosts == null)

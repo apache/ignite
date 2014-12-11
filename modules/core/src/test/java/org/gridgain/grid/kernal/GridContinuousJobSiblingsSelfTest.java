@@ -69,15 +69,15 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         private volatile int jobCnt;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             return Collections.singleton(new TestJob(++jobCnt));
         }
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (res.getException() != null)
-                throw new GridException("Job resulted in error: " + res, res.getException());
+                throw new IgniteCheckedException("Job resulted in error: " + res, res.getException());
 
             assert ses.getJobSiblings().size() == jobCnt;
 
@@ -91,7 +91,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assertEquals(JOB_COUNT, results.size());
 
             return null;
@@ -116,7 +116,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             assert ses != null;
             assert argument(0) != null;
 

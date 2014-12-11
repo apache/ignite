@@ -231,7 +231,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     }
 
     /** {@inheritDoc} */
-    @Override public GridDiscoveryTopologySnapshot topologySnapshot() throws GridException {
+    @Override public GridDiscoveryTopologySnapshot topologySnapshot() throws IgniteCheckedException {
         get();
 
         if (topSnapshot.get() == null)
@@ -272,7 +272,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Rechecks topology.
      */
-    private void initTopology(GridCacheContext<K, V> cacheCtx) throws GridException {
+    private void initTopology(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
         if (canCalculateAffinity(cacheCtx)) {
             if (log.isDebugEnabled())
                 log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
@@ -491,7 +491,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
                 throw e;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
 
                 onDone(e);
@@ -537,9 +537,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @param node Node.
      * @param id ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) throws GridException {
+    private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
@@ -556,10 +556,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @param nodes Nodes.
      * @param id ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id)
-        throws GridException {
+        throws IgniteCheckedException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(id, lastVer.get(),
             id.topologyVersion());
 
@@ -592,7 +592,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 log.debug("Oldest node left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             scheduleRecheck();
 
             U.error(log, "Failed to send local partitions to oldest node (will retry after timeout) [oldestNodeId=" +
@@ -609,7 +609,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             scheduleRecheck();
 
             U.error(log, "Failed to send full partition map to nodes (will retry after timeout) [nodes=" +
@@ -711,7 +711,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 if (n != null)
                     sendAllPartitions(F.asList(n), exchId);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 scheduleRecheck();
 
                 U.error(log, "Failed to send full partition map to node (will retry after timeout) [node=" + nodeId +
@@ -764,7 +764,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                     ", fut=" + this + ']');
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to initialize exchange future: " + this, e);
                     }
                 }
@@ -915,7 +915,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                                 for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
                                                     cacheCtx.topology().beforeExchange(exchId);
                                             }
-                                            catch (GridException e) {
+                                            catch (IgniteCheckedException e) {
                                                 onDone(e);
 
                                                 return;
@@ -988,7 +988,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     cctx.io().safeSend(cctx.discovery().nodes(remaining),
                         new GridDhtPartitionsSingleRequest<K, V>(exchId), null);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to request partitions from nodes [exchangeId=" + exchId +
                         ", nodes=" + remaining + ']', e);
                 }

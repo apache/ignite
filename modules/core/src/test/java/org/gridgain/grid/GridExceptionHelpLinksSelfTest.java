@@ -1,6 +1,7 @@
 package org.gridgain.grid;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -15,13 +16,13 @@ public class GridExceptionHelpLinksSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testDefaultLinks() throws Exception {
-        assertTrue(hasLinksInMessage(new GridException("test"), DFLT_HELP_LINKS));
-        assertTrue(hasLinksInMessage(new GridException(new Exception()), DFLT_HELP_LINKS));
-        assertTrue(hasLinksInMessage(new GridException("test", new Exception()), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteCheckedException("test"), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteCheckedException(new Exception()), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteCheckedException("test", new Exception()), DFLT_HELP_LINKS));
 
-        assertTrue(hasLinksInMessage(new GridRuntimeException("test"), DFLT_HELP_LINKS));
-        assertTrue(hasLinksInMessage(new GridRuntimeException(new Exception()), DFLT_HELP_LINKS));
-        assertTrue(hasLinksInMessage(new GridRuntimeException("test", new Exception()), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteException("test"), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteException(new Exception()), DFLT_HELP_LINKS));
+        assertTrue(hasLinksInMessage(new IgniteException("test", new Exception()), DFLT_HELP_LINKS));
     }
 
     /**
@@ -29,27 +30,27 @@ public class GridExceptionHelpLinksSelfTest extends TestCase {
      */
     public void testLinksUniqueness() {
         assertLinksAppearOnce(
-            new GridException("test",
-                new GridException("test nested",
-                    new GridException("last"))),
+            new IgniteCheckedException("test",
+                new IgniteCheckedException("test nested",
+                    new IgniteCheckedException("last"))),
             DFLT_HELP_LINKS);
 
         assertLinksAppearOnce(
-            new GridRuntimeException("test",
-                new GridRuntimeException("test nested",
-                    new GridRuntimeException("last"))),
+            new IgniteException("test",
+                new IgniteException("test nested",
+                    new IgniteException("last"))),
             DFLT_HELP_LINKS);
 
         assertLinksAppearOnce(
-            new GridException("test",
-                new GridRuntimeException("test nested",
-                    new GridException("last"))),
+            new IgniteCheckedException("test",
+                new IgniteException("test nested",
+                    new IgniteCheckedException("last"))),
             DFLT_HELP_LINKS);
 
         assertLinksAppearOnce(
-            new GridRuntimeException("test",
-                new GridException("test nested",
-                    new GridRuntimeException("last"))),
+            new IgniteException("test",
+                new IgniteCheckedException("test nested",
+                    new IgniteException("last"))),
             DFLT_HELP_LINKS);
     }
 

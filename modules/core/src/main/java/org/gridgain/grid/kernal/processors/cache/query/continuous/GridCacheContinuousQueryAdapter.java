@@ -212,12 +212,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void execute() throws GridException {
+    @Override public void execute() throws IgniteCheckedException {
         execute(null, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(@Nullable ClusterGroup prj) throws GridException {
+    @Override public void execute(@Nullable ClusterGroup prj) throws IgniteCheckedException {
         execute(prj, false);
     }
 
@@ -226,9 +226,9 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
      *
      * @param prj Grid projection.
      * @param internal If {@code true} then query notified about internal entries updates.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void execute(@Nullable ClusterGroup prj, boolean internal) throws GridException {
+    public void execute(@Nullable ClusterGroup prj, boolean internal) throws IgniteCheckedException {
         if (locCb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
@@ -285,7 +285,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         closeLock.lock();
 
         try {

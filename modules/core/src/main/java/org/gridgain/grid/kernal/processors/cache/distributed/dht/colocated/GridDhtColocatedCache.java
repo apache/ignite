@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -79,7 +79,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         super.start();
 
         ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
@@ -113,7 +113,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         GridTuple<V> val = null;
 
         if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
@@ -284,7 +284,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                         break; // While.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         return new GridFinishedFuture<>(ctx.kernalContext(), e);
                     }
                     finally {
@@ -389,7 +389,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     if (!lock.reentry()) {
                         if (!ver.equals(lock.version()))
-                            throw new GridException("Failed to unlock (if keys were locked separately, " +
+                            throw new IgniteCheckedException("Failed to unlock (if keys were locked separately, " +
                                 "then they need to be unlocked separately): " + keys);
 
                         if (!primary.isLocal()) {
@@ -435,7 +435,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     ctx.io().send(n, req);
             }
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
     }
@@ -518,7 +518,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 }
             }
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
     }
@@ -557,7 +557,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 return lockAllAsync0(cacheCtx, tx, threadId, ver, topVer, keys, txRead, timeout, filter);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(ctx.kernalContext(), e);
             }
         }

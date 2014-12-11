@@ -256,7 +256,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
                     }
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to find finalizers for resource: " + rsrc, e);
             }
 
@@ -283,14 +283,14 @@ class GridResourceCustomInjector implements GridResourceInjector {
         try {
             ioc.inject(rsrc.getResource(), annCls, nullInjector, null, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to clean up resource [ann=" + annCls + ", rsrc=" + rsrc + ']', e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls,
-        GridDeployment dep) throws GridException {
+        GridDeployment dep) throws IgniteCheckedException {
         assert dep != null;
 
         IgniteUserResource ann = (IgniteUserResource)field.getAnnotation();
@@ -298,7 +298,7 @@ class GridResourceCustomInjector implements GridResourceInjector {
         assert ann != null;
 
         if (!Modifier.isTransient(field.getField().getModifiers())) {
-            throw new GridException("@GridUserResource must only be used with 'transient' fields: " +
+            throw new IgniteCheckedException("@GridUserResource must only be used with 'transient' fields: " +
                 field.getField());
         }
 
@@ -312,13 +312,13 @@ class GridResourceCustomInjector implements GridResourceInjector {
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         assert dep != null;
 
         IgniteUserResource ann = (IgniteUserResource)mtd.getAnnotation();
 
         if (mtd.getMethod().getParameterTypes().length != 1)
-            throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());
+            throw new IgniteCheckedException("Method injection setter must have only one parameter: " + mtd.getMethod());
 
         Class<?> rsrcCls = !ann.resourceClass().equals(Void.class) ? ann.resourceClass() :
             mtd.getMethod().getParameterTypes()[0];
@@ -338,10 +338,10 @@ class GridResourceCustomInjector implements GridResourceInjector {
      * @param rsrcCls Resource class.
      * @param rsrcName Resource name.
      * @return Created resource.
-     * @throws GridException If resource creation failed.
+     * @throws IgniteCheckedException If resource creation failed.
      */
     private Object getResource(GridDeployment dep, Class<?> depCls, Class<?> rsrcCls, String rsrcName)
-        throws GridException {
+        throws IgniteCheckedException {
         assert dep != null;
 
         // For performance reasons we first try to acquire read lock and
@@ -434,9 +434,9 @@ class GridResourceCustomInjector implements GridResourceInjector {
      * @param dep Deployment.
      * @param depCls Deployed class.
      * @return Created object with injected resources.
-     * @throws GridException Thrown in case of any errors during injection.
+     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
-    private CachedResource createResource(Class<?> rsrcCls, GridDeployment dep, Class<?> depCls) throws GridException {
+    private CachedResource createResource(Class<?> rsrcCls, GridDeployment dep, Class<?> depCls) throws IgniteCheckedException {
         assert dep != null;
 
         try {
@@ -466,13 +466,13 @@ class GridResourceCustomInjector implements GridResourceInjector {
             return new CachedResource(rsrc, dep.classLoader());
         }
         catch (InstantiationException e) {
-            throw new GridException("Failed to instantiate task shared resource: " + rsrcCls, e);
+            throw new IgniteCheckedException("Failed to instantiate task shared resource: " + rsrcCls, e);
         }
         catch (IllegalAccessException e) {
-            throw new GridException("Failed to access task shared resource (is class public?): " + rsrcCls, e);
+            throw new IgniteCheckedException("Failed to access task shared resource (is class public?): " + rsrcCls, e);
         }
         catch (InvocationTargetException e) {
-            throw new GridException("Failed to initialize task shared resource: " + rsrcCls, e);
+            throw new IgniteCheckedException("Failed to initialize task shared resource: " + rsrcCls, e);
         }
     }
 
@@ -482,17 +482,17 @@ class GridResourceCustomInjector implements GridResourceInjector {
      * @param cls Class in which search for methods.
      * @param annCls Annotation.
      * @return Set of methods with given annotations.
-     * @throws GridException Thrown in case when method contains parameters.
+     * @throws IgniteCheckedException Thrown in case when method contains parameters.
      */
     private List<Method> getMethodsWithAnnotation(Class<?> cls, Class<? extends Annotation> annCls)
-        throws GridException {
+        throws IgniteCheckedException {
         List<Method> mtds = new ArrayList<>();
 
         for (Class<?> c = cls; !c.equals(Object.class); c = c.getSuperclass()) {
             for (Method mtd : c.getDeclaredMethods()) {
                 if (mtd.getAnnotation(annCls) != null) {
                     if (mtd.getParameterTypes().length > 0) {
-                        throw new GridException("Task shared resource initialization or finalization method should " +
+                        throw new IgniteCheckedException("Task shared resource initialization or finalization method should " +
                             "not have parameters: " + mtd);
                     }
 

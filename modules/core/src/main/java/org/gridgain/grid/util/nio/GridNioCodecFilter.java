@@ -53,22 +53,22 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+    @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionOpened(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+    @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionClosed(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         // No encoding needed in direct mode.
         if (directMode)
             return proceedSessionWrite(ses, msg);
@@ -84,7 +84,7 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         if (!(msg instanceof ByteBuffer))
             throw new GridNioException("Failed to decode incoming message (incoming message is not a byte buffer, " +
                 "is filter properly placed?): " + msg.getClass());
@@ -116,17 +116,17 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         return proceedSessionClose(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionWriteTimeout(ses);
     }
 }

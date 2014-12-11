@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
@@ -56,10 +56,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     /**
      * Waits when internal set maps are cleared.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private void waitSetResourcesCleared() throws GridException {
+    private void waitSetResourcesCleared() throws IgniteCheckedException {
         final int MAX_CHECK = 5;
 
         for (int i = 0; i < MAX_CHECK; i++) {

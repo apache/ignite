@@ -603,17 +603,17 @@ public class VisorTaskUtils {
      *
      * @param ggfs GGFS instance to resolve logs dir for.
      * @return {@link Path} to log dir or {@code null} if not found.
-     * @throws GridException if failed to resolve.
+     * @throws IgniteCheckedException if failed to resolve.
      */
-    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws GridException {
+    public static Path resolveGgfsProfilerLogsDir(IgniteFs ggfs) throws IgniteCheckedException {
         String logsDir;
 
         if (ggfs instanceof GridGgfsEx)
             logsDir = ((GridGgfsEx) ggfs).clientLogDirectory();
         else if (ggfs == null)
-            throw new GridException("Failed to get profiler log folder (GGFS instance not found)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
         else
-            throw new GridException("Failed to get profiler log folder (unexpected GGFS instance type)");
+            throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
 
         URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 

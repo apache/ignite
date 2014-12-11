@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -37,7 +37,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean offer(final T item) throws GridRuntimeException {
+    @Override public boolean offer(final T item) throws IgniteException {
         A.notNull(item, "item");
 
         try {
@@ -83,14 +83,14 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             return retVal;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public T poll() throws GridRuntimeException {
+    @Nullable @Override public T poll() throws IgniteException {
         try {
             int cnt = 0;
 
@@ -130,8 +130,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             return retVal;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -187,14 +187,14 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             return retVal;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void removeItem(final long rmvIdx) throws GridException {
+    @Override protected void removeItem(final long rmvIdx) throws IgniteCheckedException {
         try {
             int cnt = 0;
 
@@ -228,8 +228,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 }
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 }

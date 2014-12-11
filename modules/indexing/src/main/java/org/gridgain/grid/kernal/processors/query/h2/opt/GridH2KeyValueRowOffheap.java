@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.h2.store.*;
@@ -179,7 +179,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSwap() throws GridException {
+    @Override public synchronized void onSwap() throws IgniteCheckedException {
         Lock l = lock(ptr);
 
         try {
@@ -211,7 +211,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onUnswap(Object val) throws GridException {
+    @Override public synchronized void onUnswap(Object val) throws IgniteCheckedException {
         super.onUnswap(val);
 
         Value v = getValue(VAL_COL);

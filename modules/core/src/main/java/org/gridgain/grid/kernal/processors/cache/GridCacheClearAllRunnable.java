@@ -92,7 +92,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
                         try {
                             it = ctx.swap().lazySwapIterator();
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to get iterator over swap.", e);
                         }
 
@@ -109,7 +109,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
                         try {
                             ctx.swap().clearSwap();
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to clear entries from swap storage.", e);
                         }
                     }
@@ -127,7 +127,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         try {
             e.clear(obsoleteVer, false, CU.<K, V>empty());
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clear entry from cache (will continue to clear other entries): " + e, ex);
         }
     }

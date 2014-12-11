@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
@@ -377,9 +377,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param key Key to reload.
      * @return Reloaded value or current value if entry was updated while reloading.
-     * @throws GridException If reloading failed.
+     * @throws IgniteCheckedException If reloading failed.
      */
-    @Nullable public V reload(K key) throws GridException;
+    @Nullable public V reload(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously reloads a single key from persistent storage. This method
@@ -400,9 +400,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * This method does not participate in transactions, however it does not violate
      * cache integrity and can be used safely with or without transactions.
      *
-     * @throws GridException If reloading failed.
+     * @throws IgniteCheckedException If reloading failed.
      */
-    public void reloadAll() throws GridException;
+    public void reloadAll() throws IgniteCheckedException;
 
     /**
      * Asynchronously reloads all specified entries from underlying
@@ -422,9 +422,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * cache integrity and can be used safely with or without transactions.
      *
      * @param keys Keys to reload.
-     * @throws GridException if reloading failed.
+     * @throws IgniteCheckedException if reloading failed.
      */
-    public void reloadAll(@Nullable Collection<? extends K> keys) throws GridException;
+    public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Asynchronously reloads all specified entries from underlying
@@ -469,10 +469,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param key Entry key.
      * @param modes Optional set of peek modes.
      * @return Peeked value.
-     * @throws GridException If peek operation failed.
+     * @throws IgniteCheckedException If peek operation failed.
      * @throws NullPointerException If key is {@code null}.
      */
-    @Nullable public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException;
+    @Nullable public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException;
 
     /**
      * Retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -493,11 +493,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param key Key to retrieve the value for.
      * @return Value for the given key.
-     * @throws GridException If get operation failed.
+     * @throws IgniteCheckedException If get operation failed.
      * @throws GridCacheFlagException If failed projection flags validation.
      * @throws NullPointerException if the key is {@code null}.
      */
-    @Nullable public V get(K key) throws GridException;
+    @Nullable public V get(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
@@ -542,10 +542,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param keys Keys to get.
      * @return Map of key-value pairs.
-     * @throws GridException If get operation failed.
+     * @throws IgniteCheckedException If get operation failed.
      * @throws GridCacheFlagException If failed projection flags validation.
      */
-    public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws GridException;
+    public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -601,11 +601,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *  if entry did not pass the filter, or if there was no mapping for the key in swap
      *  or in persistent storage.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If put operation failed.
+     * @throws IgniteCheckedException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     @Nullable public V put(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache. If filters are provided, then entries will
@@ -669,11 +669,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
      *      specified.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If put operation failed.
+     * @throws IgniteCheckedException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public boolean putx(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -731,9 +731,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param transformer Closure to be applied to the previous value in cache. If this closure returns
      *      {@code null}, the associated value will be removed from cache.
      * @throws NullPointerException If either key or transform closure is {@code null}.
-     * @throws GridException On any error occurred while storing value in cache.
+     * @throws IgniteCheckedException On any error occurred while storing value in cache.
      */
-    public void transform(K key, IgniteClosure<V, V> transformer) throws GridException;
+    public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException;
 
     /**
      * Applies {@code transformer} closure to the previous value associated with given key in cache,
@@ -749,9 +749,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param key Key to store in cache.
      * @param transformer Closure to be applied to the previous value in cache.
      * @return Value computed by the closure.
-     * @throws GridException On any error occurred while storing value in cache.
+     * @throws IgniteCheckedException On any error occurred while storing value in cache.
      */
-    public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer) throws GridException;
+    public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer) throws IgniteCheckedException;
 
     /**
      * Stores result of applying {@code transformer} closure to the previous value associated with
@@ -808,10 +808,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param val Value to be associated with the given key.
      * @return Previously contained value regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If put operation failed.
+     * @throws IgniteCheckedException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V putIfAbsent(K key, V val) throws GridException;
+    @Nullable public V putIfAbsent(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -865,10 +865,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param val Value to be associated with the given key.
      * @return {@code true} if value is stored in cache and {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If put operation failed.
+     * @throws IgniteCheckedException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean putxIfAbsent(K key, V val) throws GridException;
+    public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it.
@@ -920,10 +920,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param val Value to be associated with the given key.
      * @return Previously contained value regardless of whether replace happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If replace operation failed.
+     * @throws IgniteCheckedException If replace operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    @Nullable public V replace(K key, V val) throws GridException;
+    @Nullable public V replace(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
@@ -975,10 +975,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param val Value to be associated with the given key.
      * @return {@code True} if replace happened, {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If replace operation failed.
+     * @throws IgniteCheckedException If replace operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean replacex(K key, V val) throws GridException;
+    public boolean replacex(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if there is a previous mapping for it.
@@ -1025,10 +1025,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param newVal Value to be associated with the given key.
      * @return {@code True} if replace happened, {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridException If replace operation failed.
+     * @throws IgniteCheckedException If replace operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean replace(K key, V oldVal, V newVal) throws GridException;
+    public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -1071,11 +1071,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param m Key-value pairs to store in cache.
      * @param filter Optional entry filter. If provided, then entry will
      *      be stored only if the filter returned {@code true}.
-     * @throws GridException If put operation failed.
+     * @throws IgniteCheckedException If put operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Stores result of applying transform closures from the given map to previous values associated
@@ -1099,9 +1099,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
      *
      * @param m Map containing keys and closures to be applied to values.
-     * @throws GridException On any error occurred while storing value in cache.
+     * @throws IgniteCheckedException On any error occurred while storing value in cache.
      */
-    public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException;
+    public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException;
 
     /**
      * Stores result of applying the specified transform closure to previous values associated
@@ -1127,9 +1127,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param keys Keys for entries, to which the transformation closure will be applied.
      *             If the collection is {@code null} or empty, this method is no-op.
      * @param transformer Transformation closure to be applied to each value.
-     * @throws GridException On any error occurred while storing value in cache.
+     * @throws IgniteCheckedException On any error occurred while storing value in cache.
      */
-    public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer) throws GridException;
+    public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pairs in cache. If filters are provided, then entries will
@@ -1205,10 +1205,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *             If the collection is {@code null} or empty, this method is no-op.
      * @param transformer Transformation closure to be applied to each value.
      * @return Future for operation.
-     * @throws GridException On any error occurred while storing value in cache.
+     * @throws IgniteCheckedException On any error occurred while storing value in cache.
      */
     public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
@@ -1380,11 +1380,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws GridException If local node is not primary for any of provided keys.
+     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
     public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException;
+        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
@@ -1416,11 +1416,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws GridException If local node is not primary for any of provided keys.
+     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
     public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException;
+        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does
@@ -1540,11 +1540,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <p>
      * This method is identical to calling {@link #globalClearAll(long) globalClearAll(0)}.
      *
-     * @throws GridException In case of cache could not be cleared on any of the nodes.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      * @deprecated Deprecated in favor of {@link #globalClearAll(long)} method.
      */
     @Deprecated
-    public void globalClearAll() throws GridException;
+    public void globalClearAll() throws IgniteCheckedException;
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
@@ -1556,24 +1556,24 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param timeout Timeout for clear all task in milliseconds (0 for never).
      *      Set it to larger value for large caches.
-     * @throws GridException In case of cache could not be cleared on any of the nodes.
+     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      */
-    public void globalClearAll(long timeout) throws GridException;
+    public void globalClearAll(long timeout) throws IgniteCheckedException;
 
     /**
      * Clears serialized value bytes from entry (if any) leaving only object representation.
      *
      * @param key Key to compact.
-     * @throws GridException If failed to compact.
+     * @throws IgniteCheckedException If failed to compact.
      * @return {@code true} if entry was deleted from cache (i.e. was expired).
      */
-    public boolean compact(K key) throws GridException;
+    public boolean compact(K key) throws IgniteCheckedException;
 
     /**
      * Clears serialized value bytes from cache entries (if any) leaving only object representation.
-     * @throws GridException If failed to compact.
+     * @throws IgniteCheckedException If failed to compact.
      */
-    public void compactAll() throws GridException;
+    public void compactAll() throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,
@@ -1602,11 +1602,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Previous value associated with specified key, or {@code null}
      *      if there was no value for this key.
      * @throws NullPointerException If key is {@code null}.
-     * @throws GridException If remove operation failed.
+     * @throws IgniteCheckedException If remove operation failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     @Nullable public V remove(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache. If cache previously contained value for the given key,
@@ -1659,11 +1659,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return {@code True} if filter passed validation and entry was removed, {@code false} otherwise.
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
     public boolean removex(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache.
@@ -1709,10 +1709,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return {@code True} if entry was removed and passed in value matched the cached one,
      *      {@code false} otherwise.
      * @throws NullPointerException if the key or value is {@code null}.
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      * @throws GridCacheFlagException If projection flags validation failed.
      */
-    public boolean remove(K key, V val) throws GridException;
+    public boolean remove(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -1754,11 +1754,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param keys Keys whose mappings are to be removed from cache.
      * @param filter Optional filter to check prior to removing value form cache. Note
      *      that filter is checked atomically together with remove operation.
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mappings from cache for entries for which the optionally
@@ -1804,11 +1804,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param filter Filter used to supply keys for remove operation (if {@code null},
      *      then nothing will be removed).
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do
@@ -1855,11 +1855,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param filter Optional filter to validate prior to acquiring the lock.
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
-     * @throws GridException If lock acquisition resulted in error.
+     * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public boolean lock(K key, long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously acquires lock on a cached object with given
@@ -1907,11 +1907,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *      to be acquired.
      * @return {@code True} if all filters passed and locks were acquired before
      *      timeout has expired, {@code false} otherwise.
-     * @throws GridException If lock acquisition resulted in error.
+     * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1954,10 +1954,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param key Key to unlock.
      * @param filter Optional filter that needs to pass prior to unlock taking effect.
-     * @throws GridException If unlock execution resulted in error.
+     * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void unlock(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    public void unlock(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
@@ -1976,11 +1976,11 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param keys Keys to unlock.
      * @param filter Optional filter which needs to pass for individual entries
      *      to be unlocked.
-     * @throws GridException If unlock execution resulted in error.
+     * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Checks if any node owns a lock for this key.
@@ -2022,7 +2022,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @return Total cache size across all nodes.
      */
-    public int globalSize() throws GridException;
+    public int globalSize() throws IgniteCheckedException;
 
     /**
      * Gets size of near cache key set. This method will return count of all entries in near
@@ -2055,7 +2055,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @return Total primary cache size across all nodes.
      */
-    public int globalPrimarySize() throws GridException;
+    public int globalPrimarySize() throws IgniteCheckedException;
 
     /**
      * This method promotes cache entry by given key, if any, from offheap or swap storage
@@ -2068,10 +2068,10 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @param key Key to promote entry for.
      * @return Unswapped entry value or {@code null} for non-existing key.
-     * @throws GridException If promote failed.
+     * @throws IgniteCheckedException If promote failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    @Nullable public V promote(K key) throws GridException;
+    @Nullable public V promote(K key) throws IgniteCheckedException;
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage
@@ -2083,8 +2083,8 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * {@link GridCacheFlag#SKIP_SWAP}, {@link GridCacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
-     * @throws GridException If promote failed.
+     * @throws IgniteCheckedException If promote failed.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void promoteAll(@Nullable Collection<? extends K> keys) throws GridException;
+    public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 }

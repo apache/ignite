@@ -76,19 +76,19 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param path Path to get information for.
      * @return Summary object.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path is not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException;
+    public IgniteFsPathSummary summary(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Opens a file for reading.
      *
      * @param path File path to read.
      * @return File input stream to read data from.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public IgniteFsInputStream open(IgniteFsPath path) throws GridException;
+    public IgniteFsInputStream open(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Opens a file for reading.
@@ -96,10 +96,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param path File path to read.
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    @Override public IgniteFsInputStream open(IgniteFsPath path, int bufSize) throws GridException;
+    @Override public IgniteFsInputStream open(IgniteFsPath path, int bufSize) throws IgniteCheckedException;
 
     /**
      * Opens a file for reading.
@@ -108,10 +108,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @param seqReadsBeforePrefetch Amount of sequential reads before prefetch is started.
      * @return File input stream to read data from.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public IgniteFsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws GridException;
+    public IgniteFsInputStream open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) throws IgniteCheckedException;
 
     /**
      * Creates a file and opens it for writing.
@@ -119,9 +119,9 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param path File path to create.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
      * @return File output stream to write data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException;
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException;
 
     /**
      * Creates a file and opens it for writing.
@@ -133,10 +133,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param blockSize Block size.
      * @param props File properties to set.
      * @return File output stream to write data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-        long blockSize, @Nullable Map<String, String> props) throws GridException;
+        long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException;
 
     /**
      * Creates a file and opens it for writing.
@@ -150,11 +150,11 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param blockSize Block size.
      * @param props File properties to set.
      * @return File output stream to write data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -162,10 +162,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param path File path to append.
      * @param create Create file if it doesn't exist yet.
      * @return File output stream to append data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
-    public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException;
+    public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws IgniteCheckedException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -175,11 +175,11 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param create Create file if it doesn't exist yet.
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
-        @Nullable Map<String, String> props) throws GridException;
+        @Nullable Map<String, String> props) throws IgniteCheckedException;
 
     /**
      * Sets last access time and last modification time for a given path. If argument is {@code null},
@@ -190,9 +190,9 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param modificationTime Optional last modification time to set. Value {@code -1} does not update
      *      modification time.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If target was not found.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException;
+    public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException;
 
     /**
      * Gets affinity block locations for data blocks of the file, i.e. the nodes, on which the blocks
@@ -202,10 +202,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param start Position in the file to start affinity resolution from.
      * @param len Size of data in the file to resolve affinity for.
      * @return Affinity block locations.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws GridException;
+    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws IgniteCheckedException;
 
     /**
      * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
@@ -217,26 +217,26 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param len Size of data in the file to resolve affinity for.
      * @param maxLen Maximum length of a single returned block location length.
      * @return Affinity block locations.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.fs.IgniteFsFileNotFoundException If path doesn't exist.
      */
     public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Gets metrics snapshot for this file system.
      *
      * @return Metrics.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public IgniteFsMetrics metrics() throws GridException;
+    public IgniteFsMetrics metrics() throws IgniteCheckedException;
 
     /**
      * Resets metrics for this file system.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void resetMetrics() throws GridException;
+    public void resetMetrics() throws IgniteCheckedException;
 
     /**
      * Determines size of the file denoted by provided path. In case if path is a directory, then
@@ -244,18 +244,18 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      *
      * @param path File system path.
      * @return Total size.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public long size(IgniteFsPath path) throws GridException;
+    public long size(IgniteFsPath path) throws IgniteCheckedException;
 
     /**
      * Formats the file system removing all existing entries from it.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @throws GridException In case format has failed.
+     * @throws IgniteCheckedException In case format has failed.
      */
-    public void format() throws GridException;
+    public void format() throws IgniteCheckedException;
 
     /**
      * Executes GGFS task.
@@ -267,10 +267,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param paths Collection of paths to be processed within this task.
      * @param arg Optional task argument.
      * @return Task result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
+        Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
     /**
      * Executes GGFS task with overridden maximum range length (see
@@ -287,11 +287,11 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      *      GGFS blocks will be included.
      * @param arg Optional task argument.
      * @return Task result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Executes GGFS task.
@@ -303,10 +303,10 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param paths Collection of paths to be processed within this task.
      * @param arg Optional task argument.
      * @return Task result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException;
+        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
     /**
      * Executes GGFS task with overridden maximum range length (see
@@ -322,11 +322,11 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @param maxRangeLen Maximum range length.
      * @param arg Optional task argument.
      * @return Task result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeLen, @Nullable T arg) throws GridException;
+        long maxRangeLen, @Nullable T arg) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public IgniteFs enableAsync();

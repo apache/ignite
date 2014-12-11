@@ -47,7 +47,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("PublicInnerClass")
     public static class JobContextTask extends ComputeTaskSplitAdapter<Object, Object> {
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -89,7 +89,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             for (ComputeJobResult res : results) {
                 ComputeJobContext jobCtx = res.getJobContext();
 

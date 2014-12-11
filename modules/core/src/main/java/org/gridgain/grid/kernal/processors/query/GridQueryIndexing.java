@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
@@ -26,16 +26,16 @@ public interface GridQueryIndexing {
      * Starts indexing.
      *
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void start(GridKernalContext ctx) throws GridException;
+    public void start(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Stops indexing.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void stop() throws GridException;
+    public void stop() throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -45,10 +45,10 @@ public interface GridQueryIndexing {
      * @param params Query parameters.
      * @param filters Space name and key filters.
      * @return Query result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter filters) throws GridException;
+        Collection<Object> params, GridIndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -59,10 +59,10 @@ public interface GridQueryIndexing {
      * @param type Query return type.
      * @param filters Space name and key filters.
      * @return Queried rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws GridException;
+        Collection<Object> params, GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -72,10 +72,10 @@ public interface GridQueryIndexing {
      * @param type Query return type.
      * @param filters Space name and key filter.
      * @return Queried rows.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws GridException;
+        GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Gets size of index for given type or -1 if it is a unknown type.
@@ -84,29 +84,29 @@ public interface GridQueryIndexing {
      * @param desc Type descriptor.
      * @param filters Filters.
      * @return Objects number.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, GridIndexingQueryFilter filters)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param spaceName Space name.
      * @param desc Type descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor desc) throws GridException;
+    public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
 
     /**
      * Unregisters type and removes all corresponding data.
      *
      * @param spaceName Space name.
      * @param type Type descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type) throws GridException;
+    public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
@@ -118,28 +118,28 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @param ver Version.
      * @param expirationTime Expiration time or 0 if never expires.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, Object key, Object val, byte[] ver,
-        long expirationTime) throws GridException;
+        long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
      *
      * @param spaceName Space name.
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key) throws GridException;
+    public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
      *
      * @param spaceName Space name.
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, Object key) throws GridException;
+    public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -148,9 +148,9 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes) throws GridException;
+    public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes) throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type.

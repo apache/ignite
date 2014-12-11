@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
 import org.apache.commons.codec.binary.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.indexing.*;
@@ -19,7 +20,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -81,10 +81,10 @@ public class GridLuceneIndex implements Closeable {
      * @param spaceName Space name.
      * @param type Type descriptor.
      * @param storeVal Store value in index.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridLuceneIndex(IgniteMarshaller marshaller, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws GridException {
+        @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws IgniteCheckedException {
         this.marshaller = marshaller;
         this.spaceName = spaceName;
         this.type = type;
@@ -97,7 +97,7 @@ public class GridLuceneIndex implements Closeable {
                 Version.LUCENE_30)));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         GridQueryIndexDescriptor idx = null;
@@ -136,9 +136,9 @@ public class GridLuceneIndex implements Closeable {
      * @param val Value.
      * @param ver Version.
      * @param expires Expiration time.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void store(Object key, Object val, byte[] ver, long expires) throws GridException {
+    public void store(Object key, Object val, byte[] ver, long expires) throws IgniteCheckedException {
         Document doc = new Document();
 
         boolean stringsFound = false;
@@ -181,7 +181,7 @@ public class GridLuceneIndex implements Closeable {
             writer.addDocument(doc);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             updateCntr.incrementAndGet();
@@ -192,14 +192,14 @@ public class GridLuceneIndex implements Closeable {
      * Removes entry for given key from this index.
      *
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void remove(Object key) throws GridException {
+    public void remove(Object key) throws IgniteCheckedException {
         try {
             writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             updateCntr.incrementAndGet();
@@ -212,10 +212,10 @@ public class GridLuceneIndex implements Closeable {
      * @param qry Query.
      * @param filters Filters over result.
      * @return Query result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry,
-        GridIndexingQueryFilter filters) throws GridException {
+        GridIndexingQueryFilter filters) throws IgniteCheckedException {
         IndexReader reader;
 
         try {
@@ -230,7 +230,7 @@ public class GridLuceneIndex implements Closeable {
             reader = IndexReader.open(writer, true);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         IndexSearcher searcher = new IndexSearcher(reader);
@@ -248,7 +248,7 @@ public class GridLuceneIndex implements Closeable {
             docs = searcher.search(parser.parse(qry), f, Integer.MAX_VALUE);
         }
         catch (Exception e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         IgniteBiPredicate<K, V> fltr = null;
@@ -297,10 +297,10 @@ public class GridLuceneIndex implements Closeable {
          * @param searcher Searcher.
          * @param docs Docs.
          * @param filters Filters over result.
-         * @throws GridException if failed.
+         * @throws IgniteCheckedException if failed.
          */
         private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IgniteBiPredicate<K, V> filters)
-            throws GridException {
+            throws IgniteCheckedException {
             this.reader = reader;
             this.searcher = searcher;
             this.docs = docs;
@@ -323,9 +323,9 @@ public class GridLuceneIndex implements Closeable {
         /**
          * Finds next element.
          *
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private void findNext() throws GridException {
+        private void findNext() throws IgniteCheckedException {
             curr = null;
 
             while (idx < docs.length) {
@@ -335,7 +335,7 @@ public class GridLuceneIndex implements Closeable {
                     doc = searcher.doc(docs[idx++].doc);
                 }
                 catch (IOException e) {
-                    throw new GridException(e);
+                    throw new IgniteCheckedException(e);
                 }
 
                 String keyStr = doc.get(KEY_FIELD_NAME);
@@ -362,7 +362,7 @@ public class GridLuceneIndex implements Closeable {
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<K, V> onNext() throws GridException {
+        @Override protected IgniteBiTuple<K, V> onNext() throws IgniteCheckedException {
             IgniteBiTuple<K, V> res = curr;
 
             findNext();
@@ -371,12 +371,12 @@ public class GridLuceneIndex implements Closeable {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws GridException {
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
             return curr != null;
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws GridException {
+        @Override protected void onClose() throws IgniteCheckedException {
             U.closeQuiet(searcher);
             U.closeQuiet(reader);
         }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -38,7 +39,7 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws IgniteCheckedException {
         return new AdderImpl(ctx);
     }
 
@@ -93,9 +94,9 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
 
         /**
          * @param ctx Task context.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        protected AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+        protected AdderImpl(GridHadoopTaskContext ctx) throws IgniteCheckedException {
             super(ctx);
 
             keyReader = new Reader(keySer);
@@ -122,7 +123,7 @@ public class GridHadoopHashMultimap extends GridHadoopHashMultimapBase {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
+        @Override public void write(Object key, Object val) throws IgniteCheckedException {
             A.notNull(val, "val");
 
             int keyHash = U.hash(key.hashCode());

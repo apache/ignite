@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 /**
  * This interface provides a rich API for working with distributed atomic stamped value.
@@ -62,18 +62,18 @@ public interface GridCacheAtomicStamped<T, S> {
      * Gets both current value and current stamp of atomic stamped.
      *
      * @return both current value and current stamp of atomic stamped.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteBiTuple<T, S> get() throws GridException;
+    public IgniteBiTuple<T, S> get() throws IgniteCheckedException;
 
     /**
      * Unconditionally sets the value and the stamp.
      *
      * @param val Value.
      * @param stamp Stamp.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public void set(T val, S stamp) throws GridException;
+    public void set(T val, S stamp) throws IgniteCheckedException;
 
     /**
      * Conditionally sets the new value and new stamp. They will be set if {@code expVal}
@@ -84,25 +84,25 @@ public interface GridCacheAtomicStamped<T, S> {
      * @param expStamp Expected stamp.
      * @param newStamp New stamp.
      * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws GridException;
+    public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws IgniteCheckedException;
 
     /**
      * Gets current stamp.
      *
      * @return Current stamp.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public S stamp() throws GridException;
+    public S stamp() throws IgniteCheckedException;
 
     /**
      * Gets current value.
      *
      * @return Current value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public T value() throws GridException;
+    public T value() throws IgniteCheckedException;
 
     /**
      * Gets status of atomic.

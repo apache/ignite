@@ -219,7 +219,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             // Return next value.
             return GridP2PTestStaticVariable.staticVar++;
         }
@@ -239,7 +239,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
-            throws GridException {
+            throws IgniteCheckedException {
             Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -251,7 +251,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             ComputeJobResult res = results.get(0);

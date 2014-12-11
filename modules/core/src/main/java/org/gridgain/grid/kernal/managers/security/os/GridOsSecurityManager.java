@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.managers.security.os;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +38,7 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
 
     /** {@inheritDoc} */
     @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
-        throws GridException {
+        throws IgniteCheckedException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(GridSecuritySubjectType.REMOTE_NODE, node.id());
 
         s.address(new InetSocketAddress(F.first(node.addresses()), 0));
@@ -54,7 +54,7 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityContext authenticate(AuthenticationContext authCtx) throws GridException {
+    @Override public GridSecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
         GridSecuritySubjectAdapter s = new GridSecuritySubjectAdapter(authCtx.subjectType(), authCtx.subjectId());
 
         s.permissions(ALLOW_ALL);

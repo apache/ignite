@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -36,16 +36,16 @@ public interface GridHadoopJob {
      *
      * @return Input splits.
      */
-    public Collection<GridHadoopInputSplit> input() throws GridException;
+    public Collection<GridHadoopInputSplit> input() throws IgniteCheckedException;
 
     /**
      * Returns context for task execution.
      *
      * @param info Task info.
      * @return Task Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException;
+    public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
@@ -56,9 +56,9 @@ public interface GridHadoopJob {
      *
      * @param external If {@code true} then this job instance resides in external process.
      * @param locNodeId Local node ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void initialize(boolean external, UUID locNodeId) throws GridException;
+    public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
 
     /**
      * Release all the resources.
@@ -67,25 +67,25 @@ public interface GridHadoopJob {
      * {@code false} and on instance in external process with parameter {@code true}.
      *
      * @param external If {@code true} then this job instance resides in external process.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void dispose(boolean external) throws GridException;
+    public void dispose(boolean external) throws IgniteCheckedException;
 
     /**
      * Prepare local environment for the task.
      *
      * @param info Task info.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
+    public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up local environment of the task.
      *
      * @param info Task info.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException;
+    public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up the job staging directory.

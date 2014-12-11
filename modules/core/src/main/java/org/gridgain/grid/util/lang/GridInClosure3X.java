@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient in-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object, Object, Object)} method that calls
- * {@link #applyx(Object, Object, Object)} method and properly wraps {@link GridException}
+ * {@link #applyx(Object, Object, Object)} method and properly wraps {@link IgniteCheckedException}
  * into {@link GridClosureException} instance.
  * @see CIX3
  */
@@ -25,18 +25,18 @@ public abstract class GridInClosure3X<E1, E2, E3> implements GridInClosure3<E1, 
         try {
             applyx(e1, e2, e3);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }
 
     /**
-     * In-closure body that can throw {@link GridException}.
+     * In-closure body that can throw {@link IgniteCheckedException}.
      *
      * @param e1 First variable the closure is called or closed on.
      * @param e2 Second variable the closure is called or closed on.
      * @param e3 Third variable the closure is called or closed on.
-     * @throws GridException Thrown in case of any error condition inside of the closure.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the closure.
      */
-    public abstract void applyx(E1 e1, E2 e2, E3 e3) throws GridException;
+    public abstract void applyx(E1 e1, E2 e2, E3 e3) throws IgniteCheckedException;
 }

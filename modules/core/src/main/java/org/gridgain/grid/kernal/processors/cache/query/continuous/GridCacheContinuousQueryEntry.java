@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
@@ -113,9 +114,9 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      *
      * @param marsh Marshaller.
      * @param ldr Class loader.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    void initValue(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    void initValue(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert marsh != null;
 
         if (newVal == null && newValBytes != null && !newValBytes.isNull())
@@ -138,9 +139,9 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /**
      * @param marsh Marshaller.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    void p2pMarshal(IgniteMarshaller marsh) throws GridException {
+    void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         assert key != null;
@@ -159,9 +160,9 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     /**
      * @param marsh Marshaller.
      * @param ldr Class loader.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert marsh != null;
 
         assert key == null : "Key should be null: " + key;
@@ -213,7 +214,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         assert impl != null;
 
         return impl.peek(modes);
@@ -221,7 +222,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Nullable @Override public V get()
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(LOCAL);
@@ -239,7 +240,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V reload() throws GridException {
+    @Nullable @Override public V reload() throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -321,7 +322,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Nullable @Override public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -339,7 +340,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V setIfAbsent(V val) throws GridException {
+    @Nullable @Override public V setIfAbsent(V val) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -358,7 +359,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -377,7 +378,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setxIfAbsent(@Nullable V val) throws GridException {
+    @Override public boolean setxIfAbsent(@Nullable V val) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -395,7 +396,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         ctx.denyOnFlag(READ);
     }
 
@@ -407,7 +408,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V replace(V val) throws GridException {
+    @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -425,7 +426,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(V val) throws GridException {
+    @Override public boolean replacex(V val) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -443,7 +444,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(V oldVal, V newVal) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -462,7 +463,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Nullable @Override public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -480,7 +481,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -498,7 +499,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(V val) throws GridException {
+    @Override public boolean remove(V val) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -535,7 +536,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public boolean compact()
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -545,7 +546,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         assert impl != null;
 
         return impl.lock(timeout, filter);
@@ -560,7 +561,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         assert impl != null;
 
         impl.unlock(filter);
@@ -574,7 +575,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException {
+    @Override public int memorySize() throws IgniteCheckedException {
         assert impl != null;
 
         return impl.memorySize();

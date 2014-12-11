@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -35,9 +35,9 @@ abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T
 
     /**
      * @param data Data array.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data) throws GridException {
+    protected GridH2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
         this.data = data;
 
         if (data != null) {
@@ -45,7 +45,7 @@ abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T
                 row = new Object[data.getMetaData().getColumnCount()];
             }
             catch (SQLException e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
         else
@@ -69,7 +69,7 @@ abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T
             return true;
         }
         catch (SQLException e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -100,7 +100,7 @@ abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() throws GridException {
+    @Override public void onClose() throws IgniteCheckedException {
         if (data == null)
             // Nothing to close.
             return;
@@ -109,7 +109,7 @@ abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T
             U.closeQuiet(data.getStatement());
         }
         catch (SQLException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         U.closeQuiet(data);

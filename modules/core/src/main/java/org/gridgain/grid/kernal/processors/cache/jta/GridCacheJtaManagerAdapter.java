@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.jta;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
@@ -22,16 +22,16 @@ public abstract class GridCacheJtaManagerAdapter<K, V> extends GridCacheManagerA
      * Creates transaction manager finder.
      *
      * @param ccfg Cache configuration.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void createTmLookup(GridCacheConfiguration ccfg) throws GridException;
+    public abstract void createTmLookup(GridCacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public abstract void checkJta() throws GridException;
+    public abstract void checkJta() throws IgniteCheckedException;
 
     /**
      * Gets transaction manager finder. Returns Object to avoid dependency on JTA library.

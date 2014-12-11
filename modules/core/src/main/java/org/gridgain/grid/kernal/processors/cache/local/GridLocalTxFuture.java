@@ -164,7 +164,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
                 try {
                     tx.rollback();
                 }
-                catch (GridException ex) {
+                catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to rollback the transaction: " + tx, ex);
                 }
             }
@@ -193,7 +193,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
                     // Another thread or transaction owns some lock.
                     if (!entry.lockedByThread(tx.threadId())) {
                         if (tx.pessimistic())
-                            onError(new GridException("Pessimistic transaction does not own lock for commit: " + tx));
+                            onError(new IgniteCheckedException("Pessimistic transaction does not own lock for commit: " + tx));
 
                         if (log.isDebugEnabled())
                             log.debug("Transaction entry is not locked by transaction (will wait) [entry=" + entry +
@@ -279,7 +279,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
             catch (GridCacheTxTimeoutException e) {
                 onError(e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (tx.state() == UNKNOWN) {
                     onError(new GridCacheTxHeuristicException("Commit only partially succeeded " +
                         "(entries will be invalidated on remote nodes once transaction timeout passes): " +
@@ -304,7 +304,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
             try {
                 tx.rollback();
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to rollback the transaction: " + tx, ex);
             }
 
@@ -328,9 +328,9 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
     /**
      * Checks for errors.
      *
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private void checkError() throws GridException {
+    private void checkError() throws IgniteCheckedException {
         if (err.get() != null)
             throw U.cast(err.get());
     }

@@ -103,9 +103,9 @@ public final class GridSingleExecutionTest {
      *
      * @param log Log file name.
      * @return Logger.
-     * @throws GridException If file initialization failed.
+     * @throws IgniteCheckedException If file initialization failed.
      */
-    private static IgniteLogger initLogger(String log) throws GridException {
+    private static IgniteLogger initLogger(String log) throws IgniteCheckedException {
 
         Logger impl = Logger.getRootLogger();
 
@@ -126,7 +126,7 @@ public final class GridSingleExecutionTest {
             fileApp.rollOver();
         }
         catch (IOException e) {
-            throw new GridException("Unable to initialize file appender.", e);
+            throw new IgniteCheckedException("Unable to initialize file appender.", e);
         }
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();
@@ -169,19 +169,19 @@ public final class GridSingleExecutionTest {
      * @param springCfgPath Configuration file path.
      * @param log Log file name.
      * @return List of configurations.
-     * @throws GridException If failed..
+     * @throws IgniteCheckedException If failed..
      */
     @SuppressWarnings("unchecked")
-    private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath, String log) throws GridException {
+    private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath, String log) throws IgniteCheckedException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null) {
-            throw new GridException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
+            throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
                 ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
         }
 
         if (!path.isFile())
-            throw new GridException("Provided file path is not a file: " + path);
+            throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
         Appender app = new NullAppender();
@@ -194,7 +194,7 @@ public final class GridSingleExecutionTest {
             springCtx = new FileSystemXmlApplicationContext(path.toURI().toURL().toString());
         }
         catch (BeansException | MalformedURLException e) {
-            throw new GridException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
         }
 
         Map cfgMap;
@@ -204,18 +204,18 @@ public final class GridSingleExecutionTest {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null)
-            throw new GridException("Failed to find a single grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.isEmpty())
-            throw new GridException("Can't find grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);
 
         Collection<IgniteConfiguration> res = new ArrayList<>();
 
@@ -235,7 +235,7 @@ public final class GridSingleExecutionTest {
     /** */
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
@@ -243,7 +243,7 @@ public final class GridSingleExecutionTest {
                     @IgniteLoggerResource
                     private IgniteLogger log;
 
-                    @Override public Serializable execute() throws GridException {
+                    @Override public Serializable execute() throws IgniteCheckedException {
                         if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
 
@@ -256,7 +256,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 
@@ -271,7 +271,7 @@ public final class GridSingleExecutionTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
@@ -279,7 +279,7 @@ public final class GridSingleExecutionTest {
                     @IgniteLoggerResource
                     private IgniteLogger log;
 
-                    @Override public Serializable execute() throws GridException {
+                    @Override public Serializable execute() throws IgniteCheckedException {
                         if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
 
@@ -299,7 +299,7 @@ public final class GridSingleExecutionTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws GridException {
+            List<ComputeJobResult> received) throws IgniteCheckedException {
             ses.setAttribute("attr7", 7);
             ses.setAttribute("attr8", 8);
 
@@ -307,7 +307,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -86,7 +87,7 @@ public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements C
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute() throws GridException {
+    @Override public Object execute() throws IgniteCheckedException {
         return job.execute();
     }
 

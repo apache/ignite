@@ -129,7 +129,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
                     try {
                         tmp = U.resolveWorkDirectory(path, false);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new IgniteSpiException("Failed to resolve directory [path=" + path +
                             ", exception=" + e.getMessage() + ']');
                     }

@@ -92,7 +92,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
             log.info("Task result state: " + state);
 
             assert state != null;
@@ -102,7 +102,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             log.info("Task reduce state: " + state);
 
             assert state != null;

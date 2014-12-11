@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.map.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
@@ -31,7 +32,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
+    @Override public void run0(GridHadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         GridHadoopInputSplit split = info().inputSplit();
 
         InputSplit nativeSplit;
@@ -86,7 +87,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
         catch (Exception e) {
             err = e;
 
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             if (err != null)

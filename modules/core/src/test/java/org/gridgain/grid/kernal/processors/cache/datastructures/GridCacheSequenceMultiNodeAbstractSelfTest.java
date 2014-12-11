@@ -148,7 +148,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         final GridCacheAtomicSequence seq = grid(0).cache(null).dataStructures().atomicSequence(seqName, 0, true);
 
         grid(1).compute().run(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 assertNotNull(seq);
 
                 for (int i = 0; i < RETRIES; i++)
@@ -195,7 +195,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         }
 
         /** {@inheritDoc} */
-        @Override public Set<Long> call() throws GridException {
+        @Override public Set<Long> call() throws IgniteCheckedException {
             assert ignite != null;
 
             if (log.isInfoEnabled())
@@ -249,7 +249,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         }
 
         /** {@inheritDoc} */
-        @Override public Set<Long> call() throws GridException {
+        @Override public Set<Long> call() throws IgniteCheckedException {
             assert ignite != null;
 
             if (log.isInfoEnabled())

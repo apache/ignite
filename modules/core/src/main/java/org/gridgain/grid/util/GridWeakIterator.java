@@ -1,6 +1,6 @@
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.lang.*;
 
 import java.lang.ref.*;
@@ -30,9 +30,9 @@ public class GridWeakIterator<T> extends WeakReference<Iterator<T>> {
     /**
      * Closes iterator.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void close() throws GridException {
+    public void close() throws IgniteCheckedException {
         it.close();
     }
 }

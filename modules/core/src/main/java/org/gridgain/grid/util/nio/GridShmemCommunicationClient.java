@@ -40,11 +40,11 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
      * @param connTimeout Connection timeout.
      * @param log Logger.
      * @param msgWriter Message writer.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout, IgniteLogger log,
         GridNioMessageWriter msgWriter)
-        throws GridException {
+        throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
@@ -63,7 +63,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
     /** {@inheritDoc} */
     @Override public  synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
-        throws GridException {
+        throws IgniteCheckedException {
         handshakeC.applyx(shmem.inputStream(), shmem.outputStream());
     }
 
@@ -86,9 +86,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void sendMessage(byte[] data, int len) throws GridException {
+    @Override public synchronized void sendMessage(byte[] data, int len) throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Communication client was closed: " + this);
+            throw new IgniteCheckedException("Communication client was closed: " + this);
 
         try {
             shmem.outputStream().write(data, 0, len);
@@ -96,7 +96,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
             metricsLsnr.onBytesSent(len);
         }
         catch (IOException e) {
-            throw new GridException("Failed to send message to remote node: " + shmem, e);
+            throw new IgniteCheckedException("Failed to send message to remote node: " + shmem, e);
         }
 
         markUsed();
@@ -104,9 +104,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
     /** {@inheritDoc} */
     @Override public synchronized void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
-        throws GridException {
+        throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Communication client was closed: " + this);
+            throw new IgniteCheckedException("Communication client was closed: " + this);
 
         assert writeBuf.hasArray();
 
@@ -116,14 +116,14 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
             metricsLsnr.onBytesSent(cnt);
         }
         catch (IOException e) {
-            throw new GridException("Failed to send message to remote node: " + shmem, e);
+            throw new IgniteCheckedException("Failed to send message to remote node: " + shmem, e);
         }
 
         markUsed();
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ByteBuffer data) throws GridException {
+    @Override public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 

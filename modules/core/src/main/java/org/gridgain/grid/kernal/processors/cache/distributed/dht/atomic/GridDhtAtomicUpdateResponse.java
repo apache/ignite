@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -44,7 +44,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** Update error. */
     @GridDirectTransient
-    private GridException err;
+    private IgniteCheckedException err;
 
     /** Serialized update error. */
     private byte[] errBytes;
@@ -90,7 +90,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Gets update error.
      */
-    public GridException error() {
+    public IgniteCheckedException error() {
         return err;
     }
 
@@ -114,7 +114,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
         failedKeys.add(key);
 
         if (err == null)
-            err = new GridException("Failed to update keys on primary node.");
+            err = new IgniteCheckedException("Failed to update keys on primary node.");
 
         err.addSuppressed(e);
     }
@@ -148,7 +148,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         failedKeysBytes = ctx.marshaller().marshal(failedKeys);
@@ -159,7 +159,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         failedKeys = ctx.marshaller().unmarshal(failedKeysBytes, ldr);

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -36,7 +36,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) throws GridException {
+        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) throws IgniteCheckedException {
         Set<UUID> nodeIds = taskArg.keySet();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
@@ -55,7 +55,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List list) throws GridException {
+    @Nullable @Override protected Void reduce0(List list) throws IgniteCheckedException {
         return null;
     }
 
@@ -77,7 +77,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Collection<String> qryIds) throws GridException {
+        @Override protected Void run(Collection<String> qryIds) throws IgniteCheckedException {
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = g.nodeLocalMap();
 
             for (String qryId : qryIds)

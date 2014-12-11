@@ -77,7 +77,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
         private boolean jobFailed;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             ses.setAttribute("fail", true);
 
             for (int i = 0; i < 10; i++) {
@@ -90,14 +90,14 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                 @IgniteLocalNodeIdResource
                 private UUID locNodeId;
 
-                @Override public Serializable execute() throws GridException {
+                @Override public Serializable execute() throws IgniteCheckedException {
                     boolean fail;
 
                     try {
                         fail = ses.waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     if (fail) {
@@ -108,7 +108,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                                 ses.setAttribute("test.job.attr." + i, ii);
                         }
 
-                        throw new GridException("Job exception.");
+                        throw new IgniteCheckedException("Job exception.");
                     }
 
                     try {
@@ -125,7 +125,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
                         }
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     // This job does not return any result.
@@ -136,7 +136,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (res.getException() != null) {
                 assert !jobFailed;
 
@@ -149,7 +149,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();

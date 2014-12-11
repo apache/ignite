@@ -9,6 +9,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.io.*;
@@ -194,7 +195,7 @@ class IgniteOptimizedObjectStreamRegistry {
                 return new IgniteOptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
             }
             catch (IOException e) {
-                throw new GridRuntimeException("Failed to create object output stream.", e);
+                throw new IgniteException("Failed to create object output stream.", e);
             }
         }
 
@@ -208,7 +209,7 @@ class IgniteOptimizedObjectStreamRegistry {
                 return new IgniteOptimizedObjectInputStream(new GridUnsafeDataInput());
             }
             catch (IOException e) {
-                throw new GridRuntimeException("Failed to create object input stream.", e);
+                throw new IgniteException("Failed to create object input stream.", e);
             }
         }
     }

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -25,9 +25,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests events.
@@ -99,7 +99,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             try {
                 TestEventListener.waitForEventCount(((GridKernal)grid(0)).context(), evtCnts);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
 
                 throw e;
@@ -125,9 +125,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Clear caches without generating events.
      *
-     * @throws GridException If failed to clear caches.
+     * @throws IgniteCheckedException If failed to clear caches.
      */
-    private void clearCaches() throws GridException {
+    private void clearCaches() throws IgniteCheckedException {
         for (int i = 0; i < gridCnt; i++) {
             GridCache<String, Integer> cache = cache(i);
 
@@ -218,7 +218,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
         runTest(
             new TestCacheRunnable() {
-                @Override public void run(GridCache<String, Integer> cache) throws GridException {
+                @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                     String key = "key";
                     Integer val = 1;
 
@@ -244,7 +244,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -276,7 +276,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -316,7 +316,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             return;
 
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -342,7 +342,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsyncTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -374,7 +374,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsyncTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -410,7 +410,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovex() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -434,7 +434,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -464,7 +464,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutRemovexTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -498,7 +498,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsent() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 Map.Entry<String, Integer> e = iter.next();
@@ -529,7 +529,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsentTx() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 GridCacheTx tx = cache.txStart();
@@ -567,7 +567,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testPutIfAbsentAsync() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 Map.Entry<String, Integer> e = iter.next();
@@ -601,7 +601,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt), F.t(EVT_CACHE_OBJECT_READ, 1)};
 
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
@@ -639,7 +639,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testFilteredPutRemovex() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -668,7 +668,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testFilteredPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 assert cache.keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
 
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
@@ -706,7 +706,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testFilteredPutRemovexTx2() throws Exception {
         runTest(new TestCacheRunnable() {
-            @Override public void run(GridCache<String, Integer> cache) throws GridException {
+            @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
                 assert e != null;
@@ -747,9 +747,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private static interface TestCacheRunnable {
         /**
          * @param cache Cache.
-         * @throws GridException If any exception occurs.
+         * @throws IgniteCheckedException If any exception occurs.
          */
-        void run(GridCache<String, Integer> cache) throws GridException;
+        void run(GridCache<String, Integer> cache) throws IgniteCheckedException;
     }
 
     /**
@@ -837,10 +837,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          *
          * @param ctx Kernal context.
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
-         * @throws GridException If failed to wait.
+         * @throws IgniteCheckedException If failed to wait.
          */
         private static void waitForEventCount(GridKernalContext ctx,
-            IgniteBiTuple<Integer, Integer>... evtCnts) throws GridException {
+            IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;
 
@@ -940,7 +940,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
             // For partitioned caches we allow extra event for reads.
             if (expCnt < cnt && (!partitioned || evtType != EVT_CACHE_OBJECT_READ || expCnt + 1 < cnt))
-                onDone(new GridException("Wrong event count [evtName=" + U.gridEventName(evtType) + ", evtType=" +
+                onDone(new IgniteCheckedException("Wrong event count [evtName=" + U.gridEventName(evtType) + ", evtType=" +
                     evtType + ", expCnt=" + expCnt + ", actCnt=" + cnt + ", partitioned=" + partitioned + "]"));
 
             if (expCnt == cnt || (partitioned && expCnt + 1 == cnt))

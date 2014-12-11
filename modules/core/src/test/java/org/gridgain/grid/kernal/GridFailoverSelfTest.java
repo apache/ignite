@@ -76,7 +76,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             ses.setAttribute("fail", true);
 
             nodeRef.set(subgrid.get(0));
@@ -87,14 +87,14 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
                 private UUID locId;
 
                 /** {@inheritDoc} */
-                @Override public Serializable execute() throws GridException {
+                @Override public Serializable execute() throws IgniteCheckedException {
                     boolean fail;
 
                     try {
                         fail = ses.<String, Boolean>waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     if (fail) {
@@ -102,7 +102,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
 
                         assert nodeRef.get().id().equals(locId);
 
-                        throw new GridException("Job exception.");
+                        throw new IgniteCheckedException("Job exception.");
                     }
 
                     assert !nodeRef.get().id().equals(locId);
@@ -115,7 +115,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws GridException {
+            List<ComputeJobResult> received) throws IgniteCheckedException {
             if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
@@ -128,7 +128,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             assert nodeRef.get() != null;

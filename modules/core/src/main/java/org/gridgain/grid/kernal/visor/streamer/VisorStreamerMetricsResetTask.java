@@ -46,7 +46,7 @@ public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String streamerName) throws GridException {
+        @Override protected Void run(String streamerName) throws IgniteCheckedException {
             try {
                 IgniteStreamer streamer = g.streamer(streamerName);
 
@@ -55,7 +55,7 @@ public class VisorStreamerMetricsResetTask extends VisorOneNodeTask<String, Void
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new GridException("Failed to reset metrics for streamer: " + escapeName(streamerName) +
+                throw new IgniteCheckedException("Failed to reset metrics for streamer: " + escapeName(streamerName) +
                     " on node: " + g.localNode().id(), iae);
             }
         }

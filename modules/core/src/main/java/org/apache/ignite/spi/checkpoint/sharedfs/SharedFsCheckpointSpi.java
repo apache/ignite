@@ -259,7 +259,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 try {
                     folder = U.resolveWorkDirectory(curDirPath, false);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to resolve directory [path=" + curDirPath +
                             ", exception=" + e.getMessage() + ']');
@@ -302,7 +302,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                                 log.debug("Registered existing checkpoint from: " + file.getAbsolutePath());
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal objects in checkpoint file (ignoring): " +
                             file.getAbsolutePath(), e);
                     }
@@ -363,7 +363,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                         null
                     : null;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to unmarshal objects in checkpoint file: " +
                     file.getAbsolutePath(), e);
             }
@@ -413,7 +413,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                     throw new IgniteSpiException("Failed to write checkpoint data into file: " +
                         file.getAbsolutePath(), e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal checkpoint data into file: " +
                     file.getAbsolutePath(), e);
             }

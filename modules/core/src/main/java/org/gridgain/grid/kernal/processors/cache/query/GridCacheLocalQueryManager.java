@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.jetbrains.annotations.*;
@@ -65,7 +65,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
         assert cctx.config().getCacheMode() == LOCAL;
@@ -85,7 +85,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
             fut.execute();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -96,7 +96,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     @Override public GridCacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
-        throw new GridRuntimeException("Distributed queries are not available for local cache " +
+        throw new IgniteException("Distributed queries are not available for local cache " +
             "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 
@@ -119,7 +119,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
             fut.execute();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
 
@@ -131,7 +131,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
-        throw new GridRuntimeException("Distributed queries are not available for local cache " +
+        throw new IgniteException("Distributed queries are not available for local cache " +
             "(use 'GridCacheQuery.execute(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
     }
 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -163,31 +164,31 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws GridException {
+    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws GridException {
+        throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
-        boolean overwrite) throws GridException {
+        boolean overwrite) throws IgniteCheckedException {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T loadCheckpoint(String key) throws GridException {
+    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
         assert false : "Not implemented";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws GridException {
+    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
         assert false : "Not implemented";
 
         return false;

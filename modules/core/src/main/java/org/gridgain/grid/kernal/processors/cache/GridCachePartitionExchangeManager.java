@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -146,7 +147,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     };
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         locExchFut = new GridFutureAdapter<>(cctx.kernalContext());
@@ -178,7 +179,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         super.onKernalStart0();
 
         ClusterNode loc = cctx.localNode();
@@ -238,7 +239,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 cacheCtx.preloader().onInitialExchangeComplete(null);
         }
         catch (IgniteFutureTimeoutException e) {
-            GridException err = new GridException("Timed out waiting for exchange future: " + fut, e);
+            IgniteCheckedException err = new IgniteCheckedException("Timed out waiting for exchange future: " + fut, e);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(err);
@@ -427,7 +428,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 sendLocalPartitions(oldest, null);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to refresh partition map [oldest=" + oldest.id() + ", rmts=" + U.nodeIds(rmts) +
                 ", loc=" + cctx.localNodeId() + ']', e);
         }
@@ -458,10 +459,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param nodes Nodes.
      * @return {@code True} if message was sent, {@code false} if node left grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes)
-        throws GridException {
+        throws IgniteCheckedException {
         GridDhtPartitionsFullMessage<K, V> m = new GridDhtPartitionsFullMessage<>(null, null, -1);
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
@@ -481,10 +482,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Node.
      * @param id ID.
      * @return {@code True} if message was sent, {@code false} if node left grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private boolean sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id)
-        throws GridException {
+        throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage<K, V> m = new GridDhtPartitionsSingleMessage<>(id, cctx.versions().last());
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
@@ -651,7 +652,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 sendLocalPartitions(node, msg.exchangeId());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send local partition map to node [nodeId=" + node.id() + ", exchId=" +
                     msg.exchangeId() + ']', e);
             }
@@ -850,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (GridInterruptedException e) {
                     throw e;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + exchFut, e);
                 }

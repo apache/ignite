@@ -9,7 +9,7 @@
 
 package org.apache.ignite.streamer.index;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Represents an actual instance of an index. Used by a {@link org.apache.ignite.streamer.StreamerWindow}
@@ -55,18 +55,18 @@ public interface StreamerIndexProvider<E, K, V> extends StreamerIndexProviderMBe
      *
      * @param sync Index update synchronizer.
      * @param evt Event to add to an index.
-     * @throws GridException If failed to add event to an index.
+     * @throws IgniteCheckedException If failed to add event to an index.
      */
-    public void add(StreamerIndexUpdateSync sync, E evt) throws GridException;
+    public void add(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException;
 
     /**
      * Removes an event from index.
      *
      * @param sync Index update synchronizer.
      * @param evt Event to remove from index.
-     * @throws GridException If failed to add event to an index.
+     * @throws IgniteCheckedException If failed to add event to an index.
      */
-    public void remove(StreamerIndexUpdateSync sync, E evt) throws GridException;
+    public void remove(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException;
 
     /**
      * Gets event indexing policy, which defines how events

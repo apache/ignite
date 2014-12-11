@@ -94,9 +94,9 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      *
      * @param args Arguments passes into {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
      * @return Iterator over input records.
-     * @throws GridException If iterator can't be created with the given arguments.
+     * @throws IgniteCheckedException If iterator can't be created with the given arguments.
      */
-    protected abstract Iterator<I> inputIterator(@Nullable Object... args) throws GridException;
+    protected abstract Iterator<I> inputIterator(@Nullable Object... args) throws IgniteCheckedException;
 
     /**
      * This method should transform raw data records into valid key-value pairs
@@ -112,7 +112,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args)
-        throws GridException {
+        throws IgniteCheckedException {
         ExecutorService exec = new ThreadPoolExecutor(
             threadsCnt,
             threadsCnt,
@@ -219,40 +219,40 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
 
     /** {@inheritDoc} */
     @Override public V load(@Nullable GridCacheTx tx, K key)
-        throws GridException {
+        throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws GridException {
+        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, @Nullable V val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, K key, @Nullable V val) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map<? extends K, ? extends V> map)
-        throws GridException {
+        throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable GridCacheTx tx, @Nullable Collection<? extends K> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 

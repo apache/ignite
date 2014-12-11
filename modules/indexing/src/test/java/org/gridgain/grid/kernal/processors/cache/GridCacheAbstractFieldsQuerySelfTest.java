@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -16,7 +17,6 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
@@ -1087,9 +1087,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /**
      * @param fut Query future.
      * @return Metadata.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private List<GridQueryFieldMetadata> metadata(GridCacheQueryFuture<List<?>> fut) throws GridException {
+    private List<GridQueryFieldMetadata> metadata(GridCacheQueryFuture<List<?>> fut) throws IgniteCheckedException {
         assert fut != null;
 
         return ((GridCacheQueryMetadataAware)fut).metadata().get();

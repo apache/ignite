@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -40,17 +40,17 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         plugin.stop(cancel);
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         plugin.onIgniteStart();
     }
 

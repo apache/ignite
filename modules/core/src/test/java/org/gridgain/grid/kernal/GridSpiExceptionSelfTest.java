@@ -61,7 +61,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
                 assert false : "Exception should be thrown";
             }
-            catch (GridRuntimeException e) {
+            catch (IgniteException e) {
                 assert e.getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
             }
 
@@ -70,7 +70,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
                 assert false : "Exception should be thrown";
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 assert e.getCause() instanceof GridTestSpiException : "Wrong cause exception type. " + e;
 
                 assert e.getCause().getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
@@ -98,7 +98,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
-            throw new GridRuntimeException(TEST_MSG);
+            throw new IgniteException(TEST_MSG);
         }
 
         /** {@inheritDoc} */

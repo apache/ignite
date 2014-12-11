@@ -92,7 +92,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                 info("Task result: " + res);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Got unexpected grid exception: " + e);
             }
 
@@ -120,7 +120,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private UUID locNodeId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             assert locNodeId != null;
 
             if (log.isInfoEnabled())
@@ -140,7 +140,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")
-                @Override public Serializable execute() throws GridException {
+                @Override public Serializable execute() throws IgniteCheckedException {
                     assert nodeId != null;
 
                     if (!nodeId.equals(argument(0))) {
@@ -164,7 +164,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();

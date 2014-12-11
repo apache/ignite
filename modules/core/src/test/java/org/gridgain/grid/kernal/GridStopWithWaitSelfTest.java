@@ -125,7 +125,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class GridWaitTask extends ComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
             ClusterNode mappedNode = null;
 
             for (ClusterNode node : subgrid) {
@@ -148,7 +148,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return results.get(0).getData();
         }
     }
@@ -167,7 +167,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         private UUID locId;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             ses.setAttribute("fail", true);
 
             ClusterNode node = F.view(subgrid, F.<ClusterNode>remoteNodes(locId)).iterator().next();
@@ -183,7 +183,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                 @IgniteLoggerResource
                 private IgniteLogger log;
 
-                @Override public Serializable execute() throws GridException {
+                @Override public Serializable execute() throws IgniteCheckedException {
                     jobStarted.countDown();
 
                     log.info("Starting to execute job with fail attribute: " + ses.getAttribute("fail"));
@@ -194,7 +194,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                         fail = ses.waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
-                        throw new GridException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     log.info("Failed attribute: " + fail);
@@ -207,7 +207,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
 
                         log.info("Throwing grid exception from job.");
 
-                        throw new GridException("Job exception.");
+                        throw new IgniteCheckedException("Job exception.");
                     }
 
                     assert !nodeRef.get().id().equals(locId);
@@ -223,7 +223,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
             if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException)) {
                 assert res.getNode().id().equals(nodeRef.get().id());
 
@@ -236,7 +236,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> res) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> res) throws IgniteCheckedException {
             assert res.size() == 1;
 
             assert nodeRef.get() != null;

@@ -935,11 +935,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param e Element.
      * @param p Predicates.
      * @return {@code True} if predicates passed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K, V> boolean isAll(GridCacheEntryEx<K, V> e,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 
@@ -951,10 +951,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param p Predicates.
      * @param <E> Element type.
      * @return {@code True} if predicates passed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws GridException {
+    public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws IgniteCheckedException {
         if (F.isEmpty(p))
             return true;
 
@@ -1025,10 +1025,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param obj Object to clone
      * @return Clone of the given object.
-     * @throws GridException If failed to clone object.
+     * @throws IgniteCheckedException If failed to clone object.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T cloneValue(@Nullable T obj) throws GridException {
+    @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
         if (obj == null)
             return obj;
 
@@ -1197,9 +1197,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param obj Object to clone.
      * @return Clone of the given object.
-     * @throws GridException If failed to clone.
+     * @throws IgniteCheckedException If failed to clone.
      */
-    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws GridException {
+    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws IgniteCheckedException {
         return hasFlag(CLONE) ? cloneValue(obj) : obj;
     }
 
@@ -1212,7 +1212,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return f;
 
         return f.chain(new CX1<IgniteFuture<V>, V>() {
-            @Override public V applyx(IgniteFuture<V> f) throws GridException {
+            @Override public V applyx(IgniteFuture<V> f) throws IgniteCheckedException {
                 return cloneValue(f.get());
             }
         });
@@ -1227,7 +1227,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return f;
 
         return f.chain(new CX1<IgniteFuture<Map<K, V>>, Map<K, V>>() {
-            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws GridException {
+            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws IgniteCheckedException {
                 Map<K, V> map = new GridLeanMap<>();
 
                 for (Map.Entry<K, V> e : f.get().entrySet())
@@ -1559,9 +1559,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param bytes Object marshalled with portable marshaller.
      * @return Object marshalled with grid marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+    public byte[] convertPortableBytes(byte[] bytes) throws IgniteCheckedException {
         assert portableEnabled() && offheapTiered();
 
         return marshaller().marshal(portable().unmarshal(bytes, 0));

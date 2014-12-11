@@ -29,30 +29,30 @@ public class GridClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Ob
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> clusterNodes,
-        @Nullable final Object arg) throws GridException {
+        @Nullable final Object arg) throws IgniteCheckedException {
         for (ClusterNode node : clusterNodes) {
             if (node.isLocal())
                 return Collections.singletonMap(new ComputeJobAdapter() {
-                    @Override public Object execute() throws GridException {
+                    @Override public Object execute() throws IgniteCheckedException {
                         return executeJob(arg);
                     }
                 }, node);
         }
 
-        throw new GridException("Failed to find local node in task topology: " + clusterNodes);
+        throw new IgniteCheckedException("Failed to find local node in task topology: " + clusterNodes);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return results.get(0).getData();
     }
 
     /**
      * @param arg Argument.
      * @return Execution result.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-     protected Boolean executeJob(Object arg) throws GridException {
+     protected Boolean executeJob(Object arg) throws IgniteCheckedException {
         Collection args = (Collection)arg;
 
         Iterator<Object> it = args.iterator();
@@ -68,10 +68,10 @@ public class GridClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Ob
         Object affKey = ignite.cache(cacheName).affinity().affinityKey(obj);
 
         if (!expAffKey.equals(affKey))
-            throw new GridException("Unexpected affinity key: " + affKey);
+            throw new IgniteCheckedException("Unexpected affinity key: " + affKey);
 
         if (!ignite.cache(cacheName).affinity().mapKeyToNode(obj).isLocal())
-            throw new GridException("Job is not run on primary node.");
+            throw new IgniteCheckedException("Job is not run on primary node.");
 
         return true;
     }

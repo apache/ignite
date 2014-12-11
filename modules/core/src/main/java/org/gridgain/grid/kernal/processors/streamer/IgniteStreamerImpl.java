@@ -168,19 +168,19 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start() throws GridException {
+    public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting streamer: " + name);
 
         if (F.isEmpty(c.getStages()))
-            throw new GridException("Streamer should have at least one stage configured " +
+            throw new IgniteCheckedException("Streamer should have at least one stage configured " +
                 "(fix configuration and restart): " + name);
 
         if (F.isEmpty(c.getWindows()))
-            throw new GridException("Streamer should have at least one window configured " +
+            throw new IgniteCheckedException("Streamer should have at least one window configured " +
                 "(fix configuration and restart): " + name);
 
         prepareResources();
@@ -197,11 +197,11 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             String sName = s.name();
 
             if (F.isEmpty(sName))
-                throw new GridException("Streamer stage should have non-empty name [streamerName=" + name +
+                throw new IgniteCheckedException("Streamer stage should have non-empty name [streamerName=" + name +
                     ", stage=" + s + ']');
 
             if (stages.containsKey(sName))
-                throw new GridException("Streamer stages have duplicate names (all names should be unique) " +
+                throw new IgniteCheckedException("Streamer stages have duplicate names (all names should be unique) " +
                     "[streamerName=" + name + ", stage=" + s + ", stageName=" + sName + ']');
 
             if (firstStage == null)
@@ -225,11 +225,11 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             String wName = w.name();
 
             if (F.isEmpty(wName))
-                throw new GridException("Streamer window should have non-empty name [streamerName=" + name +
+                throw new IgniteCheckedException("Streamer window should have non-empty name [streamerName=" + name +
                     ", window=" + w + ']');
 
             if (winMap.containsKey(wName))
-                throw new GridException("Streamer windows have duplicate names (all names should be unique). " +
+                throw new IgniteCheckedException("Streamer windows have duplicate names (all names should be unique). " +
                     "If you use two or more windows of the same type you need to assign their names explicitly " +
                     "[streamer=" + name + ", windowName=" + wName + ']');
 
@@ -289,9 +289,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     /**
      * Injects resources into streamer components.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void prepareResources() throws GridException {
+    private void prepareResources() throws IgniteCheckedException {
         for (StreamerStage s : c.getStages())
             ctx.resource().injectGeneric(s);
 
@@ -325,7 +325,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 try {
                     execFut.cancel();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to cancel batch execution future on node stop (will ignore) " +
                         "[execFut=" + execFut + ", err=" + e + ']');
                 }
@@ -342,7 +342,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                         fut.get();
                     }
                 }
-                catch (GridException ignore) {
+                catch (IgniteCheckedException ignore) {
                     // For failed futures callback will be executed, no need to care about this exception here.
                 }
             }
@@ -351,7 +351,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 try {
                     execFut.get();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!e.hasCause(GridInterruptedException.class))
                         U.warn(log, "Failed to wait for batch execution future completion (will ignore) " +
                             "[execFut=" + execFut + ", e=" + e + ']');
@@ -363,7 +363,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             try {
                 ctx.resource().cleanupGeneric(stage.unwrap());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cleanup stage [stage=" + stage + ", streamer=" + this + ']', e);
             }
         }
@@ -411,7 +411,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvent(Object evt, Object... evts) throws GridException {
+    @Override public void addEvent(Object evt, Object... evts) throws IgniteCheckedException {
         A.notNull(evt, "evt");
 
         if (!F.isEmpty(evts))
@@ -421,7 +421,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventToStage(String stageName, Object evt, Object... evts) throws GridException {
+    @Override public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteCheckedException {
         A.notNull(stageName, "stageName");
         A.notNull(evt, "evt");
 
@@ -432,14 +432,14 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvents(Collection<?> evts) throws GridException {
+    @Override public void addEvents(Collection<?> evts) throws IgniteCheckedException {
         A.ensure(!F.isEmpty(evts), "evts cannot be null or empty");
 
         addEventsToStage(firstStage, evts);
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventsToStage(String stageName, Collection<?> evts) throws GridException {
+    @Override public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteCheckedException {
         A.notNull(stageName, "stageName");
         A.ensure(!F.isEmpty(evts), "evts cannot be empty or null");
 
@@ -660,7 +660,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void scheduleExecutions(GridStreamerStageExecutionFuture fut,
-        Map<UUID, GridStreamerExecutionBatch> execs) throws GridException {
+        Map<UUID, GridStreamerExecutionBatch> execs) throws IgniteCheckedException {
         for (Map.Entry<UUID, GridStreamerExecutionBatch> entry : execs.entrySet()) {
             UUID nodeId = entry.getKey();
             GridStreamerExecutionBatch batch = entry.getValue();
@@ -698,16 +698,16 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * Schedules batch execution locally.
      *
      * @param batch Batch to execute.
-     * @throws GridException If schedule was attempted on stopping grid.
+     * @throws IgniteCheckedException If schedule was attempted on stopping grid.
      */
-    private void scheduleLocal(final GridStreamerExecutionBatch batch) throws GridException {
+    private void scheduleLocal(final GridStreamerExecutionBatch batch) throws IgniteCheckedException {
         final IgniteUuid futId = batch.futureId();
 
         lock.readLock();
 
         try {
             if (stopping)
-                throw new GridException("Failed to schedule local batch execution (grid is stopping): " + batch);
+                throw new IgniteCheckedException("Failed to schedule local batch execution (grid is stopping): " + batch);
 
             if (log.isDebugEnabled())
                 log.debug("Scheduling local batch execution [futId=" + futId + ", stageName=" + batch.stageName() + ']');
@@ -716,7 +716,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             if (wrapper == null) {
                 completeParentStage(ctx.localNodeId(), batch.futureId(),
-                    new GridException("Failed to process streamer batch (stage was not found): " +
+                    new IgniteCheckedException("Failed to process streamer batch (stage was not found): " +
                         batch.stageName() + ']'));
 
                 return;
@@ -804,7 +804,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
                     sendWithRetries(dstNodeId, new GridStreamerResponse(futId, errBytes));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!e.hasCause(ClusterTopologyException.class))
                         log.error("Failed to complete parent stage [futId=" + futId + ", err=" + e + ']');
                 }
@@ -846,7 +846,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     try {
                         batchFut.cancel();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         log.warning("Failed to cancel batch execution future [cancelledFutId=" + cancelledFutId +
                             ", batchFut=" + batchFut + ']', e);
                     }
@@ -859,7 +859,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             try {
                 sendWithRetries(nodeId, new GridStreamerCancelRequest(cancelledFutId));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!e.hasCause(ClusterTopologyException.class))
                     log.error("Failed to send streamer cancel request to remote node [nodeId=" + nodeId +
                         ", cancelledFutId=" + cancelledFutId + ']', e);
@@ -933,7 +933,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             try {
                 batch = executionBatch(sndNodeId, req);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal execution batch (was class undeployed?) " +
                     "[sndNodeId=" + sndNodeId + ", msg=" + msg + ']', e);
 
@@ -943,7 +943,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             try {
                 scheduleLocal(batch);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Notify parent in case of error.
                 completeParentStage(ctx.localNodeId(), batch.futureId(), e);
             }
@@ -964,7 +964,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 try {
                     err = ctx.config().getMarshaller().unmarshal(res.errorBytes(), null);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal response.", e);
                 }
             }
@@ -1026,10 +1026,10 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      *
      * @param batch Execution batch.
      * @return Execution request.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridTcpCommunicationMessageAdapter createExecutionRequest(GridStreamerExecutionBatch batch)
-        throws GridException {
+        throws IgniteCheckedException {
         boolean depEnabled = ctx.deploy().enabled();
 
         byte[] batchBytes = ctx.config().getMarshaller().marshal(batch);
@@ -1042,7 +1042,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
 
             if (dep == null)
-                throw new GridException("Failed to get deployment for batch request [batch=" + batch +
+                throw new IgniteCheckedException("Failed to get deployment for batch request [batch=" + batch +
                     ", pda=" + pda + ']');
 
             return new GridStreamerExecutionRequest(
@@ -1064,10 +1064,10 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param nodeId Node ID.
      * @param req Execution request.
      * @return Execution batch.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
     private GridStreamerExecutionBatch executionBatch(UUID nodeId, GridStreamerExecutionRequest req)
-        throws GridException {
+        throws IgniteCheckedException {
         GridDeployment dep = null;
 
         if (!req.forceLocalDeployment()) {
@@ -1082,7 +1082,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 null);
 
             if (dep == null)
-                throw new GridException("Failed to obtain global deployment based on deployment metadata " +
+                throw new IgniteCheckedException("Failed to obtain global deployment based on deployment metadata " +
                     "[nodeId=" + nodeId + ", req=" + req + ']');
         }
 
@@ -1100,16 +1100,16 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      *
      * @param dstNodeId Destination node ID.
      * @param msg Message to send.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void sendWithRetries(UUID dstNodeId, GridTcpCommunicationMessageAdapter msg) throws GridException {
+    private void sendWithRetries(UUID dstNodeId, GridTcpCommunicationMessageAdapter msg) throws IgniteCheckedException {
         for (int i = 0; i < SEND_RETRY_COUNT; i++) {
             try {
                 ctx.io().send(dstNodeId, topic, msg, GridIoPolicy.SYSTEM_POOL);
 
                 return;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message to remote node (will retry) [dstNodeId=" + dstNodeId +
                         ", msg=" + msg + ", err=" + e + ']');
@@ -1306,7 +1306,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     if (res != null) {
                         for (Map.Entry<String, Collection<?>> entry : res.entrySet()) {
                             if (entry.getKey() == null)
-                                throw new GridException("Failed to pass events to next stage " +
+                                throw new IgniteCheckedException("Failed to pass events to next stage " +
                                     "(stage name cannot be null).");
 
                             GridStreamerStageExecutionFuture part = addEvents0(
@@ -1333,7 +1333,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                             batch.executionNodeIds().size());
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!atLeastOnce) {
                         notifyFailure(batch.stageName(), batch.events(), e);
 
@@ -1380,7 +1380,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean cancel() throws GridException {
+        @Override public boolean cancel() throws IgniteCheckedException {
             assert w != null;
 
             if (!super.cancel())

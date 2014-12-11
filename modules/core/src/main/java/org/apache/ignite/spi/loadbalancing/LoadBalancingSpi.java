@@ -9,10 +9,10 @@
 
 package org.apache.ignite.spi.loadbalancing;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -28,7 +28,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object,Object&gt; {
  *    &#64;Override
- *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *        for (int i = 0; i &lt; gridSize; i++) {
@@ -54,7 +54,7 @@ import java.util.*;
  *    GridComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
- *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
+ *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
  *        Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
  *
  *        // In more complex cases, you can actually do
@@ -70,7 +70,7 @@ import java.util.*;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result
@@ -107,8 +107,8 @@ public interface LoadBalancingSpi extends IgniteSpi {
      * @param ses Grid task session for currently executing task.
      * @param top Topology of task nodes from which to pick the best balanced node for given job.
      * @param job Job for which to pick the best balanced node.
-     * @throws GridException If failed to get next balanced node.
+     * @throws IgniteCheckedException If failed to get next balanced node.
      * @return Best balanced node for the given job within given task session.
      */
-    public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) throws GridException;
+    public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) throws IgniteCheckedException;
 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
@@ -168,7 +169,7 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
     /**
      * @param v Visitor.
      */
-    public void visit(Visitor v) throws GridException {
+    public void visit(Visitor v) throws IgniteCheckedException {
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 
@@ -221,13 +222,13 @@ public class GridHadoopShuffleMessage implements GridHadoopMessage {
          * @param off Offset.
          * @param len Length.
          */
-        public void onKey(byte[] buf, int off, int len) throws GridException;
+        public void onKey(byte[] buf, int off, int len) throws IgniteCheckedException;
 
         /**
          * @param buf Buffer.
          * @param off Offset.
          * @param len Length.
          */
-        public void onValue(byte[] buf, int off, int len) throws GridException;
+        public void onValue(byte[] buf, int off, int len) throws IgniteCheckedException;
     }
 }

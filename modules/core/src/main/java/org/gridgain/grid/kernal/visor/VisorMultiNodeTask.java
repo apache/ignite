@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.kernal.visor;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
-
 import java.util.*;
+
+import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
 
 /**
  * Base class for Visor tasks intended to query data from a multiple node.
@@ -48,7 +48,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
-        throws GridException {
+        throws IgniteCheckedException {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -69,10 +69,10 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @param arg Task execution argument.
      * @param subgrid Nodes available for this task execution.
      * @return Map of grid jobs assigned to subgrid node.
-     * @throws GridException If mapping could not complete successfully.
+     * @throws IgniteCheckedException If mapping could not complete successfully.
      */
     protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
-        throws GridException {
+        throws IgniteCheckedException {
         Collection<UUID> nodeIds = arg.nodes();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
@@ -92,7 +92,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-        List<ComputeJobResult> rcvd) throws GridException {
+        List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         // All Visor tasks should handle exceptions in reduce method.
         return ComputeJobResultPolicy.WAIT;
     }
@@ -102,12 +102,12 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      *
      * @param results Job results.
      * @return Task result.
-     * @throws GridException If reduction or results caused an error.
+     * @throws IgniteCheckedException If reduction or results caused an error.
      */
-    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws GridException;
+    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final R reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public final R reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         try {
             return reduce0(results);
         }

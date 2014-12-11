@@ -73,7 +73,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     private GridHadoopJobTracker jobTracker;
 
     /** {@inheritDoc} */
-    @Override public void start(GridHadoopContext ctx) throws GridException {
+    @Override public void start(GridHadoopContext ctx) throws IgniteCheckedException {
         this.ctx = ctx;
 
         log = ctx.kernalContext().log(GridHadoopExternalTaskExecutor.class);
@@ -115,7 +115,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         try {
             comm.stop();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to gracefully stop external hadoop communication server (will shutdown anyway)", e);
         }
     }
@@ -157,7 +157,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                             sendJobInfoUpdate(proc, meta);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to initialize child process (will skip job state notification) " +
                                     "[jobId=" + meta.jobId() + ", meta=" + meta + ", err=" + e + ']');
@@ -173,7 +173,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             try {
                 job = jobTracker.job(meta.jobId(), meta.jobInfo());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get job: " + meta.jobId(), e);
 
                 return;
@@ -185,7 +185,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) throws GridException {
+    @Override public void run(final GridHadoopJob job, final Collection<GridHadoopTaskInfo> tasks) throws IgniteCheckedException {
         if (!busyLock.tryReadLock()) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start hadoop tasks (grid is stopping, will ignore).");
@@ -234,7 +234,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                         sendExecutionRequest(proc0, job, tasks);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         notifyTasksFailed(tasks, FAILED, e);
                     }
                     finally {
@@ -264,7 +264,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
      * @param tasks Collection of tasks to execute in started process.
      */
     private void sendExecutionRequest(HadoopProcess proc, GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks)
-        throws GridException {
+        throws IgniteCheckedException {
         // Must synchronize since concurrent process crash may happen and will receive onConnectionLost().
         proc.lock();
 
@@ -339,7 +339,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         ctx.kernalContext().closure().runLocalSafe(new Runnable() {
             @Override public void run() {
                 if (!busyLock.tryReadLock()) {
-                    fut.onDone(new GridException("Failed to start external process (grid is stopping)."));
+                    fut.onDone(new IgniteCheckedException("Failed to start external process (grid is stopping)."));
 
                     return;
                 }
@@ -383,14 +383,14 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                             log.warning(sb.toString());
 
-                            fut.onDone(new GridException(sb.toString()));
+                            fut.onDone(new IgniteCheckedException(sb.toString()));
 
                             break;
                         }
                     }
                 }
                 catch (Throwable e) {
-                    fut.onDone(new GridException("Failed to initialize child process: " + job, e));
+                    fut.onDone(new IgniteCheckedException("Failed to initialize child process: " + job, e));
                 }
                 finally {
                     busyLock.readUnlock();
@@ -406,7 +406,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
                     prepareForJob(proc, job, plan);
                 }
-                catch (GridException ignore) {
+                catch (IgniteCheckedException ignore) {
                     // Exception is printed in future's onDone() method.
                 }
             }
@@ -418,16 +418,16 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
     /**
      * Checks that java local command is available.
      *
-     * @throws GridException If initialization failed.
+     * @throws IgniteCheckedException If initialization failed.
      */
-    private void initJavaCommand() throws GridException {
+    private void initJavaCommand() throws IgniteCheckedException {
         String javaHome = System.getProperty("java.home");
 
         if (javaHome == null)
             javaHome = System.getenv("JAVA_HOME");
 
         if (javaHome == null)
-            throw new GridException("Failed to locate JAVA_HOME.");
+            throw new IgniteCheckedException("Failed to locate JAVA_HOME.");
 
         javaCmd = javaHome + File.separator + "bin" + File.separator + (U.isWindows() ? "java.exe" : "java");
 
@@ -439,7 +439,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             int res = proc.waitFor();
 
             if (res != 0)
-                throw new GridException("Failed to execute 'java -version' command (process finished with nonzero " +
+                throw new IgniteCheckedException("Failed to execute 'java -version' command (process finished with nonzero " +
                     "code) [exitCode=" + res + ", javaCmd='" + javaCmd + "', msg=" + F.first(out) + ']');
 
             if (log.isInfoEnabled()) {
@@ -450,12 +450,12 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             }
         }
         catch (IOException e) {
-            throw new GridException("Failed to check java for external task execution.", e);
+            throw new IgniteCheckedException("Failed to check java for external task execution.", e);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridException("Failed to wait for process completion (thread got interrupted).", e);
+            throw new IgniteCheckedException("Failed to wait for process completion (thread got interrupted).", e);
         }
     }
 
@@ -581,7 +581,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
         try {
             comm.sendMessage(proc.descriptor(), new GridHadoopJobInfoUpdateRequest(proc.jobId, meta.phase(), addrs));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (!proc.terminated()) {
                 log.error("Failed to send job state update message to remote child process (will kill the process) " +
                     "[jobId=" + proc.jobId + ", meta=" + meta + ']', e);
@@ -603,7 +603,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             comm.sendMessage(proc.descriptor(), new GridHadoopPrepareForJobRequest(job.id(), job.info(),
                 plan.reducers(), plan.reducers(ctx.localNodeId())));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send job prepare request to remote process [proc=" + proc + ", job=" + job +
                 ", plan=" + plan + ']', e);
 
@@ -684,7 +684,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                         log.warning("Lost connection with alive process (will terminate): " + desc);
 
                         GridHadoopTaskStatus status = new GridHadoopTaskStatus(CRASHED,
-                            new GridException("Failed to run tasks (external process finished unexpectedly): " + desc));
+                            new IgniteCheckedException("Failed to run tasks (external process finished unexpectedly): " + desc));
 
                         for (GridHadoopTaskInfo info : tasks)
                             jobTracker.onTaskFinished(info, status);

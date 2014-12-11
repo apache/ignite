@@ -39,9 +39,9 @@ public final class ComputeFibonacciContinuationExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute Fibonacci continuation example started.");
@@ -173,8 +173,8 @@ public final class ComputeFibonacciContinuationExample {
                 // Return cached results.
                 return fut1.get().add(fut2.get());
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }

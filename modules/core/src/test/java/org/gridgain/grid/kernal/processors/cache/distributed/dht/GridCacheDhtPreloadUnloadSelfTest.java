@@ -256,7 +256,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+                @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                     if (evt == LifecycleEventType.AFTER_GRID_START) {
                         GridCache<Integer, String> c = ignite.cache(null);
 
@@ -292,9 +292,9 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void populate(GridCache<Integer, String> c, int cnt) throws GridException {
+    private void populate(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(1024));
     }

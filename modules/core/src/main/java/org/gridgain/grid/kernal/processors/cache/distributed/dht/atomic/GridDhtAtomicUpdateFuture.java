@@ -159,7 +159,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            GridException ex = new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            IgniteCheckedException ex = new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property).");
 
             updateRes.addFailedKeys(keys, ex);
@@ -327,7 +327,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
                     mappings.remove(req.nodeId());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send update request to backup node (did node leave the grid?): "
                         + req.nodeId(), e);
 

@@ -158,7 +158,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+                @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                     if (evt == LifecycleEventType.AFTER_GRID_START) {
                         GridCache<Integer, byte[]> c = ignite.cache(null);
 
@@ -199,9 +199,9 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
      * @param c Cache.
      * @param cnt Key count.
      * @param kbSize Size in KB.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void populate(GridCache<Integer, byte[]> c, int cnt, int kbSize) throws GridException {
+    private void populate(GridCache<Integer, byte[]> c, int cnt, int kbSize) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(kbSize));
     }

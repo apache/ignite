@@ -21,9 +21,9 @@ public class GridContinuousMapperLoadTest1 {
      * Main method.
      *
      * @param args Parameters.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = G.start("examples/config/example-cache.xml")) {
             int max = 30000;
 

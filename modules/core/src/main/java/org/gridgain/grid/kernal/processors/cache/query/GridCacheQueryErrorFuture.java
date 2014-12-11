@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
@@ -33,12 +33,12 @@ public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<
     }
 
     /** {@inheritDoc} */
-    @Override public int available() throws GridException {
+    @Override public int available() throws IgniteCheckedException {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T next() throws GridException {
+    @Nullable @Override public T next() throws IgniteCheckedException {
         return null;
     }
 }

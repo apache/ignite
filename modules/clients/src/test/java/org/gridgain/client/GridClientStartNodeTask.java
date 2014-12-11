@@ -53,7 +53,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String type) throws GridException {
+    @Override protected Object executeJob(int gridSize, String type) throws IgniteCheckedException {
         log.info(">>> Starting new grid node [currGridSize=" + gridSize + ", arg=" + type + "]");
 
         if (type == null)
@@ -77,7 +77,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        throws GridException {
+        throws IgniteCheckedException {
         if (res.getException() != null)
             return FAILOVER;
 
@@ -125,7 +125,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
             assert G.allGrids().isEmpty();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             System.err.println("Uncaught exception: " + e.getMessage());
 
             e.printStackTrace(System.err);
@@ -139,9 +139,9 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
      * @param add New nodes count.
      * @param rmv Remove nodes count.
      * @param type Type of nodes to manipulate.
-     * @throws GridException On any exception.
+     * @throws IgniteCheckedException On any exception.
      */
-    private static void changeTopology(Ignite parent, int add, int rmv, String type) throws GridException {
+    private static void changeTopology(Ignite parent, int add, int rmv, String type) throws IgniteCheckedException {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
         IgniteCompute comp = parent.compute().enableAsync();

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.util.ipc.loopback;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.ipc.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;
@@ -39,36 +39,36 @@ public class GridIpcClientTcpEndpoint implements GridIpcEndpoint {
      *
      * @param port Port.
      * @param host Host.
-     * @throws GridException If connection fails.
+     * @throws IgniteCheckedException If connection fails.
      */
-    public GridIpcClientTcpEndpoint(String host, int port) throws GridException {
+    public GridIpcClientTcpEndpoint(String host, int port) throws IgniteCheckedException {
         clientSock = new Socket();
 
         try {
             clientSock.connect(new InetSocketAddress(host, port));
         }
         catch (IOException e) {
-            throw new GridException("Failed to connect to endpoint [host=" + host + ", port=" + port + ']', e);
+            throw new IgniteCheckedException("Failed to connect to endpoint [host=" + host + ", port=" + port + ']', e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public InputStream inputStream() throws GridException {
+    @Override public InputStream inputStream() throws IgniteCheckedException {
         try {
             return clientSock.getInputStream();
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream outputStream() throws GridException {
+    @Override public OutputStream outputStream() throws IgniteCheckedException {
         try {
             return clientSock.getOutputStream();
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 

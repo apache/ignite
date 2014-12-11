@@ -223,7 +223,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 srv.start();
             }
-            catch (IOException | GridException e) {
+            catch (IOException | IgniteCheckedException e) {
                 throw new GridClientException("Failed to start connection server.", e);
             }
         }
@@ -473,7 +473,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                 if (cfg.getSecurityCredentialsProvider() != null)
                     cred = cfg.getSecurityCredentialsProvider().credentials();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new GridClientException("Failed to obtain client credentials.", e);
             }
 
@@ -713,7 +713,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException {
+        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
             GridClientFutureAdapter<?> handshakeFut = ses.meta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
 
             if (handshakeFut != null) {
@@ -748,7 +748,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
             // No encoding needed for direct messages.
             throw new UnsupportedEncodingException();
         }

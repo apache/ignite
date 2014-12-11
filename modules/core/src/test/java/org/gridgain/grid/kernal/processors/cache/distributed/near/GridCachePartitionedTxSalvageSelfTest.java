@@ -202,7 +202,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                     if (prepare)
                         U.<GridCacheTxEx>field(tx, "tx").prepare();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());
                 }
             }

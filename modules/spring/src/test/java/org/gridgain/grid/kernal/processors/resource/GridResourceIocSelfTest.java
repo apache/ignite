@@ -220,7 +220,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
                         assert false : "Task must be undeployed";
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         info("Caught expected exception: " + e);
                     }
                 }
@@ -250,7 +250,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         private transient UserResource1 rsrc1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
@@ -273,7 +273,7 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -295,14 +295,14 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
 
             // Nothing to reduce.

@@ -9,18 +9,19 @@
 
 package org.gridgain.grid.kernal.managers.communication;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
@@ -40,8 +41,8 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 import static org.gridgain.grid.util.nio.GridNioBackPressureControl.*;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Grid communication manager.
@@ -158,7 +159,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
@@ -194,7 +195,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
-    @Override public void onKernalStart0() throws GridException {
+    @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @SuppressWarnings({"TooBroadScope", "fallthrough"})
             @Override public void onEvent(IgniteEvent evt) {
@@ -389,7 +390,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
         // Clear cache.
@@ -484,7 +485,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to process message (will ignore): " + msg, e);
         }
         finally {
@@ -866,10 +867,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msgId Message ID.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(ClusterNode node, Object topic, int topicOrd, GridTcpCommunicationMessageAdapter msg,
-        GridIoPolicy plc, long msgId, long timeout, boolean skipOnTimeout) throws GridException {
+        GridIoPolicy plc, long msgId, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
         assert msg != null;
@@ -883,7 +884,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             CommunicationListener commLsnr = this.commLsnr;
 
             if (commLsnr == null)
-                throw new GridException("Trying to send message when grid is not fully started.");
+                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
 
             if (msgId > 0)
                 processOrderedMessage0(ioMsg, plc, locNodeId);
@@ -898,7 +899,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 getSpi().sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
-                throw new GridException("Failed to send message (node may have left the grid or " +
+                throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
                     "TCP connection cannot be established due to firewall issues) " +
                     "[node=" + node + ", topic=" + topic +
                     ", msg=" + msg + ", policy=" + plc + ']', e);
@@ -911,14 +912,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(UUID nodeId, Object topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         send(node, topic, msg, plc);
     }
@@ -928,15 +929,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public void send(UUID nodeId, GridTopic topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         send(node, topic, topic.ordinal(), msg, plc, -1, 0, false);
     }
@@ -946,10 +947,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(ClusterNode node, Object topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         send(node, topic, -1, msg, plc, -1, 0, false);
     }
 
@@ -958,10 +959,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(ClusterNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc)
-        throws GridException {
+        throws IgniteCheckedException {
         send(node, topic, topic.ordinal(), msg, plc, -1, 0, false);
     }
 
@@ -1016,10 +1017,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @param timeout Timeout to keep a message on receiving queue.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void sendOrderedMessage(ClusterNode node, Object topic, long msgId, GridTcpCommunicationMessageAdapter msg,
-        GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws GridException {
+        GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
         send(node, topic, (byte)-1, msg, plc, msgId, timeout, skipOnTimeout);
@@ -1033,16 +1034,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @param timeout Timeout to keep a message on receiving queue.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void sendOrderedMessage(UUID nodeId, Object topic, long msgId, GridTcpCommunicationMessageAdapter msg,
-        GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws GridException {
+        GridIoPolicy plc, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new GridException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         send(node, topic, (byte)-1, msg, plc, msgId, timeout, skipOnTimeout);
     }
@@ -1055,11 +1056,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @param timeout Timeout to keep a message on receiving queue.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void sendOrderedMessage(Collection<? extends ClusterNode> nodes, Object topic, long msgId,
         GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc, long timeout, boolean skipOnTimeout)
-        throws GridException {
+        throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
         send(nodes, topic, -1, msg, plc, msgId, timeout, skipOnTimeout);
@@ -1070,10 +1071,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(Collection<? extends ClusterNode> nodes, Object topic, GridTcpCommunicationMessageAdapter msg,
-        GridIoPolicy plc) throws GridException {
+        GridIoPolicy plc) throws IgniteCheckedException {
         send(nodes, topic, -1, msg, plc, -1, 0, false);
     }
 
@@ -1082,10 +1083,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to send the message to.
      * @param msg Message to send.
      * @param plc Type of processing.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void send(Collection<? extends ClusterNode> nodes, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
-        GridIoPolicy plc) throws GridException {
+        GridIoPolicy plc) throws IgniteCheckedException {
         send(nodes, topic, topic.ordinal(), msg, plc, -1, 0, false);
     }
 
@@ -1094,9 +1095,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      *
      * @param nodes Destination nodes.
      * @param msg Message to send.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg) throws GridException {
+    public void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg) throws IgniteCheckedException {
         sendUserMessage(nodes, msg, null, false, 0);
     }
 
@@ -1108,11 +1109,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Message topic to use.
      * @param ordered Is message ordered?
      * @param timeout Message timeout in milliseconds for ordered messages.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("ConstantConditions")
     public void sendUserMessage(Collection<? extends ClusterNode> nodes, Object msg,
-        @Nullable Object topic, boolean ordered, long timeout) throws GridException {
+        @Nullable Object topic, boolean ordered, long timeout) throws IgniteCheckedException {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(locNodeId);
 
         byte[] serMsg = null;
@@ -1184,8 +1185,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 addMessageListener(TOPIC_COMM_USER,
                     new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }
@@ -1199,8 +1200,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             removeMessageListener(TOPIC_COMM_USER,
                 new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -1213,11 +1214,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msgId Message ID (for ordered messages) or -1 (for unordered messages).
      * @param timeout Message timeout.
      * @param skipOnTimeout Whether message can be skipped in timeout.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(Collection<? extends ClusterNode> nodes, Object topic, int topicOrd,
         GridTcpCommunicationMessageAdapter msg, GridIoPolicy plc, long msgId, long timeout, boolean skipOnTimeout)
-        throws GridException {
+        throws IgniteCheckedException {
         assert nodes != null;
         assert topic != null;
         assert msg != null;
@@ -1246,7 +1247,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     msg + ", policy=" + plc + ']');
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to send message (nodes may have left the grid or " +
+            throw new IgniteCheckedException("Failed to send message (nodes may have left the grid or " +
                 "TCP connection cannot be established due to firewall issues) " +
                 "[nodes=" + nodes + ", topic=" + topic +
                 ", msg=" + msg + ", policy=" + plc + ']', e);
@@ -1647,10 +1648,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
-         * @throws GridException If failed to inject resources to predicates.
+         * @throws IgniteCheckedException If failed to inject resources to predicates.
          */
         GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
-            throws GridException {
+            throws IgniteCheckedException {
             this.topic = topic;
             this.predLsnr = predLsnr;
 
@@ -1730,7 +1731,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (dep != null)
                     ctx.resource().inject(dep, dep.deployedClass(ioMsg.deploymentClassName()), msgBody);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal user message [node=" + nodeId + ", message=" +
                     msg + ']', e);
             }

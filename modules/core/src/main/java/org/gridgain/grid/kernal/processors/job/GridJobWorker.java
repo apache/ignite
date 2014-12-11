@@ -365,7 +365,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     boolean initialize(GridDeployment dep, Class<?> taskCls) {
         assert dep != null;
 
-        GridException ex = null;
+        IgniteCheckedException ex = null;
 
         try {
             if (job == null) {
@@ -381,7 +381,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
             ex = e;
@@ -452,7 +452,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         Object res = null;
 
-        GridException ex = null;
+        IgniteCheckedException ex = null;
 
         try {
             ctx.job().currentTaskSession(ses);
@@ -463,7 +463,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 sndRes = false;
             else {
                 res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
-                    @Nullable @Override public Object call() throws GridException {
+                    @Nullable @Override public Object call() throws IgniteCheckedException {
                         try {
                             if (internal && ctx.config().isPeerClassLoadingEnabled())
                                 ctx.job().internal(true);
@@ -481,7 +481,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     log.debug("Job execution has successfully finished [job=" + job + ", res=" + res + ']');
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (sysStopping && e.hasCause(GridInterruptedException.class, InterruptedException.class)) {
                 ex = handleThrowable(e);
 
@@ -530,10 +530,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param e Exception.
      * @return Wrapped exception.
      */
-    private GridException handleThrowable(Throwable e) {
+    private IgniteCheckedException handleThrowable(Throwable e) {
         String msg = null;
 
-        GridException ex = null;
+        IgniteCheckedException ex = null;
 
         // Special handling for weird interrupted exception which
         // happens due to JDk 1.5 bug.
@@ -541,7 +541,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             msg = "Failed to execute job due to interrupted exception.";
 
             // Turn interrupted exception into checked exception.
-            ex = new GridException(msg, e);
+            ex = new IgniteCheckedException(msg, e);
         }
         // Special 'NoClassDefFoundError' handling if P2P is on. We had many questions
         // about this exception and decided to change error message.
@@ -640,7 +640,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param ex Error.
      * @param sndReply If {@code true}, reply will be sent.
      */
-    void finishJob(@Nullable Object res, @Nullable GridException ex, boolean sndReply) {
+    void finishJob(@Nullable Object res, @Nullable IgniteCheckedException ex, boolean sndReply) {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -735,7 +735,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 // Send response to common topic as unordered message.
                                 ctx.io().send(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.
                             if (isDeadNode(taskNode.id())) {
                                 onMasterNodeLeft();
@@ -811,7 +811,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         log.debug("Successfully executed GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                             "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to execute GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                         "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
                 }

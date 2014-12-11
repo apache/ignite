@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -130,7 +130,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
         }
     }
@@ -227,7 +227,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
         }
     }

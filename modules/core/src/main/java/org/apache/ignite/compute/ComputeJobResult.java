@@ -9,8 +9,8 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -49,7 +49,7 @@ public interface ComputeJobResult {
      * Gets exception produced by execution of remote job, or {@code null} if
      * remote execution finished normally and did not produce any exceptions.
      *
-     * @return {@link GridException} produced by execution of remote job or {@code null} if
+     * @return {@link IgniteCheckedException} produced by execution of remote job or {@code null} if
      *      no exception was produced.
      *      <p>
      *      Note that if remote job resulted in {@link RuntimeException}
@@ -62,7 +62,7 @@ public interface ComputeJobResult {
      *      If node on which job was computing failed, then {@link org.apache.ignite.cluster.ClusterTopologyException} is
      *      returned.
      */
-    public GridException getException();
+    public IgniteCheckedException getException();
 
     /**
      * Gets local instance of remote job returned by {@link ComputeTask#map(List, Object)} method.

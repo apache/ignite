@@ -111,10 +111,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param cacheName Cache name, if {@code null}, then default cache instance is used.
      * @param keys Cache keys to map to nodes.
      * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws GridException If failed to map cache keys.
+     * @throws IgniteCheckedException If failed to map cache keys.
      */
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws GridException;
+        @Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -135,9 +135,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param key Cache key to map to a node.
      * @return Primary node for the key or {@code null} if cache with given name
      *      is not present in the grid.
-     * @throws GridException If failed to map key.
+     * @throws IgniteCheckedException If failed to map key.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException;
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -164,10 +164,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
-        int timeout, int maxConn) throws GridException;
+        int timeout, int maxConn) throws IgniteCheckedException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -265,10 +265,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws GridException;
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteCheckedException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
@@ -277,9 +277,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * stopping node. If you have other applications running in the same JVM along with GridGain,
      * those applications will be stopped as well.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void stopNodes() throws GridException;
+    public void stopNodes() throws IgniteCheckedException;
 
     /**
      * Stops nodes defined by provided IDs.
@@ -289,9 +289,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * those applications will be stopped as well.
      *
      * @param ids IDs defining nodes to stop.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void stopNodes(Collection<UUID> ids) throws GridException;
+    public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException;
 
     /**
      * Restarts nodes satisfying optional set of predicates.
@@ -299,9 +299,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
      * {@code ggstart.sh} or {@code ggstart.bat} scripts.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void restartNodes() throws GridException;
+    public void restartNodes() throws IgniteCheckedException;
 
     /**
      * Restarts nodes defined by provided IDs.
@@ -310,9 +310,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * {@code ggstart.sh} or {@code ggstart.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void restartNodes(Collection<UUID> ids) throws GridException;
+    public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException;
 
     /**
      * Resets local I/O, job, and task execution metrics.

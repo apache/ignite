@@ -94,7 +94,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
             IgniteFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws GridException {
+                @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
                     GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
@@ -134,7 +134,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             //latch2.countDown();
 
             IgniteFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws GridException {
+                @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
                     GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().
@@ -214,7 +214,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             aff2 = nodes(aff, part, F.concat(true, tmpNodes, nodes));
 
             if (retries-- < 0)
-                throw new GridException("Failed to find node IDs to change current affinity mapping.");
+                throw new IgniteCheckedException("Failed to find node IDs to change current affinity mapping.");
         }
         while (F.containsAny(aff1, aff2));
 

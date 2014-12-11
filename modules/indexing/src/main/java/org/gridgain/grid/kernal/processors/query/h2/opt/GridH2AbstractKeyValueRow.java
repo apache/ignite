@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.message.*;
@@ -156,7 +156,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      *
      * @throws IgniteSpiException If failed.
      */
-    public synchronized void onSwap() throws GridException {
+    public synchronized void onSwap() throws IgniteCheckedException {
         setValue(VAL_COL, null);
     }
 
@@ -164,9 +164,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * Should be called when entry getting unswapped.
      *
      * @param val Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public synchronized void onUnswap(Object val) throws GridException {
+    public synchronized void onUnswap(Object val) throws IgniteCheckedException {
         setValue(VAL_COL, wrap(val, desc.valueType()));
     }
 
@@ -235,8 +235,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                             v = syncValue();
                         }
                     }
-                    catch (GridException e) {
-                        throw new GridRuntimeException(e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
                     }
                 }
             }

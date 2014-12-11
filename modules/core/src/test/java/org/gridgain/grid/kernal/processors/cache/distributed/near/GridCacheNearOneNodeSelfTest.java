@@ -9,20 +9,20 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
@@ -347,7 +347,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws GridException {
+        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -358,12 +358,12 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
-            throws GridException {
+            throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

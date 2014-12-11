@@ -1075,7 +1075,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         try {
             shmemSrv = resetShmemServer();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.warn(log, "Failed to start shared memory communication server.", e);
         }
 
@@ -1084,7 +1084,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             // local node was bound to.
             nioSrvr = resetNioServer();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize TCP server: " + locHost, e);
         }
 
@@ -1102,7 +1102,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
                 createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
         }
     }
@@ -1214,13 +1214,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Recreates tpcSrvr socket instance.
      *
      * @return Server instance.
-     * @throws GridException Thrown if it's not possible to create server.
+     * @throws IgniteCheckedException Thrown if it's not possible to create server.
      */
-    private GridNioServer<GridTcpCommunicationMessageAdapter> resetNioServer() throws GridException {
+    private GridNioServer<GridTcpCommunicationMessageAdapter> resetNioServer() throws IgniteCheckedException {
         if (boundTcpPort >= 0)
-            throw new GridException("Tcp NIO server was already created on port " + boundTcpPort);
+            throw new IgniteCheckedException("Tcp NIO server was already created on port " + boundTcpPort);
 
-        GridException lastEx = null;
+        IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
         for (int port = locPort; port < locPort + locPortRange; port++) {
@@ -1257,7 +1257,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 return srvr;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 lastEx = e;
 
                 if (log.isDebugEnabled())
@@ -1267,23 +1267,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         // If free port wasn't found.
-        throw new GridException("Failed to bind to any port within range [startPort=" + locPort +
+        throw new IgniteCheckedException("Failed to bind to any port within range [startPort=" + locPort +
             ", portRange=" + locPortRange + ", locHost=" + locHost + ']', lastEx);
     }
 
     /**
      * Creates new shared memory communication server.
      * @return Server.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws GridException {
+    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
-            throw new GridException("Shared memory server was already created on port " + boundTcpShmemPort);
+            throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
         if (shmemPort == -1 || U.isWindows())
             return null;
 
-        GridException lastEx = null;
+        IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
@@ -1305,7 +1305,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 return srv;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 lastEx = e;
 
                 if (log.isDebugEnabled())
@@ -1315,7 +1315,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         // If free port wasn't found.
-        throw new GridException("Failed to bind shared memory communication to any port within range [startPort=" +
+        throw new IgniteCheckedException("Failed to bind shared memory communication to any port within range [startPort=" +
             locPort + ", portRange=" + locPortRange + ", locHost=" + locHost + ']', lastEx);
     }
 
@@ -1443,7 +1443,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 sentMsgsCnt.increment();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
             }
             finally {
@@ -1458,9 +1458,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param node Node to which client should be open.
      * @return The existing or just created client.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    private GridCommunicationClient reserveClient(ClusterNode node) throws GridException {
+    private GridCommunicationClient reserveClient(ClusterNode node) throws IgniteCheckedException {
         assert node != null;
 
         UUID nodeId = node.id();
@@ -1506,9 +1506,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * @param node Node to create client for.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected GridCommunicationClient createNioClient(ClusterNode node) throws GridException {
+    @Nullable protected GridCommunicationClient createNioClient(ClusterNode node) throws IgniteCheckedException {
         assert node != null;
 
         Integer shmemPort = node.attribute(createSpiAttributeName(ATTR_SHMEM_PORT));
@@ -1516,7 +1516,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         ClusterNode locNode = getSpiContext().localNode();
 
         if (locNode == null)
-            throw new GridException("Failed to create NIO client (local node is stopping)");
+            throw new IgniteCheckedException("Failed to create NIO client (local node is stopping)");
 
         // If remote node has shared memory server enabled and has the same set of MACs
         // then we are likely to run on the same host and shared memory communication could be tried.
@@ -1524,7 +1524,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             try {
                 return createShmemClient(node, shmemPort);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the GridIpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
@@ -1543,9 +1543,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param node Node.
      * @param port Port.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected GridCommunicationClient createShmemClient(ClusterNode node, Integer port) throws GridException {
+    @Nullable protected GridCommunicationClient createShmemClient(ClusterNode node, Integer port) throws IgniteCheckedException {
         int attempt = 1;
 
         int connectAttempts = 1;
@@ -1558,7 +1558,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             try {
                 client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log, msgWriter);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
                 if (connectAttempts < 2 && X.hasCause(e, ConnectException.class)) {
                     connectAttempts++;
@@ -1596,7 +1596,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     continue;
                 }
             }
-            catch (GridException | RuntimeException | Error e) {
+            catch (IgniteCheckedException | RuntimeException | Error e) {
                 if (log.isDebugEnabled())
                     log.debug(
                         "Caught exception (will close client) [err=" + e.getMessage() + ", client=" + client + ']');
@@ -1615,9 +1615,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param node Remote node.
      * @return Client.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected GridCommunicationClient createTcpClient(ClusterNode node) throws GridException {
+    protected GridCommunicationClient createTcpClient(ClusterNode node) throws IgniteCheckedException {
         Collection<String> rmtAddrs0 = node.attribute(createSpiAttributeName(ATTR_ADDRS));
         Collection<String> rmtHostNames0 = node.attribute(createSpiAttributeName(ATTR_HOST_NAMES));
         Integer boundPort = node.attribute(createSpiAttributeName(ATTR_PORT));
@@ -1627,7 +1627,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         boolean isExtAddrsExist = !F.isEmpty(extAddrs);
 
         if (!isRmtAddrsExist && !isExtAddrsExist)
-            throw new GridException("Failed to send message to the destination node. Node doesn't have any " +
+            throw new IgniteCheckedException("Failed to send message to the destination node. Node doesn't have any " +
                 "TCP communication addresses or mapped external addresses. Check configuration and make sure " +
                 "that you use the same communication SPI on all nodes. Remote node id: " + node.id());
 
@@ -1650,7 +1650,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         boolean conn = false;
         GridCommunicationClient client = null;
-        GridException errs = null;
+        IgniteCheckedException errs = null;
 
         int connectAttempts = 1;
 
@@ -1735,12 +1735,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 ", err=" + e.getMessage() + ", addr=" + addr + ']');
 
                         if (errs == null)
-                            errs = new GridException("Failed to connect to node (is node still alive?). " +
+                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
                                 "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                        errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
+                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
 
                         break;
                     }
@@ -1767,12 +1767,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             "configuration property) [addr=" + addr + ']');
 
                     if (errs == null)
-                        errs = new GridException("Failed to connect to node (is node still alive?). " +
+                        errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
                             "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
-                    errs.addSuppressed(new GridException("Failed to connect to address: " + addr, e));
+                    errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
 
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2 &&
@@ -1814,10 +1814,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param client Client.
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
-     * @throws GridException If handshake failed or wasn't completed withing timeout.
+     * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
-    private <T> void safeHandshake(T client, UUID rmtNodeId, long timeout) throws GridException {
+    private <T> void safeHandshake(T client, UUID rmtNodeId, long timeout) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
         sockTimeoutWorker.addTimeoutObject(obj);
@@ -1837,7 +1837,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         int read = ch.read(buf);
 
                         if (read == -1)
-                            throw new GridException("Failed to read remote node ID (connection closed).");
+                            throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
 
                         i += read;
                     }
@@ -1845,7 +1845,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     UUID rmtNodeId0 = U.bytesToUuid(buf.array(), 1);
 
                     if (!rmtNodeId.equals(rmtNodeId0))
-                        throw new GridException("Remote node ID is not as expected [expected=" + rmtNodeId +
+                        throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
                             ", rcvd=" + rmtNodeId0 + ']');
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
@@ -1859,7 +1859,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (log.isDebugEnabled())
                         log.debug("Failed to read from channel: " + e);
 
-                    throw new GridException("Failed to read from channel.", e);
+                    throw new IgniteCheckedException("Failed to read from channel.", e);
                 }
                 finally {
                     if (!success)
@@ -1902,7 +1902,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** Internal exception class for proper timeout handling. */
-    private static class HandshakeTimeoutException extends GridException {
+    private static class HandshakeTimeoutException extends IgniteCheckedException {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1942,7 +1942,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     new IgniteThread(e).start();
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!isCancelled())
                     U.error(log, "Shmem server failed.", e);
             }
@@ -2305,7 +2305,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @SuppressWarnings("ThrowFromFinallyBlock")
-        @Override public void applyx(InputStream in, OutputStream out) throws GridException {
+        @Override public void applyx(InputStream in, OutputStream out) throws IgniteCheckedException {
             try {
                 // Handshake.
                 byte[] b = new byte[17];
@@ -2316,7 +2316,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     int cnt = in.read(b, n, 17 - n);
 
                     if (cnt < 0)
-                        throw new GridException("Failed to get remote node ID (end of stream reached)");
+                        throw new IgniteCheckedException("Failed to get remote node ID (end of stream reached)");
 
                     n += cnt;
                 }
@@ -2325,17 +2325,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 UUID id = U.bytesToUuid(b, 1);
 
                 if (!rmtNodeId.equals(id))
-                    throw new GridException("Remote node ID is not as expected [expected=" + rmtNodeId +
+                    throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
                         ", rcvd=" + id + ']');
                 else if (log.isDebugEnabled())
                     log.debug("Received remote node ID: " + id);
             }
             catch (SocketTimeoutException e) {
-                throw new GridException("Failed to perform handshake due to timeout (consider increasing " +
+                throw new IgniteCheckedException("Failed to perform handshake due to timeout (consider increasing " +
                     "'connectionTimeout' configuration property).", e);
             }
             catch (IOException e) {
-                throw new GridException("Failed to perform handshake.", e);
+                throw new IgniteCheckedException("Failed to perform handshake.", e);
             }
 
             try {
@@ -2349,7 +2349,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     log.debug("Sent local node ID [locNodeId=" + locNodeId + ", rmtNodeId=" + rmtNodeId + ']');
             }
             catch (IOException e) {
-                throw new GridException("Failed to perform handshake.", e);
+                throw new IgniteCheckedException("Failed to perform handshake.", e);
             }
         }
     }

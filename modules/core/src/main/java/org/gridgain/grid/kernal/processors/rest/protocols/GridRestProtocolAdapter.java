@@ -127,11 +127,11 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /**
      * @param cond Condition to check.
      * @param condDesc Error message.
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
-    protected final void assertParameter(boolean cond, String condDesc) throws GridException {
+    protected final void assertParameter(boolean cond, String condDesc) throws IgniteCheckedException {
         if (!cond)
-            throw new GridException("REST protocol parameter failed condition check: " + condDesc);
+            throw new IgniteCheckedException("REST protocol parameter failed condition check: " + condDesc);
     }
 
     /**
@@ -156,7 +156,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
                 ) :
                 Collections.<IgniteBiTuple<String, Object>>emptyList();
         }
-        catch (GridException | IOException ignored) {
+        catch (IgniteCheckedException | IOException ignored) {
             return null;
         }
     }

@@ -115,21 +115,21 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommitted() throws Throwable {
         checkCommit(OPTIMISTIC, READ_COMMITTED);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableRead() throws Throwable {
         checkCommit(OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializable() throws Throwable {
         checkCommit(OPTIMISTIC, SERIALIZABLE);

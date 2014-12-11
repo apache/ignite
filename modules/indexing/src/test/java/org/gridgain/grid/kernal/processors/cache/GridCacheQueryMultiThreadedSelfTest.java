@@ -116,14 +116,14 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      *
      */
     private static class FakeIndexing extends GridH2Indexing {
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws GridException {
+        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException {
             super.onSwap(spaceName, key);
 
             idxSwapCnt.incrementAndGet();
         }
 
         @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
-        throws GridException {
+        throws IgniteCheckedException {
             super.onUnswap(spaceName, key, val, valBytes);
 
             idxUnswapCnt.incrementAndGet();
@@ -253,7 +253,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -333,7 +333,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -417,7 +417,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -498,7 +498,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!done.get()) {
@@ -579,7 +579,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {
@@ -642,7 +642,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 int iter = 0;
 
                 while (!done.get() && !Thread.currentThread().isInterrupted()) {
@@ -724,7 +724,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (!stop.get()) {
                     Collection<Integer> rmtVals = rdcQry.execute(rmtRdc).get();
 
@@ -794,7 +794,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {

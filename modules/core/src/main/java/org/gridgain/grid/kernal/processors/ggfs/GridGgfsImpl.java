@@ -114,9 +114,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Creates GGFS instance with given context.
      *
      * @param ggfsCtx Context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    GridGgfsImpl(GridGgfsContext ggfsCtx) throws GridException {
+    GridGgfsImpl(GridGgfsContext ggfsCtx) throws IgniteCheckedException {
         assert ggfsCtx != null;
 
         this.ggfsCtx = ggfsCtx;
@@ -133,7 +133,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         if (secondaryFs == null) {
             if (cfg.getDefaultMode() == PROXY)
-                throw new GridException("Mode cannot be PROXY if secondary file system hasn't been defined.");
+                throw new IgniteCheckedException("Mode cannot be PROXY if secondary file system hasn't been defined.");
 
             dfltMode = PRIMARY;
         }
@@ -175,7 +175,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     modes.add(new T2<>(new IgniteFsPath(mode.getKey()), mode0));
                 }
                 catch (IllegalArgumentException e) {
-                    throw new GridException("Invalid path found in mode pattern: " + mode.getKey(), e);
+                    throw new IgniteCheckedException("Invalid path found in mode pattern: " + mode.getKey(), e);
                 }
             }
         }
@@ -254,9 +254,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param path File path in the secondary file system.
      * @param out Output stream to that file.
      * @return Created batch.
-     * @throws GridException In case new batch cannot be created.
+     * @throws IgniteCheckedException In case new batch cannot be created.
      */
-    private GridGgfsFileWorkerBatch newBatch(final IgniteFsPath path, OutputStream out) throws GridException {
+    private GridGgfsFileWorkerBatch newBatch(final IgniteFsPath path, OutputStream out) throws IgniteCheckedException {
         assert path != null;
         assert out != null;
 
@@ -299,13 +299,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
             }
         }
         else
-            throw new GridException("Cannot create new output stream to the secondary file system because GGFS is " +
+            throw new IgniteCheckedException("Cannot create new output stream to the secondary file system because GGFS is " +
                 "stopping: " + path);
     }
 
     /**
      * @return {@code True} if entered busy section.
-     * @throws GridRuntimeException If failed to await caches start.
+     * @throws IgniteException If failed to await caches start.
      */
     private boolean enterBusy() {
         meta.awaitInit();
@@ -342,7 +342,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     try {
                         batch.awaitIfFinished();
                     }
-                    catch (GridException ignore) {
+                    catch (IgniteCheckedException ignore) {
                         // No-op.
                     }
                 }
@@ -389,7 +389,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public GridGgfsStatus globalSpace() throws GridException {
+    @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 IgniteBiTuple<Long, Long> space = ggfsCtx.kernalContext().grid().compute().execute(
@@ -406,7 +406,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void globalSampling(@Nullable Boolean val) throws GridException {
+    @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 if (meta.sampling(val)) {
@@ -436,7 +436,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 try {
                     return meta.sampling();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to get sampling state.", e);
 
                     return false;
@@ -461,7 +461,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) throws GridException {
+    @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
         A.notNull(path, "path");
 
         if (log.isDebugEnabled())
@@ -470,7 +470,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         IgniteFsMode mode = modeRslvr.resolveMode(path);
 
         if (mode == PROXY)
-            throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+            throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
         boolean res = false;
 
@@ -497,7 +497,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -508,7 +508,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 GridGgfsFileInfo info = resolveFileInfo(path, mode);
 
@@ -526,7 +526,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -554,7 +554,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -567,7 +567,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -610,7 +610,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
+    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(src, "src");
@@ -623,7 +623,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + src);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + src);
 
                 if (src.equals(dest))
                     return; // Rename to itself is a no-op.
@@ -719,7 +719,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
+    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -731,7 +731,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 boolean res = false;
 
@@ -781,10 +781,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param recursive Recursive deletion flag.
      * @return {@code True} if file was successfully deleted. If directory is not empty and
      *      {@code recursive} flag is false, will return {@code false}.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private boolean delete0(FileDescriptor desc, @Nullable IgniteFsPath parentPath, boolean recursive)
-        throws GridException {
+        throws IgniteCheckedException {
         IgniteFsPath curPath = parentPath == null ? new IgniteFsPath() : new IgniteFsPath(parentPath, desc.fileName);
 
         if (desc.isFile) {
@@ -815,12 +815,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
         mkdirs(path, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -834,7 +834,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -874,7 +874,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                             if (oldId == null && evts.isRecordable(EVT_GGFS_DIR_CREATED))
                                 evts.record(new IgniteFsEvent(curPath, localNode(), EVT_GGFS_DIR_CREATED));
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to create directory [path=" + path + ", parentId=" + parentId +
                                     ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
@@ -907,7 +907,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(final IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(final IgniteFsPath path) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -918,7 +918,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -959,7 +959,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(final IgniteFsPath path) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -970,7 +970,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
@@ -1026,7 +1026,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long usedSpaceSize() throws GridException {
+    @Override public long usedSpaceSize() throws IgniteCheckedException {
         return metrics().localSpaceSize();
     }
 
@@ -1036,18 +1036,18 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException {
         return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException {
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException {
         return open(path, bufSize, cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
     @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws GridException {
+        throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1063,7 +1063,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1107,20 +1107,20 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+    @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
         return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-        long blockSize, @Nullable Map<String, String> props) throws GridException {
+        long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         return create0(path, bufSize, overwrite, null, replication, props, false);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
         @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-        throws GridException {
+        throws IgniteCheckedException {
         return create0(path, bufSize, overwrite, affKey, replication, props, false);
     }
 
@@ -1135,7 +1135,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param props Properties.
      * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
      * @return Output stream.
-     * @throws GridException If file creation failed.
+     * @throws IgniteCheckedException If file creation failed.
      */
     private IgniteFsOutputStream create0(
         final IgniteFsPath path,
@@ -1145,7 +1145,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         final int replication,
         @Nullable Map<String, String> props,
         final boolean simpleCreate
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1160,7 +1160,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 GridGgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1248,13 +1248,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+    @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws IgniteCheckedException {
         return append(path, cfg.getStreamBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFsOutputStream append(final IgniteFsPath path, final int bufSize, boolean create,
-        @Nullable Map<String, String> props) throws GridException {
+        @Nullable Map<String, String> props) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1269,7 +1269,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 GridGgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
@@ -1333,7 +1333,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime)
-        throws GridException {
+        throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1367,12 +1367,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * Checks if given path exists in secondary file system and throws exception if so.
      *
      * @param path Path to check.
-     * @throws GridException If path exists.
+     * @throws IgniteCheckedException If path exists.
      */
-    private void checkConflictWithPrimary(IgniteFsPath path) throws GridException {
+    private void checkConflictWithPrimary(IgniteFsPath path) throws IgniteCheckedException {
         if (secondaryFs != null) {
             if (secondaryFs.info(path) != null) {
-                throw new GridException("Path mapped to a PRIMARY mode found in secondary file " +
+                throw new IgniteCheckedException("Path mapped to a PRIMARY mode found in secondary file " +
                      "system. Remove path from secondary file system or change path mapping: " + path);
             }
         }
@@ -1380,13 +1380,13 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
-        throws GridException {
+        throws IgniteCheckedException {
         return affinity(path, start, len, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len, long maxLen)
-        throws GridException {
+        throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1399,7 +1399,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new GridException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 // Check memory first.
                 IgniteUuid fileId = meta.fileId(path);
@@ -1431,7 +1431,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsMetrics metrics() throws GridException {
+    @Override public IgniteFsMetrics metrics() throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 IgniteFsPathSummary sum = new IgniteFsPathSummary();
@@ -1444,7 +1444,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     try {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         LT.warn(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
@@ -1482,7 +1482,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long size(IgniteFsPath path) throws GridException {
+    @Override public long size(IgniteFsPath path) throws IgniteCheckedException {
         if (enterBusy()) {
             try {
                 A.notNull(path, "path");
@@ -1511,9 +1511,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @param fileId File ID.
      * @param sum Summary object that will collect information.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void summary0(IgniteUuid fileId, IgniteFsPathSummary sum) throws GridException {
+    private void summary0(IgniteUuid fileId, IgniteFsPathSummary sum) throws IgniteCheckedException {
         assert sum != null;
 
         GridGgfsFileInfo info = meta.info(fileId);
@@ -1534,7 +1534,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() throws GridException {
+    @Override public void format() throws IgniteCheckedException {
         formatAsync().get();
     }
 
@@ -1543,7 +1543,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @return Future.
      */
-    IgniteFuture<?> formatAsync() throws GridException {
+    IgniteFuture<?> formatAsync() throws IgniteCheckedException {
         IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
         if (id == null)
@@ -1569,7 +1569,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
+    @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
         Collection<IgniteUuid> ids = meta.pendingDeletes();
 
         if (!ids.isEmpty()) {
@@ -1609,9 +1609,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @param path Path to file.
      * @return Detailed file descriptor or {@code null}, if file does not exist.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private FileDescriptor getFileDescriptor(IgniteFsPath path) throws GridException {
+    @Nullable private FileDescriptor getFileDescriptor(IgniteFsPath path) throws IgniteCheckedException {
         List<IgniteUuid> ids = meta.fileIds(path);
         GridGgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 
@@ -1630,9 +1630,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param path Path of the deleted file.
      * @param desc Detailed file descriptor to remove.
      * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void deleteFile(IgniteFsPath path, FileDescriptor desc, boolean rmvLocked) throws GridException {
+    private void deleteFile(IgniteFsPath path, FileDescriptor desc, boolean rmvLocked) throws IgniteCheckedException {
         IgniteUuid parentId = desc.parentId;
         IgniteUuid fileId = desc.fileId;
 
@@ -1668,27 +1668,27 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-        Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
+        Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
         return executeAsync(task, rslvr, paths, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-        throws GridException {
+        throws IgniteCheckedException {
         return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
+        @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
         return executeAsync(taskCls, rslvr, paths, arg).get();
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
-        long maxRangeSize, @Nullable T arg) throws GridException {
+        long maxRangeSize, @Nullable T arg) throws IgniteCheckedException {
         return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
     }
 
@@ -1768,7 +1768,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             // Exclude all PRIMARY files + the ones specified in eviction policy as exclusions.
             return primary || evictPlc == null || evictPlc.exclude(path);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             LT.error(log, e, "Failed to check whether the path must be excluded from evictions: " + path);
 
             return false;
@@ -1781,9 +1781,9 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param path Path.
      * @param mode Mode.
      * @return File info or {@code null} in case file is not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws GridException {
+    private GridGgfsFileInfo resolveFileInfo(IgniteFsPath path, IgniteFsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1912,11 +1912,11 @@ public final class GridGgfsImpl implements GridGgfsEx {
          * @param bufSize The size of the buffer to be used.
          * @param mode GGFS mode.
          * @param batch Optional secondary file system batch.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
         GgfsEventAwareOutputStream(IgniteFsPath path, GridGgfsFileInfo fileInfo,
             IgniteUuid parentId, int bufSize, IgniteFsMode mode, @Nullable GridGgfsFileWorkerBatch batch)
-            throws GridException {
+            throws IgniteCheckedException {
             super(ggfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
 
             metrics.incrementFilesOpenedForWrite();
@@ -1996,7 +1996,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws GridException {
+            throws IgniteCheckedException {
             Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -2005,7 +2005,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     @IgniteInstanceResource
                     private Ignite g;
 
-                    @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws GridException {
+                    @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws IgniteCheckedException {
                         IgniteFs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
 
                         if (ggfs == null)
@@ -2024,7 +2024,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             long used = 0;
             long max = 0;
 
@@ -2041,7 +2041,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
             // Never failover.
             return ComputeJobResultPolicy.WAIT;
         }
@@ -2063,7 +2063,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                         try {
                             msg0.finishUnmarshal(ggfsCtx.kernalContext().config().getMarshaller(), null);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to unmarshal message (will ignore): " + msg0, e);
 
                             return;
@@ -2109,7 +2109,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                                 rmv.add(id);
                             }
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to check file existence: " + id, e);
                         }
                     }

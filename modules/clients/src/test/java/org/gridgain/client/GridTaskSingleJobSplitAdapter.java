@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -28,22 +28,22 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends ComputeTaskSpl
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(final int gridSize, final T arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(final int gridSize, final T arg) throws IgniteCheckedException {
         return Collections.singleton(new ComputeJobAdapter() {
-            @Override public Object execute() throws GridException {
+            @Override public Object execute() throws IgniteCheckedException {
                 return executeJob(gridSize, arg);
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public R reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() == 1;
 
         ComputeJobResult res = results.get(0);
 
         if (res.isCancelled())
-            throw new GridException("Reduce receives failed job.");
+            throw new IgniteCheckedException("Reduce receives failed job.");
 
         return res.getData();
     }
@@ -57,11 +57,11 @@ public abstract class GridTaskSingleJobSplitAdapter<T, R> extends ComputeTaskSpl
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link org.apache.ignite.compute.ComputeJobResult#getData()} method passed into
      *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
-     * @throws GridException If job execution caused an exception. This exception will be
+     * @throws IgniteCheckedException If job execution caused an exception. This exception will be
      *      returned in {@link org.apache.ignite.compute.ComputeJobResult#getException()} method passed into
      *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
-     *      it will be wrapped into {@link GridException}.
+     *      it will be wrapped into {@link IgniteCheckedException}.
      */
-    protected abstract Object executeJob(int gridSize, T arg) throws GridException;
+    protected abstract Object executeJob(int gridSize, T arg) throws IgniteCheckedException;
 }

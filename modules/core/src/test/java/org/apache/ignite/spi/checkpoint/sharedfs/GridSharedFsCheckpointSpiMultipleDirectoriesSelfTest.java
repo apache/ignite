@@ -9,8 +9,9 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.apache.ignite.spi.checkpoint.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.spi.*;
 
@@ -100,7 +101,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
         try {
             getSpi().saveCheckpoint(CHECK_POINT_KEY_PREFIX, GridTestIoUtils.serializeJdk(state), 0, true);
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             error = true;
         }
 

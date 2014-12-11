@@ -9,10 +9,10 @@
 
 package org.apache.ignite.spi.discovery;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
+import org.gridgain.grid.kernal.managers.security.*;
 
 /**
  * Node authenticator.
@@ -24,10 +24,10 @@ public interface DiscoverySpiNodeAuthenticator {
      * @param node Node to authenticate.
      * @param cred Security credentials.
      * @return Security context if authentication succeeded or {@code null} if authentication failed.
-     * @throws GridException If authentication process failed
+     * @throws IgniteCheckedException If authentication process failed
      *      (invalid credentials should not lead to this exception).
      */
-    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws GridException;
+    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Gets global node authentication flag.

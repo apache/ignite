@@ -42,7 +42,7 @@ import java.util.*;
  *     }
  *
  *     &#64;Nullable &#64;Override public Double onAdded(GridStreamerIndexEntry&lt;StockPriceEvent, String, Double&gt; entry,
- *         StockPriceEvent evt) throws GridException {
+ *         StockPriceEvent evt) throws IgniteCheckedException {
  *         return Math.min(entry.value(), evt.getPrice()); // Update the minimum on new event.
  *     }
  *

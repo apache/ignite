@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
+import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -71,14 +72,14 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             try {
                 gridFut.get();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to transform system cache.", e);
             }
         }
     };
 
     /** {@inheritDoc} */
-    @Override public void start(GridHadoopContext ctx) throws GridException {
+    @Override public void start(GridHadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
 
         busyLock = new GridSpinReadWriteLock();
@@ -106,7 +107,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     try {
                         ctx.kernalContext().resource().injectGeneric(mrPlanner);
                     }
-                    catch (GridException e) { // Must not happen.
+                    catch (IgniteCheckedException e) { // Must not happen.
                         U.error(log, "Failed to inject resources.", e);
 
                         throw new IllegalStateException(e);
@@ -122,7 +123,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
         GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
@@ -137,7 +138,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 try {
                     // Must process query callback in a separate thread to avoid deadlocks.
                     evtProcSvc.submit(new EventHandler() {
-                        @Override protected void body() throws GridException {
+                        @Override protected void body() throws IgniteCheckedException {
                             processJobMetadataUpdates(evts);
                         }
                     });
@@ -182,7 +183,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         // Fail all pending futures.
         for (GridFutureAdapter<GridHadoopJobId> fut : activeFinishFuts.values())
-            fut.onDone(new GridException("Failed to execute Hadoop map-reduce job (grid is stopping)."));
+            fut.onDone(new IgniteCheckedException("Failed to execute Hadoop map-reduce job (grid is stopping)."));
     }
 
     /**
@@ -195,7 +196,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     @SuppressWarnings("unchecked")
     public IgniteFuture<GridHadoopJobId> submit(GridHadoopJobId jobId, GridHadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
-            return new GridFinishedFutureEx<>(new GridException("Failed to execute map-reduce job " +
+            return new GridFinishedFutureEx<>(new IgniteCheckedException("Failed to execute map-reduce job " +
                 "(grid is stopping): " + info));
         }
 
@@ -203,7 +204,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             long jobPrepare = U.currentTimeMillis();
 
             if (jobs.containsKey(jobId) || jobMetaCache().containsKey(jobId))
-                throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
+                throw new IgniteCheckedException("Failed to submit job. Job with the same ID already exists: " + jobId);
 
             GridHadoopJob job = job(jobId, info);
 
@@ -235,11 +236,11 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             perfCntr.onJobStart(jobStart);
 
             if (jobMetaCache().putIfAbsent(jobId, meta) != null)
-                throw new GridException("Failed to submit job. Job with the same ID already exists: " + jobId);
+                throw new IgniteCheckedException("Failed to submit job. Job with the same ID already exists: " + jobId);
 
             return completeFut;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to submit job: " + jobId, e);
 
             return new GridFinishedFutureEx<>(e);
@@ -279,7 +280,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job ID to get status for.
      * @return Job status for given job ID or {@code null} if job was not found.
      */
-    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+    @Nullable public GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null; // Grid is stopping.
 
@@ -298,9 +299,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param jobId Job ID.
      * @return Finish future or {@code null}.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null; // Grid is stopping.
 
@@ -352,9 +353,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param jobId Job ID.
      * @return Job plan.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridHadoopMapReducePlan plan(GridHadoopJobId jobId) throws GridException {
+    public GridHadoopMapReducePlan plan(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null;
 
@@ -569,12 +570,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         }
 
                         if (cancelSplits != null || cancelReducers != null)
-                            jobMetaCache().transform(meta.jobId(), new CancelJobClosure(null, new GridException(
+                            jobMetaCache().transform(meta.jobId(), new CancelJobClosure(null, new IgniteCheckedException(
                                 "One or more nodes participating in map-reduce job execution failed."), cancelSplits,
                                 cancelReducers));
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to cancel job: " + meta, e);
                 }
             }
@@ -584,7 +585,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     /**
      * @param updated Updated cache entries.
      */
-    private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) throws GridException {
+    private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated) throws IgniteCheckedException {
         UUID locNodeId = ctx.localNodeId();
 
         for (Map.Entry<GridHadoopJobId, GridHadoopJobMetadata> entry : updated) {
@@ -601,7 +602,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
             try {
                 ctx.taskExecutor().onJobStateChanged(meta);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process job state changed callback (will fail the job) " +
                     "[locNodeId=" + locNodeId + ", jobId=" + jobId + ", meta=" + meta + ']', e);
 
@@ -643,10 +644,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job ID.
      * @param meta Job metadata.
      * @param locNodeId Local node ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void processJobMetaUpdate(GridHadoopJobId jobId, GridHadoopJobMetadata meta, UUID locNodeId)
-        throws GridException {
+        throws IgniteCheckedException {
         JobLocalState state = activeJobs.get(jobId);
 
         GridHadoopJob job = job(jobId, meta.jobInfo());
@@ -920,9 +921,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param jobId Job ID.
      * @param jobInfo Job info.
      * @return Job.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public GridHadoopJob job(GridHadoopJobId jobId, @Nullable GridHadoopJobInfo jobInfo) throws GridException {
+    @Nullable public GridHadoopJob job(GridHadoopJobId jobId, @Nullable GridHadoopJobInfo jobInfo) throws IgniteCheckedException {
         GridFutureAdapterEx<GridHadoopJob> fut = jobs.get(jobId);
 
         if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapterEx<GridHadoopJob>())) != null)
@@ -937,7 +938,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 GridHadoopJobMetadata meta = jobMetaCache().get(jobId);
 
                 if (meta == null)
-                    throw new GridException("Failed to find job metadata for ID: " + jobId);
+                    throw new IgniteCheckedException("Failed to find job metadata for ID: " + jobId);
 
                 jobInfo = meta.jobInfo();
             }
@@ -950,7 +951,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
             return job;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onDone(e);
 
             jobs.remove(jobId, fut);
@@ -959,7 +960,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                 try {
                     job.dispose(false);
                 }
-                catch (GridException e0) {
+                catch (IgniteCheckedException e0) {
                     U.error(log, "Failed to dispose job: " + jobId, e0);
                 }
             }
@@ -973,9 +974,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param jobId Job ID.
      * @return {@code True} if job was killed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean killJob(GridHadoopJobId jobId) throws GridException {
+    public boolean killJob(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return false; // Grid is stopping.
 
@@ -1012,9 +1013,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      *
      * @param jobId Job identifier.
      * @return Job counters or {@code null} if job cannot be found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws GridException {
+    @Nullable public GridHadoopCounters jobCounters(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             return null;
 
@@ -1149,7 +1150,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                         try {
                             f.get();
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             err = e;
                         }
                     }
@@ -1199,7 +1200,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                             try {
                                 f.get();
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 err = e;
                             }
                         }

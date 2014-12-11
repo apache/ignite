@@ -36,9 +36,9 @@ public class MemcacheRestExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         Ignition.start(configuration());
     }
 
@@ -46,9 +46,9 @@ public class MemcacheRestExampleNodeStartup {
      * Create Grid configuration with GGFS and enabled IPC.
      *
      * @return Grid configuration.
-     * @throws GridException If configuration creation failed.
+     * @throws IgniteCheckedException If configuration creation failed.
      */
-    public static IgniteConfiguration configuration() throws GridException {
+    public static IgniteConfiguration configuration() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

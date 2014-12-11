@@ -316,7 +316,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
          * @param gridSize Grid size.
          * @param arg Task argument.
          */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert taskLog != null;
 
             final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {
@@ -351,7 +351,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return results.get(0).getData();
@@ -423,7 +423,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                         info("Finished load test [avgInjectTime=" + avgInjectTime +
                             "ms, duration=" + duration + "ms, count=" + iters + ']');
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         fail("Failed to inject resources: " + e.getMessage());
                     }
                 }

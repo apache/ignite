@@ -43,9 +43,9 @@ public class ComputeContinuousMapperExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Compute continuous mapper example started.");
 
@@ -81,9 +81,9 @@ public class ComputeContinuousMapperExample {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> grid, String phrase)
-            throws GridException {
+            throws IgniteCheckedException {
             if (phrase == null || phrase.isEmpty())
-                throw new GridException("Phrase is empty.");
+                throw new IgniteCheckedException("Phrase is empty.");
 
             // Populate word queue.
             Collections.addAll(words, phrase.split(" "));
@@ -98,7 +98,7 @@ public class ComputeContinuousMapperExample {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws GridException {
+            throws IgniteCheckedException {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
                 return super.result(res, rcvd);
@@ -113,16 +113,16 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return totalChrCnt.get();
         }
 
         /**
          * Sends next queued word to the next node implicitly selected by load balancer.
          *
-         * @throws GridException If sending of a word failed.
+         * @throws IgniteCheckedException If sending of a word failed.
          */
-        private void sendWord() throws GridException {
+        private void sendWord() throws IgniteCheckedException {
             // Remove first word from the queue.
             String word = words.poll();
 

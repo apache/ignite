@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
@@ -22,9 +22,9 @@ public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
      * Gets SQL metadata.
      *
      * @return SQL metadata.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException;
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException;
 
     /**
      * Creates SQL fields query which will include results metadata if needed.

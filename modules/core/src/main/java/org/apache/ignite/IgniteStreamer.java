@@ -60,9 +60,9 @@ public interface IgniteStreamer {
      *
      * @param evt Event to add.
      * @param evts Optional events to add.
-     * @throws GridException If event submission failed.
+     * @throws IgniteCheckedException If event submission failed.
      */
-    public void addEvent(Object evt, Object... evts) throws GridException;
+    public void addEvent(Object evt, Object... evts) throws IgniteCheckedException;
 
     /**
      * Submits group of events to streamer. Events will be processed from a stage with specified name.
@@ -70,27 +70,27 @@ public interface IgniteStreamer {
      * @param stageName Stage name to start with.
      * @param evt Event tp process.
      * @param evts Optional events.
-     * @throws GridException If event submission failed.
+     * @throws IgniteCheckedException If event submission failed.
      */
-    public void addEventToStage(String stageName, Object evt, Object... evts) throws GridException;
+    public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteCheckedException;
 
     /**
      * Submits group of events for processing. This group of events will be processed on default stage,
      * i.e. stage that is the first in the streamer stages list.
      *
      * @param evts Events to add.
-     * @throws GridException If event submission failed.
+     * @throws IgniteCheckedException If event submission failed.
      */
-    public void addEvents(Collection<?> evts) throws GridException;
+    public void addEvents(Collection<?> evts) throws IgniteCheckedException;
 
     /**
      * Submits events to streamer. Events will be processed from a stage with specified name.
      *
      * @param stageName Stage name to start with.
      * @param evts Events to process.
-     * @throws GridException If event submission failed.
+     * @throws IgniteCheckedException If event submission failed.
      */
-    public void addEventsToStage(String stageName, Collection<?> evts) throws GridException;
+    public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteCheckedException;
 
     /**
      * Gets streamer context. Streamer context provides access to streamer local space on this node, configured

@@ -75,7 +75,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws GridException {
+    @Override public void stop() throws IgniteCheckedException {
         stopping = true;
     }
 
@@ -185,7 +185,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 return processStreamControlRequest(ses, cmd, msg, in);
 
             default:
-                throw new GridException("Unsupported IPC command: " + cmd);
+                throw new IgniteCheckedException("Unsupported IPC command: " + cmd);
         }
     }
 
@@ -194,15 +194,15 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      *
      * @param req Handshake request.
      * @return Response message.
-     * @throws GridException In case of handshake failure.
+     * @throws IgniteCheckedException In case of handshake failure.
      */
-    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) throws GridException {
+    private GridGgfsMessage processHandshakeRequest(GridGgfsHandshakeRequest req) throws IgniteCheckedException {
         if (!F.eq(ctx.gridName(), req.gridName()))
-            throw new GridException("Failed to perform handshake because actual Grid name differs from expected " +
+            throw new IgniteCheckedException("Failed to perform handshake because actual Grid name differs from expected " +
                 "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
 
         if (!F.eq(ggfs.name(), req.ggfsName()))
-            throw new GridException("Failed to perform handshake because actual GGFS name differs from expected " +
+            throw new IgniteCheckedException("Failed to perform handshake because actual GGFS name differs from expected " +
                 "[expected=" + req.ggfsName() + ", actual=" + ggfs.name() + ']');
 
         GridGgfsControlResponse res = new GridGgfsControlResponse();
@@ -222,7 +222,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      *
      * @return Status response.
      */
-    private GridGgfsMessage processStatusRequest() throws GridException {
+    private GridGgfsMessage processStatusRequest() throws IgniteCheckedException {
         GridGgfsStatus status = ggfs.globalSpace();
 
         GridGgfsControlResponse res = new GridGgfsControlResponse();
@@ -239,10 +239,10 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @param cmd Command.
      * @param msg Message.
      * @return Response message.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private GridGgfsMessage processPathControlRequest(GridGgfsClientSession ses, GridGgfsIpcCommand cmd,
-        GridGgfsMessage msg) throws GridException {
+        GridGgfsMessage msg) throws IgniteCheckedException {
         GridGgfsPathControlRequest req = (GridGgfsPathControlRequest)msg;
 
         if (log.isDebugEnabled())
@@ -388,11 +388,11 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * @param msg Message.
      * @param in Data input to read.
      * @return Response message if needed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws IOException If failed.
      */
     private GridGgfsMessage processStreamControlRequest(GridGgfsClientSession ses, GridGgfsIpcCommand cmd,
-        GridGgfsMessage msg, DataInput in) throws GridException, IOException {
+        GridGgfsMessage msg, DataInput in) throws IgniteCheckedException, IOException {
         GridGgfsStreamControlRequest req = (GridGgfsStreamControlRequest)msg;
 
         Long rsrcId = req.streamId();
@@ -408,7 +408,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                         ", res=" + res + ']');
 
                 if (res == null)
-                    throw new GridException("Resource to close not found: " + rsrcId);
+                    throw new IgniteCheckedException("Resource to close not found: " + rsrcId);
 
                 try {
                     res.close();
@@ -444,7 +444,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 GridGgfsInputStreamAdapter ggfsIn = (GridGgfsInputStreamAdapter)resource(ses, rsrcId);
 
                 if (ggfsIn == null)
-                    throw new GridException("Input stream not found (already closed?): " + rsrcId);
+                    throw new IgniteCheckedException("Input stream not found (already closed?): " + rsrcId);
 
                 byte[][] chunks = ggfsIn.readChunks(pos, size);
 
@@ -474,7 +474,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
                 IgniteFsOutputStream out = (IgniteFsOutputStream)resource(ses, rsrcId);
 
                 if (out == null)
-                    throw new GridException("Output stream not found (already closed?): " + rsrcId);
+                    throw new IgniteCheckedException("Output stream not found (already closed?): " + rsrcId);
 
                 int writeLen = req.length();
 

@@ -58,7 +58,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployNodeSingleton(String name, ManagedService svc) throws GridException {
+    @Override public void deployNodeSingleton(String name, ManagedService svc) throws IgniteCheckedException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -73,7 +73,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployClusterSingleton(String name, ManagedService svc) throws GridException {
+    @Override public void deployClusterSingleton(String name, ManagedService svc) throws IgniteCheckedException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -89,7 +89,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
 
     /** {@inheritDoc} */
     @Override public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt)
-        throws GridException {
+        throws IgniteCheckedException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -105,7 +105,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
 
     /** {@inheritDoc} */
     @Override public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName,
-        Object affKey) throws GridException {
+        Object affKey) throws IgniteCheckedException {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
         A.notNull(affKey, "affKey");
@@ -121,7 +121,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deploy(ManagedServiceConfiguration cfg) throws GridException {
+    @Override public void deploy(ManagedServiceConfiguration cfg) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         guard();
@@ -135,7 +135,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String name) throws GridException {
+    @Override public void cancel(String name) throws IgniteCheckedException {
         A.notNull(name, "name");
 
         guard();
@@ -149,7 +149,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelAll() throws GridException {
+    @Override public void cancelAll() throws IgniteCheckedException {
         guard();
 
         try {
@@ -186,7 +186,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
-        throws GridRuntimeException {
+        throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);

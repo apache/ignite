@@ -1193,7 +1193,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -3037,7 +3037,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             try {
                 F.eventNode(null, null);
             }
-            catch (GridRuntimeException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
 

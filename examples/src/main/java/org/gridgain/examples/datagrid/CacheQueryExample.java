@@ -65,7 +65,7 @@ public class CacheQueryExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
@@ -109,9 +109,9 @@ public class CacheQueryExample {
     /**
      * Example for SQL queries based on salary ranges.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQuery() throws GridException {
+    private static void sqlQuery() throws IgniteCheckedException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
@@ -129,9 +129,9 @@ public class CacheQueryExample {
     /**
      * Example for SQL queries based on all employees working for a specific organization.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQueryWithJoin() throws GridException {
+    private static void sqlQueryWithJoin() throws IgniteCheckedException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
@@ -148,9 +148,9 @@ public class CacheQueryExample {
     /**
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void textQuery() throws GridException {
+    private static void textQuery() throws IgniteCheckedException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
@@ -169,9 +169,9 @@ public class CacheQueryExample {
      * Example for SQL queries with custom remote and local reducers to calculate
      * average salary for a specific organization.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQueryWithReducers() throws GridException {
+    private static void sqlQueryWithReducers() throws IgniteCheckedException {
         GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
@@ -218,9 +218,9 @@ public class CacheQueryExample {
      * Example for SQL queries with custom transformer to allow passing
      * only the required set of fields back to caller.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlQueryWithTransformer() throws GridException {
+    private static void sqlQueryWithTransformer() throws IgniteCheckedException {
         GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
@@ -247,9 +247,9 @@ public class CacheQueryExample {
      * Example for SQL-based fields queries that return only required
      * fields instead of whole key-value pairs.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlFieldsQuery() throws GridException {
+    private static void sqlFieldsQuery() throws IgniteCheckedException {
         GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
@@ -268,9 +268,9 @@ public class CacheQueryExample {
      * Example for SQL-based fields queries that return only required
      * fields instead of whole key-value pairs.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void sqlFieldsQueryWithJoin() throws GridException {
+    private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
         GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
@@ -289,10 +289,10 @@ public class CacheQueryExample {
     /**
      * Populate cache with test data.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws InterruptedException In case of error.
      */
-    private static void initialize() throws GridException, InterruptedException {
+    private static void initialize() throws IgniteCheckedException, InterruptedException {
         GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Organization projection.
