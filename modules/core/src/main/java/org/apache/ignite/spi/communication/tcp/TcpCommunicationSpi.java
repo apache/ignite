@@ -211,7 +211,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default received messages threshold for sending ack. */
-    public static final int DFLT_ACK_SND_THRESHOLD = 512;
+    public static final int DFLT_ACK_SND_THRESHOLD = 16;
 
     /** Default socket write timeout. */
     public static final long DFLT_SOCK_WRITE_TIMEOUT = GridNioServer.DFLT_SES_WRITE_TIMEOUT;
@@ -586,7 +586,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                     fut.onDone(client);
                                 }
-                                catch (GridException | IOException e) {
+                                catch (IgniteCheckedException | IOException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send recovery handshake " +
                                             "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
@@ -1780,7 +1780,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
-                            throw new GridException("Failed to send message to remote node " +
+                            throw new IgniteCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
                 }
@@ -2199,7 +2199,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param recovery Recovery descriptor if use recovery handshake, otherwise {@code null}.
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
-     * @throws GridException If handshake failed or wasn't completed withing timeout.
+     * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
@@ -2280,7 +2280,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             int read = ch.read(buf);
 
                             if (read == -1)
-                                throw new GridException("Failed to read remote node recovery handshake " +
+                                throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
                                     "(connection closed).");
 
                             i += read;
@@ -2833,7 +2833,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (recoveryDesc.nodeAlive(getSpiContext().node(node.id()))) {
                         if (log.isDebugEnabled())
                             log.debug("Recovery reconnect failed, will retry " +

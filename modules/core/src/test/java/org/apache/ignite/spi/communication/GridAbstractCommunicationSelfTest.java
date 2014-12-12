@@ -238,7 +238,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(BindException.class)) {
                     if (i < 2) {
                         info("Failed to start SPIs because of BindException, will retry after delay.");

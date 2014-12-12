@@ -9,12 +9,12 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.eclipse.jetty.util.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
@@ -314,7 +314,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
                         errCnt++;
 
@@ -436,7 +436,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     assertEquals(expMsgs0, lsnr0.rcvCnt.get());
                     assertEquals(expMsgs1, lsnr1.rcvCnt.get());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
                         errCnt++;
 
@@ -535,7 +535,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
                         errCnt++;
 
@@ -672,7 +672,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (e.hasCause(BindException.class)) {
                     if (i < 2) {
                         info("Failed to start SPIs because of BindException, will retry after delay.");

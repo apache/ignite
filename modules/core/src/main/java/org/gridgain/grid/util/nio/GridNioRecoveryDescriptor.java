@@ -170,7 +170,7 @@ public class GridNioRecoveryDescriptor {
 
             assert fut != null;
 
-            ((GridNioFutureImpl)fut).onDone();
+            assert fut.isDone();
 
             acked++;
         }
