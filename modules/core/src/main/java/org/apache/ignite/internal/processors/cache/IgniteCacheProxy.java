@@ -125,19 +125,31 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocked(Object key) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public boolean isLocked(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+
+        try {
+            return delegate.isLocked(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(Object key) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public boolean isLockedByThread(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+
+        try {
+            return delegate.isLockedByThread(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Entry<K, V>> localEntries(GridCachePeekMode... peekModes) throws CacheException {
+    @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
         // TODO IGNITE-1.
         throw new UnsupportedOperationException();
     }

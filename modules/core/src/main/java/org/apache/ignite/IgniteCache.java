@@ -206,7 +206,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter);
 
-    public Iterable<Entry<K, V>> localEntries(GridCachePeekMode... peekModes) throws CacheException;
+    public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
     public Map<K, V> localPartition(int part) throws CacheException;
 
