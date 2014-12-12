@@ -60,7 +60,7 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
 
     /** {@inheritDoc} */
     @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
-        if (!ctx.isNear() && !ctx.isReplicated() && modes.contains(NEAR_ONLY))
+        if (!ctx.isNear() && modes.contains(NEAR_ONLY))
             return null;
 
         V val = null;

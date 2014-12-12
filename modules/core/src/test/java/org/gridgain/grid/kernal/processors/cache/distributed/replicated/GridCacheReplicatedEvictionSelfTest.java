@@ -75,8 +75,12 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         for (int g = 0 ; g < gridCount(); g++)
             futs.add(waitForLocalEvent(grid(g).events(), nodeEvent(grid(g).localNode().id()), EVT_CACHE_ENTRY_EVICTED));
 
-        for (int i = 0; i < KEYS; i++)
-            assertTrue(cache(0).evict(String.valueOf(i)));
+        for (int g = 0; g < gridCount(); g++) {
+            for (int i = 0; i < KEYS; i++) {
+                if (cache(g).entry(String.valueOf(i)).primary())
+                    assertTrue(cache(g).evict(String.valueOf(i)));
+            }
+        }
 
         for (IgniteFuture<IgniteEvent> fut : futs)
             fut.get(3000);

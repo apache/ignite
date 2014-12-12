@@ -116,7 +116,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
         GridTuple<V> val = null;
 
-        if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
+        if (!modes.contains(NEAR_ONLY)) {
             try {
                 val = peek0(true, key, modes, ctx.tm().txx());
             }

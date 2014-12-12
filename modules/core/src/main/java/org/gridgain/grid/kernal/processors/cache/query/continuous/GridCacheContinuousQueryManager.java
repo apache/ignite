@@ -171,7 +171,16 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         assert info != null;
 
-        for (GridCacheEntry<K, V> e : internal ? cctx.cache().primaryEntrySetx() : cctx.cache().primaryEntrySet()) {
+        Set<GridCacheEntry<K, V>> entries;
+
+        if (cctx.isReplicated())
+            entries = internal ? cctx.cache().entrySetx() :
+                cctx.cache().entrySet();
+        else
+            entries = internal ? cctx.cache().primaryEntrySetx() :
+                cctx.cache().primaryEntrySet();
+
+        for (GridCacheEntry<K, V> e : entries) {
             info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null),
                 !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
         }

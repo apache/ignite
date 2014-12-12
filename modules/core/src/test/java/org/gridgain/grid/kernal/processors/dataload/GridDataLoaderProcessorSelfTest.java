@@ -216,12 +216,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             int s3 = g3.cache(null).primaryKeySet().size();
             int total = threads * cnt;
 
-            if (mode == REPLICATED) {
-                assertEquals(total, s2);
-                assertEquals(total, s3);
-            }
-            else
-                assertEquals(total, s2 + s3);
+            assertEquals(total, s2 + s3);
 
             final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
 
