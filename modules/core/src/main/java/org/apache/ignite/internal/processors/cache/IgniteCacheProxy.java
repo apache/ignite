@@ -101,7 +101,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -178,7 +178,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -213,7 +213,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -230,7 +230,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -261,7 +261,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -278,7 +278,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -295,7 +295,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -312,7 +312,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -329,7 +329,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -346,7 +346,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -363,7 +363,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -380,7 +380,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -397,7 +397,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -414,7 +414,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -431,7 +431,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
                 gate.leave(prev);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
