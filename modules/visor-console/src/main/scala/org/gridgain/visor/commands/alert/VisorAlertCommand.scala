@@ -11,24 +11,24 @@
 
 package org.gridgain.visor.commands.alert
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
-import org.apache.ignite.lang.IgnitePredicate
-import org.apache.ignite._
-import org.gridgain.grid._
-import IgniteEventType._
 import org.gridgain.grid.util.lang.{GridFunc => F}
+
+import org.apache.ignite._
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent, IgniteEventType}
+import org.apache.ignite.lang.IgnitePredicate
 
 import java.util.UUID
 import java.util.concurrent.atomic._
 
-import scala.collection.immutable._
-import scala.language.implicitConversions
-import scala.util.control.Breaks._
-
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.immutable._
+import scala.language.implicitConversions
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==

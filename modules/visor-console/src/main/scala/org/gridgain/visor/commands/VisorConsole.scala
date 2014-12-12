@@ -11,37 +11,41 @@
 
 package org.gridgain.visor.commands
 
+import org.gridgain.grid.kernal.GridProductImpl
+import org.gridgain.grid.util.scala.impl
+import org.gridgain.grid.util.{GridUtils => U}
+
+import org.apache.ignite.startup.cmdline.AboutDialog
+
+import javax.swing.ImageIcon
 import java.awt.Image
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util
-import javax.swing.ImageIcon
-import org.apache.ignite.startup.cmdline.AboutDialog
-import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.util.scala.impl
+
 import org.gridgain.visor.visor
+
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer.Completer
 import scala.tools.jline.internal.Configuration
-import org.gridgain.grid.kernal.GridProductImpl
 
 // Built-in commands.
 // Note the importing of implicit conversions.
-import ack.VisorAckCommand
-import alert.VisorAlertCommand
-import org.gridgain.visor.commands.cache.{VisorCacheSwapCommand, VisorCacheClearCommand, VisorCacheCompactCommand, VisorCacheCommand}
-import config.VisorConfigurationCommand
-import deploy.VisorDeployCommand
-import disco.VisorDiscoveryCommand
-import events.VisorEventsCommand
-import gc.VisorGcCommand
-import kill.VisorKillCommand
-import node.VisorNodeCommand
-import ping.VisorPingCommand
-import start.VisorStartCommand
-import tasks.VisorTasksCommand
-import top.VisorTopologyCommand
-import vvm.VisorVvmCommand
+import org.gridgain.visor.commands.ack.VisorAckCommand
+import org.gridgain.visor.commands.alert.VisorAlertCommand
+import org.gridgain.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheCompactCommand, VisorCacheSwapCommand}
+import org.gridgain.visor.commands.config.VisorConfigurationCommand
+import org.gridgain.visor.commands.deploy.VisorDeployCommand
+import org.gridgain.visor.commands.disco.VisorDiscoveryCommand
+import org.gridgain.visor.commands.events.VisorEventsCommand
+import org.gridgain.visor.commands.gc.VisorGcCommand
+import org.gridgain.visor.commands.kill.VisorKillCommand
+import org.gridgain.visor.commands.node.VisorNodeCommand
+import org.gridgain.visor.commands.ping.VisorPingCommand
+import org.gridgain.visor.commands.start.VisorStartCommand
+import org.gridgain.visor.commands.tasks.VisorTasksCommand
+import org.gridgain.visor.commands.top.VisorTopologyCommand
+import org.gridgain.visor.commands.vvm.VisorVvmCommand
 
 /**
  * Command line Visor.
@@ -186,11 +190,11 @@ object VisorConsole extends App {
 
             val osxApp = appCls.getDeclaredMethod("getApplication").invoke(null)
 
-            val dockIco = new ImageIcon(urlIcon("ggcube_128x128.png"))
+            val dockIco = new ImageIcon(urlIcon("ggcube_node_128x128.png"))
 
             appCls.getDeclaredMethod("setDockIconImage", classOf[Image]).invoke(osxApp, dockIco.getImage)
 
-            val bannerIconUrl = urlIcon("ggcube_48x48.png")
+            val bannerIconUrl = urlIcon("ggcube_node_48x48.png")
 
             val aboutHndProxy = java.lang.reflect.Proxy.newProxyInstance(
                 appCls.getClassLoader,

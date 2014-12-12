@@ -11,14 +11,14 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
+
+import org.apache.ignite._
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 
 import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}
 
-import org.apache.ignite._
-import org.gridgain.grid._
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._

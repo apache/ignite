@@ -11,15 +11,29 @@
 
 package org.gridgain.visor
 
-import org.apache.ignite.lifecycle.IgniteListener
-import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.{IgniteSystemProperties, IgniteState, Ignition}
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
-import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
-import org.apache.ignite.lang.IgnitePredicate
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridComponentType._
+import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
+import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.util.typedef._
+import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+
+import org.apache.ignite.IgniteSystemProperties._
+import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent, IgniteEventType}
+import org.apache.ignite.lang.IgnitePredicate
+import org.apache.ignite.lifecycle.IgniteListener
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
+import org.apache.ignite.thread.IgniteThreadPoolExecutor
+import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.jetbrains.annotations.Nullable
 
 import java.io._
 import java.net._
@@ -27,21 +41,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
-import IgniteSystemProperties._
-import IgniteEventType._
-import org.gridgain.grid.kernal.GridComponentType._
-import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
-import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.apache.ignite._
-import org.gridgain.grid._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -625,7 +625,7 @@ object visor extends VisorTag {
                     mem.remove(k)
                 }
                 catch {
-                    case ignored: Throwable => // no-op
+                    case ignored: Throwable => // No-op.
                 }
         })
     }

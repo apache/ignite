@@ -12,9 +12,10 @@
 package org.gridgain.visor.commands
 
 import org.gridgain.grid.util.{GridStringBuilder => SB}
-import VisorTextTable._
 
-import scala.collection.{Traversable, IterableLike}
+import org.gridgain.visor.commands.VisorTextTable._
+
+import scala.collection.Traversable
 
 /**
  * ==Overview==

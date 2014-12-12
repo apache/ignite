@@ -12,18 +12,16 @@
 package org.gridgain.visor.commands.ping
 
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite._
-import org.gridgain.grid._
 
 import java.util.concurrent._
-
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Ping result container.

@@ -11,20 +11,18 @@
 
 package org.gridgain.visor.commands.ack
 
-import org.apache.ignite.cluster.ClusterGroupEmptyException
-import org.apache.ignite._
-import org.gridgain.grid._
 import org.gridgain.grid.kernal.visor.misc.VisorAckTask
 
-import java.util.{HashSet => JavaHashSet}
+import org.apache.ignite.cluster.ClusterGroupEmptyException
 
-import scala.collection.JavaConversions._
-import scala.language.implicitConversions
+import java.util.{HashSet => JavaHashSet}
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
-import org.gridgain.grid.util.typedef.T2
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 
 /**
  * ==Overview==

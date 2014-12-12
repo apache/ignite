@@ -10,11 +10,13 @@
  */
 package org.gridgain.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.grid.kernal.visor.cache.VisorCacheClearTask
 import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
 
+import org.apache.ignite.cluster.ClusterNode
+
 import java.util.Collections
+
 import org.gridgain.visor.commands.VisorTextTable
 import org.gridgain.visor.visor._
 

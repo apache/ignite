@@ -11,20 +11,20 @@
 
 package org.gridgain.visor.commands.kill
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite._
-import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 
-import java.util.{Collections, UUID}
+import org.apache.ignite._
+import org.apache.ignite.cluster.ClusterNode
 
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
+import java.util.{Collections, UUID}
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
