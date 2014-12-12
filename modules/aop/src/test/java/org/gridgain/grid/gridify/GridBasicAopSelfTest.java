@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.gridify;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -38,7 +38,7 @@ public class GridBasicAopSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             "Grid is not locally started: null"
         );
     }
@@ -57,12 +57,12 @@ public class GridBasicAopSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends GridifyTaskSplitAdapter<Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize,
-            GridifyArgument arg) throws GridException {
+            GridifyArgument arg) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

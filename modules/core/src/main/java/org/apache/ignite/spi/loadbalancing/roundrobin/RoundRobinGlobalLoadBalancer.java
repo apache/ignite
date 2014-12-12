@@ -129,9 +129,9 @@ class RoundRobinGlobalLoadBalancer {
      *
      * @param top Topology to pick from.
      * @return Best balanced node.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      */
-    ClusterNode getBalancedNode(Collection<ClusterNode> top) throws GridException {
+    ClusterNode getBalancedNode(Collection<ClusterNode> top) throws IgniteCheckedException {
         assert !F.isEmpty(top);
 
         awaitInitializationCompleted();
@@ -150,7 +150,7 @@ class RoundRobinGlobalLoadBalancer {
             int cycleSize = nodes.size();
 
             if (cycleSize == 0)
-                throw new GridException("Task topology does not have any alive nodes.");
+                throw new IgniteCheckedException("Task topology does not have any alive nodes.");
 
             AtomicInteger idx;
 
@@ -217,10 +217,10 @@ class RoundRobinGlobalLoadBalancer {
      * @param top Topology for current request.
      * @param topMap Topology map.
      * @param nodes Current balanced nodes.
-     * @throws GridException If balancer can not return any node.
+     * @throws IgniteCheckedException If balancer can not return any node.
      */
     private static void checkBalancerNodes(Collection<ClusterNode> top, Map<UUID, ClusterNode> topMap, Iterable<UUID> nodes)
-        throws GridException {
+        throws IgniteCheckedException {
 
         boolean contains = false;
 
@@ -233,15 +233,15 @@ class RoundRobinGlobalLoadBalancer {
         }
 
         if (!contains)
-            throw new GridException("Task topology does not have alive nodes: " + top);
+            throw new IgniteCheckedException("Task topology does not have alive nodes: " + top);
     }
 
     /**
      * Awaits initialization of balancing nodes to be completed.
      *
-     * @throws GridException Thrown in case of thread interruption.
+     * @throws IgniteCheckedException Thrown in case of thread interruption.
      */
-    private void awaitInitializationCompleted() throws GridException {
+    private void awaitInitializationCompleted() throws IgniteCheckedException {
         try {
             if (initLatch.getCount() > 0)
                 initLatch.await();
@@ -249,7 +249,7 @@ class RoundRobinGlobalLoadBalancer {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridException("Global balancer was interrupted.", e);
+            throw new IgniteCheckedException("Global balancer was interrupted.", e);
         }
     }
 

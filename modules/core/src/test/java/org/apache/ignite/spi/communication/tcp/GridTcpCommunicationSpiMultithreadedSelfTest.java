@@ -9,10 +9,11 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.communication.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
@@ -192,7 +193,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         queue.offer(msg);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log().error("Unable to send message.", e);
 
                     fail("Unable to send message: " + e.getMessage());
@@ -280,7 +281,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                                 spis.get(from.id()).sendMessage(node, msg);
                             }
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.warning(">>> Oops, unable to send message (safe to ignore).", e);
                         }
 
@@ -377,7 +378,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         spi.sendMessage(to, msg);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fail("Unable to send message: " + e.getMessage());
                 }
             }

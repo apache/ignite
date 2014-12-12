@@ -11,6 +11,7 @@ package org.apache.ignite.portables;
 
 import org.jetbrains.annotations.*;
 
+import java.math.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -83,6 +84,13 @@ public interface PortableReader {
      * @throws PortableException In case of error.
      */
     public boolean readBoolean(String fieldName) throws PortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Decimal value.
+     * @throws PortableException In case of error.
+     */
+    @Nullable public BigDecimal readDecimal(String fieldName) throws PortableException;
 
     /**
      * @param fieldName Field name.
@@ -174,6 +182,13 @@ public interface PortableReader {
      * @throws PortableException In case of error.
      */
     @Nullable public boolean[] readBooleanArray(String fieldName) throws PortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Decimal array.
+     * @throws PortableException In case of error.
+     */
+    @Nullable public BigDecimal[] readDecimalArray(String fieldName) throws PortableException;
 
     /**
      * @param fieldName Field name.

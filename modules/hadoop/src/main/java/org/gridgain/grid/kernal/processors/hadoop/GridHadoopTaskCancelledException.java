@@ -9,12 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 /**
  * Exception that throws when the task is cancelling.
  */
-public class GridHadoopTaskCancelledException extends GridRuntimeException {
+public class GridHadoopTaskCancelledException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

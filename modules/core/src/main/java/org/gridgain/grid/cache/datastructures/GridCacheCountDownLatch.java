@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
@@ -79,11 +80,11 @@ public interface GridCacheCountDownLatch {
      * then {@link GridInterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
      *
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      * @throws GridInterruptedException if the current thread is interrupted
      *      while waiting
      */
-    public void await() throws GridException;
+    public void await() throws IgniteCheckedException;
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -122,9 +123,9 @@ public interface GridCacheCountDownLatch {
      *      if the waiting time elapsed before the count reached zero.
      * @throws GridInterruptedException If the current thread is interrupted
      *      while waiting.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean await(long timeout) throws GridException;
+    public boolean await(long timeout) throws IgniteCheckedException;
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -165,9 +166,9 @@ public interface GridCacheCountDownLatch {
      *      if the waiting time elapsed before the count reached zero.
      * @throws GridInterruptedException If the current thread is interrupted
      *      while waiting.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean await(long timeout, TimeUnit unit) throws GridException;
+    public boolean await(long timeout, TimeUnit unit) throws IgniteCheckedException;
 
     /**
      * Decrements the count of the latch, releasing all waiting threads
@@ -180,9 +181,9 @@ public interface GridCacheCountDownLatch {
      * If the current count equals zero then nothing happens.
      *
      * @return Count after decrement.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public int countDown() throws GridException;
+    public int countDown() throws IgniteCheckedException;
 
     /**
      * Decreases the count of the latch using passed in value,
@@ -196,18 +197,18 @@ public interface GridCacheCountDownLatch {
      *
      * @param val Value to decrease counter on.
      * @return Count after decreasing.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public int countDown(int val) throws GridException;
+    public int countDown(int val) throws IgniteCheckedException;
 
     /**
      * Counts down this latch to zero, releasing all waiting threads on all nodes.
      * <p>
      * If the current count equals zero then nothing happens.
      *
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public void countDownAll() throws GridException;
+    public void countDownAll() throws IgniteCheckedException;
 
     /**
      * Gets {@code removed} status of the latch.

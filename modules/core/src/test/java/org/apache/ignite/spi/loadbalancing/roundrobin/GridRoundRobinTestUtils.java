@@ -9,6 +9,7 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.*;
@@ -28,10 +29,10 @@ class GridRoundRobinTestUtils {
      * @param allNodes Topology nodes.
      * @param orderedNodes Balancing nodes.
      * @param ses Task session.
-     * @throws GridException If balancer failed.
+     * @throws IgniteCheckedException If balancer failed.
      */
     static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
-        List<UUID> orderedNodes, ComputeTaskSession ses) throws GridException {
+        List<UUID> orderedNodes, ComputeTaskSession ses) throws IgniteCheckedException {
 
         ClusterNode firstNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
@@ -56,10 +57,10 @@ class GridRoundRobinTestUtils {
      * @param orderedNodes Balancing nodes.
      * @param ses1 First task session.
      * @param ses2 Second task session.
-     * @throws GridException If balancer failed.
+     * @throws IgniteCheckedException If balancer failed.
      */
     static void checkCyclicBalancing(RoundRobinLoadBalancingSpi spi, List<ClusterNode> allNodes,
-        List<UUID> orderedNodes, ComputeTaskSession ses1, ComputeTaskSession ses2) throws GridException {
+        List<UUID> orderedNodes, ComputeTaskSession ses1, ComputeTaskSession ses2) throws IgniteCheckedException {
 
         ClusterNode firstNode = spi.getBalancedNode(ses1, allNodes, new GridTestJob());
 

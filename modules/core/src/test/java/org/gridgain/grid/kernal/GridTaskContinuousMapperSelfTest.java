@@ -80,7 +80,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             assert subgrid.size() == 2;
 
             mapper.send(new TestJob(cnt++), subgrid.get(0));
@@ -107,7 +107,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == cnt : "Unexpected result count: " + results.size();
 
             return null;
@@ -126,25 +126,25 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
         /**
          * @param mapper Continuous mapper.
-         * @throws GridException Thrown if any exception occurs.
+         * @throws IgniteCheckedException Thrown if any exception occurs.
          */
         @SuppressWarnings("unused")
         @IgniteTaskContinuousMapperResource
-        private void setMapper(ComputeTaskContinuousMapper mapper) throws GridException {
+        private void setMapper(ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
             this.mapper = mapper;
 
             mapper.send(new TestJob());
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             mapper.send(new TestJob());
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
             ComputeJobResultPolicy plc = super.result(res, received);
 
             if (received != null && received.size() == 2)
@@ -154,7 +154,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 3 : "Unexpected result count: " + results.size();
 
             ClusterNode node = results.get(0).getNode();
@@ -164,7 +164,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -174,7 +174,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -184,7 +184,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -194,7 +194,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -216,7 +216,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             try {
                 mapper.send(new TestJob(), null);
 
@@ -253,7 +253,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -283,7 +283,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isInfoEnabled())
                     log.info("Expected exception: " + e);
             }
@@ -294,7 +294,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
             return null;
@@ -317,7 +317,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             return argument(0);
         }
     }

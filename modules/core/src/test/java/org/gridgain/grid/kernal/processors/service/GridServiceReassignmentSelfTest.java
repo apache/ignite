@@ -66,7 +66,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @param total Total number of services.
      * @param maxPerNode Maximum number of services per node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void checkReassigns(int total, int maxPerNode) throws Exception {
         CountDownLatch latch = new CountDownLatch(nodeCount());

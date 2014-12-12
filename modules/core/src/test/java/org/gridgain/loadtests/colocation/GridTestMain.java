@@ -29,7 +29,7 @@ public class GridTestMain {
      * Main method.
      *
      * @param args Parameters.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public static void main(String[] args) throws Exception {
         BeanFactory ctx = new ClassPathXmlApplicationContext("org/gridgain/loadtests/colocation/spring-colocation.xml");
@@ -155,9 +155,9 @@ public class GridTestMain {
      * {@link GridTestCacheStore#loadAll} method.
      *
      * @param cache Cache to load.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void loadFromStore(GridCache<GridTestKey, Long> cache) throws GridException {
+    private static void loadFromStore(GridCache<GridTestKey, Long> cache) throws IgniteCheckedException {
         cache.loadCache(null, 0, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
     }
 

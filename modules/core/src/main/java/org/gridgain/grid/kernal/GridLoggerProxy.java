@@ -80,12 +80,12 @@ public class GridLoggerProxy extends GridMetadataAwareAdapter implements IgniteL
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         U.startLifecycleAware(Collections.singleton(impl));
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws GridException {
+    @Override public void stop() throws IgniteCheckedException {
         U.stopLifecycleAware(this, Collections.singleton(impl));
     }
 

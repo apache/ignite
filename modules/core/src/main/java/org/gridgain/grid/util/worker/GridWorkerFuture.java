@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.worker;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
 
@@ -40,7 +40,7 @@ public class GridWorkerFuture<T> extends GridFutureAdapter<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         assert w != null;
 
         if (!onCancelled())

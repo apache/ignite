@@ -104,13 +104,13 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyRangeArgument arg)
-        throws GridException {
+        throws IgniteCheckedException {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
         assert ignite != null : "Grid instance could not be injected";
 
         if (splitSize < threshold && splitSize != 0 && threshold != 0) {
-            throw new GridException("Incorrect Gridify annotation parameters. Value for parameter " +
+            throw new IgniteCheckedException("Incorrect Gridify annotation parameters. Value for parameter " +
                 "'splitSize' should not be less than parameter 'threshold' [splitSize=" + splitSize +
                 ", threshold=" + threshold + ']');
         }
@@ -125,7 +125,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
             }
 
             if (exclNodes.size() == subgrid.size())
-                throw new GridException("Failed to execute on grid where all nodes excluded.");
+                throw new IgniteCheckedException("Failed to execute on grid where all nodes excluded.");
         }
 
         int inputPerNode = splitSize;
@@ -176,7 +176,7 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     }
 
     /** {@inheritDoc} */
-    @Override public final Collection<?> reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public final Collection<?> reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() >= 1;
 
         Collection<Object> data = new ArrayList<>(results.size());

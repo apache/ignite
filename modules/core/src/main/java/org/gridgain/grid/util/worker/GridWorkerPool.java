@@ -49,10 +49,10 @@ public class GridWorkerPool {
      * Schedules runnable task for execution.
      *
      * @param w Runnable task.
-     * @throws GridException Thrown if any exception occurred.
+     * @throws IgniteCheckedException Thrown if any exception occurred.
      */
     @SuppressWarnings({"CatchGenericClass", "ProhibitedExceptionThrown"})
-    public void execute(final GridWorker w) throws GridException {
+    public void execute(final GridWorker w) throws IgniteCheckedException {
         workers.add(w);
 
         try {
@@ -75,7 +75,7 @@ public class GridWorkerPool {
         catch (RuntimeException e) {
             workers.remove(w);
 
-            throw new GridException("Failed to execute worker due to runtime exception.", e);
+            throw new IgniteCheckedException("Failed to execute worker due to runtime exception.", e);
         }
         catch (Error e) {
             workers.remove(w);

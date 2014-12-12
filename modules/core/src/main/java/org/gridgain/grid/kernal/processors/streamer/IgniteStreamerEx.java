@@ -65,10 +65,10 @@ public interface IgniteStreamerEx extends IgniteStreamer {
      *
      * @param fut Future.
      * @param execs Executions grouped by node ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void scheduleExecutions(GridStreamerStageExecutionFuture fut, Map<UUID, GridStreamerExecutionBatch> execs)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Callback for undeployed class loaders. All deployed events will be removed from window and local storage.

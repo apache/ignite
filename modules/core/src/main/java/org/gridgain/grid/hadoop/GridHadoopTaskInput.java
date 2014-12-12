@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -41,7 +41,7 @@ public interface GridHadoopTaskInput extends AutoCloseable {
     /**
      * Closes input.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 }

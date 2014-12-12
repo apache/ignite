@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -55,7 +55,7 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
     }
 
     /** {@inheritDoc} */
-    @Override public void testLockReentry() throws GridException {
+    @Override public void testLockReentry() throws IgniteCheckedException {
         super.testLockReentry();
     }
 

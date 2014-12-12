@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.streamer.task.*;
 import org.gridgain.grid.util.typedef.*;
@@ -103,13 +103,13 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws GridException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws IgniteCheckedException {
         return query(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
-        throws GridException {
+        throws IgniteCheckedException {
         ctx.gateway().readLock();
 
         try {
@@ -132,13 +132,13 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws GridException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws IgniteCheckedException {
         broadcast(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes)
-        throws GridException {
+        throws IgniteCheckedException {
         ctx.gateway().readLock();
 
         try {
@@ -156,13 +156,13 @@ public class GridStreamerContextImpl implements StreamerContext {
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
-        throws GridException {
+        throws IgniteCheckedException {
         return reduce(clo, rdc, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
-        Collection<ClusterNode> nodes) throws GridException {
+        Collection<ClusterNode> nodes) throws IgniteCheckedException {
         ctx.gateway().readLock();
 
         try {

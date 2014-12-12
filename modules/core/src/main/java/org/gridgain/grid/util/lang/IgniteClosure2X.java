@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object, Object)} method that calls {@link #applyx(Object, Object)}
- * method and properly wraps {@link GridException} into {@link GridClosureException} instance.
+ * method and properly wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
  * @see CX2
  */
 public abstract class IgniteClosure2X<E1, E2, R> implements IgniteBiClosure<E1, E2, R> {
@@ -28,18 +28,18 @@ public abstract class IgniteClosure2X<E1, E2, R> implements IgniteBiClosure<E1, 
         try {
             return applyx(e1, e2);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }
 
     /**
-     * Closure body that can throw {@link GridException}.
+     * Closure body that can throw {@link IgniteCheckedException}.
      *
      * @param e1 First bound free variable, i.e. the element the closure is called or closed on.
      * @param e2 Second bound free variable, i.e. the element the closure is called or closed on.
      * @return Optional return value.
-     * @throws GridException Thrown in case of any error condition inside of the closure.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the closure.
      */
-    public abstract R applyx(E1 e1, E2 e2) throws GridException;
+    public abstract R applyx(E1 e1, E2 e2) throws IgniteCheckedException;
 }

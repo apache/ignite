@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -71,7 +72,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void cancelQuery() throws GridException {
+    @Override protected void cancelQuery() throws IgniteCheckedException {
         final GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
         assert qryMgr != null;
@@ -114,7 +115,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                     });
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send cancel request (will cancel query in any case).", e);
         }
 

@@ -132,7 +132,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -141,7 +141,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
                     @SuppressWarnings({"UnconditionalWait"})
-                    public Serializable execute() throws GridException {
+                    public Serializable execute() throws IgniteCheckedException {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -160,7 +160,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                             return 1;
                         }
                         catch (InterruptedException e) {
-                            throw new GridException("Failed to wait for listener due to interruption.", e);
+                            throw new IgniteCheckedException("Failed to wait for listener due to interruption.", e);
                         }
                     }
                 });
@@ -171,7 +171,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (res.getException() != null)
                 throw res.getException();
 
@@ -179,7 +179,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

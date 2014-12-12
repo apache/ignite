@@ -39,9 +39,9 @@ public final class CacheAffinityExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
@@ -66,9 +66,9 @@ public final class CacheAffinityExample {
      * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)}
      * method.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingAffinityRun() throws GridException {
+    private static void visitUsingAffinityRun() throws IgniteCheckedException {
         Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
@@ -94,9 +94,9 @@ public final class CacheAffinityExample {
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingMapKeysToNodes() throws GridException {
+    private static void visitUsingMapKeysToNodes() throws IgniteCheckedException {
         final Ignite g = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);

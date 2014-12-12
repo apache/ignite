@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -23,16 +23,16 @@ public interface GridIpcServerEndpoint extends Closeable {
      * for IPC. This method will block until client connects to IPC server endpoint.
      *
      * @return Accepted client connection.
-     * @throws GridException If accept failed and the endpoint is not usable anymore.
+     * @throws IgniteCheckedException If accept failed and the endpoint is not usable anymore.
      */
-    public GridIpcEndpoint accept() throws GridException;
+    public GridIpcEndpoint accept() throws IgniteCheckedException;
 
     /**
      * Starts configured endpoint implementation.
      *
-     * @throws GridException If failed to start server endpoint.
+     * @throws IgniteCheckedException If failed to start server endpoint.
      */
-    public void start() throws GridException;
+    public void start() throws IgniteCheckedException;
 
     /**
      * Closes server IPC. After IPC is closed, no further operations can be performed on this

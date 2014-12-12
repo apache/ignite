@@ -324,17 +324,17 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
     }
 
-    /** @throws GridException */
+    /** @throws IgniteCheckedException */
     public void testGroupLockWithExternalLockOptimistic() throws Exception {
         checkGroupLockWithExternalLock(OPTIMISTIC);
     }
 
-    /** @throws GridException */
+    /** @throws IgniteCheckedException */
     public void testGroupLockWithExternalLockPessimistic() throws Exception {
         checkGroupLockWithExternalLock(PESSIMISTIC);
     }
 
-    /** @throws GridException */
+    /** @throws IgniteCheckedException */
     private void checkGroupLockWithExternalLock(final GridCacheTxConcurrency concurrency) throws Exception {
         assert sanityCheckEnabled();
 
@@ -372,7 +372,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
                         cache.unlock(key1);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fail(e.getMessage());
                 }
                 catch (InterruptedException ignored) {
@@ -945,7 +945,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             fail("Exception should be thrown");
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // Expected exception.
         }
 
@@ -984,7 +984,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             fail("Exception should be thrown.");
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // Expected exception.
         }
 
@@ -1158,9 +1158,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @param primary Primary node for which key should be calculated.
      * @return Key for which given node is primary.
-     * @throws GridException If affinity can not be calculated.
+     * @throws IgniteCheckedException If affinity can not be calculated.
      */
-    protected UUID primaryKeyForCache(Ignite primary) throws GridException {
+    protected UUID primaryKeyForCache(Ignite primary) throws IgniteCheckedException {
         UUID res;
 
         int cnt = 0;
@@ -1184,9 +1184,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @param primary Primary node for which keys should be calculated.
      * @param cnt Key count.
      * @return Collection of generated keys.
-     * @throws GridException If affinity can not be calculated.
+     * @throws IgniteCheckedException If affinity can not be calculated.
      */
-    protected UUID[] primaryKeysForCache(Ignite primary, int cnt) throws GridException {
+    protected UUID[] primaryKeysForCache(Ignite primary, int cnt) throws IgniteCheckedException {
         Collection<UUID> keys = new LinkedHashSet<>();
 
         int iters = 0;
@@ -1270,13 +1270,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public void putAll(GridCacheTx tx,
-            Map<?, ?> map) throws GridException {
+            Map<?, ?> map) throws IgniteCheckedException {
             storeMap.putAll(map);
 
             putCnt.incrementAndGet();
@@ -1284,7 +1284,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx, Object key,
-            @Nullable Object val) throws GridException {
+            @Nullable Object val) throws IgniteCheckedException {
             storeMap.put(key, val);
 
             putCnt.incrementAndGet();
@@ -1292,7 +1292,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             storeMap.remove(key);
         }
 

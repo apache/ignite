@@ -257,6 +257,11 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         assert g != null;
 
@@ -306,7 +311,7 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         g.close();
     }
 

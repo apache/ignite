@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.port.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
@@ -28,8 +28,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.fs.IgniteFsConfiguration.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
@@ -146,7 +146,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @param endpointCfg Optional REST endpoint configuration.
      * @return test-purposed IgniteFsConfiguration.
      */
-    protected IgniteFsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws GridException {
+    protected IgniteFsConfiguration gridGgfsConfiguration(@Nullable String endpointCfg) throws IgniteCheckedException {
         IgniteFsConfiguration ggfsConfiguration = new IgniteFsConfiguration();
 
         ggfsConfiguration.setDataCacheName("partitioned");

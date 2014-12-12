@@ -268,7 +268,7 @@ public final class X {
                 new ArrayList<>(), obj, honorCloneable);
         }
         catch (Throwable e) {
-            throw new GridRuntimeException("Unable to clone instance of class: " + obj.getClass(), e);
+            throw new IgniteException("Unable to clone instance of class: " + obj.getClass(), e);
         }
     }
 
@@ -313,7 +313,7 @@ public final class X {
             return clone;
         }
         catch (Exception e) {
-            throw new GridRuntimeException("Unable to clone instance of class: " + obj.getClass(), e);
+            throw new IgniteException("Unable to clone instance of class: " + obj.getClass(), e);
         }
     }
 
@@ -371,7 +371,7 @@ public final class X {
         clone = U.forceNewInstance(cls);
 
         if (clone == null)
-            throw new GridRuntimeException("Failed to clone object (empty constructor could not be assigned): " + obj);
+            throw new IgniteException("Failed to clone object (empty constructor could not be assigned): " + obj);
 
         clones.add(clone);
 
@@ -812,9 +812,9 @@ public final class X {
      * Synchronously waits for all futures in the collection.
      *
      * @param futs Futures to wait for.
-     * @throws GridException If any of the futures threw exception.
+     * @throws IgniteCheckedException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws GridException {
+    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws IgniteCheckedException {
         if (F.isEmpty(futs))
             return;
 
@@ -899,15 +899,15 @@ public final class X {
      * Tries to resolve GridGain installation home folder.
      *
      * @return Installation home folder.
-     * @throws GridException If GridGain home folder was not set.
+     * @throws IgniteCheckedException If GridGain home folder was not set.
      */
-    public static String resolveGridGainHome() throws GridException {
+    public static String resolveGridGainHome() throws IgniteCheckedException {
         String var = IgniteSystemProperties.getString(GG_HOME);
 
         if (var != null)
             return var;
         else
-            throw new GridException("Failed to resolve GridGain home folder " +
+            throw new IgniteCheckedException("Failed to resolve GridGain home folder " +
                 "(please set 'GRIDGAIN_HOME' environment or system variable)");
     }
 

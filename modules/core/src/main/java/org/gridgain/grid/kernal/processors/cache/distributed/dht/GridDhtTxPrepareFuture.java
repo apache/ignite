@@ -265,7 +265,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 //            try {
 //                tx.rollback();
 //            }
-//            catch (GridException ex) {
+//            catch (IgniteCheckedException ex) {
 //                U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
 //            }
 //
@@ -278,7 +278,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 try {
                     cctx.io().send(tx.nearNodeId(), res);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send reply to originating near node (will rollback): " + tx.nearNodeId(), e);
 
                     tx.rollbackAsync();
@@ -391,7 +391,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 return true;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onError(e);
 
                 return true;
@@ -407,9 +407,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 get();
             }
             catch (GridInterruptedException e) {
-                onError(new GridException("Got interrupted while waiting for replies to be sent.", e));
+                onError(new IgniteCheckedException("Got interrupted while waiting for replies to be sent.", e));
             }
-            catch (GridException ignored) {
+            catch (IgniteCheckedException ignored) {
                 // No-op, get() was just synchronization.
             }
 
@@ -681,7 +681,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 catch (ClusterTopologyException e) {
                     fut.onResult(e);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fut.onResult(e);
                 }
             }
@@ -735,7 +735,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     catch (ClusterTopologyException e) {
                         fut.onResult(e);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         fut.onResult(e);
                     }
                 }
@@ -1032,7 +1032,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                             break;
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             // Fail the whole thing.
                             onDone(e);
 

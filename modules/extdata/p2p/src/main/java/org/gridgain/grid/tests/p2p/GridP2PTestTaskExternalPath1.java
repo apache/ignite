@@ -31,7 +31,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
      * {@inheritDoc}
      */
     @SuppressWarnings({"unchecked"})
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
         if (log.isInfoEnabled()) {
             log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, F.node2id()) +
                 ", arg=" + arg + ']');
@@ -67,13 +67,13 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         if (!jobs.isEmpty())
             return jobs;
 
-        throw new GridException("Failed to find target node: " + arg);
+        throw new IgniteCheckedException("Failed to find target node: " + arg);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public int[] reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return results.get(0).getData();
     }
 
@@ -123,7 +123,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         }
 
         /** {@inheritDoc} */
-        @Override public int[] execute() throws GridException {
+        @Override public int[] execute() throws IgniteCheckedException {
             assert locNodeId.equals(argument(0));
 
             log.info("Running job on node: " + g.cluster().localNode().id());

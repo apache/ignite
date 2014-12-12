@@ -9,9 +9,9 @@
 
 package org.gridgain.loadtests.job;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -25,17 +25,17 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 public class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
-        throws GridException {
+        throws IgniteCheckedException {
         return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         return REDUCE;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

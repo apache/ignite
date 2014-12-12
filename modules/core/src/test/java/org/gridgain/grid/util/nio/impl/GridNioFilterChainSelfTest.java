@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio.impl;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.testframework.junits.common.*;
@@ -88,15 +88,15 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         };
 
         GridNioFilterAdapter testHead = new GridNioFilterAdapter("TestHead") {
-            @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+            @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
                 proceedSessionOpened(ses);
             }
 
-            @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+            @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
                 proceedSessionClosed(ses);
             }
 
-            @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+            @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
                 proceedExceptionCaught(ses, ex);
             }
 
@@ -108,7 +108,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
                 return null;
             }
 
-            @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+            @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
                 proceedMessageReceived(ses, msg);
             }
 
@@ -118,11 +118,11 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
                 return null;
             }
 
-            @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+            @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
                 proceedSessionIdleTimeout(ses);
             }
 
-            @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+            @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
                 proceedSessionWriteTimeout(ses);
             }
         };
@@ -175,56 +175,56 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+        @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, OPENED_META_NAME);
 
             proceedSessionOpened(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+        @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, CLOSED_META_NAME);
 
             proceedSessionClosed(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
             chainMeta(ses, EXCEPTION_CAUGHT_META_NAME);
 
             proceedExceptionCaught(ses, ex);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
             chainMeta(ses, MESSAGE_WRITE_META_NAME);
 
             return proceedSessionWrite(ses, msg);
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+        @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
             chainMeta(ses, MESSAGE_RECEIVED_META_NAME);
 
             proceedMessageReceived(ses, msg);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, CLOSE_META_NAME);
 
             return proceedSessionClose(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, IDLE_META_NAME);
 
             proceedSessionIdleTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, WRITE_TIMEOUT_META_NAME);
 
             proceedSessionWriteTimeout(ses);

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.lifecycle;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * A bean that reacts to grid lifecycle events defined in {@link LifecycleEventType}.
@@ -98,7 +98,7 @@ public interface LifecycleBean {
      * This method is called when lifecycle event occurs.
      *
      * @param evt Lifecycle event.
-     * @throws org.gridgain.grid.GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onLifecycleEvent(LifecycleEventType evt) throws GridException;
+    public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException;
 }

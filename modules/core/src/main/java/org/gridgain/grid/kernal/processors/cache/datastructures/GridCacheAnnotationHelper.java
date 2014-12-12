@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -70,9 +70,9 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
      *
      * @param target Object to find a value in.
      * @return Value of annotated field or method.
-     * @throws GridException If failed to find.
+     * @throws IgniteCheckedException If failed to find.
      */
-    public Object annotatedValue(Object target) throws GridException {
+    public Object annotatedValue(Object target) throws IgniteCheckedException {
         IgniteBiTuple<Object, Boolean> res = annotatedValue(target, new HashSet<>(), false);
 
         assert res != null;
@@ -87,10 +87,10 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
      * @param visited Set of visited objects to avoid cycling.
      * @param annFound Flag indicating if value has already been found.
      * @return Value of annotated field or method.
-     * @throws GridException If failed to find.
+     * @throws IgniteCheckedException If failed to find.
      */
     private IgniteBiTuple<Object, Boolean> annotatedValue(Object target, Set<Object> visited, boolean annFound)
-        throws GridException {
+        throws IgniteCheckedException {
         assert target != null;
 
         // To avoid infinite recursion.
@@ -112,7 +112,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                     fieldVal = f.get(target);
                 }
                 catch (IllegalAccessException e) {
-                    throw new GridException("Failed to get annotated field value [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Failed to get annotated field value [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName()+']', e);
                 }
 
@@ -130,7 +130,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                 }
                 else {
                     if (annFound)
-                        throw new GridException("Multiple annotations has been found [cls=" + cls.getName() +
+                        throw new IgniteCheckedException("Multiple annotations has been found [cls=" + cls.getName() +
                             ", ann=" + annCls.getSimpleName() + ']');
 
                     val = fieldVal;
@@ -142,7 +142,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
             // Methods.
             for (Method m : methodsWithAnnotation(cls)) {
                 if (annFound)
-                    throw new GridException("Multiple annotations has been found [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Multiple annotations has been found [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName() + ']');
 
                 m.setAccessible(true);
@@ -151,7 +151,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                     val = m.invoke(target);
                 }
                 catch (Exception e) {
-                    throw new GridException("Failed to get annotated method value [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Failed to get annotated method value [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName()+']', e);
                 }
 

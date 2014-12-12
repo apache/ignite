@@ -598,9 +598,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(GridCache<Integer, String> c, int cnt) throws GridException {
+    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }
@@ -609,9 +609,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @param cnt Key count.
      * @param grids Grids.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkKeys(GridCache<Integer, String> cache, int cnt, Iterable<Ignite> grids) throws GridException {
+    private void checkKeys(GridCache<Integer, String> cache, int cnt, Iterable<Ignite> grids) throws IgniteCheckedException {
         GridCacheAffinity<Integer> aff = affinity(cache);
 
         Ignite ignite = cache.gridProjection().ignite();

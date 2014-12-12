@@ -46,9 +46,9 @@ public final class DeploymentExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Deployment example started.");
@@ -97,7 +97,7 @@ public final class DeploymentExample {
     @ComputeTaskName(TASK_NAME)
     public static class ExampleTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
             Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -115,7 +115,7 @@ public final class DeploymentExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

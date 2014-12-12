@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.file;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.kernal.visor.log.*;
@@ -52,7 +52,7 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) throws GridException {
+        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) throws IgniteCheckedException {
             String path = arg.get1();
             String regexp = arg.get2();
 

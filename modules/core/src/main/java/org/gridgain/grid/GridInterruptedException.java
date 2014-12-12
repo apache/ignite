@@ -9,11 +9,13 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.*;
+
 /**
- * This exception is used to wrap standard {@link InterruptedException} into {@link GridException}.
+ * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
-public class GridInterruptedException extends GridException {
+public class GridInterruptedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

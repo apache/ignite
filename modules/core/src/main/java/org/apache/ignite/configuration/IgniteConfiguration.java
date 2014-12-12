@@ -370,7 +370,7 @@ public class IgniteConfiguration {
     private SwapSpaceSpi swapSpaceSpi;
 
     /** Indexing SPI. */
-    private IndexingSpi[] indexingSpi;
+    private GridIndexingSpi indexingSpi;
 
     /** Address resolver. */
     private IgniteAddressResolver addrRslvr;
@@ -517,6 +517,9 @@ public class IgniteConfiguration {
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
+    /** */
+    private GridQueryConfiguration qryCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -599,6 +602,7 @@ public class IgniteConfiguration {
         p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
         pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
+        qryCfg = cfg.getQueryConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restEnabled = cfg.isRestEnabled();
         restIdleTimeout = cfg.getRestIdleTimeout();
@@ -2147,25 +2151,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.IndexingSpi}.
+     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.IndexingSpi}.
+     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
-    public void setIndexingSpi(IndexingSpi... indexingSpi) {
+    public void setIndexingSpi(GridIndexingSpi indexingSpi) {
         this.indexingSpi = indexingSpi;
     }
 
     /**
-     * Should return fully configured indexing SPI implementations. If not provided,
-     * {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} will be used.
-     * <p>
-     * Note that user can provide one or multiple instances of this SPI (and select later which one
-     * is used in a particular context).
+     * Should return fully configured indexing SPI implementations.
      *
-     * @return Indexing SPI implementation or <tt>null</tt> to use default implementation.
+     * @return Indexing SPI implementation.
      */
-    public IndexingSpi[] getIndexingSpi() {
+    public GridIndexingSpi getIndexingSpi() {
         return indexingSpi;
     }
 
@@ -3155,6 +3155,20 @@ public class IgniteConfiguration {
      */
     public void setPluginConfigurations(Collection<? extends PluginConfiguration> pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
+    }
+
+    /**
+     * @return Query configuration.
+     */
+    public GridQueryConfiguration getQueryConfiguration() {
+        return qryCfg;
+    }
+
+    /**
+     * @param qryCfg Query configuration.
+     */
+    public void setQueryConfiguration(GridQueryConfiguration qryCfg) {
+        this.qryCfg = qryCfg;
     }
 
     /** {@inheritDoc} */

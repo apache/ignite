@@ -51,13 +51,13 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionOpened(final GridNioSession ses) throws GridException {
+    @Override public void onSessionOpened(final GridNioSession ses) throws IgniteCheckedException {
         workerPool.execute(new GridWorker(gridName, "session-opened-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionOpened(ses);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     handleException(ses, e);
                 }
             }
@@ -65,13 +65,13 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionClosed(final GridNioSession ses) throws GridException {
+    @Override public void onSessionClosed(final GridNioSession ses) throws IgniteCheckedException {
         workerPool.execute(new GridWorker(gridName, "session-closed-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionClosed(ses);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     handleException(ses, e);
                 }
             }
@@ -80,13 +80,13 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessageReceived(final GridNioSession ses, final Object msg) throws GridException {
+    @Override public void onMessageReceived(final GridNioSession ses, final Object msg) throws IgniteCheckedException {
         workerPool.execute(new GridWorker(gridName, "message-received-notify", log) {
             @Override protected void body() {
                 try {
                     proceedMessageReceived(ses, msg);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     handleException(ses, e);
                 }
             }
@@ -94,27 +94,27 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         return proceedSessionWrite(ses, msg);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         return proceedSessionClose(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionWriteTimeout(ses);
     }
 
@@ -122,11 +122,11 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
      * @param ses Session.
      * @param ex Exception.
      */
-    private void handleException(GridNioSession ses, GridException ex) {
+    private void handleException(GridNioSession ses, IgniteCheckedException ex) {
         try {
             proceedExceptionCaught(ses, ex);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.warn(log, "Failed to forward exception to the underlying filter (will ignore) [ses=" + ses + ", " +
                 "originalEx=" + ex + ", ex=" + e + ']');
         }

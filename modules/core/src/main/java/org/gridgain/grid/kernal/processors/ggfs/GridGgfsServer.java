@@ -81,13 +81,13 @@ public class GridGgfsServer {
     /**
      * Starts this server.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void start() throws GridException {
+    public void start() throws IgniteCheckedException {
         srvEndpoint = GridIpcServerEndpointDeserializer.deserialize(endpointCfg);
 
         if (U.isWindows() && srvEndpoint instanceof GridIpcSharedMemoryServerEndpoint)
-            throw new GridException(GridIpcSharedMemoryServerEndpoint.class.getSimpleName() +
+            throw new IgniteCheckedException(GridIpcSharedMemoryServerEndpoint.class.getSimpleName() +
                 " should not be configured on Windows (configure " +
                 GridIpcServerTcpEndpoint.class.getSimpleName() + ")");
 
@@ -104,7 +104,7 @@ public class GridGgfsServer {
                         srvEndpoint0.setHost(U.resolveLocalHost(locHostName).getHostAddress());
                     }
                     catch (IOException e) {
-                        throw new GridException("Failed to resolve local host: " + locHostName, e);
+                        throw new IgniteCheckedException("Failed to resolve local host: " + locHostName, e);
                     }
                 }
                 else
@@ -155,7 +155,7 @@ public class GridGgfsServer {
         try {
             hnd.stop();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to stop GGFS server handler (will close client connections anyway).", e);
         }
 
@@ -172,7 +172,7 @@ public class GridGgfsServer {
         try {
             ggfsCtx.kernalContext().resource().cleanupGeneric(srvEndpoint);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to cleanup server endpoint.", e);
         }
     }
@@ -207,9 +207,9 @@ public class GridGgfsServer {
          *
          * @param idx Worker index for worker thread naming.
          * @param endpoint Connected client endpoint.
-         * @throws GridException If endpoint output stream cannot be obtained.
+         * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
-        protected ClientWorker(GridIpcEndpoint endpoint, int idx) throws GridException {
+        protected ClientWorker(GridIpcEndpoint endpoint, int idx) throws IgniteCheckedException {
             super(ggfsCtx.kernalContext().gridName(), "ggfs-client-worker-" + idx, log);
 
             this.endpoint = endpoint;
@@ -259,7 +259,7 @@ public class GridGgfsServer {
                             try {
                                 res = fut.get();
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 res = new GridGgfsControlResponse();
 
                                 ((GridGgfsControlResponse)res).error(e);
@@ -275,7 +275,7 @@ public class GridGgfsServer {
                                     out.flush();
                                 }
                             }
-                            catch (IOException | GridException e) {
+                            catch (IOException | IgniteCheckedException e) {
                                 shutdown0(e);
                             }
                         }
@@ -287,7 +287,7 @@ public class GridGgfsServer {
                                     try {
                                         res = fut.get();
                                     }
-                                    catch (GridException e) {
+                                    catch (IgniteCheckedException e) {
                                         res = new GridGgfsControlResponse();
 
                                         ((GridGgfsControlResponse)res).error(e);
@@ -302,7 +302,7 @@ public class GridGgfsServer {
                                             out.flush();
                                         }
                                     }
-                                    catch (IOException | GridException e) {
+                                    catch (IOException | IgniteCheckedException e) {
                                         shutdown0(e);
                                     }
                                 }
@@ -314,7 +314,7 @@ public class GridGgfsServer {
             catch (EOFException ignored) {
                 // Client closed connection.
             }
-            catch (GridException | IOException e) {
+            catch (IgniteCheckedException | IOException e) {
                 if (!isCancelled())
                     U.error(log, "Failed to read data from client (will close connection)", e);
             }
@@ -401,7 +401,7 @@ public class GridGgfsServer {
                     workerThread.start();
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!isCancelled())
                     U.error(log, "Failed to accept client IPC connection (will shutdown accept thread).", e);
             }

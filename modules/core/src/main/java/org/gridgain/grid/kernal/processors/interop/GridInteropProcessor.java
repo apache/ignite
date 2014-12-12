@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.interop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.jetbrains.annotations.*;
 
@@ -25,14 +25,14 @@ public interface GridInteropProcessor extends GridProcessor {
     /**
      * Await start on native side.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void awaitStart() throws GridException;
+    public void awaitStart() throws IgniteCheckedException;
 
     /**
      * @return Environment pointer.
      */
-    public long environmentPointer() throws GridException;
+    public long environmentPointer() throws IgniteCheckedException;
 
     /**
      * @return Grid name.
@@ -43,18 +43,18 @@ public interface GridInteropProcessor extends GridProcessor {
      * Gets native wrapper for default Grid projection.
      *
      * @return Native compute wrapper.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridInteropTarget projection() throws GridException;
+    public GridInteropTarget projection() throws IgniteCheckedException;
 
     /**
      * Gets native wrapper for cache with the given name.
      *
      * @param name Cache name ({@code null} for default cache).
      * @return Native cache wrapper.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridInteropTarget cache(@Nullable String name) throws GridException;
+    public GridInteropTarget cache(@Nullable String name) throws IgniteCheckedException;
 
     /**
      * Stops grid.

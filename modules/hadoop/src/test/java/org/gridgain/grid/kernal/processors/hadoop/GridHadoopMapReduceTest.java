@@ -15,6 +15,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -109,9 +110,9 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
      * Simple test job statistics.
      *
      * @param jobId Job id.
-     * @throws GridException
+     * @throws IgniteCheckedException
      */
-    private void checkJobStatistics(GridHadoopJobId jobId) throws GridException, IOException {
+    private void checkJobStatistics(GridHadoopJobId jobId) throws IgniteCheckedException, IOException {
         GridHadoopCounters cntrs = grid(0).hadoop().counters(jobId);
 
         GridHadoopPerformanceCounter perfCntr = GridHadoopPerformanceCounter.getCounter(cntrs, null);
@@ -178,8 +179,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
                 try {
                     return ggfs.exists(statPath);
                 }
-                catch (GridException e) {
-                    throw new GridRuntimeException(e);
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
             }
         }, 10000);

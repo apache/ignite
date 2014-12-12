@@ -158,9 +158,9 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
     /**
      * @param node Node.
      * @return Atomic long value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private GridCacheAtomicLongValue peekNear(ClusterNode node) throws GridException {
+    private GridCacheAtomicLongValue peekNear(ClusterNode node) throws IgniteCheckedException {
         return (GridCacheAtomicLongValue)grid(node).cache(null).peek(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), Collections.singleton(NEAR_ONLY));
     }
@@ -168,9 +168,9 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
     /**
      * @param node Node.
      * @return Atomic long value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private GridCacheAtomicLongValue peekDht(ClusterNode node) throws GridException {
+    private GridCacheAtomicLongValue peekDht(ClusterNode node) throws IgniteCheckedException {
         return (GridCacheAtomicLongValue)grid(node).cache(null).peek(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), Collections.singleton(PARTITIONED_ONLY));
     }

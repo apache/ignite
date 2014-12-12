@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.open
 
-import org.gridgain.grid.GridException
+import org.apache.ignite.IgniteCheckedException
 import org.gridgain.visor._
 
 /**
@@ -28,7 +28,7 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
         try
             openVisor()
         catch {
-            case ignored: GridException =>
+            case ignored: IgniteCheckedException =>
         }
     }
 }

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
@@ -29,18 +29,18 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
 
     /**
      * @param marsh Marshaller.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void prepareMarshal(IgniteMarshaller marsh) throws GridException {
+    public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 
     /**
      * @param marsh Marshaller.
      * @param ldr Class loader.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 

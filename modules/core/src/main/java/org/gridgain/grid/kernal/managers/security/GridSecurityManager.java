@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.managers.security;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.authentication.*;
+import org.gridgain.grid.kernal.managers.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,9 +28,9 @@ public interface GridSecurityManager extends GridManager {
      * @param node Node id to authenticate.
      * @param cred Security credentials.
      * @return {@code True} if succeeded, {@code false} otherwise.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws GridException;
+    public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.
@@ -44,26 +44,26 @@ public interface GridSecurityManager extends GridManager {
      *
      * @param ctx Authentication context.
      * @return {@code True} if succeeded, {@code false} otherwise.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecurityContext authenticate(AuthenticationContext ctx) throws GridException;
+    public GridSecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
      * Gets collection of authenticated nodes.
      *
      * @return Collection of authenticated nodes.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
      * Gets authenticated node subject.
      *
      * @param subjId Subject ID.
      * @return Security subject.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
      * Authorizes grid operation.

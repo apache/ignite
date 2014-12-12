@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.log;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -50,7 +50,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
     /** {@inheritDoc} */
     @Nullable @Override protected IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
-            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) throws GridException {
+            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
         Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
@@ -200,7 +200,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) throws GridException {
+        @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) throws IgniteCheckedException {
             URL url = U.resolveGridGainUrl(arg.folder);
 
             if (url == null)
@@ -250,7 +250,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
                 return results.isEmpty() ? null : results;
             } catch (Exception e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
 

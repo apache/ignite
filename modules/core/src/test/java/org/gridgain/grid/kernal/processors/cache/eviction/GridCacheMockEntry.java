@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -150,7 +150,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Nullable @Override public V set(V val,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return null;
     }
@@ -163,7 +163,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V setIfAbsent(V val) throws GridException {
+    @Nullable @Override public V setIfAbsent(V val) throws IgniteCheckedException {
         // No-op.
         return null;
     }
@@ -176,7 +176,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean setx(V val,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -189,7 +189,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setxIfAbsent(@Nullable V val) throws GridException {
+    @Override public boolean setxIfAbsent(@Nullable V val) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -201,7 +201,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -212,7 +212,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V replace(V val) throws GridException {
+    @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         // No-op.
         return null;
     }
@@ -224,7 +224,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(V val) throws GridException {
+    @Override public boolean replacex(V val) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -236,7 +236,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(V oldVal, V newVal) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -249,7 +249,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Nullable @Override public V remove(
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return null;
     }
@@ -262,7 +262,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -275,7 +275,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(V val) throws GridException {
+    @Override public boolean remove(V val) throws IgniteCheckedException {
         // No-op.
         return false;
     }
@@ -293,7 +293,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         return false;
     }
 
@@ -304,7 +304,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -324,7 +324,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V reload() throws GridException {
+    @Nullable @Override public V reload() throws IgniteCheckedException {
         return null;
     }
 
@@ -334,7 +334,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get() throws GridException {
+    @Nullable @Override public V get() throws IgniteCheckedException {
         return null;
     }
 
@@ -349,7 +349,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact() throws GridException {
+    @Override public boolean compact() throws IgniteCheckedException {
         return false;
     }
 

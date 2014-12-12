@@ -58,9 +58,9 @@ public class VisorGgfs implements Serializable {
     /**
      * @param ggfs Source GGFS.
      * @return Data transfer object for given GGFS.
-     * @throws GridException
+     * @throws IgniteCheckedException
      */
-    public static VisorGgfs from(IgniteFs ggfs) throws GridException {
+    public static VisorGgfs from(IgniteFs ggfs) throws IgniteCheckedException {
         assert ggfs != null;
 
         return new VisorGgfs(

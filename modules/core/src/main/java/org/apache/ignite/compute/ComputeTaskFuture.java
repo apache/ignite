@@ -9,8 +9,8 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -27,21 +27,21 @@ public interface ComputeTaskFuture<R> extends IgniteFuture<R> {
      *
      * @throws ComputeTaskTimeoutException If task execution timed out.
      */
-    @Override public R get() throws GridException;
+    @Override public R get() throws IgniteCheckedException;
 
     /**
      * {@inheritDoc}
      *
      * @throws ComputeTaskTimeoutException If task execution timed out.
      */
-    @Override public R get(long timeout) throws GridException;
+    @Override public R get(long timeout) throws IgniteCheckedException;
 
     /**
      * {@inheritDoc}
      *
      * @throws ComputeTaskTimeoutException If task execution timed out.
      */
-    @Override public R get(long timeout, TimeUnit unit) throws GridException;
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 
     /**
      * Gets task session of execution grid task.

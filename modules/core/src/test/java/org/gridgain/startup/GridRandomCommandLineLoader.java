@@ -101,7 +101,7 @@ public final class GridRandomCommandLineLoader {
      *
      * @param e Exception to print.
      */
-    private static void echo(GridException e) {
+    private static void echo(IgniteCheckedException e) {
         assert e != null;
 
         System.err.println(e);
@@ -251,7 +251,7 @@ public final class GridRandomCommandLineLoader {
                 now = System.currentTimeMillis();
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             echo(e);
 
             exit("Failed to start grid: " + e.getMessage(), null, -1);
@@ -279,21 +279,21 @@ public final class GridRandomCommandLineLoader {
      * @param springCfgPath Configuration file path.
      * @param logCfgPath Log file name.
      * @return List of configurations.
-     * @throws GridException If an error occurs.
+     * @throws IgniteCheckedException If an error occurs.
      */
     @SuppressWarnings("unchecked")
     private static IgniteConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
-        throws GridException {
+        throws IgniteCheckedException {
         assert springCfgPath != null;
 
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null)
-            throw new GridException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
+            throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
                 ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
 
         if (!path.isFile())
-            throw new GridException("Provided file path is not a file: " + path);
+            throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
         Appender app = new NullAppender();
@@ -306,7 +306,7 @@ public final class GridRandomCommandLineLoader {
             springCtx = new FileSystemXmlApplicationContext(path.toURI().toURL().toString());
         }
         catch (BeansException | MalformedURLException e) {
-            throw new GridException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
         }
 
         Map cfgMap;
@@ -316,18 +316,18 @@ public final class GridRandomCommandLineLoader {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null)
-            throw new GridException("Failed to find a single grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.size() != 1)
-            throw new GridException("Spring configuration file should contain exactly 1 grid configuration: " + path);
+            throw new IgniteCheckedException("Spring configuration file should contain exactly 1 grid configuration: " + path);
 
         IgniteConfiguration cfg = (IgniteConfiguration)F.first(cfgMap.values());
 

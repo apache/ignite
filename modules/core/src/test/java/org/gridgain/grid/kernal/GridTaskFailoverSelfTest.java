@@ -86,7 +86,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws
-            GridException {
+            IgniteCheckedException {
             if (res.getException() != null)
                 throw res.getException();
 

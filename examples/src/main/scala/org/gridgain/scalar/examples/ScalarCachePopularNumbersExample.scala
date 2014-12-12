@@ -12,7 +12,7 @@
 package org.gridgain.scalar.examples
 
 import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
-import org.gridgain.grid.GridException
+import org.apache.ignite.IgniteCheckedException
 import org.gridgain.grid.cache.GridCache
 
 import java.util
@@ -80,9 +80,9 @@ object ScalarCachePopularNumbersExample extends App {
 
     /**
      * Populates cache in real time with numbers and keeps count for every number.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @throws[GridException]
+    @throws[IgniteCheckedException]
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole grid locally under heavy load.

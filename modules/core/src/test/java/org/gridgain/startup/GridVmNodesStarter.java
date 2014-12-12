@@ -10,10 +10,10 @@
 package org.gridgain.startup;
 
 import org.apache.commons.cli.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.springframework.beans.*;
@@ -74,7 +74,7 @@ public final class GridVmNodesStarter {
      *
      * @param e Exception to print.
      */
-    private static void echo(GridException e) {
+    private static void echo(IgniteCheckedException e) {
         assert e != null;
 
         System.err.println(e);
@@ -110,9 +110,9 @@ public final class GridVmNodesStarter {
      * Main entry point.
      *
      * @param args Command line arguments.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.setProperty(GG_UPDATE_NOTIFIER, "false");
 
         Options options = createOptions();
@@ -173,19 +173,19 @@ public final class GridVmNodesStarter {
      *
      * @param springCfgPath Configuration file path.
      * @return List of configurations.
-     * @throws GridException If an error occurs.
+     * @throws IgniteCheckedException If an error occurs.
      */
     @SuppressWarnings("unchecked")
     private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath)
-        throws GridException {
+        throws IgniteCheckedException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null)
-            throw new GridException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
+            throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
                 ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
 
         if (!path.isFile())
-            throw new GridException("Provided file path is not a file: " + path);
+            throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
         Appender app = new NullAppender();
@@ -198,7 +198,7 @@ public final class GridVmNodesStarter {
             springCtx = new FileSystemXmlApplicationContext(path.toURI().toURL().toString());
         }
         catch (BeansException | MalformedURLException e) {
-            throw new GridException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
         }
 
         Map cfgMap;
@@ -208,18 +208,18 @@ public final class GridVmNodesStarter {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null)
-            throw new GridException("Failed to find a single grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.isEmpty())
-            throw new GridException("Can't find grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);
 
         Collection<IgniteConfiguration> res = new ArrayList<>();
 

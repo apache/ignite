@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.*;
@@ -128,7 +128,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     };
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
@@ -234,7 +234,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                                 processMessage(nodeId, cacheMsg, c);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 // Log once.
                                 if (startErr.compareAndSet(false, true))
                                     U.error(log, "Failed to complete preload start future (will ignore message) " +
@@ -312,9 +312,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param msg Message to send.
      * @param destNodeId Destination node ID.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void onSend(GridCacheMessage<K, V> msg, @Nullable UUID destNodeId) throws GridException {
+    private void onSend(GridCacheMessage<K, V> msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
         if (msg.messageId() < 0)
             // Generate and set message ID.
             msg.messageId(idGen.incrementAndGet());
@@ -332,10 +332,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param node Node to send the message to.
      * @param msg Message to send.
-     * @throws GridException If sending failed.
+     * @throws IgniteCheckedException If sending failed.
      * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
      */
-    public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws GridException {
+    public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
         send(node, msg, SYSTEM_POOL);
     }
 
@@ -344,10 +344,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param node Node to send the message to.
      * @param msg Message to send.
-     * @throws GridException If sending failed.
+     * @throws IgniteCheckedException If sending failed.
      * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
      */
-    public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws GridException {
+    public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
         onSend(msg, node.id());
@@ -376,7 +376,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                 return;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
                     throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
 
@@ -401,11 +401,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param fallback Callback for failed nodes.
      * @return {@code True} if nodes are empty or message was sent, {@code false} if
      *      all nodes have left topology while sending this message.
-     * @throws GridException If send failed.
+     * @throws IgniteCheckedException If send failed.
      */
     @SuppressWarnings( {"BusyWait"})
     public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage<K, V> msg,
-        @Nullable IgnitePredicate<ClusterNode> fallback) throws GridException {
+        @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
 
@@ -474,7 +474,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                 break;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 boolean added = false;
 
                 for (ClusterNode n : nodes) {
@@ -524,9 +524,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param nodeId ID of node to send the message to.
      * @param msg Message to send.
-     * @throws GridException If sending failed.
+     * @throws IgniteCheckedException If sending failed.
      */
-    public void send(UUID nodeId, GridCacheMessage<K, V> msg) throws GridException {
+    public void send(UUID nodeId, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
@@ -542,10 +542,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param msgId Ordered message ID.
      * @param msg Message to send.
      * @param timeout Timeout to keep a message on receiving queue.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void sendOrderedMessage(ClusterNode node, Object topic, long msgId, GridCacheMessage<K, V> msg,
-        long timeout) throws GridException {
+        long timeout) throws IgniteCheckedException {
         onSend(msg, node.id());
 
         int cnt = 0;
@@ -562,7 +562,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                 return;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
                     throw new ClusterTopologyException("Node left grid while sending ordered message to: " + node.id(), e);
 
@@ -616,7 +616,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
 
             if (cacheClsHandlers[msgIdx] != null)
-                throw new GridRuntimeException("Duplicate cache message ID found [cacheId=" + cacheId +
+                throw new IgniteException("Duplicate cache message ID found [cacheId=" + cacheId +
                     ", type=" + type + ']');
 
             cacheClsHandlers[msgIdx] = c;
@@ -657,7 +657,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             return msgIdx;
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             return -1;
         }
     }
@@ -734,10 +734,10 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private void unmarshall(UUID nodeId, GridCacheMessage<K, V> cacheMsg) throws GridException {
+    private void unmarshall(UUID nodeId, GridCacheMessage<K, V> cacheMsg) throws IgniteCheckedException {
         if (cctx.localNodeId().equals(nodeId))
             return;
 
@@ -757,7 +757,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         try {
             cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (cacheMsg.ignoreClassErrors() && X.hasCause(e, InvalidClassException.class,
                     ClassNotFoundException.class, NoClassDefFoundError.class, UnsupportedClassVersionError.class))
                 cacheMsg.onClassError(e);
@@ -767,7 +767,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         catch (Error e) {
             if (cacheMsg.ignoreClassErrors() && X.hasCause(e, NoClassDefFoundError.class,
                 UnsupportedClassVersionError.class))
-                    cacheMsg.onClassError(new GridException("Failed to load class during unmarshalling: " + e, e));
+                    cacheMsg.onClassError(new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e));
             else
                 throw e;
         }

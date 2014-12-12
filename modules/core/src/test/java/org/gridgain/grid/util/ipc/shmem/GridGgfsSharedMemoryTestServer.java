@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.ipc.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
 
 import java.io.*;
@@ -24,7 +24,7 @@ import java.io.*;
  */
 public class GridGgfsSharedMemoryTestServer {
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.out.println("Starting server ...");
 
         U.setWorkDirectory(null, U.getGridGainHome());

@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -41,7 +41,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
     /** */
     @GridDirectTransient
-    private GridException gridEx;
+    private IgniteCheckedException gridEx;
 
     /** */
     private byte[] resBytes;
@@ -63,7 +63,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /** */
     @GridToStringExclude
     @GridDirectTransient
-    private GridException fakeEx;
+    private IgniteCheckedException fakeEx;
 
     /**
      * No-op constructor to support {@link Externalizable} interface. This
@@ -86,7 +86,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
      * @param isCancelled Whether job was cancelled or not.
      */
     public GridJobExecuteResponse(UUID nodeId, IgniteUuid sesId, IgniteUuid jobId, byte[] gridExBytes,
-        GridException gridEx, byte[] resBytes, Object res, byte[] jobAttrsBytes,
+        IgniteCheckedException gridEx, byte[] resBytes, Object res, byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs, boolean isCancelled) {
         assert nodeId != null;
         assert sesId != null;
@@ -142,7 +142,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Job exception.
      */
-    @Nullable public GridException getException() {
+    @Nullable public IgniteCheckedException getException() {
         return gridEx;
     }
 
@@ -177,14 +177,14 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Fake exception.
      */
-    public GridException getFakeException() {
+    public IgniteCheckedException getFakeException() {
         return fakeEx;
     }
 
     /**
      * @param fakeEx Fake exception.
      */
-    public void setFakeException(GridException fakeEx) {
+    public void setFakeException(IgniteCheckedException fakeEx) {
         this.fakeEx = fakeEx;
     }
 

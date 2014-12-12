@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -140,7 +140,7 @@ abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
         try {
             storeDataBlocks(in, len);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e.getMessage(), e);
         }
 
@@ -186,18 +186,18 @@ abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
      * Note! If file concurrently deleted we'll get lost blocks.
      *
      * @param data Data to store.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void storeDataBlock(ByteBuffer data) throws GridException, IOException;
+    protected abstract void storeDataBlock(ByteBuffer data) throws IgniteCheckedException, IOException;
 
     /**
      * Store data blocks in file reading appropriate number of bytes from given data input.
      *
      * @param in Data input to read from.
      * @param len Data length to store.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void storeDataBlocks(DataInput in, int len) throws GridException, IOException;
+    protected abstract void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException;
 
     /**
      * Close callback. It will be called only once in synchronized section.
@@ -241,7 +241,7 @@ abstract class IgniteFsOutputStreamAdapter extends IgniteFsOutputStream {
 
             storeDataBlock(buf);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException("Failed to store data into file: " + path, e);
         }
 

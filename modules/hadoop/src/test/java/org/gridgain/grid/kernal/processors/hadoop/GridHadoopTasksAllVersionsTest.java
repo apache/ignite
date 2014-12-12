@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import com.google.common.base.*;
 import org.apache.hadoop.io.*;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -101,10 +102,10 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @param taskNum Number of task in job.
      * @param words Pairs of words and its counts.
      * @return Context with mock output.
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
     private GridHadoopTestTaskContext runTaskWithInput(GridHadoopV2Job gridJob, GridHadoopTaskType taskType,
-        int taskNum, String... words) throws GridException {
+        int taskNum, String... words) throws IgniteCheckedException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(taskType, gridJob.id(), taskNum, 0, null);
 
         GridHadoopTestTaskContext ctx = new GridHadoopTestTaskContext(taskInfo, gridJob);
@@ -173,10 +174,10 @@ abstract class GridHadoopTasksAllVersionsTest extends GridHadoopAbstractWordCoun
      * @param fileBlock block of input file to be processed.
      * @param gridJob Hadoop job implementation.
      * @return Context of combine task with mock output.
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
     private GridHadoopTestTaskContext runMapCombineTask(GridHadoopFileBlock fileBlock, GridHadoopV2Job gridJob)
-        throws GridException {
+        throws IgniteCheckedException {
         GridHadoopTaskInfo taskInfo = new GridHadoopTaskInfo(GridHadoopTaskType.MAP, gridJob.id(), 0, 0, fileBlock);
 
         GridHadoopTestTaskContext mapCtx = new GridHadoopTestTaskContext(taskInfo, gridJob);

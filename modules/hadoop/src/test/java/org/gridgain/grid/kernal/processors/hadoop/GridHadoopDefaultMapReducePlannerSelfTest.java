@@ -96,9 +96,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsOneBlockPerNode() throws GridException {
+    public void testGgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_3);
@@ -156,9 +156,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOneBlockPerNode() throws GridException {
+    public void testNonGgfsOneBlockPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_3);
@@ -212,9 +212,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralBlocksPerNode() throws GridException {
+    public void testGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(true, "/file3", 0, 100, HOST_1, HOST_3);
@@ -258,9 +258,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsSeveralBlocksPerNode() throws GridException {
+    public void testNonGgfsSeveralBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, HOST_1, HOST_2);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, HOST_1, HOST_3);
@@ -300,9 +300,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testGgfsSeveralComplexBlocksPerNode() throws GridException {
+    public void testGgfsSeveralComplexBlocksPerNode() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(true, "/file1", 0, 100, HOST_1, HOST_2, HOST_3);
         GridHadoopFileBlock split2 = split(true, "/file2", 0, 100, HOST_1, HOST_2, HOST_3);
 
@@ -336,9 +336,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testNonGgfsOrphans() throws GridException {
+    public void testNonGgfsOrphans() throws IgniteCheckedException {
         GridHadoopFileBlock split1 = split(false, "/file1", 0, 100, INVALID_HOST_1, INVALID_HOST_2);
         GridHadoopFileBlock split2 = split(false, "/file2", 0, 100, INVALID_HOST_1, INVALID_HOST_3);
         GridHadoopFileBlock split3 = split(false, "/file3", 0, 100, INVALID_HOST_2, INVALID_HOST_3);
@@ -393,9 +393,9 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * @param reducers Reducers count.
      * @param splits Splits.
      * @return Plan.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static GridHadoopMapReducePlan plan(int reducers, GridHadoopInputSplit... splits) throws GridException {
+    private static GridHadoopMapReducePlan plan(int reducers, GridHadoopInputSplit... splits) throws IgniteCheckedException {
         assert reducers > 0;
         assert splits != null && splits.length > 0;
 
@@ -614,32 +614,32 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridHadoopInputSplit> input() throws GridException {
+        @Override public Collection<GridHadoopInputSplit> input() throws IgniteCheckedException {
             return splitList;
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws GridException {
+        @Override public GridHadoopTaskContext getTaskContext(GridHadoopTaskInfo info) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void initialize(boolean external, UUID nodeId) throws GridException {
+        @Override public void initialize(boolean external, UUID nodeId) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void dispose(boolean external) throws GridException {
+        @Override public void dispose(boolean external) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        @Override public void prepareTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws GridException {
+        @Override public void cleanupTaskEnvironment(GridHadoopTaskInfo info) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -660,13 +660,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
-            throws GridException {
+            throws IgniteCheckedException {
             return BLOCK_MAP.get(new Block(path, start, len));
         }
 
         /** {@inheritDoc} */
         @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len,
-            long maxLen) throws GridException {
+            long maxLen) throws IgniteCheckedException {
             return null;
         }
 
@@ -687,27 +687,27 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsStatus globalSpace() throws GridException {
+        @Override public GridGgfsStatus globalSpace() throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void globalSampling(@Nullable Boolean val) throws GridException {
+        @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -727,7 +727,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> awaitDeletesAsync() throws GridException {
+        @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
             return null;
         }
 
@@ -757,58 +757,58 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean exists(IgniteFsPath path) throws GridException {
+        @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
+        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws GridException {
+        @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
+        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
+        @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path) throws GridException {
+        @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
+        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
+        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
+        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public long usedSpaceSize() throws GridException {
+        @Override public long usedSpaceSize() throws IgniteCheckedException {
             return 0;
         }
 
@@ -818,83 +818,83 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-            long blockSize, @Nullable Map<String, String> props) throws GridException {
+            long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
             @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws GridException {
+        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
-            @Nullable Map<String, String> props) throws GridException {
+            @Nullable Map<String, String> props) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException {
+        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsMetrics metrics() throws GridException {
+        @Override public IgniteFsMetrics metrics() throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void resetMetrics() throws GridException {
+        @Override public void resetMetrics() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public long size(IgniteFsPath path) throws GridException {
+        @Override public long size(IgniteFsPath path) throws IgniteCheckedException {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public void format() throws GridException {
+        @Override public void format() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-            Collection<IgniteFsPath> paths, @Nullable T arg) throws GridException {
+            Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
             Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
             @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
             @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
-            long maxRangeLen, @Nullable T arg) throws GridException {
+            long maxRangeLen, @Nullable T arg) throws IgniteCheckedException {
             return null;
         }
 
@@ -1063,22 +1063,22 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void stopNodes() throws GridException {
+        @Override public void stopNodes() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void stopNodes(Collection<UUID> ids) throws GridException {
+        @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restartNodes() throws GridException {
+        @Override public void restartNodes() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restartNodes(Collection<UUID> ids) throws GridException {
+        @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -1193,7 +1193,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterMetrics metrics() throws GridException {
+        @Override public ClusterMetrics metrics() throws IgniteCheckedException {
             return null;
         }
 

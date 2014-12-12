@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -42,10 +42,10 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
      * @param val Value.
      * @param valBytes Value bytes.
      * @param ver Version.
-     * @throws GridException If value unmarshalling failed.
+     * @throws IgniteCheckedException If value unmarshalling failed.
      */
     public void resetFromPrimary(V val, byte[] valBytes, GridCacheVersion ver)
-        throws GridException {
+        throws IgniteCheckedException {
        if (valBytes != null && val == null)
             val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
 
@@ -55,7 +55,7 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws GridException {
+    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
         return null;
     }
 
@@ -73,12 +73,12 @@ public class GridDhtDetachedCacheEntry<K, V> extends GridDistributedCacheEntry<K
 
     /** {@inheritDoc} */
     @Override protected void updateIndex(V val, byte[] valBytes, long expireTime,
-        GridCacheVersion ver, V old) throws GridException {
+        GridCacheVersion ver, V old) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary nodes.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(V val) throws GridException {
+    @Override protected void clearIndex(V val) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 

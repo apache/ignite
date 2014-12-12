@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.email;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
 
 import javax.mail.*;
@@ -68,7 +68,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
 
                                 email.future().onDone(true);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to send email with subject: " + email.subject(), e);
 
                                 email.future().onDone(e);
@@ -80,7 +80,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (isSmtpEnabled) {
             assert q == null;
             assert snd == null;
@@ -97,7 +97,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (isSmtpEnabled) {
             U.interrupt(snd);
             U.join(snd, log);
@@ -119,7 +119,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNow(String subj, String body, boolean html) throws GridException {
+    @Override public void sendNow(String subj, String body, boolean html) throws IgniteCheckedException {
         String[] addrs = ctx.config().getAdminEmails();
 
         if (addrs != null && addrs.length > 0)
@@ -128,7 +128,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void sendNow(String subj, String body, boolean html, Collection<String> addrs)
-        throws GridException {
+        throws IgniteCheckedException {
         assert subj != null;
         assert body != null;
         assert addrs != null;
@@ -219,11 +219,11 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
      * @param body Email body.
      * @param html HTML format flag.
      * @param addrs Addresses to send email to.
-     * @throws GridException Thrown in case when sending email failed.
+     * @throws IgniteCheckedException Thrown in case when sending email failed.
      */
     public static void sendEmail(String smtpHost, int smtpPort, boolean ssl, boolean startTls, final String username,
         final String pwd, String from, String subj, String body, boolean html, Collection<String> addrs)
-        throws GridException {
+        throws IgniteCheckedException {
         assert smtpHost != null;
         assert smtpPort > 0;
         assert from != null;
@@ -283,7 +283,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
             Transport.send(email);
         }
         catch (MessagingException e) {
-            throw new GridException("Failed to send email.", e);
+            throw new IgniteCheckedException("Failed to send email.", e);
         }
     }
 }

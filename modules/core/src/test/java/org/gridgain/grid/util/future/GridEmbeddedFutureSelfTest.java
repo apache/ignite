@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
@@ -114,7 +114,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             catch (IgniteFutureTimeoutException e) {
                 fail("Failed with timeout exception: " + e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Failed with unhandled exception (normal behaviour): " + e);
 
                 assertSame(x, e.getCause(x.getClass()));

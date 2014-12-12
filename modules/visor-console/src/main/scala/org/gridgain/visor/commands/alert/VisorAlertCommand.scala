@@ -11,23 +11,24 @@
 
 package org.gridgain.visor.commands.alert
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
-import org.apache.ignite.lang.IgnitePredicate
-import org.gridgain.grid._
-import IgniteEventType._
 import org.gridgain.grid.util.lang.{GridFunc => F}
+
+import org.apache.ignite._
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent, IgniteEventType}
+import org.apache.ignite.lang.IgnitePredicate
 
 import java.util.UUID
 import java.util.concurrent.atomic._
 
-import scala.collection.immutable._
-import scala.language.implicitConversions
-import scala.util.control.Breaks._
-
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.immutable._
+import scala.language.implicitConversions
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -216,7 +217,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(value(n))
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -235,7 +236,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             () => f() && expr.get.apply(value())
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -291,7 +292,7 @@ class VisorAlertCommand {
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
                             case "r" => () // Skipping.
-                            case _ => throw new GridException("Invalid argument: " + makeArg(arg))
+                            case _ => throw new IgniteCheckedException("Invalid argument: " + makeArg(arg))
                         }
                     })
                 }

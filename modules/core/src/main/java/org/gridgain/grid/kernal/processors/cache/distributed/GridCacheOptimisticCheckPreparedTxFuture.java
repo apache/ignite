@@ -152,7 +152,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                     catch (ClusterTopologyException ignored) {
                         fut.onNodeLeft();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         fut.onError(e);
 
                         break;
@@ -173,7 +173,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 catch (ClusterTopologyException ignored) {
                     fut.onNodeLeft();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fut.onError(e);
 
                     break;

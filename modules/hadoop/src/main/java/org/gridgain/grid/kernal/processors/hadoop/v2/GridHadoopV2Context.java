@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.task.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -126,7 +127,7 @@ public class GridHadoopV2Context extends JobContextImpl implements MapContext, R
             try {
                 output.write(key, val);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException(e);
             }
         }

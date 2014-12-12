@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -450,12 +450,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteCheckedException {
         return getJobSiblings();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> getJobSiblings() throws GridException {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() throws IgniteCheckedException {
         synchronized (mux) {
             return siblings;
         }
@@ -486,7 +486,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws GridException {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteCheckedException {
         A.notNull(jobId, "jobId");
 
         Collection<ComputeJobSibling> tmp = getJobSiblings();
@@ -499,7 +499,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttribute(Object key, Object val) throws GridException {
+    @Override public void setAttribute(Object key, Object val) throws IgniteCheckedException {
         A.notNull(key, "key");
 
         checkFullSupport();
@@ -520,7 +520,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttributes(Map<?, ?> attrs) throws GridException {
+    @Override public void setAttributes(Map<?, ?> attrs) throws IgniteCheckedException {
         A.notNull(attrs, "attrs");
 
         checkFullSupport();
@@ -635,19 +635,19 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws GridException {
+    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
         saveCheckpoint(key, state, ComputeTaskSessionScope.SESSION_SCOPE, 0);
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws GridException {
+        throws IgniteCheckedException {
         saveCheckpoint(key, state, scope, timeout, true);
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean overwrite) throws GridException {
+        long timeout, boolean overwrite) throws IgniteCheckedException {
         saveCheckpoint0(this, key, state, scope, timeout, overwrite);
     }
 
@@ -658,17 +658,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param scope Scope.
      * @param timeout Timeout.
      * @param overwrite Overwrite.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected void saveCheckpoint0(GridTaskSessionInternal ses, String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean overwrite) throws GridException {
+        long timeout, boolean overwrite) throws IgniteCheckedException {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");
         A.ensure(timeout >= 0, "timeout >= 0");
 
         if (closed)
-            throw new GridException("Failed to save checkpoint (session closed): " + ses);
+            throw new IgniteCheckedException("Failed to save checkpoint (session closed): " + ses);
 
         checkFullSupport();
 
@@ -677,7 +677,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T loadCheckpoint(String key) throws GridException {
+    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
         return loadCheckpoint0(this, key);
     }
 
@@ -685,15 +685,15 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param ses Session.
      * @param key Key.
      * @return Checkpoint.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected  <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) throws GridException {
+    protected  <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");
 
         if (closed)
-            throw new GridException("Failed to load checkpoint (session closed): " + ses);
+            throw new IgniteCheckedException("Failed to load checkpoint (session closed): " + ses);
 
         checkFullSupport();
 
@@ -701,7 +701,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws GridException {
+    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
         return removeCheckpoint0(this, key);
     }
 
@@ -709,15 +709,15 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param ses Session.
      * @param key Key.
      * @return {@code True} if removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected boolean removeCheckpoint0(GridTaskSessionInternal ses, String key) throws GridException {
+    protected boolean removeCheckpoint0(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");
 
         if (closed)
-            throw new GridException("Failed to remove checkpoint (session closed): " + ses);
+            throw new IgniteCheckedException("Failed to remove checkpoint (session closed): " + ses);
 
         checkFullSupport();
 

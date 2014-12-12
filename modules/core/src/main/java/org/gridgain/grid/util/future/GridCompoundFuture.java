@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -98,7 +98,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
             for (IgniteFuture<T> fut : futs)
                 fut.cancel();
@@ -170,7 +170,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             try {
                 fut.cancel();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onDone(e);
             }
     }
@@ -342,7 +342,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
                 err.compareAndSet(null, e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!ignoreFailure(e))
                     U.error(log, "Failed to execute compound future reducer: " + this, e);
 

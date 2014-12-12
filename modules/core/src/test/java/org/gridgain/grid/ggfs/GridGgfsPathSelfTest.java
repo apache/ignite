@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -73,9 +73,9 @@ public class GridGgfsPathSelfTest extends GridCommonAbstractTest {
      *
      * @param obj Object to marshal/unmarshal.
      * @return Marshalled and then unmarshalled object.
-     * @throws GridException In case of any marshalling exception.
+     * @throws IgniteCheckedException In case of any marshalling exception.
      */
-    private <T> T mu(T obj) throws GridException {
+    private <T> T mu(T obj) throws IgniteCheckedException {
         return marshaller.unmarshal(marshaller.marshal(obj), null);
     }
 

@@ -11,13 +11,13 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.lang.IgniteBiTuple
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.visor.cache.{VisorCacheMetricsCollectorTask, VisorCacheMetrics2, VisorCacheAggregatedMetrics, VisorCacheConfiguration}
-import org.gridgain.grid.kernal.visor.node.{VisorNodeConfigurationCollectorTask, VisorGridConfiguration}
+import org.gridgain.grid.kernal.visor.cache.{VisorCacheAggregatedMetrics, VisorCacheConfiguration, VisorCacheMetrics2, VisorCacheMetricsCollectorTask}
+import org.gridgain.grid.kernal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.gridgain.grid.util.typedef._
 
+import org.apache.ignite._
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.lang.IgniteBiTuple
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
@@ -473,7 +473,7 @@ class VisorCacheCommand {
                 new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
-            case e: GridException => Nil
+            case e: IgniteCheckedException => Nil
         }
     }
 
@@ -488,7 +488,7 @@ class VisorCacheCommand {
             grid.compute(grid.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
-            case e: GridException =>
+            case e: IgniteCheckedException =>
                 scold(e.getMessage)
 
                 null

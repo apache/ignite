@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -55,34 +55,34 @@ public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
      *
      * @param jobId Job ID to get status for.
      * @return Job execution status.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException;
+    public abstract GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Returns Hadoop job counters.
      *
      * @param jobId Job ID to get counters for.
      * @return Job counters.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException;
+    public abstract GridHadoopCounters counters(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Gets Hadoop job finish future.
      *
      * @param jobId Job ID.
      * @return Job finish future or {@code null}.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException;
+    public abstract IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Kills job.
      *
      * @param jobId Job ID.
      * @return {@code True} if job was killed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract boolean kill(GridHadoopJobId jobId) throws GridException;
+    public abstract boolean kill(GridHadoopJobId jobId) throws IgniteCheckedException;
 }

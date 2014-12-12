@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
@@ -29,7 +29,7 @@ public class GridNoopManagerAdapter implements GridManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void addSpiAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -39,17 +39,17 @@ public class GridNoopManagerAdapter implements GridManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 

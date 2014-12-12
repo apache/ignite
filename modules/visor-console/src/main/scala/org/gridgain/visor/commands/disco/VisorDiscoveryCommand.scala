@@ -11,23 +11,23 @@
 
 package org.gridgain.visor.commands.disco
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.IgniteEventType
-import org.gridgain.grid._
-import IgniteEventType._
 import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
-import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.util.{GridUtils => U}
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.util.{GridUtils => U}
 
-import scala.collection.JavaConversions._
-import scala.collection.immutable._
-import scala.language.{implicitConversions, reflectiveCalls}
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.events.IgniteEventType
+import org.apache.ignite.events.IgniteEventType._
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.collection.immutable._
+import scala.language.{implicitConversions, reflectiveCalls}
 
 /**
  * ==Overview==

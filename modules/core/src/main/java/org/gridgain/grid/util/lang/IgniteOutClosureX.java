@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient out-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method and properly
- * wraps {@link GridException} into {@link GridClosureException} instance.
+ * wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
  */
 public abstract class IgniteOutClosureX<T> implements IgniteOutClosure<T> {
     /** */
@@ -27,16 +27,16 @@ public abstract class IgniteOutClosureX<T> implements IgniteOutClosure<T> {
         try {
             return applyx();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }
 
     /**
-     * Out-closure body that can throw {@link GridException}.
+     * Out-closure body that can throw {@link IgniteCheckedException}.
      *
      * @return Element.
-     * @throws GridException Thrown in case of any error condition inside of the closure.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the closure.
      */
-    public abstract T applyx() throws GridException;
+    public abstract T applyx() throws IgniteCheckedException;
 }

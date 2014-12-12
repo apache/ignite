@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.messaging.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
@@ -108,7 +108,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
             final ClusterNode rmt = grid(1).localNode();
 
             grid().message().localListen(null, new MessagingListenActor<String>() {
-                @Override protected void receive(UUID nodeId, String rcvMsg) throws GridException {
+                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
                     System.out.println("Local node received message: '" + rcvMsg + "'");
 
                     respond(rmt.id(), "RESPONSE");
@@ -152,7 +152,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         grid().message().localListen(null, new MessagingListenActor<String>() {
             @Override
-            protected void receive(UUID nodeId, String rcvMsg) throws GridException {
+            protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
                 System.out.println("Received message: '" + rcvMsg + "'");
 
                 if ("PING".equals(rcvMsg)) {

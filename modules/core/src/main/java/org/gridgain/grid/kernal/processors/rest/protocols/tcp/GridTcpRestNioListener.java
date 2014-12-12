@@ -192,7 +192,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
                                 res.result(o);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to process client request: " + msg, e);
 
                                 res.successStatus(GridClientResponse.STATUS_FAILED);

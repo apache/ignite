@@ -140,7 +140,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @throws GridNioException If filter processing has thrown an exception.
      * @throws SSLException If failed to process SSL data.
      */
-    void handshake() throws GridException, SSLException {
+    void handshake() throws IgniteCheckedException, SSLException {
         if (log.isDebugEnabled())
             log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
@@ -244,7 +244,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @throws GridNioException If exception occurred while forwarding events to underlying filter.
      * @throws SSLException If failed to process SSL data.
      */
-    void messageReceived(ByteBuffer buf) throws GridException, SSLException {
+    void messageReceived(ByteBuffer buf) throws IgniteCheckedException, SSLException {
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
@@ -373,7 +373,7 @@ class GridNioSslHandler extends ReentrantLock {
      * Flushes all deferred write events.
      * @throws GridNioException If failed to forward writes to the filter.
      */
-    void flushDeferredWrites() throws GridException {
+    void flushDeferredWrites() throws IgniteCheckedException {
         assert isHeldByCurrentThread();
         assert handshakeFinished;
 
@@ -420,7 +420,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer() throws GridException {
+    GridNioFuture<?> writeNetBuffer() throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);
@@ -434,7 +434,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @throws SSLException If failed to process SSL data.
      * @throws GridNioException If failed to pass events to the next filter.
      */
-    private void unwrapData() throws GridException, SSLException {
+    private void unwrapData() throws IgniteCheckedException, SSLException {
         if (log.isDebugEnabled())
             log.debug("Unwrapping received data: " + ses);
 
@@ -458,7 +458,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @throws SSLException If SSL exception occurred while unwrapping.
      * @throws GridNioException If failed to pass event to the next filter.
      */
-    private Status unwrapHandshake() throws SSLException, GridException {
+    private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
         // Flip input buffer so we can read the collected data.
         inNetBuf.flip();
 
@@ -493,7 +493,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @throws GridNioException If exception occurred during handshake.
      * @throws SSLException If failed to process SSL data
      */
-    private void renegotiateIfNeeded(SSLEngineResult res) throws GridException, SSLException {
+    private void renegotiateIfNeeded(SSLEngineResult res) throws IgniteCheckedException, SSLException {
         if (res.getStatus() != CLOSED && res.getStatus() != BUFFER_UNDERFLOW
             && res.getHandshakeStatus() != NOT_HANDSHAKING) {
             // Renegotiation required.

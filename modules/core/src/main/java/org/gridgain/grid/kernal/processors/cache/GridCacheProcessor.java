@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -45,8 +44,8 @@ import org.jetbrains.annotations.*;
 import javax.management.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -251,19 +250,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param c Grid configuration.
      * @param cc Configuration to validate.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void validate(IgniteConfiguration c, GridCacheConfiguration cc) throws GridException {
+    private void validate(IgniteConfiguration c, GridCacheConfiguration cc) throws IgniteCheckedException {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getAffinity() instanceof GridCachePartitionFairAffinity)
-                throw new GridException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
+                throw new IgniteCheckedException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
                     " [cacheName=" + cc.getName() + ']');
 
             if (cc.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
                 GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cc.getAffinity();
 
                 if (aff.isExcludeNeighbors())
-                    throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in " +
+                    throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
                         "GridCacheConsistentHashAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
@@ -271,7 +270,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 GridCacheRendezvousAffinityFunction aff = (GridCacheRendezvousAffinityFunction)cc.getAffinity();
 
                 if (aff.isExcludeNeighbors())
-                    throw new GridException("For REPLICATED cache flag 'excludeNeighbors' in " +
+                    throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
                         "GridCacheRendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
             }
 
@@ -299,13 +298,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        IgniteConfiguration cfg = ctx.config();
+        IgniteDeploymentMode depMode = c.getDeploymentMode();
 
-        IgniteDeploymentMode depMode = cfg.getDeploymentMode();
-
-        if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
+        if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !CU.isSystemCache(cc.getName()))
-            throw new GridException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
+            throw new IgniteCheckedException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
         if (!c.getTransactionsConfiguration().isTxSerializableEnabled() &&
@@ -319,7 +316,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cc.isWriteBehindEnabled()) {
             if (cc.getStore() == null)
-                throw new GridException("Cannot enable write-behind cache (cache store is not provided) for cache: " +
+                throw new IgniteCheckedException("Cannot enable write-behind cache (cache store is not provided) for cache: " +
                     cc.getName());
 
             assertParameter(cc.getWriteBehindBatchSize() > 0, "writeBehindBatchSize > 0");
@@ -328,7 +325,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assertParameter(cc.getWriteBehindFlushThreadCount() > 0, "writeBehindFlushThreadCount > 0");
 
             if (cc.getWriteBehindFlushSize() == 0 && cc.getWriteBehindFlushFrequency() == 0)
-                throw new GridException("Cannot set both 'writeBehindFlushFrequency' and " +
+                throw new IgniteCheckedException("Cannot set both 'writeBehindFlushFrequency' and " +
                     "'writeBehindFlushSize' parameters to 0 for cache: " + cc.getName());
         }
 
@@ -383,7 +380,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cc.getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES) {
             if (cc.isQueryIndexEnabled())
-                throw new GridException("Cannot have query indexing enabled while values are stored off-heap. " +
+                throw new IgniteCheckedException("Cannot have query indexing enabled while values are stored off-heap. " +
                     "You must either disable query indexing or disable off-heap values only flag for cache: " +
                     cc.getName());
         }
@@ -399,6 +396,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
+
+        if (cc.isPortableEnabled() && !ctx.isEnterprise())
+            throw new IgniteCheckedException("Portable mode for cache is supported only in Enterprise edition " +
+                "(set 'portableEnabled' property to 'false') [cacheName=" + cc.getName() + ']');
     }
 
     /**
@@ -425,9 +426,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cfg Configuration.
      * @param objs Extra components.
-     * @throws GridException If failed to inject.
+     * @throws IgniteCheckedException If failed to inject.
      */
-    private void prepare(GridCacheConfiguration cfg, Object... objs) throws GridException {
+    private void prepare(GridCacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
@@ -445,9 +446,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Cache configuration.
      * @param rsrc Resource.
      * @param near Near flag.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void prepare(GridCacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws GridException {
+    private void prepare(GridCacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
         if (rsrc != null) {
             ctx.resource().injectGeneric(rsrc);
 
@@ -486,7 +487,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 ctx.resource().cleanupGeneric(rsrc);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cleanup resource: " + rsrc, e);
             }
         }
@@ -494,7 +495,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked"})
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -667,10 +668,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 String cacheName = cfg.getName();
 
                 if (cacheName != null)
-                    throw new GridException("Duplicate cache name found (check configuration and " +
+                    throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
                         "assign unique name to each cache): " + cacheName);
                 else
-                    throw new GridException("Default cache has already been configured (check configuration and " +
+                    throw new IgniteCheckedException("Default cache has already been configured (check configuration and " +
                         "assign unique name to each cache).");
             }
 
@@ -874,7 +875,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs) throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         if (ctx.isDaemon() || F.isEmpty(ctx.config().getCacheConfiguration()))
             return;
 
@@ -908,9 +909,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cfgs Caches.
      * @return Maximum detected preload order.
-     * @throws GridException If validation failed.
+     * @throws IgniteCheckedException If validation failed.
      */
-    private int validatePreloadOrder(GridCacheConfiguration[] cfgs) throws GridException {
+    private int validatePreloadOrder(GridCacheConfiguration[] cfgs) throws IgniteCheckedException {
         int maxOrder = 0;
 
         for (GridCacheConfiguration cfg : cfgs) {
@@ -918,18 +919,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (preloadOrder > 0) {
                 if (cfg.getCacheMode() == LOCAL)
-                    throw new GridException("Preload order set for local cache (fix configuration and restart the " +
+                    throw new IgniteCheckedException("Preload order set for local cache (fix configuration and restart the " +
                         "node): " + cfg.getName());
 
                 if (cfg.getPreloadMode() == GridCachePreloadMode.NONE)
-                    throw new GridException("Only caches with SYNC or ASYNC preload mode can be set as preload " +
+                    throw new IgniteCheckedException("Only caches with SYNC or ASYNC preload mode can be set as preload " +
                         "dependency for other caches [cacheName=" + cfg.getName() +
                         ", preloadMode=" + cfg.getPreloadMode() + ", preloadOrder=" + cfg.getPreloadOrder() + ']');
 
                 maxOrder = Math.max(maxOrder, preloadOrder);
             }
             else if (preloadOrder < 0)
-                throw new GridException("Preload order cannot be negative for cache (fix configuration and restart " +
+                throw new IgniteCheckedException("Preload order cannot be negative for cache (fix configuration and restart " +
                     "the node) [cacheName=" + cfg.getName() + ", preloadOrder=" + preloadOrder + ']');
         }
 
@@ -998,9 +999,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Checks that remote caches has configuration compatible with the local.
      *
      * @param rmt Node.
-     * @throws GridException If check failed.
+     * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(ClusterNode rmt) throws GridException {
+    private void checkCache(ClusterNode rmt) throws IgniteCheckedException {
         GridCacheAttributes[] rmtAttrs = U.cacheAttributes(rmt);
         GridCacheAttributes[] locAttrs = U.cacheAttributes(ctx.discovery().localNode());
 
@@ -1200,10 +1201,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cache Cache.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onKernalStart(GridCacheAdapter<?, ?> cache) throws GridException {
+    private void onKernalStart(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> ctx = cache.context();
 
         // Start DHT cache as well.
@@ -1233,7 +1234,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -1349,7 +1350,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -1454,7 +1455,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     qryMgr.remove(key, keyBytes);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
                 }
             }
@@ -1664,11 +1665,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param o Cache component.
      * @param cacheName Cache name.
      * @param near Near flag.
-     * @throws GridException If registration failed.
+     * @throws IgniteCheckedException If registration failed.
      */
     @SuppressWarnings("unchecked")
     private void registerMbean(Object o, @Nullable String cacheName, boolean near)
-        throws GridException {
+        throws IgniteCheckedException {
         assert o != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
@@ -1686,7 +1687,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         (Class<Object>)itf);
                 }
                 catch (JMException e) {
-                    throw new GridException("Failed to register MBean for component: " + o, e);
+                    throw new IgniteCheckedException("Failed to register MBean for component: " + o, e);
                 }
 
                 break;
@@ -1797,7 +1798,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (locNode == null)
-                throw new GridRuntimeException("Local node is not included into affinity nodes for 'LOCAL' cache");
+                throw new IgniteException("Local node is not included into affinity nodes for 'LOCAL' cache");
 
             List<List<ClusterNode>> res = new ArrayList<>(partitions());
 

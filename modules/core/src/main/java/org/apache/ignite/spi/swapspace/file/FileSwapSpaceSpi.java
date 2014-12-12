@@ -267,7 +267,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         try {
             dir = U.resolveWorkDirectory(path, true);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e);
         }
 
@@ -524,7 +524,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         final Iterator<Map.Entry<SwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
-            @Override protected Map.Entry<byte[], byte[]> onNext() throws GridException {
+            @Override protected Map.Entry<byte[], byte[]> onNext() throws IgniteCheckedException {
                 Map.Entry<SwapKey, byte[]> x = iter.next();
 
                 return new T2<>(keyBytes(x.getKey()), x.getValue());
@@ -556,7 +556,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             try {
                 keyBytes = marsh.marshal(key.key());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);
             }
 
@@ -1434,7 +1434,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                                             f.write(vals, sign);
                                         }
                                         catch (Exception e) {
-                                            throw new GridRuntimeException(e);
+                                            throw new IgniteException(e);
                                         }
                                     }
                                 }
@@ -1467,7 +1467,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                                             buf = c.compact(vals, writeBufSize);
                                         }
                                         catch (IOException e) {
-                                            throw new GridRuntimeException(e);
+                                            throw new IgniteException(e);
                                         }
                                     }
 
@@ -1493,7 +1493,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                                                 w.write(vals, buf, sign);
                                             }
                                             catch (Exception e) {
-                                                throw new GridRuntimeException(e);
+                                                throw new IgniteException(e);
                                             }
                                         }
                                     }
@@ -1508,7 +1508,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                     }
                 });
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteSpiException(e);
             }
         }
@@ -1797,7 +1797,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                             bytes = entry.getValue().value(Space.this);
                         }
                         catch (IgniteSpiException e) {
-                            throw new GridRuntimeException(e);
+                            throw new IgniteException(e);
                         }
 
                         if (bytes != null) {
@@ -1831,7 +1831,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                         Space.this.remove(last.getKey(), false);
                     }
                     catch (IgniteSpiException e) {
-                        throw new GridRuntimeException(e);
+                        throw new IgniteException(e);
                     }
                     finally {
                         last = null;

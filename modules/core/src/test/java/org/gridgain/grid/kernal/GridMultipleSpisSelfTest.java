@@ -104,7 +104,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
             try {
                 ignite1.compute().execute(GridTestMultipleSpisTask.class.getName(), ignite1.cluster().localNode().id());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 e.printStackTrace();
 
                 assert false : "Unexpected exception.";
@@ -168,7 +168,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top,
-            ComputeJob job) throws GridException {
+            ComputeJob job) throws IgniteCheckedException {
             if (getName().equals(expName))
                 isTaskLoadBalancingCalled = true;
             else
@@ -230,7 +230,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
             assert subgrid.size() == 2;
             assert taskSes != null;
             assert ignite != null;
@@ -244,7 +244,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws GridException {
+            List<ComputeJobResult> received) throws IgniteCheckedException {
             if (res.getException() != null)
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -277,14 +277,14 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public UUID execute() throws GridException {
+        @Override public UUID execute() throws IgniteCheckedException {
             assert locId != null;
             assert jobSes != null;
             assert argument(0) != null;
 
             // Should always fail on task originating node and work on another one.
             if (locId.equals(argument(0)))
-                throw new GridException("Expected exception to failover job.");
+                throw new IgniteCheckedException("Expected exception to failover job.");
 
             // Use checkpoint on job side. This will happen on remote node.
             jobSes.loadCheckpoint("test");

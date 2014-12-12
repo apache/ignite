@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.continuous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -97,7 +98,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -153,7 +154,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     log.debug("Failed to send pending start request to node (is node alive?): " +
                                         nodeId);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to send pending start request to node: " + nodeId, e);
 
                                 completeStartFuture(routineId);
@@ -221,7 +222,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     try {
                         msg.data(marsh.unmarshal(msg.dataBytes(), null));
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
 
                         return;
@@ -265,7 +266,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -325,7 +326,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to register continuous handler.", e);
                     }
                 }
@@ -379,7 +380,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 hnd.p2pMarshal(ctx);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
 
@@ -396,7 +397,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         try {
                             msg.data(marsh.unmarshal(msg.dataBytes(), null));
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
 
                             return;
@@ -465,7 +466,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         // Stop routine with exception. Continue and complete
                         // future otherwise.
                         if (!ids.isEmpty()) {
-                            f.onDone(new GridException("Failed to get start acknowledgement from nodes (timeout " +
+                            f.onDone(new IgniteCheckedException("Failed to get start acknowledgement from nodes (timeout " +
                                 "expired): " + ids + ". Will unregister all continuous listeners."));
 
                             stopRoutine(routineId);
@@ -487,7 +488,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 sendWithRetries(nodes, req, null);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 startFuts.remove(routineId);
                 waitForStartAck.remove(routineId);
 
@@ -512,9 +513,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if (registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
                     hnd.onListenerRegistered(routineId, ctx);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(ctx,
-                    new GridException("Failed to register handler locally: " + hnd, e));
+                    new IgniteCheckedException("Failed to register handler locally: " + hnd, e));
             }
         }
 
@@ -602,7 +603,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     stopFuts.remove(routineId);
                     waitForStopAck.remove(routineId);
 
@@ -625,10 +626,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param obj Notification object.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void addNotification(UUID nodeId, UUID routineId, @Nullable Object obj, @Nullable Object orderedTopic)
-        throws GridException {
+        throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
 
@@ -650,10 +651,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param toSnd Notification object to send.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private void sendNotification(UUID nodeId, UUID routineId, Collection<Object> toSnd,
-        @Nullable Object orderedTopic) throws GridException {
+        @Nullable Object orderedTopic) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert toSnd != null;
@@ -675,7 +676,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         GridContinuousHandler hnd = data.hnd;
 
-        GridException err = null;
+        IgniteCheckedException err = null;
 
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
@@ -696,7 +697,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 hnd.p2pUnmarshal(nodeId, ctx);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             err = e;
 
             U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
@@ -713,7 +714,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         data.autoUnsubscribe, false);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 err = e;
 
                 U.error(log, "Failed to register handler [nodeId=" + nodeId + ", routineId=" + routineId + ']', e);
@@ -727,7 +728,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Failed to send start acknowledgement to node (is node alive?): " + nodeId);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send start acknowledgement to node: " + nodeId, e);
         }
 
@@ -745,7 +746,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         UUID routineId = ack.routineId();
 
-        final GridException err = ack.data();
+        final IgniteCheckedException err = ack.data();
 
         if (err != null) {
             if (waitForStartAck.remove(routineId) != null) {
@@ -788,7 +789,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Failed to send stop acknowledgement to node (is node alive?): " + nodeId);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send stop acknowledgement to node: " + nodeId, e);
         }
     }
@@ -868,10 +869,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param autoUnsubscribe Automatic unsubscribe flag.
      * @param loc Local registration flag.
      * @return Whether listener was actually registered.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private boolean registerHandler(final UUID nodeId, final UUID routineId, final GridContinuousHandler hnd,
-        int bufSize, final long interval, boolean autoUnsubscribe, boolean loc) throws GridException {
+        int bufSize, final long interval, boolean autoUnsubscribe, boolean loc) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert hnd != null;
@@ -920,7 +921,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send notification to node (is node alive?): " + nodeId);
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to send notification to node: " + nodeId, e);
                                 }
                             }
@@ -984,10 +985,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(UUID nodeId, GridContinuousMessage msg, @Nullable Object orderedTopic)
-        throws GridException {
+        throws IgniteCheckedException {
         assert nodeId != null;
         assert msg != null;
 
@@ -1004,10 +1005,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(ClusterNode node, GridContinuousMessage msg, @Nullable Object orderedTopic)
-        throws GridException {
+        throws IgniteCheckedException {
         assert node != null;
         assert msg != null;
 
@@ -1019,10 +1020,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(Collection<? extends ClusterNode> nodes, GridContinuousMessage msg,
-        @Nullable Object orderedTopic) throws GridException {
+        @Nullable Object orderedTopic) throws IgniteCheckedException {
         assert !F.isEmpty(nodes);
         assert msg != null;
 
@@ -1060,7 +1061,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 catch (GridInterruptedException e) {
                     throw e;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!ctx.discovery().alive(node.id()))
                         throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
 
@@ -1301,9 +1302,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         /**
          * @param marsh Marshaller.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws GridException {
+        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             prjPredBytes = marsh.marshal(prjPred);
@@ -1312,9 +1313,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /**
          * @param marsh Marshaller.
          * @param ldr Class loader.
-         * @throws GridException In case of error.
+         * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert prjPred == null;
@@ -1687,7 +1688,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to resend stop request to node (is node alive?): " + id);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to resend stop request to node: " + id, e);
 
                                 ids.remove(id);

@@ -180,33 +180,33 @@ public class GridWebSessionFilter implements Filter {
             retries = retriesStr != null ? Integer.parseInt(retriesStr) : DFLT_MAX_RETRIES_ON_FAIL;
         }
         catch (NumberFormatException e) {
-            throw new GridRuntimeException("Maximum number of retries parameter is invalid: " + retriesStr, e);
+            throw new IgniteException("Maximum number of retries parameter is invalid: " + retriesStr, e);
         }
 
         Ignite webSesIgnite = G.ignite(gridName);
 
         if (webSesIgnite == null)
-            throw new GridRuntimeException("Grid for web sessions caching is not started (is it configured?): " +
+            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
         log = webSesIgnite.log();
 
         if (webSesIgnite == null)
-            throw new GridRuntimeException("Grid for web sessions caching is not started (is it configured?): " +
+            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
         cache = webSesIgnite.cache(cacheName);
 
         if (cache == null)
-            throw new GridRuntimeException("Cache for web sessions is not started (is it configured?): " + cacheName);
+            throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
 
         GridCacheConfiguration cacheCfg = cache.configuration();
 
         if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
-            throw new GridRuntimeException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
+            throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
 
         if (!cacheCfg.isEagerTtl())
-            throw new GridRuntimeException("Cache for web sessions cannot operate with lazy TTL. " +
+            throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
                 "Consider setting eagerTtl to true for cache: " + cacheName);
 
         if (cacheCfg.getCacheMode() == LOCAL)
@@ -280,7 +280,7 @@ public class GridWebSessionFilter implements Filter {
                 else
                     sesId = doFilter0(httpReq, res, chain);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to update web session: " + sesId, e);
             }
         }
@@ -295,10 +295,10 @@ public class GridWebSessionFilter implements Filter {
      * @return Session ID.
      * @throws IOException In case of I/O error.
      * @throws ServletException In case oif servlet error.
-     * @throws GridException In case of other error.
+     * @throws IgniteCheckedException In case of other error.
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
-        ServletException, GridException {
+        ServletException, IgniteCheckedException {
         GridWebSession cached;
 
         String sesId = httpReq.getRequestedSessionId();
@@ -399,8 +399,8 @@ public class GridWebSessionFilter implements Filter {
                 }
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Failed to save session: " + sesId, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to save session: " + sesId, e);
         }
 
         return cached;

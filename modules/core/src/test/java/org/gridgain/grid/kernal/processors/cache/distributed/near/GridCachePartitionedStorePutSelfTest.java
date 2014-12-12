@@ -9,15 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -118,7 +118,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             assert false;
 
             return null;
@@ -126,12 +126,12 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Object key, @Nullable Object val)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
             // No-op
         }
     }

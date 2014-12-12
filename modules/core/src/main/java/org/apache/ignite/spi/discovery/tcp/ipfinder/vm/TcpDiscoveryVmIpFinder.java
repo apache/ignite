@@ -64,7 +64,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                             addrsList.addAll(address(s));
                         }
                         catch (IgniteSpiException e) {
-                            throw new GridRuntimeException(e);
+                            throw new IgniteException(e);
                         }
                     }
                 }

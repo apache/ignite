@@ -9,11 +9,11 @@
 
 package org.apache.ignite.streamer.window;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -94,14 +94,14 @@ public class StreamerBoundedTimeWindow<E> extends StreamerWindowAdapter<E> {
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws GridException {
+    @Override public void checkConfiguration() throws IgniteCheckedException {
         if (timeInterval <= 0)
-            throw new GridException("Failed to initialize window (timeInterval must be positive): [windowClass=" +
+            throw new IgniteCheckedException("Failed to initialize window (timeInterval must be positive): [windowClass=" +
                 getClass().getSimpleName() + ", maxSize=" + maxSize + ", timeInterval=" + timeInterval + ", unique=" +
                 unique + ']');
 
         if (maxSize < 0)
-            throw new GridException("Failed to initialize window (maximumSize cannot be negative): [windowClass=" +
+            throw new IgniteCheckedException("Failed to initialize window (maximumSize cannot be negative): [windowClass=" +
                 getClass().getSimpleName() + ", maxSize=" + maxSize + ", timeInterval=" + timeInterval + ", unique=" +
                 unique + ']');
     }

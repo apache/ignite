@@ -41,9 +41,9 @@ public interface IgniteFsRecordResolver extends Serializable {
      * @param stream Input stream for split file.
      * @param suggestedRecord Suggested file system record.
      * @return New adjusted record. If this method returns {@code null}, original record is ignored.
-     * @throws GridException If resolve failed.
+     * @throws IgniteCheckedException If resolve failed.
      * @throws IOException If resolve failed.
      */
     @Nullable public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord) throws GridException, IOException;
+        IgniteFsFileRange suggestedRecord) throws IgniteCheckedException, IOException;
 }

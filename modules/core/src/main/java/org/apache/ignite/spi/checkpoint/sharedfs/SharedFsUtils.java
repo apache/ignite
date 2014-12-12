@@ -35,12 +35,12 @@ final class SharedFsUtils {
      * @param m Grid marshaller.
      * @param log Messages logger.
      * @return Checkpoint data object read from given file.
-     * @throws GridException Thrown if data could not be converted
+     * @throws IgniteCheckedException Thrown if data could not be converted
      *    to {@link SharedFsCheckpointData} object.
      * @throws IOException Thrown if file read error occurred.
      */
     static SharedFsCheckpointData read(File file, IgniteMarshaller m, IgniteLogger log)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;
         assert log != null;
@@ -63,11 +63,11 @@ final class SharedFsUtils {
      * @param data Checkpoint data.
      * @param m Grid marshaller.
      * @param log Messages logger.
-     * @throws GridException Thrown if data could not be marshalled.
+     * @throws IgniteCheckedException Thrown if data could not be marshalled.
      * @throws IOException Thrown if file write operation failed.
      */
     static void write(File file, SharedFsCheckpointData data, IgniteMarshaller m, IgniteLogger log)
-        throws IOException, GridException {
+        throws IOException, IgniteCheckedException {
         assert file != null;
         assert m != null;
         assert data != null;

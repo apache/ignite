@@ -382,10 +382,10 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * Tests marshal arrays of primitives.
      *
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
-    public void testMarshallingArrayOfPrimitives() throws GridException {
+    public void testMarshallingArrayOfPrimitives() throws IgniteCheckedException {
         char[] inChars = "vasya".toCharArray();
 
         char[] outChars = unmarshal(marshal(inChars));
@@ -922,19 +922,19 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @param bean Object to marshal.
      * @return Byte buffer.
-     * @throws GridException Thrown if any exception occurs while marshalling.
+     * @throws IgniteCheckedException Thrown if any exception occurs while marshalling.
      */
-    protected static byte[] marshal(Object bean) throws GridException {
+    protected static byte[] marshal(Object bean) throws IgniteCheckedException {
         return marsh.marshal(bean);
     }
 
     /**
      * @param buf Byte buffer to unmarshal.
      * @return Unmarshalled object.
-     * @throws GridException Thrown if any exception occurs while unmarshalling.
+     * @throws IgniteCheckedException Thrown if any exception occurs while unmarshalling.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    protected static <T> T unmarshal(byte[] buf) throws GridException {
+    protected static <T> T unmarshal(byte[] buf) throws IgniteCheckedException {
         return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
     }
 

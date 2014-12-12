@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -17,7 +17,7 @@ import java.io.*;
 /**
  * When log debug mode is disabled this exception should be logged in short form - without stack trace.
  */
-public class GridInternalException extends GridException {
+public class GridInternalException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

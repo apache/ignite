@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Thrown when IPC runs out of system resources (for example, no more free shared memory is
  * available in operating system).
  */
-public class GridIpcOutOfSystemResourcesException extends GridException {
+public class GridIpcOutOfSystemResourcesException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

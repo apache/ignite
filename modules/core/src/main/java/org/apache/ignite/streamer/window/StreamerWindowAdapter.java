@@ -9,15 +9,15 @@
 
 package org.apache.ignite.streamer.window;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -81,7 +81,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract GridStreamerWindowIterator<E> iterator0();
 
     /** {@inheritDoc} */
-    @Override public boolean enqueue(E evt) throws GridException {
+    @Override public boolean enqueue(E evt) throws IgniteCheckedException {
         lock.readLock();
 
         try {
@@ -102,12 +102,12 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enqueue(E... evts) throws GridException {
+    @Override public boolean enqueue(E... evts) throws IgniteCheckedException {
         return enqueueAll(Arrays.asList(evts));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enqueueAll(Collection<E> evts) throws GridException {
+    @Override public boolean enqueueAll(Collection<E> evts) throws IgniteCheckedException {
         lock.readLock();
 
         try {
@@ -144,17 +144,17 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract boolean enqueue0(E evt);
 
     /** {@inheritDoc} */
-    @Override public E dequeue() throws GridException {
+    @Override public E dequeue() throws IgniteCheckedException {
         return F.first(dequeue(1));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> dequeueAll() throws GridException {
+    @Override public Collection<E> dequeueAll() throws IgniteCheckedException {
         return dequeue(size());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> dequeue(int cnt) throws GridException {
+    @Override public Collection<E> dequeue(int cnt) throws IgniteCheckedException {
         lock.readLock();
 
         try {
@@ -182,17 +182,17 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> dequeue0(int cnt);
 
     /** {@inheritDoc} */
-    @Override public E pollEvicted() throws GridException {
+    @Override public E pollEvicted() throws IgniteCheckedException {
         return F.first(pollEvicted(1));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvictedAll() throws GridException {
+    @Override public Collection<E> pollEvictedAll() throws IgniteCheckedException {
         return pollEvicted(evictionQueueSize());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvicted(int cnt) throws GridException {
+    @Override public Collection<E> pollEvicted(int cnt) throws IgniteCheckedException {
         lock.readLock();
 
         try {
@@ -219,7 +219,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> pollEvicted0(int cnt);
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvictedBatch() throws GridException {
+    @Override public Collection<E> pollEvictedBatch() throws IgniteCheckedException {
         lock.readLock();
 
         try {
@@ -247,7 +247,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> pollEvictedBatch0();
 
     /** {@inheritDoc} */
-    @Override public final void start() throws GridException {
+    @Override public final void start() throws IgniteCheckedException {
         checkConfiguration();
 
         if (idxs != null) {
@@ -278,9 +278,9 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     /**
      * Check window configuration.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void checkConfiguration() throws GridException;
+    protected abstract void checkConfiguration() throws IgniteCheckedException;
 
     /**
      * Reset routine.
@@ -426,7 +426,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public void clearEvicted() throws GridException {
+    @Override public void clearEvicted() throws IgniteCheckedException {
         pollEvictedAll();
     }
 
@@ -435,9 +435,9 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
      *
      * @param evt Event.
      * @param rmv Remove flag.
-     * @throws GridException If index update failed.
+     * @throws IgniteCheckedException If index update failed.
      */
-    protected void updateIndexes(E evt, boolean rmv) throws GridException {
+    protected void updateIndexes(E evt, boolean rmv) throws IgniteCheckedException {
         if (idxs != null) {
             StreamerIndexUpdateSync sync = new StreamerIndexUpdateSync();
 
@@ -516,8 +516,8 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
                     try {
                         updateIndexes(evt, true);
                     }
-                    catch (GridException e) {
-                        throw new GridRuntimeException("Faied to remove event: " + evt, e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException("Faied to remove event: " + evt, e);
                      }
                 }
             }

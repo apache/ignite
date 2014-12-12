@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Internal exception thrown when attempted to update range that is no longer present
  * in file affinity map.
  */
-public class GridGgfsInvalidRangeException extends GridException {
+public class GridGgfsInvalidRangeException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

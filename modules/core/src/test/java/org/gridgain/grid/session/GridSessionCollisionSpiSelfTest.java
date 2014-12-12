@@ -60,7 +60,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class GridSessionTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -98,7 +98,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Nothing to reduce.
             return null;
         }
@@ -125,7 +125,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
                     if (log.isInfoEnabled())
                         log.info("Set session attribute for job: " + jobId);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Failed to set session attribute: " + job, e);
                 }
 

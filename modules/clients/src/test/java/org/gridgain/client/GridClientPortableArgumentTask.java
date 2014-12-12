@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -19,7 +19,7 @@ import java.util.*;
  */
 public class GridClientPortableArgumentTask extends GridTaskSingleJobSplitAdapter {
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, Object arg) throws GridException {
+    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
         Collection args = (Collection)arg;
 
         Iterator<Object> it = args.iterator();

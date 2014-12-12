@@ -62,7 +62,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
             fail("Exception should be thrown.");
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             // Expected exception.
         }
         finally {

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown when router did not return route map. In this case pipeline execution is stopped
  * and corresponding callback is executed on originating node.
  */
-public class GridStreamerRouteFailedException extends GridException {
+public class GridStreamerRouteFailedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

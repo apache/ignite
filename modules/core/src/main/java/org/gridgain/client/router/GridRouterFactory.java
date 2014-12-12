@@ -9,8 +9,8 @@
 
 package org.gridgain.client.router;
 
+import org.apache.ignite.*;
 import org.gridgain.client.router.impl.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -53,9 +53,9 @@ public final class GridRouterFactory {
      *
      * @param cfg Router configuration.
      * @return Started router.
-     * @throws GridException If router start failed.
+     * @throws IgniteCheckedException If router start failed.
      */
-    public static GridTcpRouter startTcpRouter(GridTcpRouterConfiguration cfg) throws GridException {
+    public static GridTcpRouter startTcpRouter(GridTcpRouterConfiguration cfg) throws IgniteCheckedException {
         GridTcpRouterImpl router = new GridTcpRouterImpl(cfg);
 
         router.start();

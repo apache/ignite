@@ -10,8 +10,8 @@
 package org.apache.ignite.streamer.index.hash;
 
 import com.romix.scala.collection.concurrent.*;
+import org.apache.ignite.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -57,7 +57,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -92,7 +92,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
         }
         else {
             if (isUnique())
-                throw new GridException("Index unique key violation [evt=" + evt + ", key=" + key + ']');
+                throw new IgniteCheckedException("Index unique key violation [evt=" + evt + ", key=" + key + ']');
 
             V val = updater.onAdded(oldEntry, evt);
 
@@ -122,7 +122,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws GridException {
+    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)

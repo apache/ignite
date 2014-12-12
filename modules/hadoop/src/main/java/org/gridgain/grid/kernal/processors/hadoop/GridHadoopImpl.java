@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -68,7 +69,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+    @Nullable @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.status(jobId);
@@ -82,7 +83,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException {
+    @Nullable @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.counters(jobId);
@@ -96,7 +97,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Nullable @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.finishFuture(jobId);
@@ -110,7 +111,7 @@ public class GridHadoopImpl implements GridHadoop {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+    @Override public boolean kill(GridHadoopJobId jobId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return proc.kill(jobId);

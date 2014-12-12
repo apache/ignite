@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -150,16 +150,16 @@ public class GridLoadTestArgs {
      * @return JVM property value or environment variable value if
      *         JVM property is {@code null} or default value if both
      *         are {@code null}.
-     * @throws GridException If the value didn't pass the validation.
+     * @throws IgniteCheckedException If the value didn't pass the validation.
      */
     public static int getIntProperty(String name, int dflt, IgniteClosure<Integer, String> validClo)
-        throws GridException {
+        throws IgniteCheckedException {
         int ret = getIntProperty(name, dflt);
 
         String errMsg = validClo.apply(ret);
 
         if (errMsg != null)
-            throw new GridException("Illegal value for " + name + " parameter: " + errMsg);
+            throw new IgniteCheckedException("Illegal value for " + name + " parameter: " + errMsg);
 
         return ret;
     }

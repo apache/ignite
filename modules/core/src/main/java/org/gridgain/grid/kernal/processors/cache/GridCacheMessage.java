@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -161,10 +161,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /**
      * @param filters Predicate filters.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void prepareFilter(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
-        GridCacheSharedContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         if (filters != null)
             for (IgnitePredicate filter : filters)
                 prepareObject(filter, ctx);
@@ -173,9 +173,9 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /**
      * @param o Object to prepare for marshalling.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareObject(@Nullable Object o, GridCacheSharedContext<K, V> ctx) throws GridException {
+    protected final void prepareObject(@Nullable Object o, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         if (!skipPrepare && o != null) {
             GridDeploymentInfo d = ctx.deploy().globalDeploymentInfo();
 
@@ -201,10 +201,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /**
      * @param col Collection of objects to prepare for marshalling.
      * @param ctx Cache context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void prepareObjects(@Nullable Iterable<?> col, GridCacheSharedContext<K, V> ctx)
-        throws GridException {
+        throws IgniteCheckedException {
         if (col != null)
             for (Object o : col)
                 prepareObject(o, ctx);
@@ -239,9 +239,9 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * and is responsible for pre-marshalling state.
      *
      * @param ctx Cache context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -251,18 +251,18 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      *
      * @param ctx Context.
      * @param ldr Class loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 
     /**
      * @param info Entry to marshal.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfo(GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws GridException {
+    protected final void marshalInfo(GridCacheEntryInfo<K, V> info, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (info != null) {
@@ -279,10 +279,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param info Entry to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalInfo(GridCacheEntryInfo<K, V> info, GridCacheContext<K, V> ctx,
-        ClassLoader ldr) throws GridException {
+        ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -293,10 +293,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /**
      * @param infos Entries to marshal.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void marshalInfos(Iterable<? extends GridCacheEntryInfo<K, V>> infos, GridCacheSharedContext<K, V> ctx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ctx != null;
 
         if (infos != null)
@@ -308,10 +308,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param infos Entries to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalInfos(Iterable<? extends GridCacheEntryInfo<K, V>> infos,
-        GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        GridCacheContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -323,10 +323,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /**
      * @param txEntries Entries to marshal.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void marshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, GridCacheSharedContext<K, V> ctx)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ctx != null;
 
         if (txEntries != null) {
@@ -346,10 +346,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param txEntries Entries to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, boolean near,
-        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -363,10 +363,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param filter Collection to marshal.
      * @param ctx Context.
      * @return Marshalled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected final <T> byte[][] marshalFilter(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        GridCacheSharedContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (filter == null)
@@ -391,11 +391,11 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @param ldr Loader.
      * @return Unmarshalled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable protected final <T> IgnitePredicate<GridCacheEntry<K, V>>[] unmarshalFilter(
-        @Nullable byte[][] byteCol, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        @Nullable byte[][] byteCol, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -417,10 +417,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param col Values collection to marshal.
      * @param ctx Context.
      * @return Marshaled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected List<GridCacheValueBytes> marshalValuesCollection(@Nullable Collection<?> col,
-        GridCacheSharedContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (col == null)
@@ -444,11 +444,11 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @param ldr Loader.
      * @return Unmarshalled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected <T> List<T> unmarshalValueBytesCollection(@Nullable Collection<GridCacheValueBytes> byteCol,
         GridCacheSharedContext<K, V> ctx, ClassLoader ldr)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -472,10 +472,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param col Collection to marshal.
      * @param ctx Context.
      * @return Marshalled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected List<byte[]> marshalCollection(@Nullable Collection<?> col,
-        GridCacheSharedContext<K, V> ctx) throws GridException {
+        GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (col == null)
@@ -498,10 +498,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @param ldr Loader.
      * @return Unmarshalled collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected <T> List<T> unmarshalCollection(@Nullable Collection<byte[]> byteCol,
-        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -522,11 +522,11 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param map Map to marshal.
      * @param ctx Context.
      * @return Marshalled map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("TypeMayBeWeakened") // Don't weaken type to clearly see that it's linked hash map.
     @Nullable protected final LinkedHashMap<byte[], Boolean> marshalBooleanLinkedMap(
-        @Nullable LinkedHashMap<?, Boolean> map, GridCacheSharedContext<K, V> ctx) throws GridException {
+        @Nullable LinkedHashMap<?, Boolean> map, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         if (map == null)
@@ -549,10 +549,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @param ldr Loader.
      * @return Unmarshalled map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable protected final <K1> LinkedHashMap<K1, Boolean> unmarshalBooleanLinkedMap(
-        @Nullable Map<byte[], Boolean> byteMap, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+        @Nullable Map<byte[], Boolean> byteMap, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 

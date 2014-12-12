@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.lang.reflect.*;
 import java.util.concurrent.*;
@@ -32,12 +32,12 @@ final class GridResourceUtils {
      * @param field Field where resource should be injected.
      * @param target Target object.
      * @param rsrc Resource object which should be injected in target object field.
-     * @throws GridException Thrown if unable to inject resource.
+     * @throws IgniteCheckedException Thrown if unable to inject resource.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    static void inject(Field field, Object target, Object rsrc) throws GridException {
+    static void inject(Field field, Object target, Object rsrc) throws IgniteCheckedException {
         if (rsrc != null && !field.getType().isAssignableFrom(rsrc.getClass()))
-            throw new GridException("Resource field is not assignable from the resource: " + rsrc.getClass());
+            throw new IgniteCheckedException("Resource field is not assignable from the resource: " + rsrc.getClass());
 
         try {
             // Override default Java access check.
@@ -46,7 +46,7 @@ final class GridResourceUtils {
             field.set(target, rsrc);
         }
         catch (SecurityException | ExceptionInInitializerError | IllegalAccessException e) {
-            throw new GridException("Failed to inject resource [field=" + field.getName() +
+            throw new IgniteCheckedException("Failed to inject resource [field=" + field.getName() +
                 ", target=" + target + ", rsrc=" + rsrc + ']', e);
         }
     }
@@ -59,13 +59,13 @@ final class GridResourceUtils {
      * @param mtd Method which should be invoked to inject resource.
      * @param target Target object.
      * @param rsrc Resource object which should be injected.
-     * @throws GridException Thrown if unable to inject resource.
+     * @throws IgniteCheckedException Thrown if unable to inject resource.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    static void inject(Method mtd, Object target, Object rsrc) throws GridException {
+    static void inject(Method mtd, Object target, Object rsrc) throws IgniteCheckedException {
         if (mtd.getParameterTypes().length != 1 ||
             (rsrc != null && !mtd.getParameterTypes()[0].isAssignableFrom(rsrc.getClass()))) {
-            throw new GridException("Setter does not have single parameter of required type [type=" +
+            throw new IgniteCheckedException("Setter does not have single parameter of required type [type=" +
                 rsrc.getClass().getName() + ", setter=" + mtd + ']');
         }
 
@@ -75,7 +75,7 @@ final class GridResourceUtils {
             mtd.invoke(target, rsrc);
         }
         catch (IllegalAccessException | ExceptionInInitializerError | InvocationTargetException e) {
-            throw new GridException("Failed to inject resource [method=" + mtd.getName() +
+            throw new IgniteCheckedException("Failed to inject resource [method=" + mtd.getName() +
                 ", target=" + target + ", rsrc=" + rsrc + ']', e);
         }
     }

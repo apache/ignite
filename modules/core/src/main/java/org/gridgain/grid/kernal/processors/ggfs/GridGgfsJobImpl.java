@@ -71,7 +71,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute() throws GridException {
+    @Override public Object execute() throws IgniteCheckedException {
         IgniteFs ggfs = ignite.fileSystem(ggfsName);
 
         try (IgniteFsInputStream in = ggfs.open(path)) {
@@ -93,7 +93,7 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
             return job.execute(ggfs, new IgniteFsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
-            throw new GridException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
+            throw new IgniteCheckedException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
                 ", path=" + path + ", start=" + start + ", len=" + len + ']', e);
         }
     }

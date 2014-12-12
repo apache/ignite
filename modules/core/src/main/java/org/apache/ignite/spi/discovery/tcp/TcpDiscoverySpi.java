@@ -686,7 +686,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         try {
             addrs = U.resolveLocalAddresses(locHost);
         }
-        catch (IOException | GridException e) {
+        catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
         }
 
@@ -706,7 +706,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (extAddrs != null)
                 locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
         }
 
@@ -1129,7 +1129,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 return node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']');
 
@@ -1148,7 +1148,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
-        throws GridException {
+        throws IgniteCheckedException {
         assert addr != null;
 
         if (F.contains(locNodeAddrs, addr))
@@ -1194,7 +1194,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         return t;
                     }
-                    catch (IOException | GridException e) {
+                    catch (IOException | IgniteCheckedException e) {
                         if (errs == null)
                             errs = new ArrayList<>();
 
@@ -1270,7 +1270,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     locNode.setAttributes(attrs);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
@@ -1406,7 +1406,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 return false;
 
             boolean retry = false;
-            GridException errs = null;
+            IgniteCheckedException errs = null;
 
             for (InetSocketAddress addr : addrs) {
                 try {
@@ -1451,7 +1451,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
                 catch (IgniteSpiException e) {
                     if (errs == null)
-                        errs = new GridException("Multiple connection attempts failed.");
+                        errs = new IgniteCheckedException("Multiple connection attempts failed.");
 
                     errs.addSuppressed(e);
 
@@ -1592,7 +1592,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 errs.add(e);
             }
-            catch (IOException | GridException e) {
+            catch (IOException | IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.error("Exception on direct send: " + e.getMessage(), e);
 
@@ -1655,7 +1655,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             node.setAttributes(attrs);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
         }
     }
@@ -1676,7 +1676,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             return marsh.unmarshal(credBytes, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal node security credentials: " + node.id(), e);
         }
     }
@@ -2342,7 +2342,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 try {
                                     res = pingNode(addr, null).get1() != null;
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to ping node [addr=" + addr +
                                             ", err=" + e.getMessage() + ']');
@@ -2728,7 +2728,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     success = true;
                                 }
                             }
-                            catch (IOException | GridException e) {
+                            catch (IOException | IgniteCheckedException e) {
                                 if (errs == null)
                                     errs = new ArrayList<>();
 
@@ -2849,7 +2849,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             break addr;
                         }
-                        catch (IOException | GridException e) {
+                        catch (IOException | IgniteCheckedException e) {
                             if (errs == null)
                                 errs = new ArrayList<>();
 
@@ -3132,7 +3132,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         node.setAttributes(attrs);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
                         U.addressesAsString(node) + ']');
 
@@ -3583,7 +3583,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 authFailed = false;
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
@@ -3958,7 +3958,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Sent verified node left message to leaving node: " + msg);
                     }
-                    catch (GridException | IOException e) {
+                    catch (IgniteCheckedException | IOException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send verified node left message to leaving node [msg=" + msg +
                                 ", err=" + e.getMessage() + ']');
@@ -4659,7 +4659,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     return;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
@@ -4868,7 +4868,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (!client)
                             writeToSocket(sock, RES_OK);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             U.error(log, "Caught exception on message read [sock=" + sock +
                                 ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
@@ -5123,7 +5123,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     clearNodeAddedMessage(msg);
                 }
             }
-            catch (GridException | IOException e) {
+            catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
                         ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);

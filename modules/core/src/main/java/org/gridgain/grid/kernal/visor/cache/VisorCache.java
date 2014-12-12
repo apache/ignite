@@ -88,9 +88,9 @@ public class VisorCache implements Serializable {
      * @param c Actual cache.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
-     * @throws GridException
+     * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, GridCache c, int sample) throws GridException {
+    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
         assert g != null;
         assert c != null;
 
@@ -105,7 +105,7 @@ public class VisorCache implements Serializable {
             swapSize = ca.swapSize();
             swapKeys = ca.swapKeys();
         }
-        catch (GridException ignored) {
+        catch (IgniteCheckedException ignored) {
             swapSize = -1;
             swapKeys = -1;
         }

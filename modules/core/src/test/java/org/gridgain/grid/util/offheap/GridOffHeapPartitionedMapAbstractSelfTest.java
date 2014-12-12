@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.offheap;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.util.lang.*;
@@ -605,7 +605,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                         }
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     fail("Unexpected exception caught: " + e);
                 }
             }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.email;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -34,9 +35,9 @@ public abstract class GridEmailProcessorAdapter extends GridProcessorAdapter {
      * @param subj Email subject.
      * @param body Email body.
      * @param html HTML format flag.
-     * @throws org.gridgain.grid.GridException Thrown in case of any failure on sending.
+     * @throws IgniteCheckedException Thrown in case of any failure on sending.
      */
-    public abstract void sendNow(String subj, String body, boolean html) throws GridException;
+    public abstract void sendNow(String subj, String body, boolean html) throws IgniteCheckedException;
 
     /**
      * Sends given email in the current thread blocking until it's either successfully sent or failed.
@@ -46,9 +47,9 @@ public abstract class GridEmailProcessorAdapter extends GridProcessorAdapter {
      * @param body Email body.
      * @param html HTML format flag.
      * @param addrs Addresses.
-     * @throws GridException Thrown in case of any failure on sending.
+     * @throws IgniteCheckedException Thrown in case of any failure on sending.
      */
-    public abstract void sendNow(String subj, String body, boolean html, Collection<String> addrs) throws GridException;
+    public abstract void sendNow(String subj, String body, boolean html, Collection<String> addrs) throws IgniteCheckedException;
 
     /**
      * Schedules sending of given email to all admin emails, if any. If SMTP is disabled or admin emails

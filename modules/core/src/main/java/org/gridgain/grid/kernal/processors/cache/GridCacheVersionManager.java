@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -76,7 +76,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
 
         dataCenterId = 0; //cctx.dataCenterId(); TODO GG-9141 Grab data center ID from DR manager.
@@ -87,7 +87,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             onReceived(n.id(), n.metrics().getLastDataVersion());
     }

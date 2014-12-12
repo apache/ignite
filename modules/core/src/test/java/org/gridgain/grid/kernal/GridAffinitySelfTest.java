@@ -71,9 +71,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testAffinity() throws GridException {
+    public void testAffinity() throws IgniteCheckedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 

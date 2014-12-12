@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient reducer subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method and
- * properly wraps {@link GridException} into {@link GridClosureException} instance.
+ * properly wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
  * @see RX3
  */
 public abstract class IgniteReducer3X<E1, E2, E3, R> implements IgniteReducer3<E1, E2, E3, R> {
@@ -27,16 +27,16 @@ public abstract class IgniteReducer3X<E1, E2, E3, R> implements IgniteReducer3<E
         try {
             return applyx();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }
 
     /**
-     * Reducer body that can throw {@link GridException}.
+     * Reducer body that can throw {@link IgniteCheckedException}.
      *
      * @return Reducer return value.
-     * @throws GridException Thrown in case of any error condition inside of the reducer.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the reducer.
      */
-    public abstract R applyx() throws GridException;
+    public abstract R applyx() throws IgniteCheckedException;
 }

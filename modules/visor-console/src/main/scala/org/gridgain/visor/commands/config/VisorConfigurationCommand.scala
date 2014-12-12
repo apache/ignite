@@ -11,17 +11,18 @@
 
 package org.gridgain.visor.commands.config
 
+import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
+import org.gridgain.grid.util.{GridUtils => U}
+
+import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.lang.IgniteBiTuple
-import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
 
 import java.lang.System._
 
-import org.gridgain.grid._
-import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
-import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.commands.cache.VisorCacheCommand
+import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
 
 import scala.collection.JavaConversions._
@@ -205,7 +206,7 @@ class VisorConfigurationCommand {
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     break()

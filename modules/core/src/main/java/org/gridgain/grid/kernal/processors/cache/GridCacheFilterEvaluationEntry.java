@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -104,7 +105,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get() throws GridException {
+    @Nullable @Override public V get() throws IgniteCheckedException {
         throw new UnsupportedOperationException("get");
     }
 
@@ -119,7 +120,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V reload() throws GridException {
+    @Nullable @Override public V reload() throws IgniteCheckedException {
         throw new UnsupportedOperationException("reload");
     }
 
@@ -146,7 +147,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
         catch (GridCacheEntryRemovedException e) {
             assert false : "Entry should not become obsolete while holding lock";
 
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -158,7 +159,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
         catch (GridCacheEntryRemovedException e) {
             assert false : "Entry should not become obsolete while holding lock";
 
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -170,7 +171,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
         catch (GridCacheEntryRemovedException e) {
             assert false : "Entry should not become obsolete while holding lock";
 
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
@@ -196,7 +197,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         throw new UnsupportedOperationException("set");
     }
 
@@ -206,7 +207,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V setIfAbsent(V val) throws GridException {
+    @Nullable @Override public V setIfAbsent(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("setIfAbsent");
     }
 
@@ -217,7 +218,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
 
     /** {@inheritDoc} */
     @Override public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         throw new UnsupportedOperationException("setx");
     }
 
@@ -228,7 +229,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setxIfAbsent(@Nullable V val) throws GridException {
+    @Override public boolean setxIfAbsent(@Nullable V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("setxIfAbsent");
     }
 
@@ -238,7 +239,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         throw new UnsupportedOperationException("transform");
     }
 
@@ -248,7 +249,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V replace(V val) throws GridException {
+    @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("replace");
     }
 
@@ -258,7 +259,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(V val) throws GridException {
+    @Override public boolean replacex(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("replacex");
     }
 
@@ -268,7 +269,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(V oldVal, V newVal) throws IgniteCheckedException {
         throw new UnsupportedOperationException("replace");
     }
 
@@ -279,7 +280,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         throw new UnsupportedOperationException("remove");
     }
 
@@ -289,7 +290,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         throw new UnsupportedOperationException("removex");
     }
 
@@ -299,7 +300,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(V val) throws GridException {
+    @Override public boolean remove(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("remove");
     }
 
@@ -320,13 +321,13 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
 
     /** {@inheritDoc} */
     @Override public boolean compact()
-        throws GridException {
+        throws IgniteCheckedException {
         throw new UnsupportedOperationException("compact");
     }
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         throw new UnsupportedOperationException("lock");
     }
 
@@ -337,7 +338,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         throw new UnsupportedOperationException("unlock");
     }
 
@@ -347,7 +348,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException {
+    @Override public int memorySize() throws IgniteCheckedException {
         return impl.memorySize();
     }
 

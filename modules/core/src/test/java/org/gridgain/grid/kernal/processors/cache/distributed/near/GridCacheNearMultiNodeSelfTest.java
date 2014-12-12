@@ -927,7 +927,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws GridException {
+        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -938,12 +938,12 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
-            throws GridException {
+            throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

@@ -153,9 +153,9 @@ public class GridTestResources {
 
     /**
      * @param target Target.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void inject(Object target) throws GridException {
+    public void inject(Object target) throws IgniteCheckedException {
         assert target != null;
         assert getLogger() != null;
         assert getNodeId() != null;
@@ -226,10 +226,10 @@ public class GridTestResources {
 
     /**
      * @return Marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public synchronized IgniteMarshaller getMarshaller() throws GridException {
+    public synchronized IgniteMarshaller getMarshaller() throws IgniteCheckedException {
         if (marshaller == null) {
             String marshallerName = GridTestProperties.getProperty("marshaller.class");
 
@@ -242,7 +242,7 @@ public class GridTestResources {
                     marshaller = cls.newInstance();
                 }
                 catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    throw new GridException("Failed to create test marshaller [marshaller=" + marshallerName + ']', e);
+                    throw new IgniteCheckedException("Failed to create test marshaller [marshaller=" + marshallerName + ']', e);
                 }
             }
         }

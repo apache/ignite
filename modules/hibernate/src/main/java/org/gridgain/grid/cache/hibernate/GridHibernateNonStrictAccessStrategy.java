@@ -86,7 +86,7 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
                 ctx.updateCache(cache);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -123,7 +123,7 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -200,9 +200,9 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
          * Updates cache.
          *
          * @param cache Cache.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        void updateCache(GridCache<Object, Object> cache) throws GridException {
+        void updateCache(GridCache<Object, Object> cache) throws IgniteCheckedException {
             if (!F.isEmpty(rmvs))
                 cache.removeAll(rmvs);
 

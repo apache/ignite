@@ -9,6 +9,7 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -114,7 +115,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
         try {
             getSpi().getBalancedNode(ses, notInTop, new GridTestJob());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue(e.getMessage().contains("Task topology does not have alive nodes"));
         }
     }

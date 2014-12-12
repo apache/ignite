@@ -11,16 +11,17 @@
 
 package org.gridgain.visor.commands.events
 
-import org.apache.ignite.events.IgniteEventType
 import org.gridgain.grid.kernal.visor.event.VisorGridEvent
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.gridgain.grid.util.{GridUtils => U}
+
+import org.apache.ignite._
+import org.apache.ignite.events.IgniteEventType
+import org.apache.ignite.events.IgniteEventType._
 
 import java.util.UUID
 
-import org.gridgain.grid._
-import IgniteEventType._
-import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands._
 import org.gridgain.visor.visor._
@@ -290,7 +291,7 @@ class VisorEventsCommand {
                 grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
-                case e: GridException =>
+                case e: IgniteCheckedException =>
                     scold(e.getMessage)
 
                     return

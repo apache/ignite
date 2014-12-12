@@ -9,6 +9,7 @@
 
 package org.apache.ignite.lang;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
@@ -26,11 +27,11 @@ public interface IgniteFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link org.gridgain.grid.GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link org.gridgain.grid.GridException} throws if computation was cancelled.
-     * @throws org.gridgain.grid.GridException If computation failed.
+     * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteCheckedException If computation failed.
      */
-    public R get() throws GridException;
+    public R get() throws IgniteCheckedException;
 
     /**
      * Synchronously waits for completion of the computation for
@@ -39,12 +40,12 @@ public interface IgniteFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
-     * @throws GridException If computation failed.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteCheckedException If computation failed.
      */
-    public R get(long timeout) throws GridException;
+    public R get(long timeout) throws IgniteCheckedException;
 
     /**
      * Synchronously waits for completion of the computation for
@@ -53,20 +54,20 @@ public interface IgniteFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if computation was cancelled.
-     * @throws GridException If computation failed.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteCheckedException If computation failed.
      */
-    public R get(long timeout, TimeUnit unit) throws GridException;
+    public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 
     /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).
-     * @throws GridException If cancellation failed.
+     * @throws IgniteCheckedException If cancellation failed.
      */
-    public boolean cancel() throws GridException;
+    public boolean cancel() throws IgniteCheckedException;
 
     /**
      * Checks if computation is done.

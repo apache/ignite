@@ -9,13 +9,13 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This defines gridify exception. This runtime exception gets thrown out of gridified
  * methods in case if method execution resulted in undeclared exception.
  */
-public class GridifyRuntimeException extends GridRuntimeException {
+public class GridifyRuntimeException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -119,25 +119,25 @@ public abstract class GridHadoopTaskContext {
      * Gets partitioner.
      *
      * @return Partitioner.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract GridHadoopPartitioner partitioner() throws GridException;
+    public abstract GridHadoopPartitioner partitioner() throws IgniteCheckedException;
 
     /**
      * Gets serializer for values.
      *
      * @return Serializer for keys.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract GridHadoopSerialization keySerialization() throws GridException;
+    public abstract GridHadoopSerialization keySerialization() throws IgniteCheckedException;
 
     /**
      * Gets serializer for values.
      *
      * @return Serializer for values.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract GridHadoopSerialization valueSerialization() throws GridException;
+    public abstract GridHadoopSerialization valueSerialization() throws IgniteCheckedException;
 
     /**
      * Gets sorting comparator.
@@ -156,9 +156,9 @@ public abstract class GridHadoopTaskContext {
     /**
      * Execute current task.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void run() throws GridException;
+    public abstract void run() throws IgniteCheckedException;
 
     /**
      * Cancel current task execution.
@@ -168,14 +168,14 @@ public abstract class GridHadoopTaskContext {
     /**
      * Prepare local environment for the task.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void prepareTaskEnvironment() throws GridException;
+    public abstract void prepareTaskEnvironment() throws IgniteCheckedException;
 
     /**
      *  Cleans up local environment of the task.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void cleanupTaskEnvironment() throws GridException;
+    public abstract void cleanupTaskEnvironment() throws IgniteCheckedException;
 }

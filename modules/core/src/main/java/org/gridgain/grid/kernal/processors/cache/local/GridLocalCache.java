@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -143,14 +143,14 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             }
 
             if (!ctx.mvcc().addFuture(fut))
-                fut.onError(new GridException("Duplicate future ID (internal error): " + fut));
+                fut.onError(new IgniteCheckedException("Duplicate future ID (internal error): " + fut));
 
             // Must have future added prior to checking locks.
             fut.checkLocks();
 
             return fut;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onError(e);
 
             return fut;
@@ -159,7 +159,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {

@@ -40,9 +40,9 @@ public class GridClientNodeStartup {
      * Starts up two nodes with specified cache configuration on pre-defined endpoints.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException In case of any exception.
+     * @throws IgniteCheckedException In case of any exception.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-node.xml")) {
             U.sleep(Long.MAX_VALUE);
         }

@@ -16,12 +16,12 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -53,7 +53,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) throws IgniteCheckedException {
         assert arg != null;
 
         Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
@@ -73,7 +73,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 if (n.id().equals(nodeId))
                     return F.asMap(new JdbcDriverJob(args, first), n);
 
-            throw new GridException("Node doesn't exist or left the grid: " + nodeId);
+            throw new IgniteCheckedException("Node doesn't exist or left the grid: " + nodeId);
         }
         else {
             String cache = (String)args.get("cache");
@@ -82,12 +82,12 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 if (U.hasCache(n, cache))
                     return F.asMap(new JdbcDriverJob(args, first), n);
 
-            throw new GridException("Can't find node with cache: " + cache);
+            throw new IgniteCheckedException("Can't find node with cache: " + cache);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public byte[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         byte status;
         byte[] bytes;
 
@@ -114,7 +114,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         return WAIT;
     }
 
@@ -161,7 +161,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             String cacheName = argument("cache");
             String sql = argument("sql");
             Long timeout = argument("timeout");
@@ -199,14 +199,14 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
-                Collection<IndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                Collection<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                 if (meta == null) {
                     // Try to extract initial SQL exception.
                     try {
                         fut.get();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (e.hasCause(SQLException.class))
                             throw new GridInternalException(e.getCause(SQLException.class).getMessage(), e);
                     }
@@ -220,7 +220,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
 
-                for (IndexingFieldMetadata desc : meta) {
+                for (GridQueryFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
                     cols.add(desc.fieldName().toUpperCase());
                     types.add(desc.fieldTypeName());

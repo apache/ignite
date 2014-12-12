@@ -142,7 +142,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 CU.checkAttributeMismatch(strLog, "cache", node, "cacheMode", "Cache mode", LOCAL, PARTITIONED, true);
                 return null;
             }
-        }, GridException.class, "Cache mode mismatch");
+        }, IgniteCheckedException.class, "Cache mode mismatch");
 
         final GridCacheConfiguration cfg1 = defaultCacheConfiguration();
 
@@ -163,7 +163,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 CU.checkAttributeMismatch(strLog, cfg1, cfg2, node, new T2<>("cacheMode", "Cache mode"), true);
                 return null;
             }
-        }, GridException.class, "Cache mode mismatch");
+        }, IgniteCheckedException.class, "Cache mode mismatch");
     }
 
     /**
@@ -222,7 +222,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -286,7 +286,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -576,7 +576,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity include neighbors mismatch");
+        }, IgniteCheckedException.class, "Affinity include neighbors mismatch");
 
         backups = 2;
 
@@ -587,7 +587,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity key backups mismatch");
+        }, IgniteCheckedException.class, "Affinity key backups mismatch");
 
         backups = 1;
 
@@ -598,7 +598,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity partitions count mismatch");
+        }, IgniteCheckedException.class, "Affinity partitions count mismatch");
 
         // Replicas count.
         aff = new GridCacheConsistentHashAffinityFunction(false, 100);
@@ -608,7 +608,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity replicas mismatch");
+        }, IgniteCheckedException.class, "Affinity replicas mismatch");
 
         // Replicas count attribute name.
         aff = new GridCacheConsistentHashAffinityFunction(false, 100);
@@ -618,7 +618,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity replica count attribute name mismatch");
+        }, IgniteCheckedException.class, "Affinity replica count attribute name mismatch");
 
         // Different hash ID resolver.
         GridCacheConsistentHashAffinityFunction aff0 = new GridCacheConsistentHashAffinityFunction(false, 100);
@@ -631,7 +631,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Partitioned cache affinity hash ID resolver class mismatch");
+        }, IgniteCheckedException.class, "Partitioned cache affinity hash ID resolver class mismatch");
     }
 
     /**
@@ -818,7 +818,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -857,7 +857,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -896,7 +896,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -911,7 +911,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(1);
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         aff = new GridCacheConsistentHashAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
         backups = Integer.MAX_VALUE;
@@ -920,7 +920,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(1);
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         aff = new GridCacheConsistentHashAffinityFunction(false, 100);
 
@@ -934,7 +934,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, "Affinity partitions count mismatch");
+        }, IgniteCheckedException.class, "Affinity partitions count mismatch");
     }
 
     /**
@@ -979,55 +979,55 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 return startGrid(2);
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /** */
     private static class TestStore implements GridCacheStore<Object,Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            @Nullable Object... args) throws GridException {
+            @Nullable Object... args) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void loadAll(@Nullable GridCacheTx tx,
-            @Nullable Collection<?> keys, IgniteBiInClosure<Object, Object> c) throws GridException {
+            @Nullable Collection<?> keys, IgniteBiInClosure<Object, Object> c) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx, Object key,
-            @Nullable Object val) throws GridException {
+            @Nullable Object val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map<?, ?> map)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void removeAll(@Nullable GridCacheTx tx,
-            @Nullable Collection<?> keys) throws GridException {
+            @Nullable Collection<?> keys) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
             // No-op.
         }
     }

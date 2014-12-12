@@ -9,24 +9,24 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Replicated user transaction.
@@ -300,7 +300,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 if (timedOut())
                     fut.onError(new GridCacheTxTimeoutException("Transaction timed out and was rolled back: " + this));
                 else
-                    fut.onError(new GridException("Invalid transaction state for prepare [state=" + state() +
+                    fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
                         ", tx=" + this + ']'));
             }
             else
@@ -316,7 +316,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             if (!state(PREPARED)) {
                 setRollbackOnly();
 
-                fut.onError(new GridException("Invalid transaction state for commit [state=" + state() +
+                fut.onError(new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
                     ", tx=" + this + ']'));
 
                 return fut;
@@ -326,7 +326,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
             return fut;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             fut.onError(e);
 
             return fut;
@@ -385,7 +385,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                         fut.onError(new GridCacheTxTimeoutException("Transaction timed out and was rolled back: " +
                             this));
                     else
-                        fut.onError(new GridException("Invalid transaction state for prepare [state=" + state() +
+                        fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
                             ", tx=" + this + ']'));
                 }
                 else
@@ -418,7 +418,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
             fut.onError(e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             fut.onError(new GridCacheTxRollbackException("Failed to prepare transaction: " + this, e));
@@ -432,7 +432,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                 fut.onError(e);
             }
-            catch (GridException e1) {
+            catch (IgniteCheckedException e1) {
                 U.error(log, "Failed to rollback transaction: " + this, e1);
             }
         }
@@ -464,7 +464,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     if (finish(true))
                         fut.finish();
                     else
-                        fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
+                        fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
                 }
                 catch (GridCacheTxOptimisticException e) {
                     if (log.isDebugEnabled())
@@ -472,7 +472,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                     fut.onError(e);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to prepare transaction: " + this, e);
 
                     fut.onError(e);
@@ -487,7 +487,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                             if (finish(true))
                                 fut.finish();
                             else
-                                fut.onError(new GridException("Failed to commit transaction: " +
+                                fut.onError(new IgniteCheckedException("Failed to commit transaction: " +
                                     CU.txString(GridDhtTxLocal.this)));
                         }
                         catch (GridCacheTxOptimisticException e) {
@@ -496,7 +496,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                             fut.onError(e);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to prepare transaction: " + this, e);
 
                             fut.onError(e);
@@ -511,7 +511,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 if (finish(true))
                     fut.finish();
                 else
-                    fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
+                    fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
             }
             catch (GridCacheTxOptimisticException e) {
                 if (log.isDebugEnabled())
@@ -519,7 +519,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                 fut.onError(e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to commit transaction: " + this, e);
 
                 fut.onError(e);
@@ -549,7 +549,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 if (finish(false) || state() == UNKNOWN)
                     fut.finish();
                 else
-                    fut.onError(new GridException("Failed to commit transaction: " + CU.txString(this)));
+                    fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
             }
             catch (GridCacheTxOptimisticException e) {
                 if (log.isDebugEnabled())
@@ -557,7 +557,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
                 fut.onError(e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to rollback transaction (will make the best effort to rollback remote nodes): " +
                     this, e);
 
@@ -572,7 +572,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     try {
                         f.get(); // Check for errors of a parent future.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to prepare or rollback transaction [tx=" + this + ", e=" + e + ']');
                     }
@@ -581,11 +581,11 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                         if (finish(false) || state() == UNKNOWN)
                             fut.finish();
                         else
-                            fut.onError(new GridException("Failed to commit transaction: " +
+                            fut.onError(new IgniteCheckedException("Failed to commit transaction: " +
                                 CU.txString(GridDhtTxLocal.this)));
 
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to gracefully rollback transaction: " + CU.txString(GridDhtTxLocal.this),
                             e);
 
@@ -600,7 +600,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean finish(boolean commit) throws GridException {
+    @Override public boolean finish(boolean commit) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate() //|| !isNearEnabled(cctx) TODO GG-9141
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +

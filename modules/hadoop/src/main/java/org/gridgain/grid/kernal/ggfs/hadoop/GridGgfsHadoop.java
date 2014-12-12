@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -26,9 +27,9 @@ public interface GridGgfsHadoop {
      *
      * @param logDir Log directory.
      * @return Future with handshake result.
-     * @throws org.gridgain.grid.GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHandshakeResponse handshake(String logDir) throws GridException, IOException;
+    public GridGgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException, IOException;
 
     /**
      * Close connection.
@@ -42,9 +43,9 @@ public interface GridGgfsHadoop {
      *
      * @param path Path to get file info for.
      * @return Future for info operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile info(IgniteFsPath path) throws GridException, IOException;
+    public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to update file properties.
@@ -52,9 +53,9 @@ public interface GridGgfsHadoop {
      * @param path GGFS path to update properties.
      * @param props Properties to update.
      * @return Future for update operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
+    public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Sets last access time and last modification time for a file.
@@ -62,9 +63,9 @@ public interface GridGgfsHadoop {
      * @param path Path to update times.
      * @param accessTime Last access time to set.
      * @param modificationTime Last modification time to set.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException,
+    public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -73,9 +74,9 @@ public interface GridGgfsHadoop {
      * @param src Source path.
      * @param dest Destination path.
      * @return Future for rename operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws GridException, IOException;
+    public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException, IOException;
 
     /**
      * Command to delete given path.
@@ -83,9 +84,9 @@ public interface GridGgfsHadoop {
      * @param path Path to delete.
      * @param recursive {@code True} if deletion is recursive.
      * @return Future for delete operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Boolean delete(IgniteFsPath path, boolean recursive) throws GridException, IOException;
+    public Boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get affinity for given path, offset and length.
@@ -94,9 +95,9 @@ public interface GridGgfsHadoop {
      * @param start Start position (offset).
      * @param len Data length.
      * @return Future for affinity command.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws GridException,
+    public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -104,62 +105,62 @@ public interface GridGgfsHadoop {
      *
      * @param path Path to get summary for.
      * @return Future that will be completed when summary is received.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws GridException, IOException;
+    public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to create directories.
      *
      * @param path Path to create.
      * @return Future for mkdirs operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws GridException, IOException;
+    public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get list of files in directory.
      *
      * @param path Path to list.
      * @return Future for listFiles operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException, IOException;
+    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to get directory listing.
      *
      * @param path Path to list.
      * @return Future for listPaths operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException, IOException;
+    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Performs status request.
      *
      * @return Status response.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsStatus fsStatus() throws GridException, IOException;
+    public GridGgfsStatus fsStatus() throws IgniteCheckedException, IOException;
 
     /**
      * Command to open file for reading.
      *
      * @param path File path to open.
      * @return Future for open operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws GridException, IOException;
+    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException, IOException;
 
     /**
      * Command to open file for reading.
      *
      * @param path File path to open.
      * @return Future for open operation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws GridException,
+    public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch) throws IgniteCheckedException,
         IOException;
 
     /**
@@ -171,10 +172,10 @@ public interface GridGgfsHadoop {
      * @param replication Replication factor.
      * @param props File properties for creation.
      * @return Stream descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
-        int replication, long blockSize, @Nullable Map<String, String> props) throws GridException, IOException;
+        int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 
     /**
      * Open file for output appending data to the end of a file.
@@ -183,8 +184,8 @@ public interface GridGgfsHadoop {
      * @param create If {@code true}, file will be created if does not exist.
      * @param props File properties.
      * @return Stream descriptor.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
-        @Nullable Map<String, String> props) throws GridException, IOException;
+        @Nullable Map<String, String> props) throws IgniteCheckedException, IOException;
 }

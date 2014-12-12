@@ -48,10 +48,10 @@ public class GridCacheDhtTestUtils {
     /**
      * @param dht Cache.
      * @param keyCnt Number of test keys to put into cache.
-     * @throws GridException If failed to prepare.
+     * @throws IgniteCheckedException If failed to prepare.
      */
     @SuppressWarnings({"UnusedAssignment", "unchecked"})
-    static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws GridException {
+    static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws IgniteCheckedException {
         GridCacheAffinityFunction aff = dht.context().config().getAffinity();
 
         GridCacheConcurrentMap<Integer, String> cacheMap;
@@ -64,7 +64,7 @@ public class GridCacheDhtTestUtils {
             cacheMap = (GridCacheConcurrentMap<Integer, String>)field.get(dht);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get cache map.", e);
+            throw new IgniteCheckedException("Failed to get cache map.", e);
         }
 
         GridDhtPartitionTopology<Integer,String> top = dht.topology();

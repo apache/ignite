@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.lang
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.util.lang.GridAbsClosureX
 
@@ -23,7 +24,7 @@ class ScalarAbsClosureX(private val f: () => Unit) extends GridAbsClosureX {
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx() {
         f()
     }

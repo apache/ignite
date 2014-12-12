@@ -10,11 +10,11 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.apache.commons.collections.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.ipc.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -229,8 +229,8 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         catch (IOException e) {
             assertTrue(i >= interactionsCntBeforeSrvKilling);
 
-            assertTrue(X.hasCause(e, GridException.class));
-            assertTrue(X.cause(e, GridException.class).getMessage().contains("Shared memory segment has been closed"));
+            assertTrue(X.hasCause(e, IgniteCheckedException.class));
+            assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains("Shared memory segment has been closed"));
         }
         finally {
             U.closeQuiet(client);
@@ -288,8 +288,8 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
             assertTrue("No IOException should be thrown before client is killed.",
                 i > interactionsCntBeforeClientKilling);
 
-            assertTrue(X.hasCause(e, GridException.class));
-            assertTrue(X.cause(e, GridException.class).getMessage().contains("Shared memory segment has been closed"));
+            assertTrue(X.hasCause(e, IgniteCheckedException.class));
+            assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains("Shared memory segment has been closed"));
 
             clientStartRes.isKilledLatch().await();
 

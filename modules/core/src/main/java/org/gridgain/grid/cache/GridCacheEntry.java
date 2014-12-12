@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
@@ -99,18 +100,18 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param modes See {@link GridCacheProjection#peek(Object, Collection)}.
      * @return See {@link GridCacheProjection#peek(Object, Collection)}.
-     * @throws GridException See {@link GridCacheProjection#peek(Object, Collection)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#peek(Object, Collection)}.
      */
-    @Nullable public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException;
+    @Nullable public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
      * {@link GridCacheProjection#reload(Object)} method.
      *
      * @return See {@link GridCacheProjection#reload(Object)}.
-     * @throws GridException See {@link GridCacheProjection#reload(Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#reload(Object)}.
      */
-    @Nullable public V reload() throws GridException;
+    @Nullable public V reload() throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -196,7 +197,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as {@link #get()} method, however it
-     * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
+     * wraps {@link IgniteCheckedException} into {@link IgniteException} if failed in order to
      * comply with {@link Entry} interface.
      *
      * @return See {@link #get()}
@@ -208,9 +209,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * {@link GridCacheProjection#get(Object)} method.
      *
      * @return See {@link GridCacheProjection#get(Object)}.
-     * @throws GridException See {@link GridCacheProjection#get(Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#get(Object)}.
      */
-    @Nullable public V get() throws GridException;
+    @Nullable public V get() throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -222,7 +223,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])} method, however it
-     * wraps {@link GridException} into {@link GridRuntimeException} if failed in order to
+     * wraps {@link IgniteCheckedException} into {@link IgniteException} if failed in order to
      * comply with {@link Entry} interface.
      *
      * @return See {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])}
@@ -236,9 +237,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
      * @param filter See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    @Nullable public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    @Nullable public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -256,9 +257,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param val See {@link GridCacheProjection#putIfAbsent(Object, Object)}
      * @return See {@link GridCacheProjection#putIfAbsent(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#putIfAbsent(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#putIfAbsent(Object, Object)}.
      */
-    @Nullable public V setIfAbsent(V val) throws GridException;
+    @Nullable public V setIfAbsent(V val) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -276,10 +277,10 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param val See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
      * @param filter See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
     public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -298,9 +299,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param val See {@link GridCacheProjection#putxIfAbsent(Object, Object)}
      * @return See {@link GridCacheProjection#putxIfAbsent(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#putxIfAbsent(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#putxIfAbsent(Object, Object)}.
      */
-    public boolean setxIfAbsent(@Nullable V val) throws GridException;
+    public boolean setxIfAbsent(@Nullable V val) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -317,10 +318,10 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param transformer Closure to be applied to the previous value in cache. If this closure returns
      *      {@code null}, the associated value will be removed from cache.
-     * @throws GridException If cache update failed.
+     * @throws IgniteCheckedException If cache update failed.
      * @see GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)
      */
-    public void transform(IgniteClosure<V, V> transformer) throws GridException;
+    public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -338,9 +339,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param val See {@link GridCacheProjection#replace(Object, Object)}
      * @return See {@link GridCacheProjection#replace(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#replace(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#replace(Object, Object)}.
      */
-    @Nullable public V replace(V val) throws GridException;
+    @Nullable public V replace(V val) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -357,9 +358,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param val See {@link GridCacheProjection#replacex(Object, Object)}
      * @return See {@link GridCacheProjection#replacex(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#replacex(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#replacex(Object, Object)}.
      */
-    public boolean replacex(V val) throws GridException;
+    public boolean replacex(V val) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -377,9 +378,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param oldVal See {@link GridCacheProjection#replace(Object, Object, Object)}
      * @param newVal See {@link GridCacheProjection#replace(Object, Object, Object)}
      * @return See {@link GridCacheProjection#replace(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#replace(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#replace(Object, Object)}.
      */
-    public boolean replace(V oldVal, V newVal) throws GridException;
+    public boolean replace(V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -397,9 +398,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param filter See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    @Nullable public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    @Nullable public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -416,9 +417,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param filter See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
-     * @throws GridException See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#removex(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -435,9 +436,9 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      *
      * @param val See {@link GridCacheProjection#remove(Object, Object)}.
      * @return See {@link GridCacheProjection#remove(Object, Object)}.
-     * @throws GridException See {@link GridCacheProjection#remove(Object, Object)}.
+     * @throws IgniteCheckedException See {@link GridCacheProjection#remove(Object, Object)}.
      */
-    public boolean remove(V val) throws GridException;
+    public boolean remove(V val) throws IgniteCheckedException;
 
     /**
      * This method has the same semantic as
@@ -468,10 +469,10 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * Optimizes the size of this entry. If entry is expired at the time
      * of the call then entry is removed locally.
      *
-     * @throws GridException If failed to compact.
+     * @throws IgniteCheckedException If failed to compact.
      * @return {@code true} if entry was cleared from cache (if value was {@code null}).
      */
-    public boolean compact() throws GridException;
+    public boolean compact() throws IgniteCheckedException;
 
     /**
      * Synchronously acquires lock on a cached object associated with this entry
@@ -491,11 +492,11 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @param filter Optional filter to validate prior to acquiring the lock.
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
-     * @throws GridException If lock acquisition resulted in error.
+     * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
     public boolean lock(long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Asynchronously acquires lock on a cached object associated with this entry
@@ -535,10 +536,10 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
      *
      * @param filter Optional filter that needs to pass prior to unlock taking effect.
-     * @throws GridException If unlock execution resulted in error.
+     * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws GridCacheFlagException If flags validation failed.
      */
-    public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException;
+    public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Checks whether entry is currently present in cache or not. If entry is not in
@@ -553,7 +554,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * Gets size of serialized key and value in addition to any overhead added by {@code GridGain} itself.
      *
      * @return size in bytes.
-     * @throws GridException If failed to evaluate entry size.
+     * @throws IgniteCheckedException If failed to evaluate entry size.
      */
-    public int memorySize() throws GridException;
+    public int memorySize() throws IgniteCheckedException;
 }

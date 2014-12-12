@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -40,7 +40,7 @@ class GridTestStage implements StreamerStage<Object> {
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts)
-        throws GridException {
+        throws IgniteCheckedException {
         return stageClos.apply(name(), ctx, evts);
     }
 }

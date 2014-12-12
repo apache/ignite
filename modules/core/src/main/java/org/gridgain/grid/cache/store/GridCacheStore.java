@@ -9,7 +9,9 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
@@ -57,21 +59,37 @@ import java.util.Date;
  * </pre>
  * <h1 class="header">Working With Portable Objects</h1>
  * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
- * {@code true}), all portable keys and values are converted to instances of {@link org.apache.ignite.portables.PortableObject}.
+ * {@code true}), all portable keys and values are converted to instances of {@link PortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
  * as a key and {@code Value} class as a value (which will be converted to portable format), cache store
  * signature should be the following:
- * <pre>
+ * <pre name="code" class="java">
  * public class PortableCacheStore implements GridCacheStore&lt;Integer, GridPortableObject&gt; {
- *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws GridException {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, GridPortableObject val) throws IgniteCheckedException {
  *         ...
  *     }
  *
  *     ...
  * }
  * </pre>
- * Note that only portable classes are converted to {@link org.apache.ignite.portables.PortableObject} format. Following
+ * This behavior can be overridden by setting {@link GridCacheConfiguration#setKeepPortableInStore(boolean)}
+ * flag value to {@code false}. In this case, GridGain will deserialize keys and values stored in portable
+ * format before they are passed to cache store, so that you can use the following cache store signature instead:
+ * <pre name="code" class="java">
+ * public class ObjectsCacheStore implements GridCacheStore&lt;Integer, Person&gt; {
+ *     public void put(@Nullable GridCacheTx tx, Integer key, Person val) throws GridException {
+ *         ...
+ *     }
+ *
+ *     ...
+ * }
+ * </pre>
+ * Note that while this can simplify store implementation in some cases, it will cause performance degradation
+ * due to additional serializations and deserializations of portable objects. You will also need to have key
+ * and value classes on all nodes since portables will be deserialized when store is invoked.
+ * <p>
+ * Note that only portable classes are converted to {@link PortableObject} format. Following
  * types are stored in cache without changes and therefore should not affect cache store signature:
  * <ul>
  *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
@@ -96,9 +114,9 @@ public interface GridCacheStore<K, V> {
      * @param tx Cache transaction.
      * @param key Key to load.
      * @return Loaded value or {@code null} if value was not found.
-     * @throws GridException If load failed.
+     * @throws IgniteCheckedException If load failed.
      */
-    @Nullable public V load(@Nullable GridCacheTx tx, K key) throws GridException;
+    @Nullable public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException;
 
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
@@ -117,9 +135,9 @@ public interface GridCacheStore<K, V> {
      * @param clo Closure for loaded values.
      * @param args Arguments passes into
      *      {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
-    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws GridException;
+    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws IgniteCheckedException;
 
     /**
      * Loads all values for given keys and passes every value to the provided closure.
@@ -131,10 +149,10 @@ public interface GridCacheStore<K, V> {
      * @param tx Cache transaction.
      * @param keys Collection of keys to load.
      * @param c Closure to call for every loaded element.
-     * @throws GridException If load failed.
+     * @throws IgniteCheckedException If load failed.
      */
     public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Stores a given value in persistent storage. Note that if write-behind is configured for a
@@ -143,9 +161,9 @@ public interface GridCacheStore<K, V> {
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to put.
      * @param val Value to put.
-     * @throws GridException If put failed.
+     * @throws IgniteCheckedException If put failed.
      */
-    public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException;
+    public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException;
 
     /**
      * Stores given key value pairs in persistent storage. Note that if write-behind is configured
@@ -153,9 +171,9 @@ public interface GridCacheStore<K, V> {
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param map Values to store.
-     * @throws GridException If store failed.
+     * @throws IgniteCheckedException If store failed.
      */
-    public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws GridException;
+    public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException;
 
     /**
      * Removes the value identified by given key from persistent storage. Note that  if write-behind is
@@ -164,9 +182,9 @@ public interface GridCacheStore<K, V> {
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param key Key to remove.
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      */
-    public void remove(@Nullable GridCacheTx tx, K key) throws GridException;
+    public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException;
 
     /**
      * Removes all vales identified by given keys from persistent storage. Note that if write-behind
@@ -175,9 +193,9 @@ public interface GridCacheStore<K, V> {
      *
      * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
      * @param keys Keys to remove.
-     * @throws GridException If remove failed.
+     * @throws IgniteCheckedException If remove failed.
      */
-    public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws GridException;
+    public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
@@ -185,9 +203,9 @@ public interface GridCacheStore<K, V> {
      *
      * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.
-     * @throws GridException If commit or rollback failed. Note that commit failure in some cases
+     * @throws IgniteCheckedException If commit or rollback failed. Note that commit failure in some cases
      *      may bring cache transaction into {@link GridCacheTxState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
-    public void txEnd(GridCacheTx tx, boolean commit) throws GridException;
+    public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException;
 }

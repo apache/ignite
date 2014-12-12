@@ -82,9 +82,9 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testMappedAffinity() throws GridException {
+    public void testMappedAffinity() throws IgniteCheckedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
         Ignite g3 = grid(3);

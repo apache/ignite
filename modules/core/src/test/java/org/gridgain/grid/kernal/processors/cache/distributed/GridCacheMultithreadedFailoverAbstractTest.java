@@ -314,7 +314,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             for (Integer key : rmvSet)
                                 expVals.remove(key);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             log.error("Cache update failed [putMap=" + putMap+ ", rmvSet=" + rmvSet + ']', e);
 
                             errCtr.incrementAndGet();
@@ -454,7 +454,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             log.info("Comparing cache content.");
 
             if (!cmpLatch.await(60_000, TimeUnit.MILLISECONDS))
-                throw new GridException("Failed to suspend threads executing put.");
+                throw new IgniteCheckedException("Failed to suspend threads executing put.");
 
             if (compareCaches(expVals)) {
                 log.info("Cache comparison succeeded.");

@@ -60,11 +60,11 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
      *                will be random which over time should result into all nodes being used equally.
      * @return Map of grid jobs assigned to subgrid node. Unless {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} is injected into task, if
      *         {@code null} or empty map is returned, exception will be thrown.
-     * @throws GridException If mapping could not complete successfully. This exception will be thrown out of {@link
+     * @throws IgniteCheckedException If mapping could not complete successfully. This exception will be thrown out of {@link
      *                       org.apache.ignite.compute.ComputeTaskFuture#get()} method.
      */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable final Collection<Integer> data) throws GridException {
+        @Nullable final Collection<Integer> data) throws IgniteCheckedException {
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
@@ -82,7 +82,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws GridException {
+                @Override public Object execute() throws IgniteCheckedException {
                     log.info("Going to put data: " + data.size());
 
                     GridCache<Object, Object> cache = ignite.cache(cacheName);
@@ -143,7 +143,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

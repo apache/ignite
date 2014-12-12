@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,5 +28,5 @@ public interface GridHadoopMapReducePlanner {
      * @return Map reduce plan.
      */
     public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
-        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException;
+        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException;
 }

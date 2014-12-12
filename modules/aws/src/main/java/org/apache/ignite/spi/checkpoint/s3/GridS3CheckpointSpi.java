@@ -315,7 +315,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         catch (AmazonClientException e) {
             throw new IgniteSpiException("Failed to read checkpoint bucket: " + bucketName, e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal/unmarshal objects in bucket: " + bucketName, e);
         }
 
@@ -363,7 +363,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         catch (AmazonClientException e) {
             throw new IgniteSpiException("Failed to read checkpoint key: " + key, e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal/unmarshal objects in checkpoint key: " + key, e);
         }
     }
@@ -399,7 +399,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
             throw new IgniteSpiException("Failed to write checkpoint data [key=" + key + ", state=" +
                 Arrays.toString(state) + ']', e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal checkpoint data [key=" + key + ", state=" +
                 Arrays.toString(state) + ']', e);
         }
@@ -440,10 +440,10 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
      *
      * @param key Key name to read data from.
      * @return Checkpoint data object.
-     * @throws GridException Thrown if an error occurs while unmarshalling.
+     * @throws IgniteCheckedException Thrown if an error occurs while unmarshalling.
      * @throws AmazonClientException If an error occurs while querying Amazon S3.
      */
-    @Nullable private GridS3CheckpointData read(String key) throws GridException, AmazonClientException {
+    @Nullable private GridS3CheckpointData read(String key) throws IgniteCheckedException, AmazonClientException {
         assert !F.isEmpty(key);
 
         if (log.isDebugEnabled())
@@ -474,10 +474,10 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
      * the binary stream and saved to the S3.
      *
      * @param data Checkpoint data.
-     * @throws GridException Thrown if an error occurs while marshalling.
+     * @throws IgniteCheckedException Thrown if an error occurs while marshalling.
      * @throws AmazonClientException If an error occurs while querying Amazon S3.
      */
-    private void write(GridS3CheckpointData data) throws GridException, AmazonClientException {
+    private void write(GridS3CheckpointData data) throws IgniteCheckedException, AmazonClientException {
         assert data != null;
 
         if (log.isDebugEnabled())

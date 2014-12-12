@@ -833,7 +833,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @param overwrite Overwrite file if it already exists.
      * @param text Text to write into file.
      * @return Content of this file.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private String create(String path, boolean overwrite, String text) throws Exception {
 
@@ -853,7 +853,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      * @param create Create file if it doesn't exist yet.
      * @param text Text to append to file.
      * @return Content of this file.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private String append(String path, boolean create, String text) throws Exception {
 
@@ -871,7 +871,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      *
      * @param path File path to read.
      * @return Content of this file.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private String read(String path) throws Exception {
 
@@ -944,7 +944,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return false;
             }
-        }, GridException.class, msg);
+        }, IgniteCheckedException.class, msg);
     }
 
     /**
@@ -952,9 +952,9 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
      *
      * @param path Directory path to validate listing for.
      * @param item List of directory items.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void assertListDir(String path, String... item) throws GridException {
+    private void assertListDir(String path, String... item) throws IgniteCheckedException {
         Collection<IgniteFsFile> files = ggfs.listFiles(new IgniteFsPath(path));
 
         List<String> names = new ArrayList<>(item.length);

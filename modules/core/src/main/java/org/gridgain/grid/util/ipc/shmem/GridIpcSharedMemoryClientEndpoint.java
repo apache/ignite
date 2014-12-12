@@ -74,9 +74,9 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      *
      * @param port Port server endpoint bound to.
      * @param parent Parent logger.
-     * @throws GridException If connection fails.
+     * @throws IgniteCheckedException If connection fails.
      */
-    public GridIpcSharedMemoryClientEndpoint(int port, IgniteLogger parent) throws GridException {
+    public GridIpcSharedMemoryClientEndpoint(int port, IgniteLogger parent) throws IgniteCheckedException {
         this(port, 0, parent);
     }
 
@@ -87,10 +87,10 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @param port Port server endpoint bound to.
      * @param timeout Connection timeout.
      * @param parent Parent logger.
-     * @throws GridException If connection fails.
+     * @throws IgniteCheckedException If connection fails.
      */
     @SuppressWarnings({"CallToThreadStartDuringObjectConstruction", "ErrorNotRethrown"})
-    public GridIpcSharedMemoryClientEndpoint(int port, int timeout, IgniteLogger parent) throws GridException {
+    public GridIpcSharedMemoryClientEndpoint(int port, int timeout, IgniteLogger parent) throws IgniteCheckedException {
         assert port > 0;
         assert port < 0xffff;
 
@@ -149,11 +149,11 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
             throw GridIpcSharedMemoryUtils.linkError(e);
         }
         catch (IOException e) {
-            throw new GridException("Failed to connect shared memory endpoint to port " +
+            throw new IgniteCheckedException("Failed to connect shared memory endpoint to port " +
                 "(is shared memory server endpoint up and running?): " + port, e);
         }
         catch (ClassNotFoundException | ClassCastException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         finally {
             U.closeQuiet(sock);
@@ -168,7 +168,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
         }
 
         if (err != null) // Error response.
-            throw new GridException(err);
+            throw new IgniteCheckedException(err);
 
         this.inSpace = inSpace;
         this.outSpace = outSpace;

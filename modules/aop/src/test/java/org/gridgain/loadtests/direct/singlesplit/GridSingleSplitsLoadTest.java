@@ -114,7 +114,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
                         if (taskCnt % 500 == 0)
                             info(stats.toString());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         error("Failed to execute grid task.", e);
 
                         fail();

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -25,9 +25,9 @@ public interface GridCacheQueryFuture<T> extends IgniteFuture<Collection<T>> {
      * be returned from {@link #next()} method without blocking.
      *
      * @return Number of fetched elements which are available immediately.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public int available() throws GridException;
+    public int available() throws IgniteCheckedException;
 
     /**
      * Returns next element from result set.
@@ -36,9 +36,9 @@ public interface GridCacheQueryFuture<T> extends IgniteFuture<Collection<T>> {
      * elements available immediately.
      *
      * @return Next fetched element or {@code null} if all the elements have been fetched.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public T next() throws GridException;
+    @Nullable public T next() throws IgniteCheckedException;
 
     /**
      * Checks if all data is fetched by the query.
@@ -52,7 +52,7 @@ public interface GridCacheQueryFuture<T> extends IgniteFuture<Collection<T>> {
      * associated with this future.
      *
      * @return {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public boolean cancel() throws GridException;
+    @Override public boolean cancel() throws IgniteCheckedException;
 }

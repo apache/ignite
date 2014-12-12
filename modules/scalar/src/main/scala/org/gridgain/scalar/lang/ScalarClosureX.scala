@@ -11,6 +11,7 @@
 
 package org.gridgain.scalar.lang
 
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.util.lang.IgniteClosureX
 
@@ -23,7 +24,7 @@ class ScalarClosureX[E, R](private val f: E => R) extends IgniteClosureX[E, R] {
     /**
      * Delegates to passed in function.
      */
-    @throws(classOf[GridException])
+    @throws(classOf[IgniteCheckedException])
     def applyx(e: E): R = {
         f(e)
     }

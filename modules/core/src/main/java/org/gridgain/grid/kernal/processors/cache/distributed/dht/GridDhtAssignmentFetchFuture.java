@@ -159,7 +159,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
                     U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
                         "continue to another node): " + node);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log0, "Failed to request affinity assignment from remote node (will " +
                         "continue to another node): " + node, e);
                 }

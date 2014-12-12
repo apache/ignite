@@ -375,7 +375,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
         try {
             startGridsMultiThreaded(3);
 
-            final AtomicReference<GridException> err = new AtomicReference<>();
+            final AtomicReference<IgniteCheckedException> err = new AtomicReference<>();
 
             for (int i = 0; i < 3; i++) {
                 Ignite g = grid(i);
@@ -385,7 +385,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                         IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent) evt;
 
                         if (discoEvt.topologyNodes().size() != 3)
-                            err.compareAndSet(null, new GridException("Invalid discovery event [evt=" + discoEvt +
+                            err.compareAndSet(null, new IgniteCheckedException("Invalid discovery event [evt=" + discoEvt +
                                 ", nodes=" + discoEvt.topologyNodes() + ']'));
 
                         return true;

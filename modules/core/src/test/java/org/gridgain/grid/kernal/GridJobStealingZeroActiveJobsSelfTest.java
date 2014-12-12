@@ -56,9 +56,9 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     /**
      * Test 2 jobs on 2 nodes.
      *
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testTwoJobs() throws GridException {
+    public void testTwoJobs() throws IgniteCheckedException {
         ignite1.compute().execute(JobStealingTask.class, null);
     }
 
@@ -95,7 +95,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -108,7 +108,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 2;
 
             for (ComputeJobResult res : results) {
@@ -144,7 +144,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             try {
                 Long sleep = argument(0);
 
@@ -153,7 +153,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                throw new GridException("Job got interrupted.", e);
+                throw new IgniteCheckedException("Job got interrupted.", e);
             }
 
             return ignite.name();

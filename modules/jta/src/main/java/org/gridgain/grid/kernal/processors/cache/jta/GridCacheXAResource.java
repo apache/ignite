@@ -88,7 +88,7 @@ public final class GridCacheXAResource implements XAResource {
         try {
             cacheTx.rollback();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throwException("Failed to rollback cache transaction: " + e.getMessage(), e);
         }
     }
@@ -106,7 +106,7 @@ public final class GridCacheXAResource implements XAResource {
         try {
             cacheTx.prepare();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throwException("Failed to prepare cache transaction.", e);
         }
 
@@ -134,7 +134,7 @@ public final class GridCacheXAResource implements XAResource {
         try {
             cacheTx.commit();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throwException("Failed to commit cache transaction: " + e.getMessage(), e);
         }
     }
@@ -151,7 +151,7 @@ public final class GridCacheXAResource implements XAResource {
 
             cacheTx.commit();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throwException("Failed to forget cache transaction: " + e.getMessage(), e);
         }
     }

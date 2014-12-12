@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
 /**
@@ -27,9 +27,9 @@ public interface GridGgfsHelper {
      * Validate cache configuration for GGFS.
      *
      * @param cfg Cache configuration.
-     * @throws org.gridgain.grid.GridException If validation failed.
+     * @throws IgniteCheckedException If validation failed.
      */
-    public abstract void validateCacheConfiguration(GridCacheConfiguration cfg) throws GridException;
+    public abstract void validateCacheConfiguration(GridCacheConfiguration cfg) throws IgniteCheckedException;
 
     /**
      * Check whether object is of type {@code GridGgfsBlockKey}

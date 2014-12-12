@@ -9,15 +9,16 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.apache.ignite.spi.deployment.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -51,7 +52,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         spi.setListener(new LocalDeploymentListener());
 
         if (log.isDebugEnabled())
@@ -313,7 +314,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws GridException {
+    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         try {
             // Make sure not to deploy peer loaded tasks with non-local class loader,
             // if local one exists.
@@ -338,8 +339,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             recordDeployFailed(cls, clsLdr, true);
 
             // Avoid double wrapping.
-            if (e.getCause() instanceof GridException)
-                throw (GridException)e.getCause();
+            if (e.getCause() instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)e.getCause();
 
             throw new GridDeploymentException("Failed to deploy class: " + cls.getName(), e);
         }

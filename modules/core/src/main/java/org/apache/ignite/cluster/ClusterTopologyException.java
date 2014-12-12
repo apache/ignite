@@ -9,13 +9,13 @@
 
 package org.apache.ignite.cluster;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class ClusterTopologyException extends GridException {
+public class ClusterTopologyException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -9,14 +9,15 @@
 
 package org.gridgain.grid.kernal.managers.failover;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.failover.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.apache.ignite.spi.failover.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -62,7 +63,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(List<ClusterNode> top) throws GridException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteCheckedException {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
     }
 

@@ -30,9 +30,9 @@ public class GridifySetToSetAbstractAspect {
      * Check method signature.
      *
      * @param mtd Grid-enabled method.
-     * @throws GridException If method signature invalid..
+     * @throws IgniteCheckedException If method signature invalid..
      */
-    protected void checkMethodSignature(Method mtd) throws GridException {
+    protected void checkMethodSignature(Method mtd) throws IgniteCheckedException {
         Class<?>[] paramTypes = mtd.getParameterTypes();
 
         Collection<Integer> allowedParamIdxs = new LinkedList<>();
@@ -45,7 +45,7 @@ public class GridifySetToSetAbstractAspect {
         }
 
         if (allowedParamIdxs.isEmpty()) {
-            throw new GridException("Invalid method signature. Failed to get valid method parameter types " +
+            throw new IgniteCheckedException("Invalid method signature. Failed to get valid method parameter types " +
                 "[mtdName=" + mtd.getName() + ", allowedTypes=" + GridifyUtils.getAllowedMethodParameterTypes() + ']');
         }
 
@@ -59,27 +59,27 @@ public class GridifySetToSetAbstractAspect {
         }
 
         if (annParamIdxs.size() > 1) {
-            throw new GridException("Invalid method signature. Only one method parameter can may annotated with @" +
+            throw new IgniteCheckedException("Invalid method signature. Only one method parameter can may annotated with @" +
                 GridifyInput.class.getSimpleName() +
                 "[mtdName=" + mtd.getName() + ", allowedTypes=" + GridifyUtils.getAllowedMethodParameterTypes() +
                 ", annParamIdxs=" + annParamIdxs + ']');
         }
 
         if (allowedParamIdxs.size() > 1 && annParamIdxs.isEmpty()) {
-            throw new GridException("Invalid method signature. Method parameter must be annotated with @" +
+            throw new IgniteCheckedException("Invalid method signature. Method parameter must be annotated with @" +
                 GridifyInput.class.getSimpleName() +
                 "[mtdName=" + mtd.getName() + ", allowedTypes=" + GridifyUtils.getAllowedMethodParameterTypes() +
                 ", allowedParamIdxs=" + allowedParamIdxs + ']');
         }
 
         if (!annParamIdxs.isEmpty() && !allowedParamIdxs.contains(annParamIdxs.get(0))) {
-            throw new GridException("Invalid method signature. Invalid annotated parameter " +
+            throw new IgniteCheckedException("Invalid method signature. Invalid annotated parameter " +
                 "[mtdName=" + mtd.getName() + ", allowedTypes=" + GridifyUtils.getAllowedMethodParameterTypes() +
                 ", allowedParamIdxs=" + allowedParamIdxs + ", annParamIdxs=" + annParamIdxs + ']');
         }
 
         if (!GridifyUtils.isMethodReturnTypeValid(mtd.getReturnType())) {
-            throw new GridException("Invalid method signature. Invalid method return type " +
+            throw new IgniteCheckedException("Invalid method signature. Invalid method return type " +
                 "[mtdName=" + mtd.getName() + ", allowedTypes=" + GridifyUtils.getAllowedMethodReturnTypes() +
                 ", mtdReturnType=" + mtd.getReturnType() + ']');
         }
@@ -93,11 +93,11 @@ public class GridifySetToSetAbstractAspect {
      *
      * @param arg Gridify argument.
      * @param ann Annotation
-     * @throws GridException If split is not allowed with current parameters.
+     * @throws IgniteCheckedException If split is not allowed with current parameters.
      */
-    protected void checkIsSplitToJobsAllowed(GridifyRangeArgument arg, GridifySetToSet ann) throws GridException {
+    protected void checkIsSplitToJobsAllowed(GridifyRangeArgument arg, GridifySetToSet ann) throws IgniteCheckedException {
         if (arg.getInputSize() == UNKNOWN_SIZE && ann.threshold() <= 0 && ann.splitSize() <= 0) {
-            throw new GridException("Failed to split input method argument to jobs with unknown input size and " +
+            throw new IgniteCheckedException("Failed to split input method argument to jobs with unknown input size and " +
                 "invalid annotation parameter 'splitSize' [mtdName=" + arg.getMethodName() + ", inputTypeCls=" +
                 arg.getMethodParameterTypes()[arg.getParamIndex()].getName() +
                 ", threshold=" + ann.threshold() + ", splitSize=" + ann.splitSize() + ']');
@@ -116,10 +116,10 @@ public class GridifySetToSetAbstractAspect {
      * @param splitSize Size of elements to send in job argument.
      * @param timeout Execution timeout.
      * @return Result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
     protected Object execute(IgniteCompute compute, Class<?> cls, GridifyRangeArgument arg,
-        GridifyNodeFilter nodeFilter, int threshold, int splitSize, long timeout) throws GridException {
+        GridifyNodeFilter nodeFilter, int threshold, int splitSize, long timeout) throws IgniteCheckedException {
         long now = U.currentTimeMillis();
 
         long end = timeout == 0 ? Long.MAX_VALUE : timeout + now;

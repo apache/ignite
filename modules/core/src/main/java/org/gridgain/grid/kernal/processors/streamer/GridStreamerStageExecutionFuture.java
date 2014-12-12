@@ -217,7 +217,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
                 streamer.scheduleExecutions(this, childExecs);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onFailed(ctx.localNodeId(), e);
         }
     }
@@ -336,7 +336,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         if (!onCancelled())
             return false;
 

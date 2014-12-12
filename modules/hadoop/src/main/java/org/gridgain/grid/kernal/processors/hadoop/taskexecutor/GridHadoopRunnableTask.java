@@ -92,7 +92,7 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Void call() throws GridException {
+    @Override public Void call() throws IgniteCheckedException {
         execStartTs = U.currentTimeMillis();
 
         Throwable err = null;
@@ -153,9 +153,9 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
 
     /**
      * @param perfCntr Performance counter.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void runTask(GridHadoopPerformanceCounter perfCntr) throws GridException {
+    private void runTask(GridHadoopPerformanceCounter perfCntr) throws IgniteCheckedException {
         if (cancelled)
             throw new GridHadoopTaskCancelledException("Task cancelled.");
 
@@ -189,10 +189,10 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /**
      * @param ctx Task context.
      * @return Task input.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridHadoopTaskInput createInputInternal(GridHadoopTaskContext ctx) throws GridException {
+    private GridHadoopTaskInput createInputInternal(GridHadoopTaskContext ctx) throws IgniteCheckedException {
         switch (ctx.taskInfo().type()) {
             case SETUP:
             case MAP:
@@ -213,23 +213,23 @@ public abstract class GridHadoopRunnableTask implements Callable<Void> {
     /**
      * @param ctx Task context.
      * @return Input.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract GridHadoopTaskInput createInput(GridHadoopTaskContext ctx) throws GridException;
+    protected abstract GridHadoopTaskInput createInput(GridHadoopTaskContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Task info.
      * @return Output.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx) throws GridException;
+    protected abstract GridHadoopTaskOutput createOutput(GridHadoopTaskContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Task info.
      * @return Task output.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridHadoopTaskOutput createOutputInternal(GridHadoopTaskContext ctx) throws GridException {
+    private GridHadoopTaskOutput createOutputInternal(GridHadoopTaskContext ctx) throws IgniteCheckedException {
         switch (ctx.taskInfo().type()) {
             case SETUP:
             case REDUCE:

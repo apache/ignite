@@ -212,9 +212,9 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
 
     /**
      * Starts router.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void startRouters() throws GridException {
+    private void startRouters() throws IgniteCheckedException {
         GridTcpRouterConfiguration tcpCfg = new GridTcpRouterConfiguration();
 
         tcpCfg.setHost(HOST);
@@ -250,7 +250,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<String, String> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) throws IgniteCheckedException {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Override public String execute() {
                     return arg;
@@ -259,7 +259,7 @@ public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assertEquals(1, results.size());
 
             return results.get(0).getData();

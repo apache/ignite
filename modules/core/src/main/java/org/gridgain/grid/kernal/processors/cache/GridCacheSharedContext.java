@@ -109,11 +109,11 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      */
     @SuppressWarnings("unchecked")
-    public void addCacheContext(GridCacheContext cacheCtx) throws GridException {
+    public void addCacheContext(GridCacheContext cacheCtx) throws IgniteCheckedException {
         if (ctxMap.containsKey(cacheCtx.cacheId())) {
             GridCacheContext<K, V> existing = ctxMap.get(cacheCtx.cacheId());
 
-            throw new GridException("Failed to start cache due to conflicting cache ID " +
+            throw new IgniteCheckedException("Failed to start cache due to conflicting cache ID " +
                 "(change cache name and restart grid) [cacheName=" + cacheCtx.name() +
                 ", conflictingCacheName=" + existing.name() + ']');
         }
@@ -408,9 +408,9 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param tx Transaction to close.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void endTx(GridCacheTxEx<K, V> tx) throws GridException {
+    public void endTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
@@ -445,9 +445,9 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param tx Transaction to rollback.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void rollbackTx(GridCacheTxEx<K, V> tx) throws GridException {
+    public void rollbackTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {

@@ -179,9 +179,9 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      * Create events in grid.
      *
      * @param ignite Grid.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private void generateEvents(Ignite ignite) throws GridException {
+    private void generateEvents(Ignite ignite) throws IgniteCheckedException {
         ignite.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
         ignite.compute().execute(GridEventTestTask.class.getName(), null);
@@ -192,12 +192,12 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      */
     private static class GridEventTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             return Collections.singleton(new GridEventTestJob());
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results != null;
             assert results.size() == 1;
 
@@ -210,7 +210,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      */
     private static class GridEventTestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             return "GridEventTestJob-test-event.";
         }
     }

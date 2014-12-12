@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -29,10 +29,10 @@ public class GridIpcSharedMemoryUtils {
      * @param size Memory space size in bytes.
      * @param debug {@code True} to output debug to stdout (will set global flag).
      * @return Shared memory pointer.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     static native long allocateSystemResources(String tokFileName, int size, boolean debug)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Attaches to previously allocated shared memory segment.
@@ -40,9 +40,9 @@ public class GridIpcSharedMemoryUtils {
      * @param shmemId OS shared memory segment ID.
      * @param debug {@code True} to output debug to stdout (will set global flag).
      * @return Shared memory pointer.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    static native long attach(int shmemId, boolean debug) throws GridException;
+    static native long attach(int shmemId, boolean debug) throws IgniteCheckedException;
 
     /**
      * Stops IPC communication. Call {@link #freeSystemResources(String, long, boolean)} after this call.
@@ -75,11 +75,11 @@ public class GridIpcSharedMemoryUtils {
      * @param size Size.
      * @param timeout Operation timeout.
      * @return Read bytes count.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native long readSharedMemory(long shMemPtr, byte dest[], long dOff, long size, long timeout)
-        throws GridException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shmemPtr Shared memory pointer.
@@ -106,11 +106,11 @@ public class GridIpcSharedMemoryUtils {
      * @param size Size.
      * @param timeout Operation timeout.
      * @return Read bytes count.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native long readSharedMemoryByteBuffer(long shMemPtr, ByteBuffer dest, long dOff, long size, long timeout)
-        throws GridException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shMemPtr Shared memory pointer
@@ -118,11 +118,11 @@ public class GridIpcSharedMemoryUtils {
      * @param sOff Offset.
      * @param size Size.
      * @param timeout Operation timeout.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native void writeSharedMemory(long shMemPtr, byte src[], long sOff, long size, long timeout)
-        throws GridException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shMemPtr Shared memory pointer
@@ -130,11 +130,11 @@ public class GridIpcSharedMemoryUtils {
      * @param sOff Offset.
      * @param size Size.
      * @param timeout Operation timeout.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native void writeSharedMemoryByteBuffer(long shMemPtr, ByteBuffer src, long sOff, long size, long timeout)
-        throws GridException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
 
     /** @return PID of the current process (-1 on error). */
     public static int pid() {
@@ -176,8 +176,8 @@ public class GridIpcSharedMemoryUtils {
      * @param e Link error.
      * @return Wrapping grid exception.
      */
-    static GridException linkError(UnsatisfiedLinkError e) {
-        return new GridException("Linkage error due to possible native library, libggshmem.so, " +
+    static IgniteCheckedException linkError(UnsatisfiedLinkError e) {
+        return new IgniteCheckedException("Linkage error due to possible native library, libggshmem.so, " +
             "version mismatch (stop all grid nodes, clean up your '/tmp' folder, and try again).", e);
     }
 

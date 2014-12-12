@@ -10,7 +10,7 @@
 package org.gridgain.grid.util.ipc;
 
 import net.sf.json.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
@@ -62,7 +62,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
                 return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
                     JSONSerializer.toJSON(shmemSrvEndpoint).toString()));
             }
-        }, GridException.class, "Failed to create server endpoint (type is not specified)");
+        }, IgniteCheckedException.class, "Failed to create server endpoint (type is not specified)");
     }
 
     /**
@@ -76,7 +76,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
 
                 return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json.toString()));
             }
-        }, GridException.class, "Failed to create server endpoint (type is unknown): unknownEndpointType");
+        }, IgniteCheckedException.class, "Failed to create server endpoint (type is unknown): unknownEndpointType");
     }
 
     /**
@@ -88,7 +88,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
                 return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
                     JSONSerializer.toJSON(tcpSrvEndpoint).toString()));
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**

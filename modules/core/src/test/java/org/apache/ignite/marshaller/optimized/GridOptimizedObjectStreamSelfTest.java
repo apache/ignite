@@ -9,11 +9,11 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.io.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -212,7 +212,7 @@ public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             assert false : "Exception not thrown.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             NotSerializableException serEx = e.getCause(NotSerializableException.class);
 
             if (serEx == null)

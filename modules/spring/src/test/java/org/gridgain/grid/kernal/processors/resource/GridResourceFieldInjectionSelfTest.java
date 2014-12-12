@@ -104,7 +104,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             assert false : "Did not get exception for non-transient field.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got correct exception for non-transient field: " + e.getMessage());
         }
         finally {
@@ -123,7 +123,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             assert false : "Did not get exception for non-transient field.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got correct exception for non-transient field: " + e.getMessage());
         }
 
@@ -141,7 +141,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             assert false : "Did not get exception for unknown Spring bean name.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got correct exception for with unknown Spring bean name: " + e.getMessage());
         }
 
@@ -159,7 +159,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             assert false : "Did not get exception for different Spring bean classes.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got correct exception for for different Spring bean classes: " + e.getMessage());
         }
 
@@ -289,7 +289,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private Object rsrc;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -297,7 +297,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -315,7 +315,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient Object springBean;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -323,7 +323,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -341,7 +341,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient Serializable springBean;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -349,7 +349,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -367,7 +367,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private Object rsrc;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -375,7 +375,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             // Never reached.
             assert false;
 
@@ -462,7 +462,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         private transient ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;
@@ -604,7 +604,7 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrc1 != null;
             assert rsrc2 != null;
             assert rsrc3 != null;

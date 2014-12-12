@@ -9,8 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -61,7 +62,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
         return new GridCacheQueryAdapter<>(ctx,
             SQL,
             filter(),
-            ctx.kernalContext().indexing().typeName(U.box(cls)),
+            ctx.kernalContext().query().typeName(U.box(cls)),
             clause,
             null,
             false,
@@ -105,7 +106,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
         return new GridCacheQueryAdapter<>(ctx,
             TEXT,
             filter(),
-            ctx.kernalContext().indexing().typeName(U.box(cls)),
+            ctx.kernalContext().query().typeName(U.box(cls)),
             search,
             null,
             false,
@@ -136,6 +137,22 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             null,
             null,
             (IgniteBiPredicate<Object, Object>)filter,
+            false,
+            prj != null && prj.isKeepPortable());
+    }
+
+    /**
+     * Query for {@link GridIndexingSpi}.
+     *
+     * @return Query.
+     */
+    public <R> GridCacheQuery<R> createSpiQuery() {
+        return new GridCacheQueryAdapter<>(ctx,
+            SPI,
+            filter(),
+            null,
+            null,
+            null,
             false,
             prj != null && prj.isKeepPortable());
     }
@@ -175,7 +192,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws GridException {
+    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
         return ctx.queries().sqlMetadata();
     }
 

@@ -154,7 +154,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Grid with locally executed job with timeout should throw GridComputeTaskTimeoutException.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
@@ -340,7 +340,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testCheckpoint", "TestState");
@@ -394,7 +394,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws GridException {
+        @Override public String execute() throws IgniteCheckedException {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testAllCheckpoint", "CheckpointTestState");
@@ -411,12 +411,12 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     @ComputeTaskSessionFullSupport
     private static class GridAllEventsTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             return Collections.singleton((ComputeJob)arg);
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results != null;
             assert results.size() == 1;
 

@@ -336,6 +336,9 @@ public class GridCacheConfiguration {
     /** */
     private boolean portableEnabled;
 
+    /** */
+    private boolean keepPortableInStore = true;
+
     /** Query configuration. */
     private GridCacheQueryConfiguration qryCfg;
 
@@ -379,6 +382,7 @@ public class GridCacheConfiguration {
         indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
+        keepPortableInStore = cc.isKeepPortableInStore();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
@@ -1754,6 +1758,42 @@ public class GridCacheConfiguration {
      */
     public void setPortableEnabled(boolean portableEnabled) {
         this.portableEnabled = portableEnabled;
+    }
+
+    /**
+     * Flag indicating that {@link GridCacheStore} implementation
+     * is working with portable objects instead of Java objects
+     * if portable mode for this cache is enabled ({@link #isPortableEnabled()}
+     * flag is {@code true}). Default value of this flag is {@code true},
+     * because this is recommended behavior from performance standpoint.
+     * <p>
+     * If set to {@code false}, GridGain will deserialize keys and
+     * values stored in portable format before they are passed
+     * to cache store.
+     * <p>
+     * Note that setting this flag to {@code false} can simplify
+     * store implementation in some cases, but it can cause performance
+     * degradation due to additional serializations and deserializations
+     * of portable objects. You will also need to have key and value
+     * classes on all nodes since portables will be deserialized when
+     * store is called.
+     * <p>
+     * This flag is ignored if portable mode is disabled for this
+     * cache ({@link #isPortableEnabled()} flag is {@code false}).
+     *
+     * @return Keep portables in store flag.
+     */
+    public boolean isKeepPortableInStore() {
+        return keepPortableInStore;
+    }
+
+    /**
+     * Sets keep portables in store flag.
+     *
+     * @param keepPortableInStore Keep portables in store flag.
+     */
+    public void setKeepPortableInStore(boolean keepPortableInStore) {
+        this.keepPortableInStore = keepPortableInStore;
     }
 
     /**

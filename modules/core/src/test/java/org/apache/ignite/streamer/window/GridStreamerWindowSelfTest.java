@@ -9,10 +9,9 @@
 
 package org.apache.ignite.streamer.window;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -43,7 +42,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -58,7 +57,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setTimeInterval(1);
 
@@ -72,7 +71,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -87,7 +86,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchSize(1);
 
@@ -101,7 +100,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -116,7 +115,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchSize(1);
 
@@ -126,7 +125,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchTimeInterval(1);
         win.setBatchSize(-1);
@@ -137,7 +136,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchSize(1);
 
@@ -151,7 +150,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -279,7 +278,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setMaximumSize(60);
         win.setUnique(true);
@@ -328,7 +327,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchSize(10);
         win.setMaximumBatches(2);
@@ -403,7 +402,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setMaximumSize(60);
         win.setTimeInterval(40);
@@ -455,7 +454,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
 
         win.setBatchSize(50);
         win.setBatchTimeInterval(500);
@@ -750,9 +749,9 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
      *
      * @param win Window to check.
      * @param maxSize Max window size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void finalChecks(StreamerWindow<Integer> win, int maxSize) throws GridException {
+    private void finalChecks(StreamerWindow<Integer> win, int maxSize) throws IgniteCheckedException {
         int evictQueueSize = win.evictionQueueSize();
 
         info("Eviction queue size for final checks: " + evictQueueSize);

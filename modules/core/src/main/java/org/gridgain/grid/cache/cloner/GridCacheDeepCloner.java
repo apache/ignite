@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.cloner;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
@@ -25,7 +25,7 @@ import org.gridgain.grid.util.typedef.*;
  * constructor. If it does, then it will be instantiated using such constructor.
  * Otherwise an empty constructor will be fetched from JDK and used instead.
  * Note that this behavior may not work on some JDKs in which case
- * {@link #cloneValue(Object)} method will result in {@link GridException}
+ * {@link #cloneValue(Object)} method will result in {@link IgniteCheckedException}
  * being thrown.
  */
 public class GridCacheDeepCloner implements GridCacheCloner {
@@ -73,7 +73,7 @@ public class GridCacheDeepCloner implements GridCacheCloner {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T cloneValue(T val) throws GridException {
+    @Override public <T> T cloneValue(T val) throws IgniteCheckedException {
         return X.cloneObject(val, true, honorCloneable);
     }
 }

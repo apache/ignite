@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -16,10 +17,10 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -70,7 +71,7 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         if (modes.contains(NEAR_ONLY) && ctx.isNear())
             return peekNear0(modes, CU.<K, V>empty());
 
@@ -93,9 +94,9 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         try {
             return peekDht0(SMART, filter);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should never happen.
-            throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+            throw new IgniteException("Unable to perform entry peek() operation.", e);
         }
     }
 
@@ -103,10 +104,10 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
      * @param modes Peek modes.
      * @param filter Optional entry filter.
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peekNear0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peekNear0(SMART, filter);
 
@@ -126,11 +127,11 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
      * @param mode Peek mode.
      * @param filter Optional entry filter.
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peekNear0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (mode == null)
             mode = SMART;
 
@@ -160,10 +161,10 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
      * @param modes Peek modes.
      * @param filter Optional entry filter.
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peekDht0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peekDht0(SMART, filter);
 
@@ -183,11 +184,11 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
      * @param mode Peek mode.
      * @param filter Optional entry filter.
      * @return Peeked value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peekDht0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (mode == null)
             mode = SMART;
 

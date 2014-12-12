@@ -9,9 +9,9 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, String&gt; {
  *     &#64;Override
- *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *     protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *         List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *         for (int i = 0; i &lt; gridSize; i++) {
@@ -40,7 +40,7 @@ import java.util.*;
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         // For the purpose of this example we simply
  *         // concatenate string representation of every
  *         // job result
@@ -83,22 +83,22 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
      *      available grid nodes. Note that if number of jobs is greater than number of
      *      grid nodes (i.e, grid size), the grid nodes will be reused and some jobs
      *      will end up on the same grid nodes.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      *
      * @see ComputeTask#map(List, Object)
      */
-    protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws GridException;
+    protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg)
-        throws GridException {
+        throws IgniteCheckedException {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
         Collection<? extends ComputeJob> jobs = split(subgrid.size(), arg);
 
         if (F.isEmpty(jobs))
-            throw new GridException("Split returned no jobs.");
+            throw new IgniteCheckedException("Split returned no jobs.");
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(jobs.size());
 
@@ -106,7 +106,7 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
             ClusterNode old = map.put(job, balancer.getBalancedNode(job, null));
 
             if (old != null)
-                throw new GridException("Failed to map task (same job instance is being mapped more than once) " +
+                throw new IgniteCheckedException("Failed to map task (same job instance is being mapped more than once) " +
                     "[job=" + job + ", task=" + this + ']');
         }
 

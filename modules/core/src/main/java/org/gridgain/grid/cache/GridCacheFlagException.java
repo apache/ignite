@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Exception thrown when projection flags check fails.
  */
-public class GridCacheFlagException extends GridRuntimeException {
+public class GridCacheFlagException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

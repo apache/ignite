@@ -40,30 +40,30 @@ public interface GridGgfsEx extends IgniteFs {
 
     /** {@inheritDoc} */
     @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path) throws GridException;
+    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws GridException;
+    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException;
 
     /**
      * Gets global space counters.
      *
      * @return Tuple in which first component is used space on all nodes,
      *      second is available space on all nodes.
-     * @throws GridException If task execution failed.
+     * @throws IgniteCheckedException If task execution failed.
      */
-    public GridGgfsStatus globalSpace() throws GridException;
+    public GridGgfsStatus globalSpace() throws IgniteCheckedException;
 
     /**
      * Enables, disables or clears sampling flag.
      *
      * @param val {@code True} to turn on sampling, {@code false} to turn it off, {@code null} to clear sampling state.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void globalSampling(@Nullable Boolean val) throws GridException;
+    public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException;
 
     /**
      * Get sampling state.
@@ -91,9 +91,9 @@ public interface GridGgfsEx extends IgniteFs {
      * Asynchronously await for all entries existing in trash to be removed.
      *
      * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgniteFuture<?> awaitDeletesAsync() throws GridException;
+    public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
 
     /**
      * Gets client file system log directory.

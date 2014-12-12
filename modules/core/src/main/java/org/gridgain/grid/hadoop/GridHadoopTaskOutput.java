@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.hadoop;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Task output.
@@ -21,12 +21,12 @@ public interface GridHadoopTaskOutput extends AutoCloseable {
      * @param key Key.
      * @param val Value.
      */
-    public void write(Object key, Object val) throws GridException;
+    public void write(Object key, Object val) throws IgniteCheckedException;
 
     /**
      * Closes output.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 }

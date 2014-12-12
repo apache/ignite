@@ -11,19 +11,20 @@
 
 package org.gridgain.visor.commands.start
 
-import org.gridgain.grid._
 import org.gridgain.grid.util.{GridUtils => U}
+
+import org.apache.ignite._
 
 import java.io._
 import java.util.concurrent._
 
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
-
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * Node start attempt result.
@@ -226,7 +227,7 @@ class VisorStartCommand {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
+                    case e: IgniteCheckedException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -281,7 +282,7 @@ class VisorStartCommand {
                     res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
-                    case e: GridException => scold(e.getMessage).^^
+                    case e: IgniteCheckedException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }

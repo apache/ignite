@@ -935,11 +935,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param e Element.
      * @param p Predicates.
      * @return {@code True} if predicates passed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K, V> boolean isAll(GridCacheEntryEx<K, V> e,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 
@@ -951,10 +951,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param p Predicates.
      * @param <E> Element type.
      * @return {@code True} if predicates passed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws GridException {
+    public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws IgniteCheckedException {
         if (F.isEmpty(p))
             return true;
 
@@ -1025,10 +1025,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param obj Object to clone
      * @return Clone of the given object.
-     * @throws GridException If failed to clone object.
+     * @throws IgniteCheckedException If failed to clone object.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T cloneValue(@Nullable T obj) throws GridException {
+    @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
         if (obj == null)
             return obj;
 
@@ -1197,9 +1197,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param obj Object to clone.
      * @return Clone of the given object.
-     * @throws GridException If failed to clone.
+     * @throws IgniteCheckedException If failed to clone.
      */
-    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws GridException {
+    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws IgniteCheckedException {
         return hasFlag(CLONE) ? cloneValue(obj) : obj;
     }
 
@@ -1212,7 +1212,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return f;
 
         return f.chain(new CX1<IgniteFuture<V>, V>() {
-            @Override public V applyx(IgniteFuture<V> f) throws GridException {
+            @Override public V applyx(IgniteFuture<V> f) throws IgniteCheckedException {
                 return cloneValue(f.get());
             }
         });
@@ -1227,7 +1227,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return f;
 
         return f.chain(new CX1<IgniteFuture<Map<K, V>>, Map<K, V>>() {
-            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws GridException {
+            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws IgniteCheckedException {
                 Map<K, V> map = new GridLeanMap<>();
 
                 for (Map.Entry<K, V> e : f.get().entrySet())
@@ -1559,9 +1559,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param bytes Object marshalled with portable marshaller.
      * @return Object marshalled with grid marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public byte[] convertPortableBytes(byte[] bytes) throws GridException {
+    public byte[] convertPortableBytes(byte[] bytes) throws IgniteCheckedException {
         assert portableEnabled() && offheapTiered();
 
         return marshaller().marshal(portable().unmarshal(bytes, 0));
@@ -1602,34 +1602,31 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (col instanceof ArrayList)
             return unwrapPortables((ArrayList<Object>)col);
 
-        int idx = 0;
+        Collection<Object> col0 = new ArrayList<>(col.size());
 
-        for (Object obj : col) {
-            Object unwrapped = unwrapPortable(obj);
+        for (Object obj : col)
+            col0.add(unwrapPortable(obj));
 
-            if (obj != unwrapped) {
-                Collection<Object> unwrappedCol = new ArrayList<>(col.size());
+        return col0;
+    }
 
-                int idx0 = 0;
+    /**
+     * Unwraps map.
+     *
+     * @param map Map to unwrap.
+     * @param keepPortable Keep portable flag.
+     * @return Unwrapped collection.
+     */
+    public Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepPortable) {
+        if (keepPortable || !config().isPortableEnabled())
+            return map;
 
-                for (Object obj0 : col) {
-                    if (idx0 < idx)
-                        unwrappedCol.add(obj0);
-                    else if (idx == idx0)
-                        unwrappedCol.add(unwrapped);
-                    else
-                        unwrappedCol.add(unwrapPortable(obj0));
+        Map<Object, Object> map0 = U.newHashMap(map.size());
 
-                    idx0++;
-                }
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapPortable(e.getKey()), unwrapPortable(e.getValue()));
 
-                return unwrappedCol;
-            }
-
-            idx++;
-        }
-
-        return col;
+        return map0;
     }
 
     /**
@@ -1662,7 +1659,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        if (keepPortable || !config().isPortableEnabled())
+        assert !portableEnabled() || o == null || U.isPortableOrCollectionType(o.getClass());
+
+        if (o == null)
+            return null;
+
+        if (keepPortable || !portableEnabled())
             return o;
 
         return unwrapPortable(o);
@@ -1699,6 +1701,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         else {
             if (o instanceof Collection)
                 return unwrapPortablesIfNeeded((Collection<Object>)o, false);
+            else if (o instanceof Map)
+                return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
             else if (o instanceof PortableObject)
                 return ((PortableObject)o).deserialize();
         }

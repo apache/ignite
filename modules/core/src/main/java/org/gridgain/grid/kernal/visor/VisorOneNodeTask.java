@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -21,7 +21,7 @@ import java.util.*;
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
     /** {@inheritDoc} */
-    @Nullable @Override protected R reduce0(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override protected R reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() == 1;
 
         ComputeJobResult res = F.first(results);

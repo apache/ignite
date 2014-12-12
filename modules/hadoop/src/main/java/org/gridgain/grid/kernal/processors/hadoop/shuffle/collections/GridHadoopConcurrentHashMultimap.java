@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.*;
@@ -79,7 +80,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @return Adder object.
      * @param ctx Task context.
      */
-    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws GridException {
+    @Override public Adder startAdding(GridHadoopTaskContext ctx) throws IgniteCheckedException {
         if (inputs.get() != 0)
             throw new IllegalStateException("Active inputs.");
 
@@ -114,7 +115,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
      * @param v Visitor.
      * @return {@code false} If visiting was impossible due to rehashing.
      */
-    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws IgniteCheckedException {
         if (!state.compareAndSet(State.READING_WRITING, State.VISITING)) {
             assert state.get() != State.CLOSING;
 
@@ -154,7 +155,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         inputs.incrementAndGet();
 
         if (!adders.isEmpty())
@@ -168,7 +169,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         assert s != State.REHASHING;
 
         return new Input(taskCtx) {
-            @Override public void close() throws GridException {
+            @Override public void close() throws IgniteCheckedException {
                 if (inputs.decrementAndGet() < 0)
                     throw new IllegalStateException();
 
@@ -359,9 +360,9 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
 
         /**
          * @param ctx Task context.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private AdderImpl(GridHadoopTaskContext ctx) throws GridException {
+        private AdderImpl(GridHadoopTaskContext ctx) throws IgniteCheckedException {
             super(ctx);
 
             keyReader = new Reader(keySer);
@@ -375,9 +376,9 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
          * @param in Data input.
          * @param reuse Reusable key.
          * @return Key.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws GridException {
+        @Override public Key addKey(DataInput in, @Nullable Key reuse) throws IgniteCheckedException {
             KeyImpl k = reuse == null ? new KeyImpl() : (KeyImpl)reuse;
 
             k.tmpKey = keySer.read(in, k.tmpKey);
@@ -388,7 +389,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Object key, Object val) throws GridException {
+        @Override public void write(Object key, Object val) throws IgniteCheckedException {
             A.notNull(val, "val");
 
             add(key, val);
@@ -430,9 +431,9 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
          * @param key Key.
          * @param val Value.
          * @return Updated or created meta page pointer.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        private long add(Object key, @Nullable Object val) throws GridException {
+        private long add(Object key, @Nullable Object val) throws IgniteCheckedException {
             AtomicLongArray tbl = oldTbl;
 
             int keyHash = U.hash(key.hashCode());
@@ -534,7 +535,7 @@ public class GridHadoopConcurrentHashMultimap extends GridHadoopHashMultimapBase
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             if (!adders.remove(this))
                 throw new IllegalStateException();
 

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.loadtest.swapspace;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;
@@ -163,7 +163,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                 catch (IgniteSpiException e) {
                     e.printStackTrace();
 
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
             }
         }, N_THREADS, "store");
@@ -222,7 +222,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                         }
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }

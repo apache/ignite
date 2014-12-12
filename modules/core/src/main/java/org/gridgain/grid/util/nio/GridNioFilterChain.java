@@ -123,9 +123,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * Starts chain notification from head to tail.
      *
      * @param ses Session that was created.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+    @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         head.onSessionOpened(ses);
     }
 
@@ -133,9 +133,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * Starts chain notification from head to tail.
      *
      * @param ses Session that was closed.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+    @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
         head.onSessionClosed(ses);
     }
 
@@ -143,9 +143,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * Starts chain notification from head to tail.
      *
      * @param ses Session in which GridNioException was caught.
-     * @param e GridException instance.
+     * @param e IgniteCheckedException instance.
      */
-    @Override public void onExceptionCaught(GridNioSession ses, GridException e) {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException e) {
         try {
             head.onExceptionCaught(ses, e);
         }
@@ -159,9 +159,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      *
      * @param ses Session in which message was received.
      * @param msg Received message.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         head.onMessageReceived(ses, msg);
     }
 
@@ -171,9 +171,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @param ses Session to which message should be written.
      * @param msg Message to write.
      * @return Send future.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         return tail.onSessionWrite(ses, msg);
     }
 
@@ -182,19 +182,19 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      *
      * @param ses Session to close.
      * @return Close future.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         return tail.onSessionClose(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
         head.onSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
         head.onSessionWriteTimeout(ses);
     }
 
@@ -203,9 +203,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      *
      * @param ses Session to pause reads.
      * @return Future.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
         return tail.onPauseReads(ses);
     }
 
@@ -214,9 +214,9 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      *
      * @param ses Session to resume reads.
      * @return Future.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
         return tail.onResumeReads(ses);
     }
 
@@ -242,18 +242,18 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, GridException ex) {
+        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) {
             lsnr.onDisconnected(ses, ex);
         }
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg)
-            throws GridException {
+            throws IgniteCheckedException {
             return proceedSessionWrite(ses, msg);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
             return proceedSessionClose(ses);
         }
 
@@ -263,22 +263,22 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
             lsnr.onSessionIdleTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+        @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
             lsnr.onSessionWriteTimeout(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
             return proceedPauseReads(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws GridException {
+        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             return proceedResumeReads(ses);
         }
     }

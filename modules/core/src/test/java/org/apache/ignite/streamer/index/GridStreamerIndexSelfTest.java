@@ -9,6 +9,7 @@
 
 package org.apache.ignite.streamer.index;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
@@ -85,7 +86,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             fail("Exception should have been thrown.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -166,9 +167,9 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
      * it discards event "A" and accepts event "B".
      *
      * @param updater Index updater.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkIndexUpdater(StreamerIndexUpdater<String, String, Integer> updater) throws GridException {
+    private void checkIndexUpdater(StreamerIndexUpdater<String, String, Integer> updater) throws IgniteCheckedException {
         List<StreamerIndexProvider<String, String, Integer>> idxps = Arrays.asList(
             indexProvider(true, "tree", updater, StreamerIndexPolicy.EVENT_TRACKING_ON, false),
             indexProvider(false, "hash", updater, StreamerIndexPolicy.EVENT_TRACKING_ON, false));
@@ -249,11 +250,11 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             // Submit the same event in multiple threads.
             runMultiThreaded(new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     try {
                         win.enqueue(evt);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (e.getMessage().contains("Index unique key violation"))
                             nIdxErrors.incrementAndGet();
                         else
@@ -294,7 +295,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // These threads poll evicted events from the window if it doesn't break
             // the test invariant.
             pollFut = runMultiThreadedAsync(new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     try {
                         while (!Thread.currentThread().isInterrupted()) {
                             StreamerIndex<String, String, Integer> idx = win.index("idx");
@@ -324,7 +325,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // sorted by value and the value is a number of repeated events, so, this
             // should be invariant.
             IgniteFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     final String evt = Thread.currentThread().getName();
                     int cntr = 1;
 
@@ -351,7 +352,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             // This thread generates a set of single non-repeating events from 0 to iters.
             IgniteFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++)
                         win.enqueue(String.valueOf(i));
                 }
@@ -368,9 +369,9 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param idx Index.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkNonUniqueIndex(StreamerIndexProvider<String, String, Integer> idx) throws GridException {
+    private void checkNonUniqueIndex(StreamerIndexProvider<String, String, Integer> idx) throws IgniteCheckedException {
         assert !idx.isUnique();
 
         StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
@@ -503,9 +504,9 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param idx Index.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkUniqueIndex(StreamerIndexProvider<String, String, String> idx) throws GridException {
+    private void checkUniqueIndex(StreamerIndexProvider<String, String, String> idx) throws IgniteCheckedException {
         assert idx.isUnique();
 
         StreamerBoundedSizeWindow<String> win = new StreamerBoundedSizeWindow<>();
@@ -524,7 +525,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
                 fail("Exception should have been thrown.");
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -668,8 +669,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt)
-            throws GridException {
-            throw new GridException("Unique key violation: " + evt);
+            throws IgniteCheckedException {
+            throw new IgniteCheckedException("Unique key violation: " + evt);
         }
 
         /** {@inheritDoc} */

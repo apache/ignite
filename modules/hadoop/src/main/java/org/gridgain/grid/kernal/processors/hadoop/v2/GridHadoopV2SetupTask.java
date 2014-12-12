@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 
@@ -31,7 +32,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected void run0(GridHadoopV2TaskContext taskCtx) throws GridException {
+    @Override protected void run0(GridHadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         try {
             JobContextImpl jobCtx = taskCtx.jobContext();
 
@@ -45,7 +46,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
                 committer.setupJob(jobCtx);
         }
         catch (ClassNotFoundException | IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

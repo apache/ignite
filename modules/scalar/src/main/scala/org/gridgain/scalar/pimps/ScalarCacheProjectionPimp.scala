@@ -17,6 +17,7 @@ import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer, IgniteClosure, Ig
 import collection._
 import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.gridgain.grid.cache._
 import org.gridgain.grid.util.lang.{GridFunc => F}
@@ -247,7 +248,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         else if (c == classOf[Byte])
             classOf[java.lang.Byte]
         else if (c == classOf[Symbol])
-            throw new GridException("Cache type projeciton on 'scala.Symbol' are not supported.")
+            throw new IgniteCheckedException("Cache type projeciton on 'scala.Symbol' are not supported.")
         else
             c
     }

@@ -20,6 +20,7 @@ import scalar._
 import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
+import org.apache.ignite._
 import org.gridgain.grid._
 import collection.JavaConversions._
 import java.util.UUID

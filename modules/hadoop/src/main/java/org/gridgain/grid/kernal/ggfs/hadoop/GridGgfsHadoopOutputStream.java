@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.jetbrains.annotations.*;
@@ -182,7 +183,7 @@ public class GridGgfsHadoopOutputStream extends OutputStream implements GridGgfs
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() throws GridException {
+    @Override public void onClose() throws IgniteCheckedException {
         markClosed(true);
     }
 

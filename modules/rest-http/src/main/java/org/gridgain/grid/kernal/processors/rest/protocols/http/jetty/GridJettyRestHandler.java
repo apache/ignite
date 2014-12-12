@@ -286,10 +286,10 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param cmd Command.
      * @param params Parameters.
      * @return REST request.
-     * @throws GridException If creation failed.
+     * @throws IgniteCheckedException If creation failed.
      */
     @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params,
-        ServletRequest req) throws GridException {
+        ServletRequest req) throws IgniteCheckedException {
         GridRestRequest restReq;
 
         switch (cmd) {
@@ -329,7 +329,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                     List<Object> vals = values("v", params);
 
                     if (keys.size() < vals.size())
-                        throw new GridException("Number of keys must be greater or equals to number of values.");
+                        throw new IgniteCheckedException("Number of keys must be greater or equals to number of values.");
 
                     Map<Object, Object> map = U.newHashMap(keys.size());
 
@@ -402,7 +402,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             }
 
             default:
-                throw new GridException("Invalid command: " + cmd);
+                throw new IgniteCheckedException("Invalid command: " + cmd);
         }
 
         restReq.address(new InetSocketAddress(req.getRemoteAddr(), req.getRemotePort()));
@@ -457,9 +457,9 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param dfltVal Default value.
      * @return Long value from parameters map or {@code dfltVal} if null
      *     or not exists.
-     * @throws GridException If parsing failed.
+     * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws GridException {
+    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws IgniteCheckedException {
         assert key != null;
 
         String val = (String) params.get(key);
@@ -468,7 +468,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             return val == null ? dfltVal : Long.valueOf(val);
         }
         catch (NumberFormatException ignore) {
-            throw new GridException("Failed to parse parameter of Long type [" + key + "=" + val + "]");
+            throw new IgniteCheckedException("Failed to parse parameter of Long type [" + key + "=" + val + "]");
         }
     }
 
@@ -480,9 +480,9 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param dfltVal Default value.
      * @return Integer value from parameters map or {@code dfltVal} if null
      *     or not exists.
-     * @throws GridException If parsing failed.
+     * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws GridException {
+    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws IgniteCheckedException {
         assert key != null;
 
         String val = (String) params.get(key);
@@ -491,7 +491,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             return val == null ? dfltVal : Integer.valueOf(val);
         }
         catch (NumberFormatException ignore) {
-            throw new GridException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
+            throw new IgniteCheckedException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
         }
     }
 
@@ -502,9 +502,9 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param params Parameters map.
      * @return UUID value from parameters map or {@code null} if null
      *     or not exists.
-     * @throws GridException If parsing failed.
+     * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws GridException {
+    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
         assert key != null;
 
         String val = (String) params.get(key);
@@ -513,7 +513,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             return val == null ? null : UUID.fromString(val);
         }
         catch (NumberFormatException ignore) {
-            throw new GridException("Failed to parse parameter of UUID type [" + key + "=" + val + "]");
+            throw new IgniteCheckedException("Failed to parse parameter of UUID type [" + key + "=" + val + "]");
         }
     }
 

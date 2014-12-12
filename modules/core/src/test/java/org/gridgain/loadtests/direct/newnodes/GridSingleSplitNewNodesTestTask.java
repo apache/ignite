@@ -9,10 +9,10 @@
 
 package org.gridgain.loadtests.direct.newnodes;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 
 import java.io.*;
 import java.util.*;
@@ -30,7 +30,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
         assert !subgrid.isEmpty() : "Subgrid cannot be empty.";
 
         Map<ComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());
@@ -47,7 +47,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
                 private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */
-                @Override public Serializable execute() throws GridException {
+                @Override public Serializable execute() throws IgniteCheckedException {
                     assert jobSes != null;
 
                     Integer arg = this.<Integer>argument(0);
@@ -73,7 +73,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {

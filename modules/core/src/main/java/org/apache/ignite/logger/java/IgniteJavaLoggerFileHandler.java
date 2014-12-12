@@ -9,7 +9,7 @@
 
 package org.apache.ignite.logger.java;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -68,7 +68,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
      *
      * @param nodeId Node id.
      */
-    public void nodeId(UUID nodeId) throws GridException, IOException {
+    public void nodeId(UUID nodeId) throws IgniteCheckedException, IOException {
         if (delegate != null)
             return;
 
@@ -123,7 +123,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
      *
      * @return Logging directory.
      */
-    private static File logDirectory() throws GridException {
+    private static File logDirectory() throws IgniteCheckedException {
         return !F.isEmpty(U.GRIDGAIN_LOG_DIR) ? new File(U.GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
     }
 

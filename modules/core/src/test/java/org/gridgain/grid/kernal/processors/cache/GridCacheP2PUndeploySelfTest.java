@@ -175,9 +175,9 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @param g Grid.
      * @return Size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private long size(String cacheName, GridKernal g) throws GridException {
+    private long size(String cacheName, GridKernal g) throws IgniteCheckedException {
         if (offheap)
             return g.cache(cacheName).offHeapEntriesCount();
 

@@ -9,9 +9,9 @@
 
 package org.apache.ignite.spi.failover;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -56,7 +56,7 @@ public class GridFailoverTestContext implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) throws GridException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) throws IgniteCheckedException {
         return grid.get(RAND.nextInt(grid.size()));
     }
 }

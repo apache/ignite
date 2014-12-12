@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
@@ -133,7 +134,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                     try {
                         clientIo.start();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         throw new IOException(e.getMessage(), e);
                     }
 
@@ -222,9 +223,9 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     /**
      * Starts the IO.
      *
-     * @throws GridException If failed to connect the endpoint.
+     * @throws IgniteCheckedException If failed to connect the endpoint.
      */
-    private void start() throws GridException {
+    private void start() throws IgniteCheckedException {
         boolean success = false;
 
         try {
@@ -242,11 +243,11 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
             success = true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             GridIpcOutOfSystemResourcesException resEx = e.getCause(GridIpcOutOfSystemResourcesException.class);
 
             if (resEx != null)
-                throw new GridException(GridIpcSharedMemoryServerEndpoint.OUT_OF_RESOURCES_MSG, resEx);
+                throw new IgniteCheckedException(GridIpcSharedMemoryServerEndpoint.OUT_OF_RESOURCES_MSG, resEx);
 
             throw e;
         }
@@ -308,13 +309,13 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws GridException {
+    @Override public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws IgniteCheckedException {
         return send(msg, null, 0, 0);
     }
 
     /** {@inheritDoc} */
     @Override public <T> GridPlainFuture<T> send(GridGgfsMessage msg, @Nullable byte[] outBuf, int outOff,
-        int outLen) throws GridException {
+        int outLen) throws IgniteCheckedException {
         assert outBuf == null || msg.command() == GridGgfsIpcCommand.READ_BLOCK;
 
         if (!busyLock.readLock().tryLock())
@@ -344,7 +345,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
             byte[] hdr = GridGgfsMarshaller.createHeader(reqId, msg.command());
 
-            GridException err = null;
+            IgniteCheckedException err = null;
 
             try {
                 synchronized (this) {
@@ -353,7 +354,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                     out.flush(); // Blocking operation + sometimes system call.
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 err = e;
             }
             catch (IOException e) {
@@ -374,7 +375,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendPlain(GridGgfsMessage msg) throws GridException {
+    @Override public void sendPlain(GridGgfsMessage msg) throws IgniteCheckedException {
         if (!busyLock.readLock().tryLock())
             throw new GridGgfsHadoopCommunicationException("Failed to send message (client is being " +
                 "concurrently closed).");
@@ -426,7 +427,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
         }
 
         if (err == null)
-            err = new GridException("Failed to perform request (connection was concurrently closed before response " +
+            err = new IgniteCheckedException("Failed to perform request (connection was concurrently closed before response " +
                 "is received).");
 
         // Clean up resources.
@@ -499,7 +500,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                             log.warn(msg);
 
-                            err = new GridException(msg);
+                            err = new IgniteCheckedException(msg);
 
                             break;
                         }
@@ -549,7 +550,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                                 fut.onDone(res);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to apply response closure (will fail request future): " +
                                         e.getMessage());
@@ -563,7 +564,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
                 }
             }
             catch (EOFException ignored) {
-                err = new GridException("Failed to read response from server (connection was closed by remote peer).");
+                err = new IgniteCheckedException("Failed to read response from server (connection was closed by remote peer).");
             }
             catch (IOException e) {
                 if (!stopping)
@@ -571,7 +572,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                 err = new GridGgfsHadoopCommunicationException(e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (!stopping)
                     log.error("Failed to obtain endpoint input stream (connection will be closed)", e);
 

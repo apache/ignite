@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -67,7 +67,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         ctx.security().authorize(ses.getTaskName(), GridSecurityPermission.TASK_CANCEL, null);
 
         checkValid();
@@ -86,9 +86,9 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
      * callback on local jobs.
      *
      * @return {@code True} if future was cancelled (i.e. was not finished prior to this call).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean cancelOnMasterLeave() throws GridException {
+    public boolean cancelOnMasterLeave() throws IgniteCheckedException {
         checkValid();
 
         if (onCancelled()) {

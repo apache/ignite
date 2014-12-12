@@ -10,9 +10,9 @@
 package org.gridgain.grid.kernal.processors.schedule;
 
 import it.sauronsoftware.cron4j.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -99,14 +99,14 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         sched = new Scheduler();
 
         sched.start();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (sched.isStarted())
             sched.stop();
 

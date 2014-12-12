@@ -61,7 +61,7 @@ public class GridHibernateTransactionalAccessStrategy extends GridHibernateAcces
         try {
             return cache.get(key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -71,7 +71,7 @@ public class GridHibernateTransactionalAccessStrategy extends GridHibernateAcces
         try {
             cache.putx(key, val);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -93,7 +93,7 @@ public class GridHibernateTransactionalAccessStrategy extends GridHibernateAcces
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -110,7 +110,7 @@ public class GridHibernateTransactionalAccessStrategy extends GridHibernateAcces
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -125,7 +125,7 @@ public class GridHibernateTransactionalAccessStrategy extends GridHibernateAcces
         try {
             cache.removex(key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }

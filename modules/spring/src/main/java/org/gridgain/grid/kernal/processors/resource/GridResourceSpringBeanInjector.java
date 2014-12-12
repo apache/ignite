@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
+import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.springframework.context.*;
+
 import java.io.*;
 import java.lang.reflect.*;
 
@@ -36,7 +37,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> cls,
-        GridDeployment depCls) throws GridException {
+        GridDeployment depCls) throws IgniteCheckedException {
         IgniteSpringResource ann = (IgniteSpringResource)field.getAnnotation();
 
         assert ann != null;
@@ -47,7 +48,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         // Check for 'transient' modifier only in serializable classes.
         if (!Modifier.isTransient(field.getField().getModifiers()) &&
             Serializable.class.isAssignableFrom(field.getField().getDeclaringClass())) {
-            throw new GridException("@GridSpringResource must only be used with 'transient' fields: " +
+            throw new IgniteCheckedException("@GridSpringResource must only be used with 'transient' fields: " +
                 field.getField());
         }
 
@@ -62,13 +63,13 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> cls,
-        GridDeployment depCls) throws GridException {
+        GridDeployment depCls) throws IgniteCheckedException {
         IgniteSpringResource ann = (IgniteSpringResource)mtd.getAnnotation();
 
         assert ann != null;
 
         if (mtd.getMethod().getParameterTypes().length != 1)
-            throw new GridException("Method injection setter must have only one parameter: " + mtd.getMethod());
+            throw new IgniteCheckedException("Method injection setter must have only one parameter: " + mtd.getMethod());
 
         String name = ann.resourceName();
 

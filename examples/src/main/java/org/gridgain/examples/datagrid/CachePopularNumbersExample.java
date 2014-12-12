@@ -48,7 +48,7 @@ public class CachePopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
@@ -83,9 +83,9 @@ public class CachePopularNumbersExample {
      * Populates cache in real time with numbers and keeps count for every number.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void streamData(final Ignite g) throws GridException {
+    private static void streamData(final Ignite g) throws IgniteCheckedException {
         try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
@@ -137,7 +137,7 @@ public class CachePopularNumbersExample {
 
                     System.out.println("----------------");
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }
@@ -160,7 +160,7 @@ public class CachePopularNumbersExample {
         };
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) throws GridException {
+        @Override public void update(GridCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.transform(entry.getKey(), INC);
         }

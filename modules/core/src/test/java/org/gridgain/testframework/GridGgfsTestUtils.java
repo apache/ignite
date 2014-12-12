@@ -10,7 +10,7 @@
 package org.gridgain.testframework;
 
 import net.sf.json.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -23,9 +23,9 @@ public class GridGgfsTestUtils {
      *
      * @param jsonStr String to convert.
      * @return Map.
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
-    public static Map<String,String> jsonToMap(String jsonStr) throws GridException {
+    public static Map<String,String> jsonToMap(String jsonStr) throws IgniteCheckedException {
         Map<String,String> res = new HashMap<>();
 
         try {
@@ -39,7 +39,7 @@ public class GridGgfsTestUtils {
 
         }
         catch (JSONException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         return res;

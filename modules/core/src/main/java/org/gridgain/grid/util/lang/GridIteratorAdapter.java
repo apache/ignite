@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -26,8 +26,8 @@ public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
         try {
             return nextX();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -36,8 +36,8 @@ public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
         try {
             return hasNextX();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -46,8 +46,8 @@ public abstract class GridIteratorAdapter<T> implements GridIterator<T> {
         try {
             removeX();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 

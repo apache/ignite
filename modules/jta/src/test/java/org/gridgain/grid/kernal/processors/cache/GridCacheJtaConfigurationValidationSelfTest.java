@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.gridgain.testframework.*;
@@ -18,7 +18,6 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
-
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -52,7 +51,7 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
 
                 return null;
             }
-        }, GridException.class, null);
+        }, IgniteCheckedException.class, null);
     }
 
     /**
@@ -60,7 +59,7 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTxLookup implements GridCacheTmLookup {
-        @Nullable @Override public TransactionManager getTm() throws GridException {
+        @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
             return null;
         }
     }

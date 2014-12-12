@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -39,7 +39,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
         final GridSnapshotLock<T3<Long, Long, Long>> lock = new GridSnapshotLock<T3<Long, Long, Long>>() {
             @Override protected T3<Long, Long, Long> doSnapshot() {
                 if (rnd.nextBoolean())
-                    throw new GridRuntimeException(oops);
+                    throw new IgniteException(oops);
 
                 return new T3<>(x.get(), y.get(), z.get());
             }
@@ -81,7 +81,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
                     try {
                         t = lock.snapshot();
                     }
-                    catch (GridRuntimeException e) {
+                    catch (IgniteException e) {
                         assertEquals(oops, e.getMessage());
 
                         continue;

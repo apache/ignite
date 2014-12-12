@@ -291,14 +291,14 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param cnt Entry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void put(GridCacheProjection<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
                 assertTrue("Failed to put key: 'key" + i + "'",  cache.putx("key" + i, i));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -310,7 +310,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @param concurrency Concurrency control.
      * @param isolation Isolation level.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void put(GridCacheProjection<String, Integer> cache, final int cnt,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
@@ -319,13 +319,13 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
             CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override public void applyx(GridCacheProjection<String, Integer> cache)
-                    throws GridException {
+                    throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue("Failed to put key: 'key" + i + "'", cache.putx("key" + i, i));
                 }
             });
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -337,14 +337,14 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param cnt Entry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void remove(GridCacheProjection<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
                 cache.removex("key" + i);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -356,7 +356,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @param concurrency Concurrency control.
      * @param isolation Isolation level.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void remove(GridCacheProjection<String, Integer> cache, final int cnt,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
@@ -365,13 +365,13 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
             CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
                 @Override public void applyx(GridCacheProjection<String, Integer> cache)
-                    throws GridException {
+                    throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         cache.removex("key" + i);
                 }
             });
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -383,9 +383,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param expSize Minimum expected cache size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void check(GridCacheProjection<String,Integer> cache, int expSize) throws GridException {
+    private void check(GridCacheProjection<String,Integer> cache, int expSize) throws IgniteCheckedException {
         int size;
 
         if (cacheMode() == PARTITIONED) {

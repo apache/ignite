@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.managers.security;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.*;
 import org.apache.ignite.plugin.security.*;
+import org.gridgain.grid.kernal.*;
 
 import java.io.*;
 import java.util.*;
@@ -45,12 +45,12 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException {
+    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
         return secMgr.authenticatedSubjects();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException {
+    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
         return secMgr.authenticatedSubject(subjId);
     }
 

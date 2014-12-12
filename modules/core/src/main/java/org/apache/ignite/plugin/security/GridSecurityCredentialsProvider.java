@@ -9,7 +9,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Security credentials provider for specifying security credentials.
@@ -35,7 +35,7 @@ public interface GridSecurityCredentialsProvider {
      * Gets security credentials.
      *
      * @return Security credentials.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridSecurityCredentials credentials() throws GridException;
+    public GridSecurityCredentials credentials() throws IgniteCheckedException;
 }

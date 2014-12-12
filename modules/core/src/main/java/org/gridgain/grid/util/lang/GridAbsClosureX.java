@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient abs-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method
- * and properly wraps {@link GridException} into {@link GridClosureException} instance.
+ * and properly wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
  */
 public abstract class GridAbsClosureX extends GridAbsClosure {
     /** */
@@ -26,15 +26,15 @@ public abstract class GridAbsClosureX extends GridAbsClosure {
         try {
             applyx();
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             throw F.wrap(ex);
         }
     }
 
     /**
-     * Closure body that can throw {@link GridException}.
+     * Closure body that can throw {@link IgniteCheckedException}.
      *
-     * @throws GridException Thrown in case of any error condition inside of the closure.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the closure.
      */
-    public abstract void applyx() throws GridException;
+    public abstract void applyx() throws IgniteCheckedException;
 }

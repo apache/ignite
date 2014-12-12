@@ -147,7 +147,7 @@ public class GridHadoopExternalProcessStarter {
         try {
             logger = url != null ? new IgniteLog4jLogger(url) : new IgniteLog4jLogger(true);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             System.err.println("Failed to create URL-based logger. Will use default one.");
 
             e.printStackTrace();

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -57,9 +57,9 @@ public class GridNioServerBuffer {
     /**
      * @param buf Buffer.
      * @return Message bytes or {@code null} if message is not fully read yet.
-     * @throws GridException If failed to parse message.
+     * @throws IgniteCheckedException If failed to parse message.
      */
-    @Nullable public byte[] read(ByteBuffer buf) throws GridException {
+    @Nullable public byte[] read(ByteBuffer buf) throws IgniteCheckedException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++) {
                 msgSize <<= 8;
@@ -72,7 +72,7 @@ public class GridNioServerBuffer {
 
             // If count is 0 then message size should be inited.
             if (msgSize <= 0)
-                throw new GridException("Invalid message size: " + msgSize);
+                throw new IgniteCheckedException("Invalid message size: " + msgSize);
 
             data = new byte[msgSize];
         }

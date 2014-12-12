@@ -141,7 +141,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             assert false : "Grid was started with illegal configuration.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

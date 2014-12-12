@@ -231,9 +231,9 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(GridCache<Integer, String> c, int cnt) throws GridException {
+    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }
@@ -241,9 +241,9 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void checkKeys(GridCache<Integer, String> c, int cnt) throws GridException {
+    private void checkKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         GridCacheAffinity<Integer> aff = affinity(c);
 
         boolean sync = isSync(c);

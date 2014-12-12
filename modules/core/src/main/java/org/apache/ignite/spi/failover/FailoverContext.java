@@ -9,9 +9,9 @@
 
 package org.apache.ignite.spi.failover;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -41,7 +41,7 @@ public interface FailoverContext {
      *
      * @param top Topology to pick balanced node from.
      * @return The next balanced node.
-     * @throws GridException If anything failed.
+     * @throws IgniteCheckedException If anything failed.
      */
-    public ClusterNode getBalancedNode(List<ClusterNode> top) throws GridException;
+    public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteCheckedException;
 }

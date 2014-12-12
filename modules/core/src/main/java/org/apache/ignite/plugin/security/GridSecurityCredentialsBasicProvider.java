@@ -9,7 +9,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Basic implementation for {@link GridSecurityCredentialsProvider}. Use it
@@ -30,7 +30,7 @@ public class GridSecurityCredentialsBasicProvider implements GridSecurityCredent
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityCredentials credentials() throws GridException {
+    @Override public GridSecurityCredentials credentials() throws IgniteCheckedException {
         return cred;
     }
 }

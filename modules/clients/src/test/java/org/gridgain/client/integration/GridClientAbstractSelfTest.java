@@ -11,19 +11,19 @@ package org.gridgain.client.integration;
 
 import junit.framework.*;
 import net.sf.json.*;
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.client.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.gridgain.client.*;
+import org.gridgain.client.ssl.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -1435,7 +1435,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws GridException {
+            throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1457,7 +1457,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1473,7 +1473,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     private static class SleepTestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws GridException {
+            throws IgniteCheckedException {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1495,7 +1495,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1513,7 +1513,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
 
@@ -1525,7 +1525,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return delegate.reduce(results);
         }
     }
@@ -1538,7 +1538,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
             JSON json = JSONSerializer.toJSON(arg);
 
             List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
@@ -1547,7 +1547,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return delegate.reduce(results);
         }
     }
@@ -1561,7 +1561,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args)
-            throws GridException {
+            throws IgniteCheckedException {
             for (Map.Entry e : map.entrySet()) {
                 clo.apply(e.getKey(), e.getValue());
             }
@@ -1569,19 +1569,19 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx, Object key,
-            @Nullable Object val) throws GridException {
+            @Nullable Object val) throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             map.remove(key);
         }
     }

@@ -9,16 +9,16 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -63,7 +63,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException {
+    @Override public int memorySize() throws IgniteCheckedException {
         return super.memorySize() + NEAR_SIZE_OVERHEAD;
     }
 
@@ -169,11 +169,11 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param primaryNodeId Primary node ID.
      * @return {@code True} if reset was done.
      * @throws GridCacheEntryRemovedException If obsolete.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"RedundantTypeArguments"})
     public boolean resetFromPrimary(V val, byte[] valBytes, GridCacheVersion ver, GridCacheVersion dhtVer,
-        UUID primaryNodeId) throws GridCacheEntryRemovedException, GridException {
+        UUID primaryNodeId) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -311,7 +311,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected V readThrough(GridCacheTxEx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx, F.asList(key), reload, /*force primary*/false, filter, subjId, taskName, true).
             get().get(key);
     }
@@ -329,14 +329,14 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param evt Event flag.
      * @param topVer Topology version.
      * @return {@code True} if initial value was set.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     public boolean loadedValue(@Nullable GridCacheTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt, long topVer, UUID subjId)
-        throws GridException, GridCacheEntryRemovedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
         if (valBytes != null && val == null && (isNewLocked() || !valid))
@@ -396,7 +396,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void updateIndex(V val, byte[] valBytes, long expireTime,
-        GridCacheVersion ver, V old) throws GridException {
+        GridCacheVersion ver, V old) throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
 

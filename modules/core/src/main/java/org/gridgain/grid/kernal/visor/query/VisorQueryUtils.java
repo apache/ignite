@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.visor.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.*;
 
@@ -114,7 +114,7 @@ public class VisorQueryUtils {
      */
     public static IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
         GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
-        throws GridException {
+        throws IgniteCheckedException {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
@@ -164,7 +164,7 @@ public class VisorQueryUtils {
      * @return Fetched rows and last processed element.
      */
     public static IgniteBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
-        List<?> savedNext, int pageSize) throws GridException {
+        List<?> savedNext, int pageSize) throws IgniteCheckedException {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;

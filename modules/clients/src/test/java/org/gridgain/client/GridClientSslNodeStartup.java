@@ -40,9 +40,9 @@ public class GridClientSslNodeStartup {
      * Starts up two nodes with specified cache configuration on pre-defined endpoints.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException In case of any exception.
+     * @throws IgniteCheckedException In case of any exception.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
 
         try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-ssl-node.xml")) {

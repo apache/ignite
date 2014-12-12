@@ -741,7 +741,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                GridException.class,
+                IgniteCheckedException.class,
                 null);
         }
         finally {
@@ -761,7 +761,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, GridException.class, null);
+            }, IgniteCheckedException.class, null);
 
             assert X.hasCause(t, IgniteSpiException.class) : "Unexpected exception: " + t;
         }
@@ -812,7 +812,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                GridException.class,
+                IgniteCheckedException.class,
                 null);
         }
         finally {
@@ -844,7 +844,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                GridException.class,
+                IgniteCheckedException.class,
                 null);
         }
         finally {
@@ -873,7 +873,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                GridException.class,
+                IgniteCheckedException.class,
                 null);
         }
         finally {

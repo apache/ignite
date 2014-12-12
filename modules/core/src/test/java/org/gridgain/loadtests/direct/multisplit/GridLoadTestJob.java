@@ -34,7 +34,7 @@ public class GridLoadTestJob extends ComputeJobAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Serializable execute() throws GridException {
+    @Override public Serializable execute() throws IgniteCheckedException {
         Integer i = this.<Integer>argument(0);
 
         assert i != null && i > 0;

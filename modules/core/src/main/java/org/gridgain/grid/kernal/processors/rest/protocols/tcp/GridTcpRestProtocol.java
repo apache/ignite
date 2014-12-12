@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
@@ -17,7 +18,6 @@ import org.gridgain.client.marshaller.*;
 import org.gridgain.client.marshaller.jdk.*;
 import org.gridgain.client.marshaller.optimized.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
@@ -143,7 +143,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public void start(final GridRestProtocolHandler hnd) throws GridException {
+    @Override public void start(final GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert hnd != null;
 
         ClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
@@ -163,7 +163,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 GridSslContextFactory factory = cfg.getRestTcpSslContextFactory();
 
                 if (factory == null)
-                    // Thrown SSL exception instead of GridException for writing correct warning message into log.
+                    // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
                 sslCtx = factory.createSslContext();
@@ -302,7 +302,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage());
 

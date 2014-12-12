@@ -35,7 +35,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         IgniteServiceResource ann = (IgniteServiceResource)field.getAnnotation();
 
         Class svcItf = ann.proxyInterface();
@@ -53,7 +53,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
-        throws GridException {
+        throws IgniteCheckedException {
         IgniteServiceResource ann = (IgniteServiceResource)mtd.getAnnotation();
 
         Class svcItf = ann.proxyInterface();
@@ -68,7 +68,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Class<?>[] types = mtd.getMethod().getParameterTypes();
 
         if (types.length != 1)
-            throw new GridException("Setter does not have single parameter of required type [type=" +
+            throw new IgniteCheckedException("Setter does not have single parameter of required type [type=" +
                 svc.getClass().getName() + ", setter=" + mtd + ']');
 
         if (svc != null)

@@ -13,9 +13,10 @@ import com.amazonaws.*;
 import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.checkpoint.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
@@ -91,7 +92,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
             final String key = KEY_PREFIX + i;
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assertNotNull("Missing checkpoint: " + key,
                         getSpi().loadCheckpoint(key));
                 }
@@ -124,7 +125,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
             final String key = KEY_PREFIX + i;
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assertNull(getSpi().loadCheckpoint(key));
                 }
             });
@@ -150,7 +151,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
             final String key = KEY_PREFIX + i;
 
             assertWithRetries(new GridAbsClosureX() {
-                @Override public void applyx() throws GridException {
+                @Override public void applyx() throws IgniteCheckedException {
                     assertNull("Checkpoint state should not be loaded with key: " + key,
                         getSpi().loadCheckpoint(key));
                 }
@@ -172,7 +173,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
         getSpi().saveCheckpoint(KEY_PREFIX, GridTestIoUtils.serializeJdk(state2), 0, true);
 
         assertWithRetries(new GridAbsClosureX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 assertNotNull(getSpi().loadCheckpoint(KEY_PREFIX));
             }
         });
@@ -188,7 +189,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
         getSpi().removeCheckpoint(KEY_PREFIX);
 
         assertWithRetries(new GridAbsClosureX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 assertNull(getSpi().loadCheckpoint(KEY_PREFIX));
             }
         });

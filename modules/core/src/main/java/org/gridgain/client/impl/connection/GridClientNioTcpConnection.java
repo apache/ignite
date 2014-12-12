@@ -8,6 +8,7 @@
  */
 package org.gridgain.client.impl.connection;
 
+import org.apache.ignite.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.marshaller.*;
@@ -211,7 +212,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             cleanup = false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new GridClientException(e);
         }
         finally {

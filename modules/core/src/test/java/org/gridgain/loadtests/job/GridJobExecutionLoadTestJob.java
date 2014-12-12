@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.job;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.io.*;
 
@@ -19,7 +19,7 @@ import java.io.*;
  */
 public class GridJobExecutionLoadTestJob implements ComputeJob, Externalizable {
     /** {@inheritDoc} */
-    @Override public Object execute() throws GridException {
+    @Override public Object execute() throws IgniteCheckedException {
         return null;
     }
 

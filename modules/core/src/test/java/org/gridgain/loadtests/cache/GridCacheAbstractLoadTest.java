@@ -234,9 +234,9 @@ abstract class GridCacheAbstractLoadTest {
      *
      * @param log Log file name.
      * @return Logger.
-     * @throws GridException If file initialization failed.
+     * @throws IgniteCheckedException If file initialization failed.
      */
-    protected IgniteLogger initLogger(String log) throws GridException {
+    protected IgniteLogger initLogger(String log) throws IgniteCheckedException {
         Logger impl = Logger.getRootLogger();
 
         impl.removeAllAppenders();
@@ -259,7 +259,7 @@ abstract class GridCacheAbstractLoadTest {
             fileApp.activateOptions();
         }
         catch (IOException e) {
-            throw new GridException("Unable to initialize file appender.", e);
+            throw new IgniteCheckedException("Unable to initialize file appender.", e);
         }
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();
@@ -307,18 +307,18 @@ abstract class GridCacheAbstractLoadTest {
      * @param springCfgPath Configuration file path.
      * @param log Log file name.
      * @return Configuration.
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
     @SuppressWarnings("unchecked")
-    protected IgniteConfiguration configuration(String springCfgPath, String log) throws GridException {
+    protected IgniteConfiguration configuration(String springCfgPath, String log) throws IgniteCheckedException {
         File path = GridTestUtils.resolveGridGainPath(springCfgPath);
 
         if (path == null)
-            throw new GridException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
+            throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
                 ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
 
         if (!path.isFile())
-            throw new GridException("Provided file path is not a file: " + path);
+            throw new IgniteCheckedException("Provided file path is not a file: " + path);
 
         // Add no-op logger to remove no-appender warning.
         Appender app = new NullAppender();
@@ -331,7 +331,7 @@ abstract class GridCacheAbstractLoadTest {
             springCtx = new FileSystemXmlApplicationContext(path.toURI().toURL().toString());
         }
         catch (BeansException | MalformedURLException e) {
-            throw new GridException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
         }
 
         Map cfgMap;
@@ -341,20 +341,20 @@ abstract class GridCacheAbstractLoadTest {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null)
-            throw new GridException("Failed to find a single grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
 
         // Remove previously added no-op logger.
         Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.isEmpty())
-            throw new GridException("Can't find grid factory configuration in: " + path);
+            throw new IgniteCheckedException("Can't find grid factory configuration in: " + path);
         else if (cfgMap.size() > 1)
-            throw new GridException("More than one configuration provided for cache load test: " + cfgMap.values());
+            throw new IgniteCheckedException("More than one configuration provided for cache load test: " + cfgMap.values());
 
         IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 

@@ -47,7 +47,7 @@ public class IgniteFsFixedLengthRecordResolver implements IgniteFsRecordResolver
     /** {@inheritDoc} */
     @Override public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
         IgniteFsFileRange suggestedRecord)
-        throws GridException, IOException {
+        throws IgniteCheckedException, IOException {
         long suggestedEnd = suggestedRecord.start() + suggestedRecord.length();
 
         long startRem = suggestedRecord.start() % recLen;

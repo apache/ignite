@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -353,7 +354,7 @@ public class GridFunc {
             try {
                 return ((GridCacheEntry)o).get();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
             }
         }
@@ -382,7 +383,7 @@ public class GridFunc {
             try {
                 return ((GridCacheEntry)o).get() != null;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
             }
         }
@@ -399,7 +400,7 @@ public class GridFunc {
             try {
                 return ((GridCacheEntry)o).get() == null;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
             }
         }
@@ -1513,7 +1514,7 @@ public class GridFunc {
      * Here's the typical example of how this method is used in {@code reduce()} method
      * implementation (this example sums up all the values of {@code Integer} type):
      * <pre name="code" class="java">
-     * public Integer reduce(List&lt;GridComputeJobResult&gt; res) throws GridException {
+     * public Integer reduce(List&lt;GridComputeJobResult&gt; res) throws IgniteCheckedException {
      *     return F.sum(F.&lt;Integer&gt;jobResults(res));
      * }
      * </pre>
@@ -2733,7 +2734,7 @@ public class GridFunc {
                     return fut.get();
                 }
                 catch (Exception e) {
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
             }
         };
@@ -2771,8 +2772,8 @@ public class GridFunc {
                     try {
                         return fut.cancel();
                     }
-                    catch (GridException e) {
-                        throw new GridRuntimeException(e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
                     }
                 }
                 else
@@ -2797,7 +2798,7 @@ public class GridFunc {
                 catch (GridInterruptedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new ExecutionException("The computation failed.", e);
                 }
             }
@@ -2816,7 +2817,7 @@ public class GridFunc {
                 catch (IgniteFutureTimeoutException e) {
                     throw new TimeoutException("The computation timed out: " + e.getMessage());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new ExecutionException("The computation failed.", e);
                 }
             }
@@ -3265,7 +3266,7 @@ public class GridFunc {
      *
      * @param c Callable to convert to closure.
      * @return Out-closure that wraps given callable. Note that if callable throw
-     *      exception the wrapping closure will re-throw it as {@link GridRuntimeException}.
+     *      exception the wrapping closure will re-throw it as {@link IgniteException}.
      */
     public static <R> IgniteOutClosure<R> as0(final Callable<R> c) {
         A.notNull(c, "c");
@@ -5141,7 +5142,7 @@ public class GridFunc {
                     return cls.newInstance();
                 }
                 catch (Exception e) {
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
             }
         };
@@ -8079,7 +8080,7 @@ public class GridFunc {
 
                         return v != null && vals.contains(v);
                     }
-                    catch (GridException e1) {
+                    catch (IgniteCheckedException e1) {
                         throw wrap(e1);
                     }
                 }
@@ -8173,7 +8174,7 @@ public class GridFunc {
                     try {
                         return eq(e.get(), map.get(e.getKey()));
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         throw wrap(ex);
                     }
                 }
@@ -8234,7 +8235,7 @@ public class GridFunc {
 
                         return false;
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         throw wrap(ex);
                     }
                 }
@@ -8351,7 +8352,7 @@ public class GridFunc {
 
                         return v != null && F.isAll(v, ps);
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         throw wrap(ex);
                     }
                 }
@@ -8519,7 +8520,7 @@ public class GridFunc {
                         return isAll(node, p);
                     }
                     catch (IllegalStateException ex) {
-                        throw new GridRuntimeException("Invalid grid name: " + gridName, ex);
+                        throw new IgniteException("Invalid grid name: " + gridName, ex);
                     }
                 }
             };
@@ -8576,9 +8577,9 @@ public class GridFunc {
      * Waits until all passed futures will be executed.
      *
      * @param futs Futures. If none provided - this method is no-op.
-     * @throws GridException If any of the futures failed.
+     * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(@Nullable IgniteFuture<T>... futs) throws GridException {
+    public static <T> void awaitAll(@Nullable IgniteFuture<T>... futs) throws IgniteCheckedException {
         if (!isEmpty(futs))
             awaitAll(asList(futs));
     }
@@ -8587,9 +8588,9 @@ public class GridFunc {
      * Waits until all passed futures will be executed.
      *
      * @param futs Futures. If none provided - this method is no-op.
-     * @throws GridException If any of the futures failed.
+     * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(@Nullable Collection<IgniteFuture<T>> futs) throws GridException {
+    public static <T> void awaitAll(@Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
         awaitAll(0, null, futs);
     }
 
@@ -8598,9 +8599,9 @@ public class GridFunc {
      *
      * @param timeout Timeout for waiting ({@code 0} for forever).
      * @param futs Futures. If none provided - this method is no-op.
-     * @throws GridException If any of the futures failed.
+     * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteFuture<T>> futs) throws GridException {
+    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
         awaitAll(timeout, null, futs);
     }
 
@@ -8613,10 +8614,10 @@ public class GridFunc {
      * @param <T> Return type of the futures.
      * @param <R> Return type of the reducer.
      * @return Reduced result if reducer is provided, {@code null} otherwise.
-     * @throws GridException If any of the futures failed.
+     * @throws IgniteCheckedException If any of the futures failed.
      */
     @Nullable public static <T, R> R awaitAll(long timeout, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Collection<IgniteFuture<T>> futs) throws GridException {
+        @Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
         if (futs == null || futs.isEmpty())
             return null;
 

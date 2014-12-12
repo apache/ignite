@@ -118,7 +118,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Override public int capacity() throws GridException {
+    @Override public int capacity() throws IgniteCheckedException {
         return cap;
     }
 
@@ -137,14 +137,14 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             return hdr.size();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public T peek() throws GridRuntimeException {
+    @Nullable @Override public T peek() throws IgniteException {
         try {
             GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
@@ -155,8 +155,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             return (T)cache.get(itemKey(hdr.head()));
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -190,13 +190,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             return new QueueIterator(hdr);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void put(T item) throws GridRuntimeException {
+    @Override public void put(T item) throws IgniteException {
         A.notNull(item, "item");
 
         if (!bounded()) {
@@ -214,7 +214,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new GridRuntimeException("Queue put interrupted.", e);
+                throw new IgniteException("Queue put interrupted.", e);
             }
 
             checkStopping();
@@ -225,7 +225,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException {
+    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws IgniteException {
         A.notNull(item, "item");
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
@@ -252,7 +252,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new GridRuntimeException("Queue put interrupted.", e);
+                throw new IgniteException("Queue put interrupted.", e);
             }
 
             if (retVal)
@@ -263,7 +263,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T take() throws GridRuntimeException {
+    @Nullable @Override public T take() throws IgniteException {
         while (true) {
             try {
                 readSem.acquire();
@@ -271,7 +271,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new GridRuntimeException("Queue take interrupted.", e);
+                throw new IgniteException("Queue take interrupted.", e);
             }
 
             checkStopping();
@@ -284,7 +284,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws GridRuntimeException {
+    @Nullable @Override public T poll(long timeout, TimeUnit unit) throws IgniteException {
         A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
         long end = U.currentTimeMillis() + MILLISECONDS.convert(timeout, unit);
@@ -302,7 +302,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new GridRuntimeException("Queue poll interrupted.", e);
+                throw new IgniteException("Queue poll interrupted.", e);
             }
 
             if (retVal != null)
@@ -329,7 +329,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void clear(int batchSize) throws GridRuntimeException {
+    @Override public void clear(int batchSize) throws IgniteException {
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
@@ -343,8 +343,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -382,11 +382,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     static void removeKeys(GridCacheProjection cache, IgniteUuid id, String name, boolean collocated, long startIdx,
-        long endIdx, int batchSize) throws GridException {
+        long endIdx, int batchSize) throws IgniteCheckedException {
         Collection<GridCacheQueueItemKey> keys = new ArrayList<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
@@ -476,11 +476,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Throws {@link GridRuntimeException} in case if grid is stopping.
+     * Throws {@link IgniteException} in case if grid is stopping.
      */
     private void checkStopping() {
         if (cctx.kernalContext().isStopping())
-            throw new GridRuntimeException("Grid is stopping");
+            throw new IgniteException("Grid is stopping");
     }
 
     /**
@@ -494,9 +494,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * Removes item with given index from queue.
      *
      * @param rmvIdx Index of item to be removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void removeItem(long rmvIdx) throws GridException;
+    protected abstract void removeItem(long rmvIdx) throws IgniteCheckedException;
 
 
     /**
@@ -551,10 +551,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
         /**
          * @param hdr Queue header.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("unchecked")
-        private QueueIterator(GridCacheQueueHeader hdr) throws GridException {
+        private QueueIterator(GridCacheQueueHeader hdr) throws IgniteCheckedException {
             idx = hdr.head();
             endIdx = hdr.tail();
             rmvIdxs = hdr.removedIndexes();
@@ -591,8 +591,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
                 return cur;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 
@@ -606,8 +606,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
                 cur = null;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }

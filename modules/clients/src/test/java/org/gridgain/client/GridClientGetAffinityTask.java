@@ -29,7 +29,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String arg) throws GridException {
+    @Override protected Object executeJob(int gridSize, String arg) throws IgniteCheckedException {
         A.notNull(arg, "task argument");
 
         String[] split = arg.split(":", 2);
@@ -48,7 +48,7 @@ public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<Str
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         if (res.getException() != null)
             return FAILOVER;
 

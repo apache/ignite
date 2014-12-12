@@ -9,7 +9,7 @@
 
 package org.apache.ignite.spi.authentication;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.apache.ignite.plugin.security.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ public interface AuthenticationAclProvider {
      * Gets per-user access control map.
      *
      * @return Per-user access control map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws GridException;
+    public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws IgniteCheckedException;
 }

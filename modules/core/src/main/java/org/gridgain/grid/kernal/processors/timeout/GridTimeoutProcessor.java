@@ -9,14 +9,15 @@
 
 package org.gridgain.grid.kernal.processors.timeout;
 
+import org.apache.ignite.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
+
 import java.util.*;
 
 /**
@@ -60,7 +61,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         U.interrupt(timeoutWorker);
         U.join(timeoutWorker);
 

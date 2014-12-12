@@ -228,7 +228,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Comp
         try {
             return (String)job.getDeployment().annotatedValue(job.getJob(), GridCacheName.class);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }
@@ -238,7 +238,7 @@ public class GridJobContextImpl extends GridMetadataAwareAdapter implements Comp
         try {
             return (T)job.getDeployment().annotatedValue(job.getJob(), GridCacheAffinityKeyMapped.class);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw F.wrap(e);
         }
     }

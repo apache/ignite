@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Plain closure that takes one input argument and does not implement {@code GridPeerDeployAware}.
@@ -17,7 +17,7 @@ import org.gridgain.grid.*;
 public interface GridPlainInClosure<T> {
     /**
      * @param arg Closure argument.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public void apply(T arg) throws GridException;
+    public void apply(T arg) throws IgniteCheckedException;
 }

@@ -50,9 +50,9 @@ class GridAffinityUtils {
      * @param ctx  {@code GridKernalContext} instance which provides deployment manager
      * @param o Object for which deployment should be obtained.
      * @return Deployment object for given instance,
-     * @throws GridException If node cannot create deployment for given object.
+     * @throws IgniteCheckedException If node cannot create deployment for given object.
      */
-    private static GridAffinityMessage affinityMessage(GridKernalContext ctx, Object o) throws GridException {
+    private static GridAffinityMessage affinityMessage(GridKernalContext ctx, Object o) throws IgniteCheckedException {
         Class cls = o.getClass();
 
         GridDeployment dep = ctx.deploy().deploy(cls, cls.getClassLoader());
@@ -76,10 +76,10 @@ class GridAffinityUtils {
      * @param sndNodeId {@link UUID} of the sender node.
      * @param msg Transfer object that contains original serialized object and deployment information.
      * @return Unmarshalled object.
-     * @throws GridException If node cannot obtain deployment.
+     * @throws IgniteCheckedException If node cannot obtain deployment.
      */
     static Object unmarshall(GridKernalContext ctx, UUID sndNodeId, GridAffinityMessage msg)
-        throws GridException {
+        throws IgniteCheckedException {
         GridDeployment dep = ctx.deploy().getGlobalDeployment(
             msg.deploymentMode(),
             msg.sourceClassName(),

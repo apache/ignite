@@ -147,7 +147,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         private IgniteMarshaller marshaller;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws GridException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("map:session:key:" + i, "map:session:testval:" + i);
                 ses.saveCheckpoint("map:global:key:" + i, "map:global:testval:" + i,
@@ -162,7 +162,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                     private static final long serialVersionUID = -9118687978815477993L;
 
                     /** {@inheritDoc} */
-                    @Override public Serializable execute() throws GridException {
+                    @Override public Serializable execute() throws IgniteCheckedException {
                         ses.saveCheckpoint("job:session:key:" + argument(0), "job:session:testval:" + argument(0));
                         ses.saveCheckpoint("job:global:key:" + argument(0), "job:global:testval:" + argument(0),
                             ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
@@ -176,7 +176,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             int res = 0;
 
             for (ComputeJobResult result : results) {
@@ -194,7 +194,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 Thread.sleep(200);
             }
             catch (InterruptedException e) {
-                throw new GridException("Got interrupted during reducing.", e);
+                throw new IgniteCheckedException("Got interrupted during reducing.", e);
             }
 
             try {
@@ -214,7 +214,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 }
             }
             catch (Exception e) {
-                throw new GridException("Running state check failure.", e);
+                throw new IgniteCheckedException("Running state check failure.", e);
             }
 
             return res;

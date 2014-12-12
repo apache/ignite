@@ -14,17 +14,16 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
-import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -38,13 +37,13 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.cache.query.GridCacheQueryType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.junit.Assert.*;
 
 /**
@@ -97,12 +96,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setDiscoverySpi(disco);
 
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
+        GridQueryConfiguration idxCfg = new GridQueryConfiguration();
 
-        indexing.setDefaultIndexPrimitiveKey(true);
-        indexing.setIndexCustomFunctionClasses(SqlFunctions.class);
+        idxCfg.setIndexCustomFunctionClasses(SqlFunctions.class);
 
-        c.setIndexingSpi(indexing);
+        c.setQueryConfiguration(idxCfg);
 
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());
@@ -125,6 +123,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);
+
+            GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+            qcfg.setIndexPrimitiveKey(true);
+            qcfg.setIndexFixedTyping(true);
+
+            cc.setQueryConfiguration(qcfg);
 
             // Explicitly set number of backups equal to number of grids.
             if (cacheMode() == GridCacheMode.PARTITIONED)
@@ -226,9 +231,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * Tests UDFs.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testUserDefinedFunction() throws GridException {
+    public void testUserDefinedFunction() throws IgniteCheckedException {
         // Without alias.
         GridCacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
             projection(ignite.cluster());
@@ -270,7 +275,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             null
         );
     }
@@ -1105,9 +1110,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testBadHashObjectKey() throws GridException {
+    public void testBadHashObjectKey() throws IgniteCheckedException {
         GridCache<BadHashKeyObject, Integer> cache = ignite.cache(null);
 
         cache.put(new BadHashKeyObject("test_key1"), 9);
@@ -1119,9 +1124,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testTextIndexedKey() throws GridException {
+    public void testTextIndexedKey() throws IgniteCheckedException {
         GridCache<ObjectValue, Integer> cache = ignite.cache(null);
 
         cache.put(new ObjectValue("test_key1", 10), 19);
@@ -1618,7 +1623,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
                     assertNull(qe.continuousQueryFilter());
                     assertArrayEquals(new Integer[] { 10 }, qe.arguments());
 
-                    List<?> row = qe.row();
+                    List<?> row = (List<?>)qe.row();
 
                     map.put((Integer)row.get(0), (String)row.get(1));
 
@@ -1678,9 +1683,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @param cls Class to check index table for.
      * @param qryMgr Query manager.
      * @return {@code true} if index has a table for given class.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr) throws GridException {
+    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr) throws IgniteCheckedException {
         return qryMgr.size(cls) != -1;
     }
 
@@ -1998,18 +2003,18 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public Object load(@Nullable GridCacheTx tx, Object key)
-            throws GridException {
+            throws IgniteCheckedException {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Object key, @Nullable Object val)
-            throws GridException {
+            throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

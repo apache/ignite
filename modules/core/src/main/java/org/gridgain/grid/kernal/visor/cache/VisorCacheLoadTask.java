@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -48,7 +48,7 @@ public class VisorCacheLoadTask extends
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, Integer> run(GridTuple3<Set<String>, Long, Object[]> arg) throws GridException {
+        @Override protected Map<String, Integer> run(GridTuple3<Set<String>, Long, Object[]> arg) throws IgniteCheckedException {
             Set<String> cacheNames = arg.get1();
             Long ttl = arg.get2();
             Object[] loaderArgs = arg.get3();

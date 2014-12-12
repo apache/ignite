@@ -11,14 +11,16 @@
 
 package org.gridgain.visor.commands.deploy
 
+import org.gridgain.grid.util.io.GridFilenameUtils
+import org.gridgain.grid.util.typedef.X
+import org.gridgain.grid.util.{GridUtils => U}
+
+import com.jcraft.jsch._
+
 import java.io._
 import java.net.UnknownHostException
 import java.util.concurrent._
 
-import com.jcraft.jsch._
-import org.gridgain.grid.util.io.GridFilenameUtils
-import org.gridgain.grid.util.typedef.X
-import org.gridgain.grid.util.{GridUtils => U}
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._

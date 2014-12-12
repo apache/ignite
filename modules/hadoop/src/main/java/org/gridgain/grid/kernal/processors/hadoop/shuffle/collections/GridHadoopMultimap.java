@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
@@ -27,22 +28,22 @@ public interface GridHadoopMultimap extends AutoCloseable {
      * @param v Visitor.
      * @return {@code false} If visiting was impossible.
      */
-    public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException;
+    public boolean visit(boolean ignoreLastVisited, Visitor v) throws IgniteCheckedException;
 
     /**
      * @param ctx Task context.
      * @return Adder.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Adder startAdding(GridHadoopTaskContext ctx) throws GridException;
+    public Adder startAdding(GridHadoopTaskContext ctx) throws IgniteCheckedException;
 
     /**
      * @param taskCtx Task context.
      * @return Task input.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public void close();
@@ -55,9 +56,9 @@ public interface GridHadoopMultimap extends AutoCloseable {
          * @param in Data input.
          * @param reuse Reusable key.
          * @return Key.
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          */
-        public Key addKey(DataInput in, @Nullable Key reuse) throws GridException;
+        public Key addKey(DataInput in, @Nullable Key reuse) throws IgniteCheckedException;
     }
 
     /**
@@ -93,12 +94,12 @@ public interface GridHadoopMultimap extends AutoCloseable {
          * @param keyPtr Key pointer.
          * @param keySize Key size.
          */
-        public void onKey(long keyPtr, int keySize) throws GridException;
+        public void onKey(long keyPtr, int keySize) throws IgniteCheckedException;
 
         /**
          * @param valPtr Value pointer.
          * @param valSize Value size.
          */
-        public void onValue(long valPtr, int valSize) throws GridException;
+        public void onValue(long valPtr, int valSize) throws IgniteCheckedException;
     }
 }

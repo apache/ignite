@@ -20,7 +20,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * &#64;GridJobStealingDisabled
  * public class MyJob extends GridComputeJobAdapter&lt;Object&gt; {
- *     public Serializable execute() throws GridException {
+ *     public Serializable execute() throws IgniteCheckedException {
  *         // Job logic goes here.
  *         ...
  *     }

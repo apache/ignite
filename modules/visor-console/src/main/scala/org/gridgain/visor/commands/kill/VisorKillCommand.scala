@@ -11,19 +11,20 @@
 
 package org.gridgain.visor.commands.kill
 
-import org.apache.ignite.cluster.ClusterNode
-import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 
-import java.util.{Collections, UUID}
+import org.apache.ignite._
+import org.apache.ignite.cluster.ClusterNode
 
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
+import java.util.{Collections, UUID}
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -171,7 +172,7 @@ class VisorKillCommand {
                     if (restart && node != null && node.attribute[String](ATTR_RESTART_ENABLED) != "true")
                         scold("Node doesn't support restart: " + nid8(node)).^^
                 catch {
-                    case e: GridException => scold("Failed to restart the node. " + e.getMessage).^^
+                    case e: IgniteCheckedException => scold("Failed to restart the node. " + e.getMessage).^^
                 }
 
                 val op = if (restart) "restart" else "kill"
@@ -179,7 +180,7 @@ class VisorKillCommand {
                 try
                     killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
-                    case _: GridException => scold("Failed to " + op + " due to system error.").^^
+                    case _: IgniteCheckedException => scold("Failed to " + op + " due to system error.").^^
                 }
             }
         }

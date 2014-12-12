@@ -32,7 +32,7 @@ public abstract class GridGgfsManager {
      *
      * @param ggfsCtx GGFS context.
      */
-    public void start(GridGgfsContext ggfsCtx) throws GridException {
+    public void start(GridGgfsContext ggfsCtx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
             assert false : "Method start is called more than once for manager: " + this;
 
@@ -65,9 +65,9 @@ public abstract class GridGgfsManager {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public final void onKernalStart() throws GridException {
+    public final void onKernalStart() throws IgniteCheckedException {
         onKernalStart0();
 
         if (log != null && log.isDebugEnabled())
@@ -91,7 +91,7 @@ public abstract class GridGgfsManager {
     /**
      * Start manager implementation.
      */
-    protected void start0() throws GridException {
+    protected void start0() throws IgniteCheckedException {
         // No-op by default.
     }
 
@@ -105,9 +105,9 @@ public abstract class GridGgfsManager {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void onKernalStart0() throws GridException {
+    protected void onKernalStart0() throws IgniteCheckedException {
         // No-op.
     }
 

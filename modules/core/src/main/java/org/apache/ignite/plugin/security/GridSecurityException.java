@@ -9,13 +9,13 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Common security exception for the grid.
  */
-public class GridSecurityException extends GridRuntimeException {
+public class GridSecurityException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

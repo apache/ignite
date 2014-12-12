@@ -9,11 +9,12 @@
 
 package org.apache.ignite.streamer.window;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -96,16 +97,16 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws GridException {
+    @Override public void checkConfiguration() throws IgniteCheckedException {
         if (maxBatches < 0)
-            throw new GridException("Failed to initialize window (maximumBatches cannot be negative) " +
+            throw new IgniteCheckedException("Failed to initialize window (maximumBatches cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +
                 ", batchTimeInterval=" + batchTimeInterval + ']');
 
         if (batchSize < 0)
-            throw new GridException("Failed to initialize window (batchSize cannot be negative) " +
+            throw new IgniteCheckedException("Failed to initialize window (batchSize cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +
@@ -114,7 +115,7 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
             batchSize = Integer.MAX_VALUE;
 
         if (batchTimeInterval <= 0)
-            throw new GridException("Failed to initialize window (batchTimeInterval must be positive) " +
+            throw new IgniteCheckedException("Failed to initialize window (batchTimeInterval must be positive) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +

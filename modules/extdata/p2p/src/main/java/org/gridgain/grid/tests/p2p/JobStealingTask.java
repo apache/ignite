@@ -29,7 +29,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Object arg) throws GridException {
+        @Nullable Object arg) throws IgniteCheckedException {
         assert !subgrid.isEmpty();
 
         Map<ComputeJobAdapter, ClusterNode> map = U.newHashMap(subgrid.size());
@@ -43,7 +43,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
 
     /** {@inheritDoc} */
     @SuppressWarnings("SuspiciousMethodCalls")
-    @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         Map<UUID, Integer> ret = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
@@ -78,7 +78,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             try {
@@ -91,7 +91,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
             catch (InterruptedException e) {
                 log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
 
-                throw new GridException("Job got interrupted.", e);
+                throw new IgniteCheckedException("Job got interrupted.", e);
             }
             finally {
                 log.info("Job finished on node: " + ignite.cluster().localNode().id());

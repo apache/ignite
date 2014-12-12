@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -66,7 +66,7 @@ public class StreamerStageWrapper implements StreamerStage<Object> {
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts)
-        throws GridException {
+        throws IgniteCheckedException {
         return delegate.run(ctx, evts);
     }
 

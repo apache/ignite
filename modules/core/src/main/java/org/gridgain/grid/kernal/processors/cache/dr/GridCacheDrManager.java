@@ -9,12 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.dr;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.jetbrains.annotations.*;
-
-import java.util.*;
 
 /**
  * Replication manager class which processes all replication events.
@@ -37,7 +35,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param drExpireTime DR expire time
      * @param drVer DR version.
      * @return DR result.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
@@ -47,7 +45,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
          long ttl,
          long drTtl,
          long drExpireTime,
-         @Nullable GridCacheVersion drVer) throws GridException, GridCacheEntryRemovedException;
+         @Nullable GridCacheVersion drVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Handles DR for transactional cache.
@@ -61,7 +59,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param newTtl TTL.
      * @param newDrExpireTime DR expire time
      * @return DR result.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     public GridDrResolveResult<V> resolveTx(
@@ -72,7 +70,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
         V newVal,
         byte[] newValBytes,
         long newTtl,
-        long newDrExpireTime) throws GridException, GridCacheEntryRemovedException;
+        long newDrExpireTime) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Performs replication.
@@ -85,7 +83,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param expireTime Expire time.
      * @param ver Version.
      * @param drType Replication type.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void replicate(K key,
         @Nullable byte[] keyBytes,
@@ -94,16 +92,16 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType)throws GridException;
+        GridDrType drType)throws IgniteCheckedException;
 
     /**
      * Process partitions "before exchange" event.
      *
      * @param topVer Topology version.
      * @param left {@code True} if exchange has been caused by node leave.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(long topVer, boolean left) throws GridException;
+    public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.

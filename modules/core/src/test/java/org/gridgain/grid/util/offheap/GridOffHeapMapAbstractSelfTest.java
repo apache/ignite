@@ -9,13 +9,12 @@
 
 package org.gridgain.grid.util.offheap;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.GridException;
-import org.apache.ignite.lang.IgniteFuture;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.X;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -669,7 +668,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                         it.close();
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
                 catch (InterruptedException e) {
@@ -741,7 +740,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
         IgniteFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override
-            public Void call() throws GridException {
+            public Void call() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!stop.get()) {

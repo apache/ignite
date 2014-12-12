@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.util.gridify;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.*;
 
 import java.lang.annotation.*;
 import java.util.*;
@@ -104,9 +104,9 @@ public final class GridifyArgumentBuilder {
      * @param arg Task argument contains all necessary data for method invoke.
      * @param input Input collection..
      * @return Argument for task.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public GridifyRangeArgument createTaskArgument(GridifyRangeArgument arg, Collection<?> input) throws GridException {
+    public GridifyRangeArgument createTaskArgument(GridifyRangeArgument arg, Collection<?> input) throws IgniteCheckedException {
         GridifyRangeArgument res = new GridifyRangeArgument();
 
         res.setTarget(arg.getTarget());
@@ -131,7 +131,7 @@ public final class GridifyArgumentBuilder {
         Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
 
         if (paramValue == null)
-            throw new GridException("Failed to create task argument for type: " + paramCls.getName());
+            throw new IgniteCheckedException("Failed to create task argument for type: " + paramCls.getName());
 
         mtdArgs[arg.getParamIndex()] = paramValue;
 
@@ -144,9 +144,9 @@ public final class GridifyArgumentBuilder {
      * @param arg Task argument contains all necessary data for method invoke.
      * @param input Input collection used in job.
      * @return Argument for job.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public GridifyArgument createJobArgument(GridifyRangeArgument arg, Collection<?> input) throws GridException {
+    public GridifyArgument createJobArgument(GridifyRangeArgument arg, Collection<?> input) throws IgniteCheckedException {
         GridifyArgumentAdapter res = new GridifyArgumentAdapter();
 
         res.setTarget(arg.getTarget());
@@ -169,7 +169,7 @@ public final class GridifyArgumentBuilder {
         Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
 
         if (paramValue == null)
-            throw new GridException("Failed to create job argument for type: " + paramCls.getName());
+            throw new IgniteCheckedException("Failed to create job argument for type: " + paramCls.getName());
 
         mtdArgs[arg.getParamIndex()] = paramValue;
 
