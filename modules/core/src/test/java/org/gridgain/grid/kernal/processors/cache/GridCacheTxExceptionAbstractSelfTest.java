@@ -571,7 +571,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -583,63 +583,12 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IndexingFieldsResult queryFields(@Nullable String spaceName, String qry,
-            Collection<Object> params, IndexingQueryFilter filters) {
+        @Override public Iterator<?> query(@Nullable String spaceName, Collection<Object> params, @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> query(
-            @Nullable String spaceName, String qry, Collection<Object> params, IndexingTypeDescriptor type,
-            IndexingQueryFilter filters) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> IgniteSpiCloseableIterator<IndexingKeyValueRow<K, V>> queryText(
-            @Nullable String spaceName, String qry, IndexingTypeDescriptor type,
-            IndexingQueryFilter filters) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long size(@Nullable String spaceName, IndexingTypeDescriptor desc) {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean registerType(@Nullable String spaceName, IndexingTypeDescriptor desc) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregisterType(@Nullable String spaceName, IndexingTypeDescriptor type) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K> void onSwap(@Nullable String spaceName, String swapSpaceName, K key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> void onUnswap(@Nullable String spaceName, K key, V val, byte[] valBytes) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void registerMarshaller(IndexingMarshaller marshaller) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rebuildIndexes(@Nullable String spaceName, IndexingTypeDescriptor type) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> void store(@Nullable String spaceName, IndexingTypeDescriptor type,
-                                           IndexingEntity<K> key, IndexingEntity<V> val, byte[] ver, long expirationTime)
+        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
@@ -649,19 +598,22 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         }
 
         /** {@inheritDoc} */
-        @Override public <K> boolean remove(@Nullable String spaceName, IndexingEntity<K> k)
+        @Override public void remove(@Nullable String spaceName, Object k)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
 
                 throw new IgniteSpiException("Test exception.");
             }
-
-            return true;
         }
 
         /** {@inheritDoc} */
-        @Override public void registerSpace(String spaceName) throws IgniteSpiException {
+        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
             // No-op.
         }
 

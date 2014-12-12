@@ -10,8 +10,8 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.future.*;
 
 import java.util.*;
@@ -40,7 +40,7 @@ public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<L
     /**
      * @return Metadata.
      */
-    public IgniteFuture<List<IndexingFieldMetadata>> metadata() {
-        return new GridFinishedFuture<>(ctx, incMeta ? Collections.<IndexingFieldMetadata>emptyList() : null);
+    public IgniteFuture<List<GridQueryFieldMetadata>> metadata() {
+        return new GridFinishedFuture<>(ctx, incMeta ? Collections.<GridQueryFieldMetadata>emptyList() : null);
     }
 }

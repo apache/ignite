@@ -346,11 +346,11 @@ public class GridCacheUtils {
      * Checks that cache store is present.
      *
      * @param ctx Registry.
-     * @throws GridException If cache store is not present.
+     * @throws IgniteCheckedException If cache store is not present.
      */
-    public static void checkStore(GridCacheContext<?, ?> ctx) throws GridException {
+    public static void checkStore(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
         if (!ctx.store().configured())
-            throw new GridException("Failed to find cache store for method 'reload(..)' " +
+            throw new IgniteCheckedException("Failed to find cache store for method 'reload(..)' " +
                 "(is GridCacheStore configured?)");
     }
 
@@ -1059,7 +1059,7 @@ public class GridCacheUtils {
                 try {
                     f.get();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (!F.isEmpty(excl))
                         for (Class cls : excl)
                             if (e.hasCause(cls))
@@ -1122,7 +1122,7 @@ public class GridCacheUtils {
         if (t == null)
             return false;
 
-        while (t instanceof GridException || t instanceof GridRuntimeException)
+        while (t instanceof IgniteCheckedException || t instanceof IgniteException)
             t = t.getCause();
 
         return t instanceof GridCacheLockTimeoutException;
@@ -1136,7 +1136,7 @@ public class GridCacheUtils {
         if (t == null)
             return false;
 
-        while (t instanceof GridException || t instanceof GridRuntimeException)
+        while (t instanceof IgniteCheckedException || t instanceof IgniteException)
             t = t.getCause();
 
         return t instanceof GridCacheLockTimeoutException || t instanceof GridDistributedLockCancelledException;
@@ -1146,11 +1146,11 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      * @param obj Object to marshal.
      * @return Buffer that contains obtained byte array.
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("unchecked")
     public static byte[] marshal(GridCacheSharedContext ctx, Object obj)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ctx != null;
 
         if (ctx.gridDeploy().enabled()) {
@@ -1176,20 +1176,20 @@ public class GridCacheUtils {
      * @param cmd Callable.
      * @param ctx Cache context.
      * @return T Callable result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws GridException {
+    public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws IgniteCheckedException {
         if (ctx.tm().inUserTx())
             return ctx.closures().callLocalSafe(cmd, false).get();
         else {
             try {
                 return cmd.call();
             }
-            catch (GridException | GridRuntimeException e) {
+            catch (IgniteCheckedException | IgniteException e) {
                 throw e;
             }
             catch (Exception e) {
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
     }
@@ -1377,11 +1377,11 @@ public class GridCacheUtils {
      * @param rmtCfg Remote configuration.
      * @param rmt Remote node.
      * @param attr Attribute name.
-     * @param fail If true throws GridException in case of attribute values mismatch, otherwise logs warning.
-     * @throws GridException If attribute values are different and fail flag is true.
+     * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
+     * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(IgniteLogger log, GridCacheConfiguration locCfg,
-        GridCacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws GridException {
+        GridCacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
         assert rmt != null;
         assert attr != null;
         assert attr.get1() != null;
@@ -1404,18 +1404,18 @@ public class GridCacheUtils {
      * @param attrMsg Full attribute name for error message.
      * @param locVal Local value.
      * @param rmtVal Remote value.
-     * @param fail If true throws GridException in case of attribute values mismatch, otherwise logs warning.
-     * @throws GridException If attribute values are different and fail flag is true.
+     * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
+     * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(IgniteLogger log, String cfgName, ClusterNode rmt, String attrName,
-        String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws GridException {
+        String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws IgniteCheckedException {
         assert rmt != null;
         assert attrName != null;
         assert attrMsg != null;
 
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
-                throw new GridException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
+                throw new IgniteCheckedException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
                     "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
@@ -1604,10 +1604,10 @@ public class GridCacheUtils {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param clo Closure.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws GridException {
+        GridCacheTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);

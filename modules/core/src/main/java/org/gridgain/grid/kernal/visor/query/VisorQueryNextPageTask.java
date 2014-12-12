@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.visor.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
@@ -50,12 +50,12 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws GridException {
+        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
         /** Collect data from SQL query */
-        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws GridException {
+        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
@@ -78,7 +78,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         }
 
         /** Collect data from SCAN query */
-        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws GridException {
+        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();

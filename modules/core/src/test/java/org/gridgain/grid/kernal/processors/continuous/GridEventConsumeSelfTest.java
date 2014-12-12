@@ -516,7 +516,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             assert false : "Exception was not thrown.";
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             assertTrue(e.getMessage().startsWith(
                 "Failed to register remote continuous listener (projection is empty)."));
         }
@@ -1036,7 +1036,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         comp.future().get(3000);
                     }
-                    catch (GridException ignored) {
+                    catch (IgniteCheckedException ignored) {
                         // Ignore all job execution related errors.
                     }
                 }

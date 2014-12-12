@@ -264,8 +264,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
                 return val != null ? new SimpleValueWrapper(val) : null;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to get value from cache [cacheName=" + cache.name() +
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to get value from cache [cacheName=" + cache.name() +
                     ", key=" + key + ']', e);
             }
         }
@@ -281,8 +281,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
                 return (T)val;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to get value from cache [cacheName=" + cache.name() +
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to get value from cache [cacheName=" + cache.name() +
                     ", key=" + key + ']', e);
             }
         }
@@ -292,8 +292,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
             try {
                 cache.putx(key, val);
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to put value to cache [cacheName=" + cache.name() +
                     ", key=" + key + ", val=" + val + ']', e);
             }
         }
@@ -305,8 +305,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
                 return old != null ? new SimpleValueWrapper(old) : null;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to put value to cache [cacheName=" + cache.name() +
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to put value to cache [cacheName=" + cache.name() +
                     ", key=" + key + ", val=" + val + ']', e);
             }
         }
@@ -316,8 +316,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
             try {
                 cache.removex(key);
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to remove value from cache [cacheName=" + cache.name() +
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to remove value from cache [cacheName=" + cache.name() +
                     ", key=" + key + ']', e);
             }
         }
@@ -329,8 +329,8 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
 
                 ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
             }
         }
     }
@@ -364,7 +364,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void applyx() throws GridException {
+        @Override public void applyx() throws IgniteCheckedException {
             GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache != null)

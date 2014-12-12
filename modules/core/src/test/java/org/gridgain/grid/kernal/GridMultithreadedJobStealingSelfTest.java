@@ -91,7 +91,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                         }
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Failed to execute task.", e);
 
                     fail.getAndSet(e);
@@ -152,7 +152,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
             @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws GridException {
+            @Nullable Object arg) throws IgniteCheckedException {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -165,7 +165,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public JobStealingResult reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public JobStealingResult reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 2;
 
             for (ComputeJobResult res : results) {
@@ -201,7 +201,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             try {
                 Long sleep = argument(0);
 
@@ -210,7 +210,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                throw new GridException("Job got interrupted.", e);
+                throw new IgniteCheckedException("Job got interrupted.", e);
             }
 
             return ignite.name();

@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,26 +23,26 @@ public interface GridComponent {
     /**
      * Starts grid component.
      *
-     * @throws GridException Throws in case of any errors.
+     * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start() throws GridException;
+    public void start() throws IgniteCheckedException;
 
     /**
      * Stops grid component.
      *
      * @param cancel If {@code true}, then all ongoing tasks or jobs for relevant
      *      components need to be cancelled.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void stop(boolean cancel) throws GridException;
+    public void stop(boolean cancel) throws IgniteCheckedException;
 
     /**
      * Callback that notifies that kernal has successfully started,
      * including all managers and processors.
      *
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onKernalStart() throws GridException;
+    public void onKernalStart() throws IgniteCheckedException;
 
     /**
      * Callback to notify that kernal is about to stop.

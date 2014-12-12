@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.lang.*;
@@ -24,9 +25,9 @@ public interface GridGgfsHadoopIo {
      *
      * @param msg Message to send.
      * @return Future that will be completed.
-     * @throws GridException If a message cannot be sent (connection is broken or client was closed).
+     * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
-    public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws GridException;
+    public GridPlainFuture<GridGgfsMessage> send(GridGgfsMessage msg) throws IgniteCheckedException;
 
     /**
      * Sends given GGFS client message and asynchronously awaits for response. When IO detects response
@@ -38,18 +39,18 @@ public interface GridGgfsHadoopIo {
      * @param outOff Output buffer offset.
      * @param outLen Output buffer length.
      * @return Future that will be completed when response is returned from closure.
-     * @throws GridException If a message cannot be sent (connection is broken or client was closed).
+     * @throws IgniteCheckedException If a message cannot be sent (connection is broken or client was closed).
      */
     public <T> GridPlainFuture<T> send(GridGgfsMessage msg, @Nullable byte[] outBuf, int outOff, int outLen)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Sends given message and does not wait for response.
      *
      * @param msg Message to send.
-     * @throws GridException If send failed.
+     * @throws IgniteCheckedException If send failed.
      */
-    public void sendPlain(GridGgfsMessage msg) throws GridException;
+    public void sendPlain(GridGgfsMessage msg) throws IgniteCheckedException;
 
     /**
      * Adds event listener that will be invoked when connection with server is lost or remote error has occurred.

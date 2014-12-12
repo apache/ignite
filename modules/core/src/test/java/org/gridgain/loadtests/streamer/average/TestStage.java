@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.streamer.average;
 
+import org.apache.ignite.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ class TestStage implements StreamerStage<Integer> {
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
-        throws GridException {
+        throws IgniteCheckedException {
         ConcurrentMap<String, TestAverage> loc = ctx.localSpace();
 
         TestAverage avg = loc.get("avg");

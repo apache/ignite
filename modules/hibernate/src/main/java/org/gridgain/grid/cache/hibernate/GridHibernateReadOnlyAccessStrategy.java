@@ -67,7 +67,7 @@ public class GridHibernateReadOnlyAccessStrategy extends GridHibernateAccessStra
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }

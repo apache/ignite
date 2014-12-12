@@ -108,7 +108,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                     ctx.io().send(nodeId, topic, res, SYSTEM_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job task result response.", e);
                 }
             }
@@ -125,7 +125,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         try {
             return handleAsyncUnsafe(req);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute task command: " + req, e);
 
             return new GridFinishedFuture<>(ctx, e);
@@ -139,9 +139,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * @param req Request.
      * @return Future.
-     * @throws GridException On any handling exception.
+     * @throws IgniteCheckedException On any handling exception.
      */
-    private IgniteFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws GridException {
+    private IgniteFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws IgniteCheckedException {
         assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
@@ -170,7 +170,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 final String name = req0.taskName();
 
                 if (F.isEmpty(name))
-                    throw new GridException(missingParameter("name"));
+                    throw new IgniteCheckedException(missingParameter("name"));
 
                 final List<Object> params = req0.params();
 
@@ -227,7 +227,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             try {
                                 desc = new TaskDescriptor(true, f.get(), null);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 if (e.hasCause(ClusterTopologyException.class, ClusterGroupEmptyException.class))
                                     U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
                                         "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
@@ -258,7 +258,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                         fut.onDone(res);
                                     }
                                     catch (PortableException e) {
-                                        fut.onDone(new GridException("Failed to marshal task result: " +
+                                        fut.onDone(new IgniteCheckedException("Failed to marshal task result: " +
                                             desc.result(), e));
                                     }
                                 }
@@ -268,7 +268,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                         }
                         finally {
                             if (!async && !fut.isDone())
-                                fut.onDone(new GridException("Failed to execute task (see server logs for details)."));
+                                fut.onDone(new IgniteCheckedException("Failed to execute task (see server logs for details)."));
                         }
                     }
                 });
@@ -280,12 +280,12 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 String id = req0.taskId();
 
                 if (F.isEmpty(id))
-                    throw new GridException(missingParameter("id"));
+                    throw new IgniteCheckedException(missingParameter("id"));
 
                 StringTokenizer st = new StringTokenizer(id, "~");
 
                 if (st.countTokens() != 2)
-                    throw new GridException("Failed to parse id parameter: " + id);
+                    throw new IgniteCheckedException("Failed to parse id parameter: " + id);
 
                 String tidParam = st.nextToken();
                 String resHolderIdParam = st.nextToken();
@@ -298,19 +298,19 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     UUID resHolderId = !F.isEmpty(resHolderIdParam) ? UUID.fromString(resHolderIdParam) : null;
 
                     if (tid == null || resHolderId == null)
-                        throw new GridException("Failed to parse id parameter: " + id);
+                        throw new IgniteCheckedException("Failed to parse id parameter: " + id);
 
                     if (ctx.localNodeId().equals(resHolderId)) {
                         TaskDescriptor desc = taskDescs.get(tid);
 
                         if (desc == null)
-                            throw new GridException("Task with provided id has never been started on provided node" +
+                            throw new IgniteCheckedException("Task with provided id has never been started on provided node" +
                                 " [taskId=" + tidParam + ", taskResHolderId=" + resHolderIdParam + ']');
 
                         taskRestRes.setFinished(desc.finished());
 
                         if (desc.error() != null)
-                            throw new GridException(desc.error().getMessage());
+                            throw new IgniteCheckedException(desc.error().getMessage());
 
                         taskRestRes.setResult(desc.result());
 
@@ -320,20 +320,20 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                         IgniteBiTuple<String, GridTaskResultResponse> t = requestTaskResult(resHolderId, tid);
 
                         if (t.get1() != null)
-                            throw new GridException(t.get1());
+                            throw new IgniteCheckedException(t.get1());
 
                         GridTaskResultResponse taskRes = t.get2();
 
                         assert taskRes != null;
 
                         if (!taskRes.found())
-                            throw new GridException("Task with provided id has never been started on provided node " +
+                            throw new IgniteCheckedException("Task with provided id has never been started on provided node " +
                                 "[taskId=" + tidParam + ", taskResHolderId=" + resHolderIdParam + ']');
 
                         taskRestRes.setFinished(taskRes.finished());
 
                         if (taskRes.error() != null)
-                            throw new GridException(taskRes.error());
+                            throw new IgniteCheckedException(taskRes.error());
 
                         taskRestRes.setResult(taskRes.result());
 
@@ -347,7 +347,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     if (log.isDebugEnabled())
                         log.debug(msg);
 
-                    throw new GridException(msg, e);
+                    throw new IgniteCheckedException(msg, e);
                 }
 
                 fut.onDone(res);
@@ -405,7 +405,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 try {
                     res.result(ctx.config().getMarshaller().unmarshal(res.resultBytes(), null));
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal task result: " + res, e);
                 }
 
@@ -460,7 +460,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 ctx.io().send(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +
                     ", err=" + e.getMessage() + ']';
 

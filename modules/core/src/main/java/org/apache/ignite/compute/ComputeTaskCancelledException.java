@@ -9,13 +9,13 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * This exception indicates that grid task was cancelled.
  */
-public class ComputeTaskCancelledException extends GridException {
+public class ComputeTaskCancelledException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

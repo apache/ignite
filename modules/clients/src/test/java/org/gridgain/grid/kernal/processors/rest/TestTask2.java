@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -23,7 +23,7 @@ class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
     static final String RES = "Task 2 result.";
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
         Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
@@ -40,7 +40,7 @@ class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public String reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return RES;
     }
 }

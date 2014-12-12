@@ -9,7 +9,7 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.*;
  * assumed the code in grid task, grid job or SPI. In most cases it should be an indication of unrecoverable
  * error condition such as assertion, {@link NullPointerException}, {@link OutOfMemoryError}, etc.
  */
-public class ComputeUserUndeclaredException extends GridException {
+public class ComputeUserUndeclaredException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

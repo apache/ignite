@@ -45,7 +45,7 @@ public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstrac
 
                     assert false;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     info("Caught expected exception: " + e);
                 }
             }

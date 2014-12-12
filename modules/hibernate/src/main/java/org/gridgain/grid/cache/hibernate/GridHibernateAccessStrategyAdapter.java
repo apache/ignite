@@ -105,7 +105,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             return cache.get(key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -133,7 +133,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             cache.putx(key, val);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -279,7 +279,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -294,7 +294,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             cache.globalClearAll();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -333,7 +333,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Void call() throws GridException {
+        @Override public Void call() throws IgniteCheckedException {
             GridCache<Object, Object> cache = ignite.cache(cacheName);
 
             assert cache != null;

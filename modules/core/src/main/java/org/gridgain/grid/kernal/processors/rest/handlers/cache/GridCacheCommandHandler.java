@@ -139,7 +139,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             GridRestCommand cmd = req0.command();
 
             if (key == null && KEY_REQUIRED_REQUESTS.contains(cmd))
-                throw new GridException(GridRestCommandHandlerAdapter.missingParameter("key"));
+                throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("key"));
 
             final Long ttl = req0.ttl();
 
@@ -157,7 +157,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Set<Object> keys = req0.values().keySet();
 
                     if (F.isEmpty(keys))
-                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("keys"));
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("keys"));
 
                     // HashSet wrapping for correct serialization
                     keys = new HashSet<>(keys);
@@ -172,7 +172,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key, new
                         PutCommand(key, ttl, val), req.portableMode());
@@ -184,7 +184,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
                         new AddCommand(key, ttl, val), req.portableMode());
@@ -196,14 +196,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Map<Object, Object> map = req0.values();
 
                     if (F.isEmpty(map))
-                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("values"));
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("values"));
 
                     for (Map.Entry<Object, Object> e : map.entrySet()) {
                         if (e.getKey() == null)
-                            throw new GridException("Failing putAll operation (null keys are not allowed).");
+                            throw new IgniteCheckedException("Failing putAll operation (null keys are not allowed).");
 
                         if (e.getValue() == null)
-                            throw new GridException("Failing putAll operation (null values are not allowed).");
+                            throw new IgniteCheckedException("Failing putAll operation (null values are not allowed).");
                     }
 
                     // HashMap wrapping for correct serialization
@@ -238,7 +238,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val = req0.value();
 
                     if (val == null)
-                        throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
+                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
                         new ReplaceCommand(key, ttl, val), req.portableMode());
@@ -296,12 +296,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return fut;
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
             return new GridFinishedFuture<>(ctx, e);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
             return new GridFinishedFuture<>(ctx, e);
@@ -325,7 +325,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param op Operation to perform.
      * @param keepPortable Keep portable flag.
      * @return Operation result in future.
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
     private IgniteFuture<GridRestResponse> executeCommand(
         @Nullable UUID destId,
@@ -334,7 +334,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final GridCacheFlag[] flags,
         final Object key,
         final CacheProjectionCommand op,
-        final boolean keepPortable) throws GridException {
+        final boolean keepPortable) throws IgniteCheckedException {
 
         final boolean locExec =
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
@@ -370,14 +370,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param key Key to set affinity mapping in the response.
      * @param op Operation to perform.
      * @return Operation result in future.
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
     private IgniteFuture<GridRestResponse> executeCommand(
         @Nullable UUID destId,
         UUID clientId,
         final String cacheName,
         final Object key,
-        final CacheCommand op) throws GridException {
+        final CacheCommand op) throws IgniteCheckedException {
         final boolean locExec = destId == null || destId.equals(ctx.localNodeId()) ||
             ctx.cache().cache(cacheName) != null;
 
@@ -405,10 +405,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param req Request.
      * @param decr Whether to decrement (increment otherwise).
      * @return Future of operation result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     private static IgniteFuture<?> incrementOrDecrement(GridCacheProjection<Object, Object> cache, String key,
-        GridRestCacheRequest req, final boolean decr) throws GridException {
+        GridRestCacheRequest req, final boolean decr) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -417,7 +417,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         Long delta = req.delta();
 
         if (delta == null)
-            throw new GridException(GridRestCommandHandlerAdapter.missingParameter("delta"));
+            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("delta"));
 
         final GridCacheAtomicLong l = cache.cache().dataStructures().atomicLong(key, init != null ? init : 0, true);
 
@@ -439,12 +439,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param req Request.
      * @param prepend Whether to prepend.
      * @return Future of operation result.
-     * @throws GridException In case of any exception.
+     * @throws IgniteCheckedException In case of any exception.
      */
     private static IgniteFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
         final GridCacheProjection<Object, Object> cache,
-        final Object key, GridRestCacheRequest req, final boolean prepend) throws GridException {
+        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -452,7 +452,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final Object val = req.value();
 
         if (val == null)
-            throw new GridException(GridRestCommandHandlerAdapter.missingParameter("val"));
+            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -483,9 +483,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param appendVal Appendix value to add to the original one.
      * @param appendPlc Append or prepend policy flag.
      * @return Resulting value.
-     * @throws GridException In case of grid exceptions.
+     * @throws IgniteCheckedException In case of grid exceptions.
      */
-    private static Object appendOrPrepend(Object origVal, Object appendVal, boolean appendPlc) throws GridException {
+    private static Object appendOrPrepend(Object origVal, Object appendVal, boolean appendPlc) throws IgniteCheckedException {
         // Strings.
         if (appendVal instanceof String && origVal instanceof String)
             return appendPlc ? origVal + (String)appendVal : (String)appendVal + origVal;
@@ -530,7 +530,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return col;
         }
 
-        throw new GridException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
+        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
     }
 
     /** {@inheritDoc} */
@@ -548,7 +548,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static IgniteClosure<IgniteFuture<?>, GridRestResponse> resultWrapper(
         final GridCacheProjection<Object, Object> c, @Nullable final Object key) {
         return new CX1<IgniteFuture<?>, GridRestResponse>() {
-            @Override public GridRestResponse applyx(IgniteFuture<?> f) throws GridException {
+            @Override public GridRestResponse applyx(IgniteFuture<?> f) throws IgniteCheckedException {
                 GridCacheRestResponse resp = new GridCacheRestResponse();
 
                 resp.setResponse(f.get());
@@ -576,13 +576,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      *
      * @param cacheName Name of the cache.
      * @return Instance on the named cache.
-     * @throws GridException If cache not found.
+     * @throws IgniteCheckedException If cache not found.
      */
-    protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws GridException {
+    protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
         GridCacheProjectionEx<Object, Object> cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().cache(cacheName);
 
         if (cache == null)
-            throw new GridException(
+            throw new IgniteCheckedException(
                 "Failed to find cache for given cache name (null for default cache): " + cacheName);
 
         return cache;
@@ -592,13 +592,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param ignite Grid instance.
      * @param cacheName Name of the cache.
      * @return Instance on the named cache.
-     * @throws GridException If cache not found.
+     * @throws IgniteCheckedException If cache not found.
      */
-    private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws GridException {
+    private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
         GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         if (cache == null)
-            throw new GridException(
+            throw new IgniteCheckedException(
                 "Failed to find cache for given cache name (null for default cache): " + cacheName);
 
         return (GridCacheProjectionEx<Object, Object>)cache;
@@ -622,7 +622,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Object applyx(IgniteFuture<?> f) throws GridException {
+        @Override public Object applyx(IgniteFuture<?> f) throws IgniteCheckedException {
             f.get();
 
             return res;
@@ -1047,7 +1047,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
-            throws GridException {
+            throws IgniteCheckedException {
             return incrementOrDecrement(c, (String)key, req, false);
         }
     }
@@ -1073,7 +1073,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) throws GridException {
+        @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) throws IgniteCheckedException {
             return incrementOrDecrement(c, (String)key, req, true);
         }
     }
@@ -1100,7 +1100,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
-            throws GridException {
+            throws IgniteCheckedException {
             return appendOrPrepend(ctx, c, key, req, false);
         }
     }
@@ -1127,7 +1127,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx)
-            throws GridException {
+            throws IgniteCheckedException {
             return appendOrPrepend(ctx, c, key, req, true);
         }
     }

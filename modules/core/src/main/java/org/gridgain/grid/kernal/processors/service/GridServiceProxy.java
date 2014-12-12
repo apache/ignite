@@ -125,7 +125,7 @@ class GridServiceProxy<T> implements Serializable {
                     node = nodeForService(name, sticky);
 
                     if (node == null)
-                        throw new GridRuntimeException("Failed to find deployed service: " + name);
+                        throw new IgniteException("Failed to find deployed service: " + name);
 
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
@@ -152,7 +152,7 @@ class GridServiceProxy<T> implements Serializable {
                     throw e;
                 }
                 catch (Exception e) {
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
 
                 // If we are here, that means that service was not found
@@ -167,7 +167,7 @@ class GridServiceProxy<T> implements Serializable {
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
 
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
             }
         }

@@ -142,7 +142,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws GridException {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -155,7 +155,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

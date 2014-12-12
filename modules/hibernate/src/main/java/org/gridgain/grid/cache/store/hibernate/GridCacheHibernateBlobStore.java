@@ -185,7 +185,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
-    @Override public V load(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -205,7 +205,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new GridException("Failed to load value from cache store with key: " + key, e);
+            throw new IgniteCheckedException("Failed to load value from cache store with key: " + key, e);
         }
         finally {
             end(ses, tx);
@@ -214,7 +214,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, K key, @Nullable V val)
-        throws GridException {
+        throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -236,7 +236,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new GridException("Failed to put value to cache store [key=" + key + ", val" + val + "]", e);
+            throw new IgniteCheckedException("Failed to put value to cache store [key=" + key + ", val" + val + "]", e);
         }
         finally {
             end(ses, tx);
@@ -245,7 +245,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection", "JpaQlInspection"})
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -262,7 +262,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new GridException("Failed to remove value from cache store with key: " + key, e);
+            throw new IgniteCheckedException("Failed to remove value from cache store with key: " + key, e);
         }
         finally {
             end(ses, tx);
@@ -306,7 +306,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         init();
 
         Session ses = tx.removeMeta(ATTR_SES);
@@ -328,7 +328,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
                         log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
                 }
                 catch (HibernateException e) {
-                    throw new GridException("Failed to end transaction [xid=" + tx.xid() +
+                    throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() +
                         ", commit=" + commit + ']', e);
                 }
                 finally {
@@ -405,9 +405,9 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
     /**
      * Initializes store.
      *
-     * @throws GridException If failed to initialize.
+     * @throws IgniteCheckedException If failed to initialize.
      */
-    private void init() throws GridException {
+    private void init() throws IgniteCheckedException {
         if (initGuard.compareAndSet(false, true)) {
             if (log.isDebugEnabled())
                 log.debug("Initializing cache store.");
@@ -479,7 +479,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
                 }
             }
             catch (HibernateException e) {
-                throw new GridException("Failed to initialize store.", e);
+                throw new IgniteCheckedException("Failed to initialize store.", e);
             }
             finally {
                 initLatch.countDown();
@@ -489,7 +489,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
             U.await(initLatch);
 
         if (sesFactory == null)
-            throw new GridException("Cache store was not properly initialized.");
+            throw new IgniteCheckedException("Cache store was not properly initialized.");
     }
 
     /**
@@ -533,9 +533,9 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
      *
      * @param obj Object to convert to byte array.
      * @return Byte array.
-     * @throws GridException If failed to convert.
+     * @throws IgniteCheckedException If failed to convert.
      */
-    protected byte[] toBytes(Object obj) throws GridException {
+    protected byte[] toBytes(Object obj) throws IgniteCheckedException {
         return marsh.marshal(obj);
     }
 
@@ -545,9 +545,9 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
      * @param bytes Bytes to deserialize.
      * @param <X> Result object type.
      * @return Deserialized object.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected <X> X fromBytes(byte[] bytes) throws GridException {
+    protected <X> X fromBytes(byte[] bytes) throws IgniteCheckedException {
         if (bytes == null || bytes.length == 0)
             return null;
 

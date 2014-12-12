@@ -9,12 +9,12 @@
 
 package org.gridgain.testframework.junits.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -69,9 +69,9 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testRollback() throws GridException {
+    public void testRollback() throws IgniteCheckedException {
         GridCacheTx tx = new DummyTx();
 
         // Put.
@@ -132,32 +132,32 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithTXNoCommit() throws GridException {
+    public void testAllOpsWithTXNoCommit() throws IgniteCheckedException {
         doTestAllOps(new DummyTx(), false);
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithTXCommit() throws GridException {
+    public void testAllOpsWithTXCommit() throws IgniteCheckedException {
         doTestAllOps(new DummyTx(), true);
     }
 
     /**
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithoutTX() throws GridException {
+    public void testAllOpsWithoutTX() throws IgniteCheckedException {
         doTestAllOps(null, false);
     }
 
     /**
      * @param tx Transaction.
      * @param commit Commit.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void doTestAllOps(@Nullable GridCacheTx tx, boolean commit) throws GridException {
+    private void doTestAllOps(@Nullable GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         try {
             store.put(tx, "key1", "val1");
 
@@ -473,12 +473,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Override public void commit() throws GridException {
+        @Override public void commit() throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             // No-op.
         }
 
@@ -488,7 +488,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Override public void rollback() throws GridException {
+        @Override public void rollback() throws IgniteCheckedException {
             // No-op.
         }
     }

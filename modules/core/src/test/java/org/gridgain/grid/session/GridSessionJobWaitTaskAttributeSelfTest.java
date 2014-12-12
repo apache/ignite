@@ -100,9 +100,9 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
     /**
      * @param num Number.
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    private void checkTask(int num) throws GridException {
+    private void checkTask(int num) throws IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class.getName(), null);
@@ -130,7 +130,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             assert taskSes != null;
 
             if (log.isInfoEnabled())
@@ -140,7 +140,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @Override public Serializable execute() throws GridException {
+                    @Override public Serializable execute() throws IgniteCheckedException {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -159,7 +159,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                                 fail("Invalid test session value: " + val);
                             }
                             catch (InterruptedException e) {
-                                throw new GridException("Failed to get attribute due to interruption.", e);
+                                throw new IgniteCheckedException("Failed to get attribute due to interruption.", e);
                             }
                         }
 
@@ -173,7 +173,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (result.getException() != null)
                 throw result.getException();
 
@@ -189,7 +189,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

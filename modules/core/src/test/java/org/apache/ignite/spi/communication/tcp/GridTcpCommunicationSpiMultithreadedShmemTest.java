@@ -15,6 +15,6 @@ package org.apache.ignite.spi.communication.tcp;
 public class GridTcpCommunicationSpiMultithreadedShmemTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
     /** */
     public GridTcpCommunicationSpiMultithreadedShmemTest() {
-        super(true);
+        super(false);
     }
 }

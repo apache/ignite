@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.mockito.*;
 
@@ -106,7 +106,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
             atomic1.get();
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }
@@ -159,9 +159,9 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
      * Tests that non-persistent atomic reference doesn't ever
      * hit the store.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testNonPersistentMode() throws GridException {
+    public void testNonPersistentMode() throws IgniteCheckedException {
         String atomicName = UUID.randomUUID().toString();
 
         GridCache<Object, Object> cache = grid().cache(null);

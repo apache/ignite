@@ -154,7 +154,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             try {
                 queueQry.close();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to cancel queue header query.", e);
             }
         }
@@ -170,10 +170,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
      * @param create  If {@code true} sequence will be created in case it is not in cache.
      * @return Sequence.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
     public final GridCacheAtomicSequence sequence(final String name, final long initVal,
-        final boolean create) throws GridException {
+        final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -254,7 +254,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             }, cctx);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get sequence by name: " + name, e);
+            throw new IgniteCheckedException("Failed to get sequence by name: " + name, e);
         }
     }
 
@@ -263,9 +263,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Sequence name.
      * @return Method returns {@code true} if sequence has been removed and {@code false} if it's not cached.
-     * @throws GridException If removing failed.
+     * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeSequence(String name) throws GridException {
+    public final boolean removeSequence(String name) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -276,7 +276,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return removeInternal(key, GridCacheAtomicSequenceValue.class);
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove sequence by name: " + name, e);
+            throw new IgniteCheckedException("Failed to remove sequence by name: " + name, e);
         }
     }
 
@@ -288,10 +288,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *        will be ignored.
      * @param create If {@code true} atomic long will be created in case it is not in cache.
      * @return Atomic long.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
     public final GridCacheAtomicLong atomicLong(final String name, final long initVal,
-        final boolean create) throws GridException {
+        final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -349,7 +349,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             }, cctx);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get atomic long by name: " + name, e);
+            throw new IgniteCheckedException("Failed to get atomic long by name: " + name, e);
         }
     }
 
@@ -358,9 +358,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Atomic long name.
      * @return Method returns {@code true} if atomic long has been removed and {@code false} if it's not cached.
-     * @throws GridException If removing failed.
+     * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicLong(String name) throws GridException {
+    public final boolean removeAtomicLong(String name) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -371,7 +371,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return removeInternal(key, GridCacheAtomicLongValue.class);
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove atomic long by name: " + name, e);
+            throw new IgniteCheckedException("Failed to remove atomic long by name: " + name, e);
         }
     }
 
@@ -383,11 +383,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *        will be ignored.
      * @param create If {@code true} atomic reference will be created in case it is not in cache.
      * @return Atomic reference.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
     @SuppressWarnings("unchecked")
     public final <T> GridCacheAtomicReference<T> atomicReference(final String name, final T initVal,
-        final boolean create) throws GridException {
+        final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -446,7 +446,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             }, cctx);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get atomic reference by name: " + name, e);
+            throw new IgniteCheckedException("Failed to get atomic reference by name: " + name, e);
         }
     }
 
@@ -455,9 +455,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Atomic reference name.
      * @return Method returns {@code true} if atomic reference has been removed and {@code false} if it's not cached.
-     * @throws GridException If removing failed.
+     * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicReference(String name) throws GridException {
+    public final boolean removeAtomicReference(String name) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -468,7 +468,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return removeInternal(key, GridCacheAtomicReferenceValue.class);
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove atomic reference by name: " + name, e);
+            throw new IgniteCheckedException("Failed to remove atomic reference by name: " + name, e);
         }
     }
 
@@ -482,11 +482,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *        will be ignored.
      * @param create If {@code true} atomic stamped will be created in case it is not in cache.
      * @return Atomic stamped.
-     * @throws GridException If loading failed.
+     * @throws IgniteCheckedException If loading failed.
      */
     @SuppressWarnings("unchecked")
     public final <T, S> GridCacheAtomicStamped<T, S> atomicStamped(final String name, final T initVal,
-        final S initStamp, final boolean create) throws GridException {
+        final S initStamp, final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -545,7 +545,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             }, cctx);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get atomic stamped by name: " + name, e);
+            throw new IgniteCheckedException("Failed to get atomic stamped by name: " + name, e);
         }
     }
 
@@ -554,9 +554,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Atomic stamped name.
      * @return Method returns {@code true} if atomic stamped has been removed and {@code false} if it's not cached.
-     * @throws GridException If removing failed.
+     * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicStamped(String name) throws GridException {
+    public final boolean removeAtomicStamped(String name) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -567,7 +567,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return removeInternal(key, GridCacheAtomicStampedValue.class);
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove atomic stamped by name: " + name, e);
+            throw new IgniteCheckedException("Failed to remove atomic stamped by name: " + name, e);
         }
     }
 
@@ -579,10 +579,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param colloc Collocation flag.
      * @param create If {@code true} queue will be created in case it is not in cache.
      * @return Instance of queue.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
-        final boolean create) throws GridException {
+        final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
         checkSupportsQueue();
@@ -608,11 +608,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param colloc Collocation flag.
      * @param create If {@code true} queue will be created in case it is not in cache.
      * @return Queue.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
     private <T> GridCacheQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCacheQueueHeaderKey key = new GridCacheQueueHeaderKey(name);
 
         GridCacheQueueHeader header;
@@ -624,7 +624,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             if (old != null) {
                 if (old.capacity() != cap || old.collocated() != colloc)
-                    throw new GridException("Failed to create queue, queue with the same name but different " +
+                    throw new IgniteCheckedException("Failed to create queue, queue with the same name but different " +
                         "configuration already exists [name=" + name + ']');
 
                 header = old;
@@ -702,9 +702,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param name Queue name.
      * @param batchSize Batch size.
      * @return Method returns {@code true} if queue has been removed and {@code false} if it's not cached.
-     * @throws GridException If removing failed.
+     * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeQueue(final String name, final int batchSize) throws GridException {
+    public final boolean removeQueue(final String name, final int batchSize) throws IgniteCheckedException {
         waitInitialization();
 
         checkSupportsQueue();
@@ -723,9 +723,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param name Queue name.
      * @param batchSize Batch size.
      * @return {@code True} if queue was removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private boolean removeQueue0(String name, final int batchSize) throws GridException {
+    private boolean removeQueue0(String name, final int batchSize) throws IgniteCheckedException {
         GridCacheQueueHeader hdr = queueHdrView.remove(new GridCacheQueueHeaderKey(name));
 
         if (hdr == null)
@@ -753,10 +753,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *      if it is {@code false} all parameters except {@code name} are ignored.
      * @return Count down latch for the given name or {@code null} if it is not found and
      *      {@code create} is false.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
     public GridCacheCountDownLatch countDownLatch(final String name, final int cnt, final boolean autoDel,
-        final boolean create) throws GridException {
+        final boolean create) throws IgniteCheckedException {
         A.ensure(cnt >= 0, "count can not be negative");
 
         waitInitialization();
@@ -816,7 +816,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 }, cctx);
         }
         catch (Exception e) {
-            throw new GridException("Failed to get count down latch by name: " + name, e);
+            throw new IgniteCheckedException("Failed to get count down latch by name: " + name, e);
         }
     }
 
@@ -825,9 +825,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Name of the latch.
      * @return Count down latch for the given name.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean removeCountDownLatch(final String name) throws GridException {
+    public boolean removeCountDownLatch(final String name) throws IgniteCheckedException {
         waitInitialization();
 
         checkTransactionalWithNear();
@@ -845,7 +845,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
                             if (val != null) {
                                 if (val.get() > 0) {
-                                    throw new GridException("Failed to remove count down latch " +
+                                    throw new IgniteCheckedException("Failed to remove count down latch " +
                                         "with non-zero count: " + val.get());
                                 }
 
@@ -869,7 +869,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             );
         }
         catch (Exception e) {
-            throw new GridException("Failed to remove count down latch by name: " + name, e);
+            throw new IgniteCheckedException("Failed to remove count down latch by name: " + name, e);
         }
     }
 
@@ -879,9 +879,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param key Internal entry key.
      * @param cls Class of object which will be removed. If cached object has different type exception will be thrown.
      * @return Method returns true if sequence has been removed and false if it's not cached.
-     * @throws GridException If removing failed or class of object is different to expected class.
+     * @throws IgniteCheckedException If removing failed or class of object is different to expected class.
      */
-    private <R> boolean removeInternal(final GridCacheInternal key, final Class<R> cls) throws GridException {
+    private <R> boolean removeInternal(final GridCacheInternal key, final Class<R> cls) throws IgniteCheckedException {
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -920,7 +920,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             try {
                 waitInitialization();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to wait for manager initialization.", e);
 
                 return;
@@ -978,15 +978,15 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
-     * @throws GridException If thread is interrupted or manager
+     * @throws IgniteCheckedException If thread is interrupted or manager
      *     was not successfully initialized.
      */
-    private void waitInitialization() throws GridException {
+    private void waitInitialization() throws IgniteCheckedException {
         if (initLatch.getCount() > 0)
             U.await(initLatch);
 
         if (!initFlag)
-            throw new GridException("DataStructures manager was not properly initialized for cache: " +
+            throw new IgniteCheckedException("DataStructures manager was not properly initialized for cache: " +
                 cctx.cache().name());
     }
 
@@ -1006,24 +1006,24 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     }
 
     /**
-     * @throws GridException If {@link GridCacheQueue} can not be used with current cache configuration.
+     * @throws IgniteCheckedException If {@link GridCacheQueue} can not be used with current cache configuration.
      */
-    private void checkSupportsQueue() throws GridException {
+    private void checkSupportsQueue() throws IgniteCheckedException {
         if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
-            throw new GridException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
+            throw new IgniteCheckedException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
                 " (change write order mode to PRIMARY in configuration)");
     }
 
     /**
-     * @throws GridException If cache is not transactional with near cache enabled.
+     * @throws IgniteCheckedException If cache is not transactional with near cache enabled.
      */
-    private void checkTransactionalWithNear() throws GridException {
+    private void checkTransactionalWithNear() throws IgniteCheckedException {
         if (cctx.atomic())
-            throw new GridException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
+            throw new IgniteCheckedException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
                 "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
 
         if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))
-            throw new GridException("Cache data structures can not be used with near cache disabled on cache: " +
+            throw new IgniteCheckedException("Cache data structures can not be used with near cache disabled on cache: " +
                 cctx.cache().name());
     }
 
@@ -1034,10 +1034,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
      * @return Set instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         waitInitialization();
 
         // Non collocated mode enabled only for PARTITIONED cache.
@@ -1058,9 +1058,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param name Set name.
      * @return {@code True} if set was removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean removeSet(final String name) throws GridException {
+    public boolean removeSet(final String name) throws IgniteCheckedException {
         waitInitialization();
 
         if (cctx.atomic())
@@ -1142,10 +1142,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
      * @return Set.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws GridException {
+    @Nullable private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -1182,10 +1182,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * @param name Set name.
      * @return {@code True} if set was removed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private boolean removeSet0(String name) throws GridException {
+    private boolean removeSet0(String name) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCache cache = cctx.cache();
@@ -1254,10 +1254,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * @param setId Set ID.
      * @param topVer Topology version.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, long topVer) throws GridException {
+    private void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
         boolean local = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -1301,9 +1301,9 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * @param call Callable.
      * @return Callable result.
-     * @throws GridException If all retrys failed.
+     * @throws IgniteCheckedException If all retrys failed.
      */
-    <R> R retry(Callable<R> call) throws GridException {
+    <R> R retry(Callable<R> call) throws IgniteCheckedException {
         try {
             int cnt = 0;
 
@@ -1312,7 +1312,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     return call.call();
                 }
                 catch (ClusterGroupEmptyException e) {
-                    throw new GridRuntimeException(e);
+                    throw new IgniteException(e);
                 }
                 catch (GridCacheTxRollbackException | GridCachePartialUpdateException | ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
@@ -1325,22 +1325,22 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 }
             }
         }
-        catch (GridException | GridRuntimeException e) {
+        catch (IgniteCheckedException | IgniteException e) {
             throw e;
         }
         catch (Exception e) {
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 
     /**
      * @param cache Cache.
      * @param key Key to remove.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws GridException {
+    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
@@ -1351,11 +1351,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * @param cache Cache.
      * @param keys Keys to remove.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         retry(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 cache.removeAll(keys);
@@ -1369,12 +1369,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param cache Cache.
      * @param key Key.
      * @param val Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @return Previous value.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
-        throws GridException {
+        throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.putIfAbsent(key, val);
@@ -1389,17 +1389,17 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @param cls Class
      * @param <R> Type of expected result.
      * @return Object has casted to expected type.
-     * @throws GridException If {@code obj} has different to {@code cls} type.
+     * @throws IgniteCheckedException If {@code obj} has different to {@code cls} type.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws GridException {
+    @Nullable private <R> R cast(@Nullable Object obj, Class<R> cls) throws IgniteCheckedException {
         if (obj == null)
             return null;
 
         if (cls.isInstance(obj))
             return (R)obj;
         else
-            throw new GridException("Failed to cast object [expected=" + cls + ", actual=" + obj.getClass() + ']');
+            throw new IgniteCheckedException("Failed to cast object [expected=" + cls + ", actual=" + obj.getClass() + ']');
     }
 
     /** {@inheritDoc} */
@@ -1474,7 +1474,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         }
 
         /** {@inheritDoc} */
-        @Override public Void call() throws GridException {
+        @Override public Void call() throws IgniteCheckedException {
             GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
@@ -1542,7 +1542,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         }
 
         /** {@inheritDoc} */
-        @Override public Void call() throws GridException {
+        @Override public Void call() throws IgniteCheckedException {
             GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;

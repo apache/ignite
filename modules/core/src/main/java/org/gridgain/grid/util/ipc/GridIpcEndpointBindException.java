@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util.ipc;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Represents exception occurred during IPC endpoint binding.
  */
-public class GridIpcEndpointBindException extends GridException {
+public class GridIpcEndpointBindException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

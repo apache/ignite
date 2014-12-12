@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -148,7 +148,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
      * @param dhtVer DHT version.
      * @param mappedVer Mapped version.
      * @param ctx Context.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void addValueBytes(
         @Nullable V val,
@@ -157,7 +157,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         @Nullable GridCacheVersion dhtVer,
         @Nullable GridCacheVersion mappedVer,
         GridCacheContext<K, V> ctx
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         int idx = valuesSize();
 
         dhtVers[idx] = dhtVer;

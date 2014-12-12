@@ -45,10 +45,10 @@ public class GridMergeSortLoadTest {
      *              <b>3-nd argument:</b> size of the generated array for "warm up" (optional, default: {@code 10000}).
      *          </li>
      *      </ul>
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws IOException In case of file output error.
      */
-    public static void main(String[] args) throws GridException, IOException {
+    public static void main(String[] args) throws IgniteCheckedException, IOException {
         GridFileLock fileLock = GridLoadTestUtils.fileLock();
 
         fileLock.lock();
@@ -99,9 +99,9 @@ public class GridMergeSortLoadTest {
      * @param g Grid to run sorting on.
      * @param size Size of the generated array, which we sort.
      * @return Sort execution time in milliseconds.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static long sort(Ignite g, int size) throws GridException {
+    private static long sort(Ignite g, int size) throws IgniteCheckedException {
         int[] bigArr = generateRandomArray(size);
 
         X.println("Array is generated.");

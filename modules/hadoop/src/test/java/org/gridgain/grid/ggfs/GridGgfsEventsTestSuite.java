@@ -69,7 +69,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemPrivate extends GridGgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'shmem', port:" +
@@ -84,7 +84,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackPrivate extends GridGgfsEventsAbstractSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:" +
@@ -102,7 +102,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         private static IgniteFs ggfsSec;
 
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
@@ -115,7 +115,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         /**
          * @return GGFS configuration for secondary file system.
          */
-        protected IgniteFsConfiguration getSecondaryGgfsConfiguration() throws GridException {
+        protected IgniteFsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setName("ggfs-secondary");
@@ -170,7 +170,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemDualSync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_SYNC);
@@ -184,7 +184,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class ShmemDualAsync extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_ASYNC);
@@ -198,7 +198,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public abstract static class LoopbackPrimarySecondaryTest extends PrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(
@@ -209,7 +209,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getSecondaryGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getSecondaryGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getSecondaryGgfsConfiguration();
 
             ggfsCfg.setName("ggfs-secondary");
@@ -225,7 +225,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackDualSync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_SYNC);
@@ -239,7 +239,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
      */
     public static class LoopbackDualAsync extends LoopbackPrimarySecondaryTest {
         /** {@inheritDoc} */
-        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws GridException {
+        @Override protected IgniteFsConfiguration getGgfsConfiguration() throws IgniteCheckedException {
             IgniteFsConfiguration ggfsCfg = super.getGgfsConfiguration();
 
             ggfsCfg.setDefaultMode(DUAL_ASYNC);

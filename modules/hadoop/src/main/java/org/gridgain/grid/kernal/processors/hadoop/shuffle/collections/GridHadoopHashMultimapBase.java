@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -28,12 +29,12 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws GridException {
+    @Override public boolean visit(boolean ignoreLastVisited, Visitor v) throws IgniteCheckedException {
         throw new UnsupportedOperationException("visit");
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         return new Input(taskCtx);
     }
 
@@ -126,8 +127,8 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
             try {
                 return read(key(meta), keySize(meta));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }
@@ -152,10 +153,10 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
         private final Reader valReader;
 
         /**
-         * @throws GridException If failed.
+         * @throws IgniteCheckedException If failed.
          * @param taskCtx Task context.
          */
-        public Input(GridHadoopTaskContext taskCtx) throws GridException {
+        public Input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
             cap = capacity();
 
             keyReader = new Reader(taskCtx.keySerialization());
@@ -192,7 +193,7 @@ public abstract class GridHadoopHashMultimapBase extends GridHadoopMultimapBase 
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws GridException {
+        @Override public void close() throws IgniteCheckedException {
             keyReader.close();
             valReader.close();
         }

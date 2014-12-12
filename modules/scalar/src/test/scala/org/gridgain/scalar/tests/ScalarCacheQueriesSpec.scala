@@ -18,6 +18,7 @@ import org.scalatest.matchers._
 import org.scalatest._
 import junit.JUnitRunner
 import org.gridgain.grid.cache._
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.junit.runner.RunWith
 

@@ -59,7 +59,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
             message(ignite.cluster().forNodes(nodes)).send(null,
                 new GridTestCommunicationMessage(cntr, ignite.cluster().localNode().id()));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             error("Failed to send message.", e);
         }
     }

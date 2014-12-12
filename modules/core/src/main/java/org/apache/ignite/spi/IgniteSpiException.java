@@ -9,12 +9,12 @@
 
 package org.apache.ignite.spi;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown by SPI implementations.
  */
-public class IgniteSpiException extends GridException {
+public class IgniteSpiException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

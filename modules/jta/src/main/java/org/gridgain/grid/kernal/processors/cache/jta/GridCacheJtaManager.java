@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.jta;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -31,7 +31,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
     private GridCacheTmLookup tmLookup;
 
     /** {@inheritDoc} */
-    @Override public void createTmLookup(GridCacheConfiguration ccfg) throws GridException {
+    @Override public void createTmLookup(GridCacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg.getTransactionManagerLookupClassName() != null;
 
         try {
@@ -40,12 +40,12 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
             tmLookup = (GridCacheTmLookup)cls.newInstance();
         }
         catch (Exception e) {
-            throw new GridException("Failed to instantiate transaction manager lookup.", e);
+            throw new IgniteCheckedException("Failed to instantiate transaction manager lookup.", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void checkJta() throws GridException {
+    @Override public void checkJta() throws IgniteCheckedException {
         if (jtaTm == null)
             jtaTm = tmLookup.getTm();
 
@@ -79,16 +79,16 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                         rsrc = new GridCacheXAResource((GridCacheTxEx)tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
-                            throw new GridException("Failed to enlist XA resource to JTA user transaction.");
+                            throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
 
                         xaRsrc.set(rsrc);
                     }
                 }
                 catch (SystemException e) {
-                    throw new GridException("Failed to obtain JTA transaction.", e);
+                    throw new IgniteCheckedException("Failed to obtain JTA transaction.", e);
                 }
                 catch (RollbackException e) {
-                    throw new GridException("Failed to enlist XAResource to JTA transaction.", e);
+                    throw new IgniteCheckedException("Failed to enlist XAResource to JTA transaction.", e);
                 }
             }
         }

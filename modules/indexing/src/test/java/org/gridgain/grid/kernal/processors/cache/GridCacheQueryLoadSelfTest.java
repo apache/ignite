@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -84,9 +84,9 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      *
      * @param cls Value type.
      * @return Objects number.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private long size(Class<?> cls) throws GridException {
+    private long size(Class<?> cls) throws IgniteCheckedException {
         GridCacheQueryManager<Object, Object> qryMgr = ((GridKernal)grid()).internalCache().context().queries();
 
         assert qryMgr != null;
@@ -384,7 +384,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     private static class TestStore extends GridCacheStoreAdapter<Integer, ValueObject> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, ValueObject> clo,
-            @Nullable Object... args) throws GridException {
+            @Nullable Object... args) throws IgniteCheckedException {
             assert clo != null;
 
             for (int i = 0; i < PUT_CNT; i++)
@@ -393,7 +393,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ValueObject load(@Nullable GridCacheTx tx,
-            Integer key) throws GridException {
+            Integer key) throws IgniteCheckedException {
             assert key != null;
 
             return STORE_MAP.get(key);
@@ -401,7 +401,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void put(@Nullable GridCacheTx tx,
-            Integer key, ValueObject val) throws GridException {
+            Integer key, ValueObject val) throws IgniteCheckedException {
             assert key != null;
             assert val != null;
 
@@ -410,7 +410,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable GridCacheTx tx,
-            Integer key) throws GridException {
+            Integer key) throws IgniteCheckedException {
             assert key != null;
 
             STORE_MAP.remove(key);

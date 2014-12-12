@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors;
 
-import org.gridgain.grid.GridException;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.tostring.*;
 
@@ -24,7 +24,7 @@ public interface GridProcessor extends GridComponent {
      * Adds attributes from this component to map of all node attributes.
      *
      * @param attrs Map of all attributes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addAttributes(Map<String, Object> attrs) throws GridException;
+    public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException;
 }

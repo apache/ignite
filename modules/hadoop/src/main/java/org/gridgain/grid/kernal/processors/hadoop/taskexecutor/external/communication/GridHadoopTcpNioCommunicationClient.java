@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
@@ -59,9 +60,9 @@ public class GridHadoopTcpNioCommunicationClient extends GridHadoopAbstractCommu
 
     /** {@inheritDoc} */
     @Override public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg)
-        throws GridException {
+        throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -70,7 +71,7 @@ public class GridHadoopTcpNioCommunicationClient extends GridHadoopAbstractCommu
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
     }

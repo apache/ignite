@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -24,8 +24,8 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Checks that exception is propagated to user when cache store throws an exception.
@@ -58,8 +58,8 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
 
         cc.setStore(new GridCacheStoreAdapter<Object, Object>() {
             @Override public Object load(@Nullable GridCacheTx tx, Object key)
-                throws GridException {
-                throw new GridException("Failed to get key from store: " + key);
+                throws IgniteCheckedException {
+                throw new IgniteCheckedException("Failed to get key from store: " + key);
             }
 
             @Override public void put(@Nullable GridCacheTx tx, Object key,
@@ -113,7 +113,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, GridException.class, null);
+            }, IgniteCheckedException.class, null);
         }
         finally {
             stopAllGrids();

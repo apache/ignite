@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.jta.jndi;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.jta.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +43,7 @@ public class GridCacheJndiTmLookup implements GridCacheTmLookup {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public TransactionManager getTm() throws GridException {
+    @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
         assert jndiNames != null;
         assert !jndiNames.isEmpty();
 
@@ -58,7 +58,7 @@ public class GridCacheJndiTmLookup implements GridCacheTmLookup {
             }
         }
         catch (NamingException e) {
-            throw new GridException("Unable to lookup TM by: " + jndiNames, e);
+            throw new IgniteCheckedException("Unable to lookup TM by: " + jndiNames, e);
         }
 
         return null;

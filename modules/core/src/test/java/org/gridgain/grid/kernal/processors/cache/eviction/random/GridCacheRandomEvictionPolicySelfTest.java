@@ -176,7 +176,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                 t[i] = Integer.toString(i);
 
             multithreaded(new Callable() {
-                @Nullable @Override public Object call() throws GridException {
+                @Nullable @Override public Object call() throws IgniteCheckedException {
                     int runs = 3000;
 
                     for (int i = 0; i < runs; i++) {

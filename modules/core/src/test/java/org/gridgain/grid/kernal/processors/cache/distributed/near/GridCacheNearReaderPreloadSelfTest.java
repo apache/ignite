@@ -109,7 +109,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @param ipFinder IP finder.
      * @param gridName Grid name.
      * @return Configuration for data node.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private IgniteConfiguration dataNode(TcpDiscoveryIpFinder ipFinder, String gridName)
         throws Exception {

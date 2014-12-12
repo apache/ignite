@@ -12,9 +12,9 @@ import org.gridgain.testframework.junits.common.*;
 public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
     /**
      * Method executes GridP2PTestTask.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testGridP2PTestTask() throws GridException {
+    public void testGridP2PTestTask() throws IgniteCheckedException {
         try (Ignite g  = G.start()) {
             assert g != null;
 

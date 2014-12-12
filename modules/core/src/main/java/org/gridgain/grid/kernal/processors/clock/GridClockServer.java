@@ -43,9 +43,9 @@ public class GridClockServer {
      * Starts server.
      *
      * @param ctx Kernal context.
-     * @throws GridException If server could not be started.
+     * @throws IgniteCheckedException If server could not be started.
      */
-    public void start(GridKernalContext ctx) throws GridException {
+    public void start(GridKernalContext ctx) throws IgniteCheckedException {
         this.ctx = ctx;
 
         clockSync = ctx.clockSync();
@@ -76,11 +76,11 @@ public class GridClockServer {
             }
 
             if (sock == null)
-                throw new GridException("Failed to bind time server socket within specified port range [locHost=" +
+                throw new IgniteCheckedException("Failed to bind time server socket within specified port range [locHost=" +
                     locHost + ", startPort=" + startPort + ", endPort=" + endPort + ']');
         }
         catch (IOException e) {
-            throw new GridException("Failed to start time server (failed to get local host address)", e);
+            throw new IgniteCheckedException("Failed to start time server (failed to get local host address)", e);
         }
     }
 
@@ -123,9 +123,9 @@ public class GridClockServer {
      * @param msg Message to send.
      * @param addr Address.
      * @param port Port.
-     * @throws GridException If send failed.
+     * @throws IgniteCheckedException If send failed.
      */
-    public void sendPacket(GridClockMessage msg, InetAddress addr, int port) throws GridException {
+    public void sendPacket(GridClockMessage msg, InetAddress addr, int port) throws IgniteCheckedException {
         try {
             DatagramPacket packet = new DatagramPacket(msg.toBytes(), GridClockMessage.PACKET_SIZE, addr, port);
 
@@ -136,7 +136,7 @@ public class GridClockServer {
         }
         catch (IOException e) {
             if (!sock.isClosed())
-                throw new GridException("Failed to send datagram message to remote node [addr=" + addr +
+                throw new IgniteCheckedException("Failed to send datagram message to remote node [addr=" + addr +
                     ", port=" + port + ", msg=" + msg + ']', e);
         }
     }
@@ -185,7 +185,7 @@ public class GridClockServer {
 
                     clockSync.onMessageReceived(msg, packet.getAddress(), packet.getPort());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to assemble clock server message (will ignore the packet) [host=" +
                         packet.getAddress() + ", port=" + packet.getPort() + ", err=" + e.getMessage() + ']');
                 }

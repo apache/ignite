@@ -185,7 +185,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             fail("Failed to receive mismatching configuration exception.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
@@ -599,7 +599,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             }
             catch (Exception e) {
-                throw new GridRuntimeException(e);
+                throw new IgniteException(e);
             }
         }
 
@@ -611,7 +611,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                 return val == null ? 0 : val.get();
             }
             catch (Exception e) {
-                throw new GridRuntimeException(e);
+                throw new IgniteException(e);
             }
         }
 

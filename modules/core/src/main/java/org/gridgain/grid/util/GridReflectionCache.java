@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -80,9 +80,9 @@ public class GridReflectionCache implements Externalizable {
      *
      * @param o Key to get affinity key for.
      * @return Value of the field for given object or {@code null} if field was not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public Object firstFieldValue(Object o) throws GridException {
+    @Nullable public Object firstFieldValue(Object o) throws IgniteCheckedException {
         assert o != null;
 
         Field f = firstField(o.getClass());
@@ -92,7 +92,7 @@ public class GridReflectionCache implements Externalizable {
                 return f.get(o);
             }
             catch (IllegalAccessException e) {
-                throw new GridException("Failed to access field for object [field=" + f + ", obj=" + o + ']', e);
+                throw new IgniteCheckedException("Failed to access field for object [field=" + f + ", obj=" + o + ']', e);
             }
         }
 
@@ -104,9 +104,9 @@ public class GridReflectionCache implements Externalizable {
      *
      * @param o Key to get affinity key for.
      * @return Method return value for given object or {@code null} if method was not found.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public Object firstMethodValue(Object o) throws GridException {
+    @Nullable public Object firstMethodValue(Object o) throws IgniteCheckedException {
         assert o != null;
 
         Method m = firstMethod(o.getClass());
@@ -116,7 +116,7 @@ public class GridReflectionCache implements Externalizable {
                 return m.invoke(o);
             }
             catch (IllegalAccessException | InvocationTargetException e) {
-                throw new GridException("Failed to invoke method for object [mtd=" + m + ", obj=" + o + ']', e);
+                throw new IgniteCheckedException("Failed to invoke method for object [mtd=" + m + ", obj=" + o + ']', e);
             }
         }
 

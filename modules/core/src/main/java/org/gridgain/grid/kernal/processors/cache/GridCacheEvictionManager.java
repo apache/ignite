@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -38,9 +39,9 @@ import java.util.concurrent.locks.*;
 import java.util.concurrent.locks.Lock;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -116,7 +117,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private volatile boolean firstEvictWarn;
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         GridCacheConfiguration cfg = cctx.config();
 
         plc = cctx.isNear() ? cfg.<K, V>getNearEvictionPolicy() : cfg.<K, V>getEvictionPolicy();
@@ -128,10 +129,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         filter = cfg.getEvictionFilter();
 
         if (cfg.getEvictMaxOverflowRatio() < 0)
-            throw new GridException("Configuration parameter 'maxEvictOverflowRatio' cannot be negative.");
+            throw new IgniteCheckedException("Configuration parameter 'maxEvictOverflowRatio' cannot be negative.");
 
         if (cfg.getEvictSynchronizedKeyBufferSize() < 0)
-            throw new GridException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
+            throw new IgniteCheckedException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
         if (!cctx.isLocal()) {
             evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
@@ -147,7 +148,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         }
 
         if (cctx.isDht() && !nearSync && evictSync && isNearEnabled(cctx))
-            throw new GridException("Illegal configuration (may lead to data inconsistency) " +
+            throw new IgniteCheckedException("Illegal configuration (may lead to data inconsistency) " +
                 "[evictSync=true, evictNearSync=false]");
 
         reportConfigurationProblems();
@@ -175,10 +176,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (evictSyncAgr) {
             if (cfg.getEvictSynchronizedTimeout() <= 0)
-                throw new GridException("Configuration parameter 'evictSynchronousTimeout' should be positive.");
+                throw new IgniteCheckedException("Configuration parameter 'evictSynchronousTimeout' should be positive.");
 
             if (cfg.getEvictSynchronizedConcurrencyLevel() <= 0)
-                throw new GridException("Configuration parameter 'evictSynchronousConcurrencyLevel' " +
+                throw new IgniteCheckedException("Configuration parameter 'evictSynchronousConcurrencyLevel' " +
                     "should be positive.");
 
             maxActiveFuts = cfg.getEvictSynchronizedConcurrencyLevel();
@@ -237,7 +238,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         super.onKernalStart0();
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
@@ -466,7 +467,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 log.debug("Failed to send eviction response since initiating node left grid " +
                     "[node=" + nodeId + ", localNode=" + cctx.nodeId() + ']');
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send eviction response to node [node=" + nodeId +
                 ", localNode=" + cctx.nodeId() + ", res" + res + ']', e);
         }
@@ -616,7 +617,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             // as well because versions may change outside the transaction.
             return evict0(cache, entry, obsoleteVer, null, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to evict entry on remote node [key=" + key + ", localNode=" + cctx.nodeId() + ']', e);
 
             return false;
@@ -630,10 +631,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param filter Filter.
      * @param explicit If eviction is initiated by user.
      * @return {@code true} if entry has been evicted.
-     * @throws GridException If failed to evict entry.
+     * @throws IgniteCheckedException If failed to evict entry.
      */
     private boolean evict0(GridCacheAdapter<K, V> cache, GridCacheEntryEx<K, V> entry, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean explicit) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean explicit) throws IgniteCheckedException {
         assert cache != null;
         assert entry != null;
         assert obsoleteVer != null;
@@ -690,7 +691,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             if (e.markObsoleteIfEmpty(null) || e.obsolete())
                 e.context().cache().removeEntry(e);
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
@@ -698,7 +699,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
             }
         }
@@ -722,7 +723,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             if (e.markObsoleteIfEmpty(null) || e.obsolete())
                 e.context().cache().removeEntry(e);
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
@@ -730,7 +731,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
             }
 
@@ -826,10 +827,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param explicit {@code True} if evict is called explicitly, {@code false} if it's called
      *      from eviction policy.
      * @return {@code True} if entry was marked for eviction.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public boolean evict(@Nullable GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion obsoleteVer,
-        boolean explicit, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        boolean explicit, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (entry == null)
             return true;
 
@@ -879,9 +880,9 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     /**
      * @param keys Keys to evict.
      * @param obsoleteVer Obsolete version.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void batchEvict(Collection<? extends K> keys, @Nullable GridCacheVersion obsoleteVer) throws GridException {
+    public void batchEvict(Collection<? extends K> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
         assert !evictSyncAgr;
         assert cctx.isSwapOrOffheapEnabled();
 
@@ -1107,7 +1108,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
                 return;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Eviction future finished with error (all entries will be touched): " + fut, e);
 
                 if (plcEnabled) {
@@ -1155,7 +1156,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     // They will be touched within updating transactions.
                     evict0(cctx.cache(), entry, obsoleteVer, versionFilter(info), false);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to evict entry [entry=" + entry +
                         ", localNode=" + cctx.nodeId() + ']', e);
                 }
@@ -1678,7 +1679,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                                 plcEnabled)
                                 touch0(info.entry());
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to evict entry: " + info.entry(), e);
                         }
                     }
@@ -1711,7 +1712,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     // Node left the topology.
                     onNodeLeft(nodeId);
                 }
-                catch (GridException ex) {
+                catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to send eviction request to node [node=" + nodeId + ", req=" + req + ']', ex);
 
                     rejectEntries(nodeId);

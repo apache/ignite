@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.visor;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -44,7 +43,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute() throws GridException {
+    @Nullable @Override public Object execute() throws IgniteCheckedException {
         start = U.currentTimeMillis();
 
         A arg = argument(0);
@@ -66,5 +65,5 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
      *
      * @return Result.
      */
-    protected abstract R run(@Nullable A arg) throws GridException;
+    protected abstract R run(@Nullable A arg) throws IgniteCheckedException;
 }

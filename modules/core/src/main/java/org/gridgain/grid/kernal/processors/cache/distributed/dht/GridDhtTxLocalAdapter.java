@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -384,9 +384,9 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param msgId Message ID.
      * @param e Entry to add.
      * @return Future for active transactions for the time when reader was added.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, GridCacheTxEntry<K, V> e) throws GridException {
+    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, GridCacheTxEntry<K, V> e) throws IgniteCheckedException {
         init();
 
         GridCacheTxState state = state();
@@ -444,7 +444,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     GridCacheVersion dhtVer = cctx.mvcc().mappedVersion(explicit);
 
                     if (dhtVer == null)
-                        throw new GridException("Failed to find dht mapping for explicit entry version: " + entry);
+                        throw new IgniteCheckedException("Failed to find dht mapping for explicit entry version: " + entry);
 
                     entry.explicitVersion(dhtVer);
                 }
@@ -486,7 +486,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         try {
             checkValid();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
@@ -568,7 +568,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
             return obtainLockAsync(cacheCtx, ret, passedKeys, read, skipped, null);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -605,7 +605,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         return new GridEmbeddedFuture<>(
             fut,
             new PLC1<GridCacheReturn<V>>(ret) {
-                @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws GridException {
+                @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + passedKeys);
 
@@ -682,7 +682,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean finish(boolean commit) throws GridException {
+    @Override public boolean finish(boolean commit) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing dht local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -694,7 +694,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 GridCacheTxState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
-                    throw new GridException("Invalid transaction state for commit [state=" + state() +
+                    throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
                         ", tx=" + this + ']');
                 else {
                     if (log.isDebugEnabled())
@@ -713,7 +713,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             }
         }
 
-        GridException err = null;
+        IgniteCheckedException err = null;
 
         // Commit to DB first. This way if there is a failure, transaction
         // won't be committed.
@@ -723,7 +723,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             else
                 userRollback();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             err = e;
 
             commit = false;
@@ -749,7 +749,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     if (!state(COMMITTED)) {
                         state(UNKNOWN);
 
-                        throw new GridException("Invalid transaction state for commit: " + this);
+                        throw new IgniteCheckedException("Invalid transaction state for commit: " + this);
                     }
                 }
             }
@@ -757,7 +757,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 if (!state(ROLLED_BACK)) {
                     state(UNKNOWN);
 
-                    throw new GridException("Invalid transaction state for rollback: " + this);
+                    throw new IgniteCheckedException("Invalid transaction state for rollback: " + this);
                 }
             }
         }
@@ -773,7 +773,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture<K, V> fut);
 
     /** {@inheritDoc} */
-    @Override public void rollback() throws GridException {
+    @Override public void rollback() throws IgniteCheckedException {
         try {
             rollbackAsync().get();
         }

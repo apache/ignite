@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 
 /**
  * Defines "rich" closeable iterator interface that is also acts like lambda function and iterable.
@@ -41,9 +41,9 @@ public interface GridCloseableIterator<T> extends GridIterator<T>, IgniteSpiClos
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 
     /**
      * Checks if iterator has been closed.

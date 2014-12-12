@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -49,19 +49,19 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     private final AtomicLong seq = new AtomicLong();
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (intLsnrCnt.get() > 0 || lsnrCnt.get() > 0) {
             Collection<ClusterNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
 
             for (ClusterNode n : nodes) {
                 if (!n.version().greaterThanEqual(6, 2, 0))
-                    throw new GridException("Rolling update is not supported for continuous queries " +
+                    throw new IgniteCheckedException("Rolling update is not supported for continuous queries " +
                         "for versions below 6.2.0");
             }
         }
@@ -84,10 +84,10 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param newBytes New value bytes.
      * @param oldVal Old value.
      * @param oldBytes Old value bytes.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
     public void onEntryUpdate(GridCacheEntryEx<K, V> e, K key, @Nullable V newVal,
-        @Nullable GridCacheValueBytes newBytes, V oldVal, @Nullable GridCacheValueBytes oldBytes) throws GridException {
+        @Nullable GridCacheValueBytes newBytes, V oldVal, @Nullable GridCacheValueBytes oldBytes) throws IgniteCheckedException {
         assert e != null;
         assert key != null;
 

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.marshaller;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -90,18 +90,18 @@ public interface IgniteMarshaller {
      *
      * @param obj Object to marshal.
      * @param out Output stream to marshal into.
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public void marshal(@Nullable Object obj, OutputStream out) throws GridException;
+    public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException;
 
     /**
      * Marshals object to byte array.
      *
      * @param obj Object to marshal.
      * @return Byte array.
-     * @throws GridException If marshalling failed.
+     * @throws IgniteCheckedException If marshalling failed.
      */
-    public byte[] marshal(@Nullable Object obj) throws GridException;
+    public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException;
 
     /**
      * Unmarshals object from the output stream using given class loader.
@@ -111,9 +111,9 @@ public interface IgniteMarshaller {
      * @param in Input stream.
      * @param clsLdr Class loader to use.
      * @return Unmarshalled object.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws GridException;
+    public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
      * Unmarshals object from byte array using given class loader.
@@ -122,7 +122,7 @@ public interface IgniteMarshaller {
      * @param arr Byte array.
      * @param clsLdr Class loader to use.
      * @return Unmarshalled object.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws GridException;
+    public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
 }

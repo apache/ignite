@@ -238,9 +238,9 @@ public class GridSwapEvictAllBenchmark {
     /**
      * @param store Cache store.
      * @return Started grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(GridCacheStore<Long, String> store) throws GridException {
+    private static Ignite start(GridCacheStore<Long, String> store) throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.visor.node;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -36,7 +36,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
 
     /** {@inheritDoc} */
     @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results)
-        throws GridException {
+        throws IgniteCheckedException {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
         for (ComputeJobResult res: results) {
@@ -64,7 +64,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Long, Long> run(Void arg) throws GridException {
+        @Override protected IgniteBiTuple<Long, Long> run(Void arg) throws IgniteCheckedException {
             ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.log;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
@@ -92,7 +92,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         try {
             return new GridFinishedFuture<>(ctx, new GridRestResponse(readLog(path, from, to)));
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
         catch (IOException e) {
@@ -107,17 +107,17 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
      * @param from Number of line to start from.
      * @param to Number tof line to finish on.
      * @return List of read lines.
-     * @throws GridException If argumets are illegal.
+     * @throws IgniteCheckedException If argumets are illegal.
      * @throws IOException If file couldn't be accessed or read failed.
      */
-    private List<String> readLog(String path, int from, int to) throws GridException, IOException {
+    private List<String> readLog(String path, int from, int to) throws IgniteCheckedException, IOException {
         URL url = U.resolveGridGainUrl(path);
 
         if (url == null)
-            throw new GridException("Log file not found: " + path);
+            throw new IgniteCheckedException("Log file not found: " + path);
 
         if (!isAccessible(url))
-            throw new GridException("File is not accessible through REST" +
+            throw new IgniteCheckedException("File is not accessible through REST" +
                 " (check restAccessibleFolders configuration property): " + path);
 
         if (from >= 0 && to >= 0)
@@ -125,7 +125,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         else if (from < 0 && to < 0)
             return readLinesBackward(url, from, to);
         else
-            throw new GridException(
+            throw new IgniteCheckedException(
                 "Illegal arguments (both should be positive or negative) [from=" + from + ", to=" + to + ']');
     }
 
@@ -136,15 +136,15 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
      * @param from Number of line to start from. Should be negative, representing number of line from the end.
      * @param to Number tof line to finish on. Should be negative, representing number of line from the end.
      * @return List of read lines.
-     * @throws GridException If arguments are illegal.
+     * @throws IgniteCheckedException If arguments are illegal.
      * @throws IOException If file couldn't be accessed or read failed.
      */
     @SuppressWarnings("TooBroadScope")
-    private List<String> readLinesBackward(URL url, final int from, final int to) throws GridException, IOException {
+    private List<String> readLinesBackward(URL url, final int from, final int to) throws IgniteCheckedException, IOException {
         File file = new File(url.getFile());
 
         if (!file.exists() || !file.isFile())
-            throw new GridException("File doesn't exists: " + url);
+            throw new IgniteCheckedException("File doesn't exists: " + url);
 
         int linesToRead = to - from + 1;
         int linesRead = 0;

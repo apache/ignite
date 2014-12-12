@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.lang.*;
 
 /**
@@ -23,7 +23,7 @@ public class GridEmptyCloseableIterator<T> extends GridEmptyIterator<T> implemen
     private boolean closed;
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         closed = true;
     }
 

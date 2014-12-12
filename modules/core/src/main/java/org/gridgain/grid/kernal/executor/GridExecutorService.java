@@ -158,7 +158,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             try {
                 task.cancel();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cancel task: " + task, e);
             }
         }
@@ -212,7 +212,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 return false;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get task result: " + fut, e);
 
                 if (e.getCause() instanceof InterruptedException)
@@ -238,7 +238,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
             return addFuture(comp.<T>future());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<T>(e));
         }
@@ -256,7 +256,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             comp.run(task);
 
             IgniteFuture<T> fut = comp.future().chain(new CX1<IgniteFuture<?>, T>() {
-                @Override public T applyx(IgniteFuture<?> fut) throws GridException {
+                @Override public T applyx(IgniteFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
 
                     return res;
@@ -265,7 +265,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
             return addFuture(fut);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<T>(e));
         }
@@ -284,7 +284,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
             return addFuture(comp.future());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<>(e));
         }
@@ -353,7 +353,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 fut = comp.future();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Should not be thrown since uses asynchronous execution.
                 fut = new GridFinishedFutureEx<>(e);
             }
@@ -376,7 +376,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                     cancelFuture(fut);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (e.getCause() instanceof InterruptedException) {
                         // This invokeAll() method was interrupted (therefore, need to cancel all tasks).
                         // Note: that execution may be interrupted on remote node. Possible bug.
@@ -418,7 +418,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
         try {
             fut.cancel();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to cancel task: " + fut, e);
         }
     }
@@ -493,7 +493,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 fut = comp.future();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Should not be thrown since uses asynchronous execution.
                 fut = new GridFinishedFutureEx<>(e);
             }
@@ -528,7 +528,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                     cancel = true;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // This invokeAll() method was interrupted (therefore, need to cancel all tasks).
                     // Note: that execution may be interrupted on remote node. Possible bug.
                     if (e.getCause() instanceof InterruptedException)
@@ -573,7 +573,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
             addFuture(comp.future());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Should not be thrown since uses asynchronous execution.
             addFuture(new GridFinishedFutureEx(e));
         }
@@ -647,7 +647,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             try {
                 fut.cancel();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to cancel task: " + fut, e);
             }
 
@@ -674,7 +674,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
 
                 return res;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Task cancellation may cause throwing exception.
                 if (fut.isCancelled()) {
                     RuntimeException ex = new CancellationException("Task was cancelled: " + fut);
@@ -712,7 +712,7 @@ public class GridExecutorService extends GridMetadataAwareAdapter implements Exe
             catch (ComputeTaskTimeoutException e) {
                 throw new ExecutionException("Task execution timed out during waiting for task result: " + fut, e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Task cancellation may cause throwing exception.
                 if (fut.isCancelled()) {
                     RuntimeException ex = new CancellationException("Task was cancelled: " + fut);

@@ -164,7 +164,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     try {
                         tx.rollback();
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
@@ -173,7 +173,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 try {
                     tx.close();
                 }
-                catch (GridException ex) {
+                catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to invalidate transaction: " + tx, ex);
                 }
             }
@@ -307,7 +307,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             try {
                 tx.rollback();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to rollback empty transaction: " + tx, e);
             }
 
@@ -385,7 +385,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 fut.onResult(e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 fut.onResult(e);
             }

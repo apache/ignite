@@ -441,7 +441,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            GridException.class,
+            IgniteCheckedException.class,
             null
         );
     }
@@ -727,9 +727,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      *
      * @param path Spring application context configuration path.
      * @return Spring application context.
-     * @throws GridException If given path or xml-configuration at this path is invalid.
+     * @throws IgniteCheckedException If given path or xml-configuration at this path is invalid.
      */
-    private GenericApplicationContext getSpringContext(String path) throws GridException {
+    private GenericApplicationContext getSpringContext(String path) throws IgniteCheckedException {
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
@@ -740,7 +740,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             return ctx;
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context: " + e.getMessage(), e);
         }
     }
 
@@ -787,12 +787,12 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
             return F.asSet(new TestJob());
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -803,7 +803,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("StatementWithEmptyBody")
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < 3000);

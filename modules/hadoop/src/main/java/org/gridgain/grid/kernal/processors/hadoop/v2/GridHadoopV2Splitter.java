@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -30,9 +31,9 @@ public class GridHadoopV2Splitter {
     /**
      * @param ctx Job context.
      * @return Collection of mapped splits.
-     * @throws GridException If mapping failed.
+     * @throws IgniteCheckedException If mapping failed.
      */
-    public static Collection<GridHadoopInputSplit> splitJob(JobContext ctx) throws GridException {
+    public static Collection<GridHadoopInputSplit> splitJob(JobContext ctx) throws IgniteCheckedException {
         try {
             InputFormat<?, ?> format = ReflectionUtils.newInstance(ctx.getInputFormatClass(), ctx.getConfiguration());
 
@@ -59,7 +60,7 @@ public class GridHadoopV2Splitter {
             return res;
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -73,10 +74,10 @@ public class GridHadoopV2Splitter {
      * @param in Input stream.
      * @param hosts Optional hosts.
      * @return File block or {@code null} if it is not a {@link FileSplit} instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public static GridHadoopFileBlock readFileBlock(String clsName, DataInput in, @Nullable String[] hosts)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!FileSplit.class.getName().equals(clsName))
             return null;
 
@@ -86,7 +87,7 @@ public class GridHadoopV2Splitter {
             split.readFields(in);
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         if (hosts == null)

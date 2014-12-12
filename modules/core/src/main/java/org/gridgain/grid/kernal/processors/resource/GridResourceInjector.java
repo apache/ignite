@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 
 /**
@@ -24,9 +24,9 @@ interface GridResourceInjector {
      * @param target Target object the field belongs to.
      * @param depCls Deployed class.
      * @param dep Deployment.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
-    public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep) throws GridException;
+    public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep) throws IgniteCheckedException;
 
     /**
      * Injects resource with a setter method. Caches injected resource with the given key if needed.
@@ -35,9 +35,9 @@ interface GridResourceInjector {
      * @param target Target object the field belongs to.
      * @param depCls Deployed class.
      * @param dep Deployment.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
-    public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep) throws GridException;
+    public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep) throws IgniteCheckedException;
 
     /**
      * Gracefully cleans all resources associated with deployment.

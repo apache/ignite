@@ -206,14 +206,14 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     };
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
         pendingExplicit = GridConcurrentFactory.newMap();
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart0() throws GridException {
+    @Override public void onKernalStart0() throws IgniteCheckedException {
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 

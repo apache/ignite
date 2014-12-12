@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.io.*;
 
@@ -21,17 +21,17 @@ public interface GridIpcEndpoint extends Closeable {
      * Gets input stream associated with this IPC endpoint.
      *
      * @return IPC input stream.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public InputStream inputStream() throws GridException;
+    public InputStream inputStream() throws IgniteCheckedException;
 
     /**
      * Gets output stream associated with this IPC endpoint.
      *
      * @return IPC output stream.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public OutputStream outputStream() throws GridException;
+    public OutputStream outputStream() throws IgniteCheckedException;
 
     /**
      * Closes endpoint. Note that IPC endpoint may acquire native resources so it must be always closed

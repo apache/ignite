@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -46,7 +46,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     @Override protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return new IgniteClosure<Throwable, Throwable>() {
             @Override public Throwable apply(Throwable e) {
-                if (e instanceof GridException || X.hasCause(e, ClusterTopologyException.class)) {
+                if (e instanceof IgniteCheckedException || X.hasCause(e, ClusterTopologyException.class)) {
                     info("Discarding exception: " + e);
 
                     return null;

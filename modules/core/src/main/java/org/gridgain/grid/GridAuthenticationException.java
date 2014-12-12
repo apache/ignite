@@ -9,10 +9,12 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.*;
+
 /**
  * Exception that represents authentication failure.
  */
-public class GridAuthenticationException extends GridException {
+public class GridAuthenticationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

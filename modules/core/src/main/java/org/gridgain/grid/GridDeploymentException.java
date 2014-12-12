@@ -9,13 +9,13 @@
 
 package org.gridgain.grid;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Deployment or re-deployment failed.
  */
-public class GridDeploymentException extends GridException {
+public class GridDeploymentException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

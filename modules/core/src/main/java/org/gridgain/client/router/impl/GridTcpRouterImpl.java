@@ -79,14 +79,14 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
     /**
      * Starts router.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         try {
             client = createClient(cfg);
         }
         catch (GridClientException e) {
-            throw new GridException("Failed to initialise embedded client.", e);
+            throw new IgniteCheckedException("Failed to initialise embedded client.", e);
         }
 
         GridNioServerListener<GridClientMessage> lsnr;
@@ -104,7 +104,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new GridException("Failed to create NIO listener.", e);
+            throw new IgniteCheckedException("Failed to create NIO listener.", e);
         }
 
         parser = new GridTcpRouterNioParser();
@@ -115,7 +115,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             hostAddr = InetAddress.getByName(cfg.getHost());
         }
         catch (UnknownHostException e) {
-            throw new GridException("Failed to resolve grid address for configured host: " + cfg.getHost(), e);
+            throw new IgniteCheckedException("Failed to resolve grid address for configured host: " + cfg.getHost(), e);
         }
 
         SSLContext sslCtx;
@@ -126,7 +126,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             sslCtx = sslCtxFactory == null ? null : sslCtxFactory.createSslContext();
         }
         catch (SSLException e) {
-            throw new GridException("Failed to create SSL context.", e);
+            throw new IgniteCheckedException("Failed to create SSL context.", e);
         }
 
         for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
@@ -146,7 +146,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         }
 
         if (bindPort == 0)
-            throw new GridException("Failed to bind TCP router server (possibly all ports in range " +
+            throw new IgniteCheckedException("Failed to bind TCP router server (possibly all ports in range " +
                 "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
                 ", addr=" + hostAddr + ']');
 
@@ -253,7 +253,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start TCP router protocol on port " + port + ": " + e.getMessage());
 

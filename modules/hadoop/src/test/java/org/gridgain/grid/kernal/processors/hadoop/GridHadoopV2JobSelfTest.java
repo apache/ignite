@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
@@ -50,9 +51,9 @@ public class GridHadoopV2JobSelfTest extends GridHadoopAbstractSelfTest {
     /**
      * Tests that {@link GridHadoopJob} provides wrapped serializer if it's set in configuration.
      *
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
-    public void testCustomSerializationApplying() throws GridException {
+    public void testCustomSerializationApplying() throws IgniteCheckedException {
         JobConf cfg = new JobConf();
 
         cfg.setMapOutputKeyClass(IntWritable.class);

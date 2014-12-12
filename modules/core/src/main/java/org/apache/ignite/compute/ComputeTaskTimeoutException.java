@@ -9,14 +9,14 @@
 
 package org.apache.ignite.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * This exception indicates that task execution timed out. It is thrown from
  * {@link ComputeTaskFuture#get()} method.
  */
-public class ComputeTaskTimeoutException extends GridException {
+public class ComputeTaskTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

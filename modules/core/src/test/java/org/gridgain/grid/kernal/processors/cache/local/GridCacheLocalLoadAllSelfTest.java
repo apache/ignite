@@ -74,7 +74,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings({"TypeParameterExtendsFinalClass"})
         @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) throws GridException {
+            IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
             assert keys != null;
 
             c.apply(1, 1);
@@ -83,19 +83,19 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer load(GridCacheTx tx, Integer key) throws GridException {
+        @Override public Integer load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, Integer val) throws GridException {
+        @Override public void put(GridCacheTx tx, Integer key, Integer val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
     }

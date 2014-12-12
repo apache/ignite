@@ -9,12 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.apache.ignite.IgniteLogger;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -64,7 +63,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
             GridCacheAtomicLongValue val = atomicView.get(key);
 
             if (val == null)
-                throw new GridException("Failed to find atomic long with given name: " + name);
+                throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
             return val.get();
         }
@@ -79,7 +78,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 GridCacheAtomicLongValue val = atomicView.get(key);
 
                 if (val == null)
-                    throw new GridException("Failed to find atomic long with given name: " + name);
+                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                 long retVal = val.get() + 1;
 
@@ -110,7 +109,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 GridCacheAtomicLongValue val = atomicView.get(key);
 
                 if (val == null)
-                    throw new GridException("Failed to find atomic long with given name: " + name);
+                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                 long retVal = val.get();
 
@@ -141,7 +140,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 GridCacheAtomicLongValue val = atomicView.get(key);
 
                 if (val == null)
-                    throw new GridException("Failed to find atomic long with given name: " + name);
+                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                 long retVal = val.get() - 1;
 
@@ -172,7 +171,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 GridCacheAtomicLongValue val = atomicView.get(key);
 
                 if (val == null)
-                    throw new GridException("Failed to find atomic long with given name: " + name);
+                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                 long retVal = val.get();
 
@@ -230,56 +229,56 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public long get() throws GridException {
+    @Override public long get() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(getCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long incrementAndGet() throws GridException {
+    @Override public long incrementAndGet() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(incAndGetCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndIncrement() throws GridException {
+    @Override public long getAndIncrement() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(getAndIncCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long addAndGet(long l) throws GridException {
+    @Override public long addAndGet(long l) throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(internalAddAndGet(l), ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndAdd(long l) throws GridException {
+    @Override public long getAndAdd(long l) throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(internalGetAndAdd(l), ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long decrementAndGet() throws GridException {
+    @Override public long decrementAndGet() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(decAndGetCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndDecrement() throws GridException {
+    @Override public long getAndDecrement() throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(getAndDecCall, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndSet(long l) throws GridException {
+    @Override public long getAndSet(long l) throws IgniteCheckedException {
         checkRemoved();
 
         return CU.outTx(internalGetAndSet(l), ctx);
@@ -287,7 +286,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(long expVal, long newVal)
-        throws GridException {
+        throws IgniteCheckedException {
         checkRemoved();
         return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
     }
@@ -295,9 +294,9 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /**
      * Check removed flag.
      *
-     * @throws GridException If removed.
+     * @throws IgniteCheckedException If removed.
      */
-    private void checkRemoved() throws GridException {
+    private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
             throw new GridCacheDataStructureRemovedException("Atomic long was removed from cache: " + name);
     }
@@ -337,7 +336,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     GridCacheAtomicLongValue val = atomicView.get(key);
 
                     if (val == null)
-                        throw new GridException("Failed to find atomic long with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                     long retVal = val.get() + l;
 
@@ -375,7 +374,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     GridCacheAtomicLongValue val = atomicView.get(key);
 
                     if (val == null)
-                        throw new GridException("Failed to find atomic long with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                     long retVal = val.get();
 
@@ -413,7 +412,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     GridCacheAtomicLongValue val = atomicView.get(key);
 
                     if (val == null)
-                        throw new GridException("Failed to find atomic long with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                     long retVal = val.get();
 
@@ -453,7 +452,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     GridCacheAtomicLongValue val = atomicView.get(key);
 
                     if (val == null)
-                        throw new GridException("Failed to find atomic long with given name: " + name);
+                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
                     boolean retVal = val.get() == expVal;
 
@@ -504,7 +503,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
             return t.get1().dataStructures().atomicLong(t.get2(), 0L, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {

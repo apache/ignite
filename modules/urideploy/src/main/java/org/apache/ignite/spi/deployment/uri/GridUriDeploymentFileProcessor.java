@@ -189,7 +189,7 @@ final class GridUriDeploymentFileProcessor {
                 return addDirectoryDigest(dir, digest, log) ? Hex.encodeHexString(digest.digest()) : null;
             }
             catch (NoSuchAlgorithmException e) {
-                throw new GridRuntimeException("MD5 digest algorithm not found.", e);
+                throw new IgniteException("MD5 digest algorithm not found.", e);
             }
         }
 

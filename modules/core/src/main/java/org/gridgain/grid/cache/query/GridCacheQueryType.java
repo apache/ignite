@@ -32,5 +32,8 @@ public enum GridCacheQueryType {
     SCAN,
 
     /** Continuous query. */
-    CONTINUOUS
+    CONTINUOUS,
+
+    /** SPI query. */
+    SPI
 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 
 import java.io.*;
@@ -16,7 +17,7 @@ import java.io.*;
 /**
  * Communication exception indicating a problem between file system and GGFS instance.
  */
-public class GridGgfsHadoopCommunicationException extends GridException {
+public class GridGgfsHadoopCommunicationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

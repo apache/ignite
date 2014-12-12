@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.visor.node;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.kernal.visor.event.*;
@@ -43,7 +43,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) throws GridException {
+        List<ComputeJobResult> results) throws IgniteCheckedException {
 
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
@@ -255,7 +255,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg)
-            throws GridException {
+            throws IgniteCheckedException {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.streamer;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -46,8 +46,8 @@ public interface StreamerStage<IN> {
      * @param ctx Streamer context.
      * @param evts Input events.
      * @return Map of stage name to collection of events.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public Map<String, Collection<?>> run(StreamerContext ctx, Collection<IN> evts)
-        throws GridException;
+        throws IgniteCheckedException;
 }

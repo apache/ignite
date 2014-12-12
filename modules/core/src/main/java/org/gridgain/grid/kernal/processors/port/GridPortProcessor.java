@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.port;
 
+import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
@@ -44,13 +45,13 @@ public class GridPortProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started port processor.");
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Stopped port processor.");
     }

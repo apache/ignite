@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
  * Note that data structures throw runtime exceptions out of methods that don't have
  * checked exceptions in the signature.
  */
-public class GridCacheDataStructureInvalidRuntimeException extends GridRuntimeException {
+public class GridCacheDataStructureInvalidRuntimeException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

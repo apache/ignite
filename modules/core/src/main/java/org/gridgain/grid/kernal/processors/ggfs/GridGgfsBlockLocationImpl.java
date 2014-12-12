@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.net.*;
@@ -236,7 +236,7 @@ public class GridGgfsBlockLocationImpl implements IgniteFsBlockLocation, Externa
                     }
                 }
             }
-            catch (GridException ignored) {
+            catch (IgniteCheckedException ignored) {
                 names.addAll(node.addresses());
             }
 

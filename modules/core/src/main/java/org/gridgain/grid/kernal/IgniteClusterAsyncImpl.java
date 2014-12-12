@@ -67,45 +67,45 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws GridException {
+        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         return grid.mapKeysToNodes(cacheName, keys);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws GridException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException {
         return grid.mapKeyToNode(cacheName, key);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-        boolean restart, int timeout, int maxConn) throws GridException {
+        boolean restart, int timeout, int maxConn) throws IgniteCheckedException {
         return saveOrGet(grid.startNodesAsync(file, restart, timeout, maxConn));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws GridException {
+        int maxConn) throws IgniteCheckedException {
         return saveOrGet(grid.startNodesAsync(hosts, dflts, restart, timeout, maxConn));
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes() throws GridException {
+    @Override public void stopNodes() throws IgniteCheckedException {
         grid.stopNodes();
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes(Collection<UUID> ids) throws GridException {
+    @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
         grid.stopNodes(ids);
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes() throws GridException {
+    @Override public void restartNodes() throws IgniteCheckedException {
         grid.restartNodes();
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes(Collection<UUID> ids) throws GridException {
+    @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
         grid.restartNodes(ids);
     }
 
@@ -225,7 +225,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterMetrics metrics() throws GridException {
+    @Override public ClusterMetrics metrics() throws IgniteCheckedException {
         return grid.metrics();
     }
 }

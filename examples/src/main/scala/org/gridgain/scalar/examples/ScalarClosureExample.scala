@@ -14,6 +14,7 @@ package org.gridgain.scalar.examples
 import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.scalar.scalar
 import scalar._
+import org.apache.ignite._
 import org.gridgain.grid._
 
 /**

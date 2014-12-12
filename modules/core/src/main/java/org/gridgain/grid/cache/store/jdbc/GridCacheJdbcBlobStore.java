@@ -164,7 +164,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private boolean initOk;
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         init();
 
         Connection conn = tx.removeMeta(ATTR_CONN);
@@ -177,7 +177,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                     conn.rollback();
             }
             catch (SQLException e) {
-                throw new GridException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+                throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
             }
             finally {
                 closeConnection(conn);
@@ -190,7 +190,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public V load(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -213,7 +213,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                 return fromBytes(rs.getBytes(2));
         }
         catch (SQLException e) {
-            throw new GridException("Failed to load object: " + key, e);
+            throw new IgniteCheckedException("Failed to load object: " + key, e);
         }
         finally {
             end(tx, conn, stmt);
@@ -223,7 +223,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws GridException {
+    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -253,7 +253,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
             }
         }
         catch (SQLException e) {
-            throw new GridException("Failed to put object [key=" + key + ", val=" + val + ']', e);
+            throw new IgniteCheckedException("Failed to put object [key=" + key + ", val=" + val + ']', e);
         }
         finally {
             end(tx, conn, stmt);
@@ -261,7 +261,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -281,7 +281,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
             stmt.executeUpdate();
         }
         catch (SQLException e) {
-            throw new GridException("Failed to remove object: " + key, e);
+            throw new IgniteCheckedException("Failed to remove object: " + key, e);
         }
         finally {
             end(tx, conn, stmt);
@@ -361,16 +361,16 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     /**
      * Initializes store.
      *
-     * @throws GridException If failed to initialize.
+     * @throws IgniteCheckedException If failed to initialize.
      */
-    private void init() throws GridException {
+    private void init() throws IgniteCheckedException {
         if (initLatch.getCount() > 0) {
             if (initGuard.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
                     log.debug("Initializing cache store.");
 
                 if (F.isEmpty(connUrl))
-                    throw new GridException("Failed to initialize cache store (connection URL is not provided).");
+                    throw new IgniteCheckedException("Failed to initialize cache store (connection URL is not provided).");
 
                 if (!initSchema) {
                     initLatch.countDown();
@@ -379,7 +379,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                 }
 
                 if (F.isEmpty(createTblQry))
-                    throw new GridException("Failed to initialize cache store (create table query is not provided).");
+                    throw new IgniteCheckedException("Failed to initialize cache store (create table query is not provided).");
 
                 Connection conn = null;
 
@@ -397,7 +397,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                     initOk = true;
                 }
                 catch (SQLException e) {
-                    throw new GridException("Failed to create database table.", e);
+                    throw new IgniteCheckedException("Failed to create database table.", e);
                 }
                 finally {
                     U.closeQuiet(stmt);
@@ -412,7 +412,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
         }
 
         if (!initOk)
-            throw new GridException("Cache store was not properly initialized.");
+            throw new IgniteCheckedException("Cache store was not properly initialized.");
     }
 
     /**
@@ -522,9 +522,9 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      *
      * @param obj Object to convert to byte array.
      * @return Byte array.
-     * @throws GridException If failed to convert.
+     * @throws IgniteCheckedException If failed to convert.
      */
-    protected byte[] toBytes(Object obj) throws GridException {
+    protected byte[] toBytes(Object obj) throws IgniteCheckedException {
         return marsh.marshal(obj);
     }
 
@@ -534,9 +534,9 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @param bytes Bytes to deserialize.
      * @param <X> Result object type.
      * @return Deserialized object.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected <X> X fromBytes(byte[] bytes) throws GridException {
+    protected <X> X fromBytes(byte[] bytes) throws IgniteCheckedException {
         if (bytes == null || bytes.length == 0)
             return null;
 

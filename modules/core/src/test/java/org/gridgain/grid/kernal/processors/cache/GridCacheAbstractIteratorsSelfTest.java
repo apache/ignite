@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -87,7 +87,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
             cache(i).removeAll();
 
         final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
             }
@@ -166,7 +166,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
             cache(i).removeAll();
 
         final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
             }
@@ -255,7 +255,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
             cache(i).removeAll();
 
         final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
             }
@@ -323,7 +323,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
             cache(i).removeAll();
 
         final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
             }

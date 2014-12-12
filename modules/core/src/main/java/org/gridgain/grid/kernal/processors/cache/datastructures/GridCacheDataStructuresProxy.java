@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
@@ -52,7 +52,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Override public GridCacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -64,7 +64,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAtomicSequence(String name) throws GridException {
+    @Override public boolean removeAtomicSequence(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -76,7 +76,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAtomicLong atomicLong(String name, long initVal, boolean create) throws GridException {
+    @Override public GridCacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -88,7 +88,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAtomicLong(String name) throws GridException {
+    @Override public boolean removeAtomicLong(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -101,7 +101,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Override public <T> GridCacheAtomicReference<T> atomicReference(String name, T initVal, boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -113,7 +113,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAtomicReference(String name) throws GridException {
+    @Override public boolean removeAtomicReference(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -126,7 +126,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Override public <T, S> GridCacheAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
-        boolean create) throws GridException {
+        boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -138,7 +138,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAtomicStamped(String name) throws GridException {
+    @Override public boolean removeAtomicStamped(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -151,7 +151,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Override public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -163,7 +163,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeQueue(String name) throws GridException {
+    @Override public boolean removeQueue(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -175,7 +175,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeQueue(String name, int batchSize) throws GridException {
+    @Override public boolean removeQueue(String name, int batchSize) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -188,7 +188,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
-        throws GridException {
+        throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -200,7 +200,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeSet(String name) throws GridException {
+    @Override public boolean removeSet(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -213,7 +213,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
-        boolean create) throws GridException {
+        boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -225,7 +225,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCountDownLatch(String name) throws GridException {
+    @Override public boolean removeCountDownLatch(String name) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {

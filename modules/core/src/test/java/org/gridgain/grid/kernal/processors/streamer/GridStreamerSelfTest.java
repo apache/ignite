@@ -157,7 +157,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
                 Collection<Object> evts)
-                throws GridException {
+                throws IgniteCheckedException {
                 String nextStage = ctx.nextStageName();
 
                 U.sleep(50);
@@ -261,7 +261,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         p2pEnabled = false;
 
         final CountDownLatch finishLatch = new CountDownLatch(1);
-        final AtomicReference<GridException> err = new AtomicReference<>();
+        final AtomicReference<IgniteCheckedException> err = new AtomicReference<>();
 
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
@@ -282,7 +282,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
                 val++;
 
                 if (!String.valueOf(val).equals(ctx.nextStageName()))
-                    err.compareAndSet(null, new GridException("Stage name comparison failed [exp=" + val +
+                    err.compareAndSet(null, new IgniteCheckedException("Stage name comparison failed [exp=" + val +
                         ", actual=" + ctx.nextStageName() + ']'));
 
                 return (Map)F.asMap(ctx.nextStageName(), F.asList(val));
@@ -450,7 +450,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
-                Collection<Object> evts) throws GridException {
+                Collection<Object> evts) throws IgniteCheckedException {
                 String nextStage = ctx.nextStageName();
 
                 ctx.window().enqueueAll(evts);

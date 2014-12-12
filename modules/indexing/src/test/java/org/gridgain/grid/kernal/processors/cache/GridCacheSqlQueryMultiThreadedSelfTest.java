@@ -10,12 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -43,10 +42,6 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
         disco.setIpFinder(ipFinder);
 
         c.setDiscoverySpi(disco);
-
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
-
-        c.setIndexingSpi(indexing);
 
         GridCacheConfiguration ccfg = new GridCacheConfiguration();
 

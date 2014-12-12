@@ -9,21 +9,21 @@
 
 package org.gridgain.grid.kernal.visor.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.GridCache;
-import org.gridgain.grid.cache.query.GridCacheQueryFuture;
-import org.gridgain.grid.kernal.GridKernal;
+import org.apache.ignite.lang.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.task.GridInternal;
-import org.gridgain.grid.kernal.processors.timeout.GridTimeoutObjectAdapter;
+import org.gridgain.grid.kernal.processors.query.*;
+import org.gridgain.grid.kernal.processors.task.*;
+import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.kernal.visor.*;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.indexing.IndexingFieldMetadata;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
@@ -176,7 +176,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg)
-            throws GridException {
+            throws IgniteCheckedException {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -185,7 +185,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
                 if (c == null)
-                    return new IgniteBiTuple<>(new GridException("Cache not found: " + escapeName(arg.cacheName())), null);
+                    return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " + escapeName(arg.cacheName())), null);
 
                 if (scan) {
                     GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
@@ -221,7 +221,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                     List<Object> firstRow = (List<Object>)fut.next();
 
-                    List<IndexingFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                    List<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
                     if (meta == null)
                         return new IgniteBiTuple<Exception, VisorQueryResultEx>(
@@ -230,7 +230,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         VisorQueryField[] names = new VisorQueryField[meta.size()];
 
                         for (int i = 0; i < meta.size(); i++) {
-                            IndexingFieldMetadata col = meta.get(i);
+                            GridQueryFieldMetadata col = meta.get(i);
 
                             names[i] = new VisorQueryField(col.typeName(), col.fieldName());
                         }

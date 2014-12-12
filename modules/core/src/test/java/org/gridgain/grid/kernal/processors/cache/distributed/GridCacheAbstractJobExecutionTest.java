@@ -122,7 +122,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Void applyx(final Integer i) throws GridException {
+                @Override public Void applyx(final Integer i) throws IgniteCheckedException {
                     GridCache<String, int[]> cache = this.ignite.cache(null);
 
                     try (GridCacheTx tx = cache.txStart(concur, isolation)) {

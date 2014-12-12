@@ -39,7 +39,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable String cacheName) throws GridException {
+        @Nullable String cacheName) throws IgniteCheckedException {
         Map<JdbcDriverMetadataJob, ClusterNode> map = new HashMap<>();
 
         for (ClusterNode n : subgrid)
@@ -53,7 +53,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public byte[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return F.first(results).getData();
     }
 
@@ -92,7 +92,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             byte status;
             byte[] data;
 

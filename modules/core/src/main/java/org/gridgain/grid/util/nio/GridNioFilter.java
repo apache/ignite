@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This interface defines the general element in transformation chain between the nio server and
@@ -62,35 +62,35 @@ public interface GridNioFilter {
      * Forwards session opened event to the next logical filter in filter chain.
      *
      * @param ses Opened session.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedSessionOpened(GridNioSession ses) throws GridException;
+    public void proceedSessionOpened(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Forwards session closed event to the next logical filter in filter chain.
      *
      * @param ses Closed session.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedSessionClosed(GridNioSession ses) throws GridException;
+    public void proceedSessionClosed(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Forwards GridNioException event to the next logical filter in filter chain.
      *
      * @param ses Session instance.
      * @param e GridNioException instance.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedExceptionCaught(GridNioSession ses, GridException e) throws GridException;
+    public void proceedExceptionCaught(GridNioSession ses, IgniteCheckedException e) throws IgniteCheckedException;
 
     /**
      * Forwards received message to the next logical filter in filter chain.
      *
      * @param ses Session instance.
      * @param msg Received message.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedMessageReceived(GridNioSession ses, Object msg) throws GridException;
+    public void proceedMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException;
 
     /**
      * Forwards write request to the next logical filter in filter chain.
@@ -98,43 +98,43 @@ public interface GridNioFilter {
      * @param ses Session instance.
      * @param msg Message to send.
      * @return Write future.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedSessionWrite(GridNioSession ses, Object msg) throws GridException;
+    public GridNioFuture<?> proceedSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException;
 
     /**
      * Forwards session close request to the next logical filter in filter chain.
      *
      * @param ses Session instance.
      * @return Close future.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<Boolean> proceedSessionClose(GridNioSession ses) throws GridException;
+    public GridNioFuture<Boolean> proceedSessionClose(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Invoked when a new session was created.
      *
      * @param ses Opened session.
-     * @throws GridException If GridNioException occurred while handling event.
+     * @throws IgniteCheckedException If GridNioException occurred while handling event.
      */
-    public void onSessionOpened(GridNioSession ses) throws GridException;
+    public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Invoked after session get closed.
      *
      * @param ses Closed session.
-     * @throws GridException If GridNioException occurred while handling event.
+     * @throws IgniteCheckedException If GridNioException occurred while handling event.
      */
-    public void onSessionClosed(GridNioSession ses) throws GridException;
+    public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Invoked when exception is caught in filter processing.
      *
-     * @param ses Session that caused GridException.
+     * @param ses Session that caused IgniteCheckedException.
      * @param ex GridNioException instance.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException;
+    public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException;
 
     /**
      * Invoked when a write request is performed on a session.
@@ -144,93 +144,93 @@ public interface GridNioFilter {
      * @return Write future.
      * @throws GridNioException If GridNioException occurred while handling event.
      */
-    public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException;
+    public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException;
 
     /**
      * Invoked when a new messages received.
      *
      * @param ses Session on which message was received.
      * @param msg Received message.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    public void onMessageReceived(GridNioSession ses, Object msg) throws GridException;
+    public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException;
 
     /**
      * Invoked when a session close request is performed on session.
      *
      * @param ses Session to close.
      * @return Close future.
-     * @throws GridException If GridException occurred while handling event.
+     * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException;
+    public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Called when session is idle for longer time that is
      * allowed by NIO server.
      *
      * @param ses Session that is idle.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void onSessionIdleTimeout(GridNioSession ses) throws GridException;
+    public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Forwards session idle notification to the next logical filter in filter chain.
      *
      * @param ses Session instance.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedSessionIdleTimeout(GridNioSession ses) throws GridException;
+    public void proceedSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Called when session has not empty write buffer that has not been fully
      * flushed during max timeout allowed by NIO server.
      *
      * @param ses Session that has timed out writes.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void onSessionWriteTimeout(GridNioSession ses) throws GridException;
+    public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Forwards session write timeout notification to the next logical filter in filter chain.
      *
      * @param ses Session instance.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public void proceedSessionWriteTimeout(GridNioSession ses) throws GridException;
+    public void proceedSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Pauses reads for session.
      *
      * @param ses Session.
      * @return Future for operation.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedPauseReads(GridNioSession ses) throws GridException;
+    public GridNioFuture<?> proceedPauseReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Pauses reads for session.
      *
      * @param ses Session.
      * @return Future for operation.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> onPauseReads(GridNioSession ses) throws GridException;
+    public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Resumes reads for session.
      *
      * @param ses Session.
      * @return Future for operation.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedResumeReads(GridNioSession ses) throws GridException;
+    public GridNioFuture<?> proceedResumeReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Resumes reads for session.
      *
      * @param ses Session.
      * @return Future for operation.
-     * @throws GridException If filter is not in chain or GridNioException occurred in the underlying filter.
+     * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> onResumeReads(GridNioSession ses) throws GridException;
+    public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException;
 }

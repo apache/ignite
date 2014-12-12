@@ -9,9 +9,9 @@
 
 package org.gridgain.examples.datagrid.store.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
@@ -31,9 +31,9 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     /**
      * Constructor.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public CacheJdbcPersonStore() throws GridException {
+    public CacheJdbcPersonStore() throws IgniteCheckedException {
         prepareDb();
     }
 
@@ -41,9 +41,9 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      * Prepares database for example execution. This method will create a
      * table called "PERSONS" so it can be used by store implementation.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void prepareDb() throws GridException {
+    private void prepareDb() throws IgniteCheckedException {
         try (Connection conn = openConnection(false); Statement st = conn.createStatement()) {
             st.execute("create table if not exists PERSONS (id number unique, firstName varchar(255), " +
                 "lastName varchar(255))");
@@ -51,12 +51,12 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             conn.commit();
         }
         catch (SQLException e) {
-            throw new GridException("Failed to create database table.", e);
+            throw new IgniteCheckedException("Failed to create database table.", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         try (Connection conn = tx.removeMeta(ATTR_NAME)) {
             if (conn != null) {
                 if (commit)
@@ -68,12 +68,12 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             System.out.println(">>> Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
         }
         catch (SQLException e) {
-            throw new GridException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+            throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
         }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Person load(@Nullable GridCacheTx tx, Long key) throws GridException {
+    @Nullable @Override public Person load(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -91,7 +91,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new GridException("Failed to load object: " + key, e);
+            throw new IgniteCheckedException("Failed to load object: " + key, e);
         }
         finally {
             end(tx, conn);
@@ -102,7 +102,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, Long key, Person val)
-        throws GridException {
+        throws IgniteCheckedException {
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -134,7 +134,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
         }
         }
         catch (SQLException e) {
-            throw new GridException("Failed to put object [key=" + key + ", val=" + val + ']', e);
+            throw new IgniteCheckedException("Failed to put object [key=" + key + ", val=" + val + ']', e);
         }
         finally {
             end(tx, conn);
@@ -142,7 +142,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws GridException {
+    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -157,7 +157,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new GridException("Failed to remove object: " + key, e);
+            throw new IgniteCheckedException("Failed to remove object: " + key, e);
         }
         finally {
             end(tx, conn);
@@ -165,9 +165,9 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws GridException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws IgniteCheckedException {
         if (args == null || args.length == 0 || args[0] == null)
-            throw new GridException("Expected entry count parameter is not provided.");
+            throw new IgniteCheckedException("Expected entry count parameter is not provided.");
 
         final int entryCnt = (Integer)args[0];
 
@@ -193,7 +193,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new GridException("Failed to load values from cache store.", e);
+            throw new IgniteCheckedException("Failed to load values from cache store.", e);
         }
         finally {
             end(null, conn);

@@ -16,6 +16,7 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
@@ -856,7 +857,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                     pathUri.getAuthority() != null ? newUri.getAuthority() : null, pathUri.getPath(), null, null));
             }
             catch (URISyntaxException e) {
-                throw new GridRuntimeException("Failed to construct secondary file system path from the primary file " +
+                throw new IgniteException("Failed to construct secondary file system path from the primary file " +
                     "system path: " + path, e);
             }
         }

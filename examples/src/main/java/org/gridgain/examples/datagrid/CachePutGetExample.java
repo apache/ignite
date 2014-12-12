@@ -32,7 +32,7 @@ public class CachePutGetExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
@@ -50,9 +50,9 @@ public class CachePutGetExample {
     /**
      * Execute individual puts and gets.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void putGet() throws GridException {
+    private static void putGet() throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
@@ -75,9 +75,9 @@ public class CachePutGetExample {
     /**
      * Execute bulk {@code putAll(...)} and {@code getAll(...)} operations.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void putAllGetAll() throws GridException {
+    private static void putAllGetAll() throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
 

@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -39,7 +39,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
     /** {@inheritDoc} */
     @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results)
-        throws GridException {
+        throws IgniteCheckedException {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = new HashMap<>();
 
         for (ComputeJobResult res : results) {
@@ -128,7 +128,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorCacheMetrics2> run(IgniteBiTuple<Boolean, String> arg) throws GridException {
+        @Override protected Collection<VisorCacheMetrics2> run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
             Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {

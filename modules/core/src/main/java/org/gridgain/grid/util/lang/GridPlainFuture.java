@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.concurrent.*;
 
@@ -21,9 +21,9 @@ public interface GridPlainFuture<R> {
      * Synchronously waits for completion and returns result.
      *
      * @return Completed future result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public R get() throws GridException;
+    public R get() throws IgniteCheckedException;
 
     /**
      * Synchronously waits for completion and returns result.
@@ -31,10 +31,10 @@ public interface GridPlainFuture<R> {
      * @param timeout Timeout interval to wait future completes.
      * @param unit Timeout interval unit to wait future completes.
      * @return Completed future result.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timed out before future finishes.
      */
-    public R get(long timeout, TimeUnit unit) throws GridException;
+    public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 
     /**
      * Checks if future is done.

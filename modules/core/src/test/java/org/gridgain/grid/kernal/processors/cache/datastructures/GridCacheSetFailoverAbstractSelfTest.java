@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
@@ -114,7 +114,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                         // TODO: GG-7952, check for equality when GG-7952 fixed.
                         assertTrue(size > 0);
                     }
-                    catch (GridRuntimeException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
 
@@ -132,7 +132,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
                         // TODO: GG-7952, check for equality when GG-7952 fixed.
                         assertTrue(cnt > 0);
                     }
-                    catch (GridRuntimeException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
 

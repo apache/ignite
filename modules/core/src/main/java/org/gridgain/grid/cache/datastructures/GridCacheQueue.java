@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * {@link Collection} interface and provides all methods from collections including
  * {@link Collection#addAll(Collection)}, {@link Collection#removeAll(Collection)}, and
  * {@link Collection#retainAll(Collection)} methods for bulk operations. Note that all
- * {@link Collection} methods in the queue may throw {@link GridRuntimeException} in case
+ * {@link Collection} methods in the queue may throw {@link IgniteException} in case
  * of failure.
  * <p>
  * All queue operations have synchronous and asynchronous counterparts.
@@ -73,97 +73,97 @@ public interface GridCacheQueue<T> extends BlockingQueue<T> {
     public String name();
 
     /** {@inheritDoc} */
-    @Override public boolean add(T item) throws GridRuntimeException;
+    @Override public boolean add(T item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item) throws GridRuntimeException;
+    @Override public boolean offer(T item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws GridRuntimeException;
+    @Override public boolean offer(T item, long timeout, TimeUnit unit) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean addAll(Collection<? extends T> items) throws GridRuntimeException;
+    @Override public boolean addAll(Collection<? extends T> items) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean contains(Object item) throws GridRuntimeException;
+    @Override public boolean contains(Object item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean containsAll(Collection<?> items) throws GridRuntimeException;
+    @Override public boolean containsAll(Collection<?> items) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public void clear() throws GridRuntimeException;
+    @Override public void clear() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean remove(Object item) throws GridRuntimeException;
+    @Override public boolean remove(Object item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean removeAll(Collection<?> items) throws GridRuntimeException;
+    @Override public boolean removeAll(Collection<?> items) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean isEmpty() throws GridRuntimeException;
+    @Override public boolean isEmpty() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public Iterator<T> iterator() throws GridRuntimeException;
+    @Override public Iterator<T> iterator() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public Object[] toArray() throws GridRuntimeException;
+    @Override public Object[] toArray() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public <T> T[] toArray(T[] a) throws GridRuntimeException;
+    @Override public <T> T[] toArray(T[] a) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public boolean retainAll(Collection<?> items) throws GridRuntimeException;
+    @Override public boolean retainAll(Collection<?> items) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public int size() throws GridRuntimeException;
+    @Override public int size() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll() throws GridRuntimeException;
+    @Override @Nullable public T poll() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T peek() throws GridRuntimeException;
+    @Override @Nullable public T peek() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public void put(T item) throws GridRuntimeException;
+    @Override public void put(T item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T take() throws GridRuntimeException;
+    @Override @Nullable public T take() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll(long timeout, TimeUnit unit) throws GridRuntimeException;
+    @Override @Nullable public T poll(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Removes all of the elements from this queue. Method is used in massive queues with huge numbers of elements.
      *
      * @param batchSize Batch size.
-     * @throws GridRuntimeException if operation failed.
+     * @throws IgniteException if operation failed.
      */
-    public void clear(int batchSize) throws GridRuntimeException;
+    public void clear(int batchSize) throws IgniteException;
 
     /**
      * Gets maximum number of elements of the queue.
      *
      * @return Maximum number of elements. If queue is unbounded {@code Integer.MAX_SIZE} will return.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public int capacity() throws GridException;
+    public int capacity() throws IgniteCheckedException;
 
     /**
      * Returns {@code true} if this queue is bounded.
      *
      * @return {@code true} if this queue is bounded.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean bounded() throws GridException;
+    public boolean bounded() throws IgniteCheckedException;
 
     /**
      * Returns {@code true} if this queue can be kept on the one node only.
      * Returns {@code false} if this queue can be kept on the many nodes.
      *
      * @return {@code true} if this queue is in {@code collocated} mode {@code false} otherwise.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean collocated() throws GridException;
+    public boolean collocated() throws IgniteCheckedException;
 
     /**
      * Gets status of queue.

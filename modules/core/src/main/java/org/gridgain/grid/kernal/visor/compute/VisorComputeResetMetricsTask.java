@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.compute;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -43,7 +43,7 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws GridException {
+        @Override protected Void run(Void arg) throws IgniteCheckedException {
             g.resetMetrics();
 
             return null;

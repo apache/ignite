@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import junit.framework.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -109,9 +110,9 @@ public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return Client.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private GridTestMemcacheClient client() throws GridException {
+    private GridTestMemcacheClient client() throws IgniteCheckedException {
         return new GridTestMemcacheClient(HOST, PORT);
     }
 

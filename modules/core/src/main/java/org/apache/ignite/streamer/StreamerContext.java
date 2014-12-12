@@ -9,9 +9,9 @@
 
 package org.apache.ignite.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -67,9 +67,9 @@ public interface StreamerContext {
      *
      * @param clo Function to be executed on individual nodes.
      * @return Result received from all streamers.
-     * @throws GridException If query execution failed.
+     * @throws IgniteCheckedException If query execution failed.
      */
-    public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws GridException;
+    public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws IgniteCheckedException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes
@@ -80,19 +80,19 @@ public interface StreamerContext {
      * @param nodes Optional list of nodes to execute query on, if empty, then all nodes on
      *      which this streamer is running will be queried.
      * @return Result received from all streamers.
-     * @throws GridException If query execution failed.
+     * @throws IgniteCheckedException If query execution failed.
      */
     public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Queries all streamer nodes deployed within grid. Given closure will be executed on each streamer node
      * in the grid. No result is collected.
      *
      * @param clo Function to be executed on individual nodes.
-     * @throws GridException If closure execution failed.
+     * @throws IgniteCheckedException If closure execution failed.
      */
-    public void broadcast(IgniteInClosure<StreamerContext> clo) throws GridException;
+    public void broadcast(IgniteInClosure<StreamerContext> clo) throws IgniteCheckedException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on
@@ -101,9 +101,9 @@ public interface StreamerContext {
      * @param clo Function to be executed on individual nodes.
      * @param nodes Optional list of nodes to execute query on, if empty, then all nodes on
      *      which this streamer is running will be queried.
-     * @throws GridException If closure execution failed.
+     * @throws IgniteCheckedException If closure execution failed.
      */
-    public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes) throws GridException;
+    public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes) throws IgniteCheckedException;
 
     /**
      * Queries all streamer nodes deployed within grid. Given closure will be executed on each streamer node in
@@ -113,9 +113,9 @@ public interface StreamerContext {
      * @param clo Function to be executed on individual nodes.
      * @param rdc Reducer to reduce results received from remote nodes.
      * @return Reducer result.
-     * @throws GridException If query execution failed.
+     * @throws IgniteCheckedException If query execution failed.
      */
-    public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) throws GridException;
+    public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) throws IgniteCheckedException;
 
     /**
      * Queries streamer nodes deployed within grid. Given closure will be executed on those of passed nodes on which
@@ -127,8 +127,8 @@ public interface StreamerContext {
      * @param nodes Optional list of nodes to execute query on, if empty, then all nodes on
      *      which this streamer is running will be queried.
      * @return Reducer result.
-     * @throws GridException If query execution failed.
+     * @throws IgniteCheckedException If query execution failed.
      */
     public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
-        Collection<ClusterNode> nodes) throws GridException;
+        Collection<ClusterNode> nodes) throws IgniteCheckedException;
 }

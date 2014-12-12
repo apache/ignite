@@ -45,9 +45,9 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /**
      * Starts everything added (in the added order).
      *
-     * @throws GridException If failed
+     * @throws IgniteCheckedException If failed
      */
-    public void start() throws GridException {
+    public void start() throws IgniteCheckedException {
         for (GridComponent comp : this)
             comp.start();
     }
@@ -56,9 +56,9 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * Stops everything added.
      *
      * @param cancel Cancel parameter.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void stop(boolean cancel) throws GridException {
+    public void stop(boolean cancel) throws IgniteCheckedException {
         List<GridComponent> comps = components();
 
         for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {

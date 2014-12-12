@@ -65,7 +65,7 @@ public class GridGgfsHadoopEndpoint {
             return new URI(uri.getScheme(), sb.length() != 0 ? sb.toString() : null, endpoint.host(), endpoint.port(),
                 uri.getPath(), uri.getQuery(), uri.getFragment());
         }
-        catch (URISyntaxException | GridException e) {
+        catch (URISyntaxException | IgniteCheckedException e) {
             throw new IOException("Failed to normalize URI: " + uri, e);
         }
     }
@@ -74,9 +74,9 @@ public class GridGgfsHadoopEndpoint {
      * Constructor.
      *
      * @param connStr Connection string.
-     * @throws GridException If failed to parse connection string.
+     * @throws IgniteCheckedException If failed to parse connection string.
      */
-    public GridGgfsHadoopEndpoint(@Nullable String connStr) throws GridException {
+    public GridGgfsHadoopEndpoint(@Nullable String connStr) throws IgniteCheckedException {
         if (connStr == null)
             connStr = "";
 
@@ -107,13 +107,13 @@ public class GridGgfsHadoopEndpoint {
                 else if (authTokens.length == 2)
                     gridName = F.isEmpty(authTokens[1]) ? null : authTokens[1];
                 else
-                    throw new GridException("Invalid connection string format: " + connStr);
+                    throw new IgniteCheckedException("Invalid connection string format: " + connStr);
             }
 
             hostPort = hostPort(connStr, tokens[1]);
         }
         else
-            throw new GridException("Invalid connection string format: " + connStr);
+            throw new IgniteCheckedException("Invalid connection string format: " + connStr);
 
         host = hostPort.get1();
 
@@ -128,9 +128,9 @@ public class GridGgfsHadoopEndpoint {
      * @param connStr Full connection string.
      * @param hostPortStr Host/port connection string part.
      * @return Tuple with host and port.
-     * @throws GridException If failed to parse connection string.
+     * @throws IgniteCheckedException If failed to parse connection string.
      */
-    private IgniteBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws GridException {
+    private IgniteBiTuple<String, Integer> hostPort(String connStr, String hostPortStr) throws IgniteCheckedException {
         String[] tokens = hostPortStr.split(":", -1);
 
         String host = tokens[0];
@@ -149,14 +149,14 @@ public class GridGgfsHadoopEndpoint {
                 port = Integer.valueOf(portStr);
 
                 if (port < 0 || port > 65535)
-                    throw new GridException("Invalid port number: " + connStr);
+                    throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
             catch (NumberFormatException e) {
-                throw new GridException("Invalid port number: " + connStr);
+                throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
         }
         else
-            throw new GridException("Invalid connection string format: " + connStr);
+            throw new IgniteCheckedException("Invalid connection string format: " + connStr);
 
         return F.t(host, port);
     }

@@ -89,12 +89,12 @@ public class GridHadoopV2JobResourceManager {
      *
      * @param download {@code true} If need to download resources.
      * @param jobLocDir Work directory for the job.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void prepareJobEnvironment(boolean download, File jobLocDir) throws GridException {
+    public void prepareJobEnvironment(boolean download, File jobLocDir) throws IgniteCheckedException {
         try {
             if (jobLocDir.exists())
-                throw new GridException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
+                throw new IgniteCheckedException("Local job directory already exists: " + jobLocDir.getAbsolutePath());
 
             JobConf cfg = ctx.getJobConf();
 
@@ -107,11 +107,11 @@ public class GridHadoopV2JobResourceManager {
                     FileSystem fs = FileSystem.get(stagingDir.toUri(), cfg);
 
                     if (!fs.exists(stagingDir))
-                        throw new GridException("Failed to find map-reduce submission directory (does not exist): " +
+                        throw new IgniteCheckedException("Failed to find map-reduce submission directory (does not exist): " +
                             stagingDir);
 
                     if (!FileUtil.copy(fs, stagingDir, jobLocDir, false, cfg))
-                        throw new GridException("Failed to copy job submission directory contents to local file system " +
+                        throw new IgniteCheckedException("Failed to copy job submission directory contents to local file system " +
                             "[path=" + stagingDir + ", locDir=" + jobLocDir.getAbsolutePath() + ", jobId=" + jobId + ']');
                 }
 
@@ -136,12 +136,12 @@ public class GridHadoopV2JobResourceManager {
                 }
             }
             else if (!jobLocDir.mkdirs())
-                throw new GridException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
+                throw new IgniteCheckedException("Failed to create local job directory: " + jobLocDir.getAbsolutePath());
 
             setLocalFSWorkingDirectory(jobLocDir);
         }
         catch (URISyntaxException | IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -239,9 +239,9 @@ public class GridHadoopV2JobResourceManager {
      * </ul>
      *
      * @param path Path to working directory of the task.
-     * @throws GridException If fails.
+     * @throws IgniteCheckedException If fails.
      */
-    public void prepareTaskWorkDir(File path) throws GridException {
+    public void prepareTaskWorkDir(File path) throws IgniteCheckedException {
         try {
             if (path.exists())
                 throw new IOException("Task local directory already exists: " + path);
@@ -268,7 +268,7 @@ public class GridHadoopV2JobResourceManager {
             }
         }
         catch (IOException e) {
-            throw new GridException("Unable to prepare local working directory for the task " +
+            throw new IgniteCheckedException("Unable to prepare local working directory for the task " +
                  "[jobId=" + jobId + ", path=" + path+ ']', e);
         }
     }

@@ -33,7 +33,7 @@ public final class GgfsExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Ignite g = Ignition.start("examples/config/filesystem/example-ggfs.xml");
@@ -98,9 +98,9 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path File or directory path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void delete(IgniteFs fs, IgniteFsPath path) throws GridException {
+    private static void delete(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
 
@@ -130,9 +130,9 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path Directory path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws GridException {
+    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
 
@@ -156,11 +156,11 @@ public final class GgfsExample {
      * @param fs GGFS.
      * @param path File path.
      * @param data Data.
-     * @throws GridException If file can't be created.
+     * @throws IgniteCheckedException If file can't be created.
      * @throws IOException If data can't be written.
      */
     private static void create(IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
-        throws GridException, IOException {
+        throws IgniteCheckedException, IOException {
         assert fs != null;
         assert path != null;
 
@@ -185,10 +185,10 @@ public final class GgfsExample {
      * @param fs GGFS.
      * @param path File path.
      * @param data Data.
-     * @throws GridException If file can't be created.
+     * @throws IgniteCheckedException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws GridException, IOException {
+    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteCheckedException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
@@ -210,10 +210,10 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path File path.
-     * @throws GridException If file can't be opened.
+     * @throws IgniteCheckedException If file can't be opened.
      * @throws IOException If data can't be read.
      */
-    private static void read(IgniteFs fs, IgniteFsPath path) throws GridException, IOException {
+    private static void read(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException, IOException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isFile();
@@ -233,9 +233,9 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path Directory path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void list(IgniteFs fs, IgniteFsPath path) throws GridException {
+    private static void list(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
@@ -262,9 +262,9 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path File or directory path.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    private static void printInfo(IgniteFs fs, IgniteFsPath path) throws GridException {
+    private static void printInfo(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
         System.out.println();
         System.out.println("Information for " + path + ": " + fs.info(path));
     }

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.spi;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.io.*;
 import java.util.*;
@@ -25,7 +25,7 @@ public interface IgniteSpiCloseableIterator<T> extends Iterator<T>, AutoCloseabl
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    @Override public void close() throws GridException;
+    @Override public void close() throws IgniteCheckedException;
 }

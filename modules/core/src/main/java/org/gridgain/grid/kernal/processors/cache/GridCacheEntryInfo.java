@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -199,18 +199,18 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
     /**
      * @param ctx Context.
      * @param ldr Loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void unmarshalValue(GridCacheContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    public void unmarshalValue(GridCacheContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val == null && valBytes != null)
             val = ctx.marshaller().unmarshal(valBytes, ldr);
     }
 
     /**
      * @param ctx Cache context.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         boolean depEnabled = ctx.gridDeploy().enabled();
 
         boolean valIsByteArr = val != null && val instanceof byte[];
@@ -231,9 +231,9 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      *
      * @param ctx Cache context.
      * @param clsLdr Class loader.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws GridException {
+    public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
         IgniteMarshaller mrsh = ctx.marshaller();
 
         if (key == null)

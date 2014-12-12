@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
@@ -71,7 +71,7 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
             // Back remove operation by actual cache.
             cur.removex();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new GridClosureException(e);
         }
     }

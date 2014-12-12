@@ -70,15 +70,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getSelectorsCount();
 
     /**
-     * Gets flag defining whether asynchronous (NIO) or synchronous (blocking) IO
-     * should be used to send messages.
-     *
-     * @return {@code True} if asynchronous IO should be used to send messages.
-     */
-    @IgniteMBeanDescription("Asynchronous send.")
-    public boolean isAsyncSend();
-
-    /**
      * Gets sent messages count.
      *
      * @return Sent messages count.
@@ -220,23 +211,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getSocketSendBuffer();
 
     /**
-     * Gets flag indicating whether dual-socket connection between nodes should be enforced. If set to
-     * {@code true}, two separate connections will be established between communicating nodes: one for outgoing
-     * messages, and one for incoming. When set to {@code false}, single {@code TCP} connection will be used
-     * for both directions.
-     * <p>
-     * This flag is useful on some operating systems, when {@code TCP_NODELAY} flag is disabled and
-     * messages take too long to get delivered.
-     *
-     * @return Whether dual-socket connection should be enforced.
-     */
-    @IgniteMBeanDescription("Dual-socket connection.")
-    public boolean isDualSocketConnection();
-
-    /**
      * Gets message queue limit for incoming and outgoing messages.
-     * <p>
-     * This parameter only used when {@link #isAsyncSend()} set to {@code true}.
      *
      * @return Send queue size limit.
      */
@@ -260,4 +235,31 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @IgniteMBeanDescription("Buffer size ratio.")
     public double getBufferSizeRatio();
+
+    /**
+     * Gets socket write timeout for TCP connections. If message can not be written to
+     * socket within this time then connection is closed and reconnect is attempted.
+     *
+     * @return Socket write timeout for TCP connections.
+     */
+    @IgniteMBeanDescription("Socket write timeout.")
+    public long getSocketWriteTimeout();
+
+    /**
+     * Gets number of received messages per connection to node after which acknowledgment message is sent.
+     *
+     * @return Number of received messages after which acknowledgment is sent.
+     */
+    @IgniteMBeanDescription("Number of received messages after which acknowledgment is sent.")
+    public int getAckSendThreshold();
+
+    /**
+     * Gets maximum number of stored unacknowledged messages per connection to node.
+     * If number of unacknowledged messages exceeds this number then connection to node is
+     * closed and reconnect is attempted.
+     *
+     * @return Maximum number of unacknowledged messages.
+     */
+    @IgniteMBeanDescription("Maximum number of unacknowledged messages.")
+    public int getUnacknowledgedMessagesBufferSize();
 }

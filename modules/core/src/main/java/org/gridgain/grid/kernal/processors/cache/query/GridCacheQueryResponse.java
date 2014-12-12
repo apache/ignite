@@ -9,15 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -54,7 +53,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private List<IndexingFieldMetadata> metadata;
+    private List<GridQueryFieldMetadata> metadata;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -98,14 +97,14 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws GridException {
+    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (err != null)
             errBytes = ctx.marshaller().marshal(err);
 
         metaDataBytes = marshalCollection(metadata, ctx);
-        dataBytes = fields ? marshalFieldsCollection(data, ctx) : marshalCollection(data, ctx);
+        dataBytes = marshalCollection(data, ctx);
 
         if (ctx.deploymentEnabled() && !F.isEmpty(data)) {
             for (Object o : data) {
@@ -120,27 +119,27 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
 
         metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
-        data = fields ? unmarshalFieldsCollection(dataBytes, ctx, ldr) : unmarshalCollection(dataBytes, ctx, ldr);
+        data = unmarshalCollection(dataBytes, ctx, ldr);
     }
 
     /**
      * @return Metadata.
      */
-    public List<IndexingFieldMetadata> metadata() {
+    public List<GridQueryFieldMetadata> metadata() {
         return metadata;
     }
 
     /**
      * @param metadata Metadata.
      */
-    public void metadata(@Nullable List<IndexingFieldMetadata> metadata) {
+    public void metadata(@Nullable List<GridQueryFieldMetadata> metadata) {
         this.metadata = metadata;
     }
 
@@ -192,128 +191,6 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
      */
     public boolean fields() {
         return fields;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("TypeMayBeWeakened")
-    @Nullable private Collection<byte[]> marshalFieldsCollection(@Nullable Collection<Object> col,
-        GridCacheSharedContext<K, V> ctx) throws GridException {
-        assert ctx != null;
-
-        if (col == null)
-            return null;
-
-        Collection<List<Object>> col0 = new ArrayList<>(col.size());
-
-        for (Object o : col) {
-            List<IndexingEntity<?>> list = (List<IndexingEntity<?>>)o;
-            List<Object> list0 = new ArrayList<>(list.size());
-
-            for (IndexingEntity<?> ent : list) {
-                if (ent.bytes() != null)
-                    list0.add(ent.bytes());
-                else {
-                    if (ctx.deploymentEnabled())
-                        prepareObject(ent.value(), ctx);
-
-                    list0.add(CU.marshal(ctx, ent.value()));
-                }
-            }
-
-            col0.add(list0);
-        }
-
-        return marshalCollection(col0, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("TypeMayBeWeakened")
-    @Nullable private Collection<Object> unmarshalFieldsCollection(@Nullable Collection<byte[]> byteCol,
-        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws GridException {
-        assert ctx != null;
-        assert ldr != null;
-
-        Collection<Object> col = unmarshalCollection(byteCol, ctx, ldr);
-        Collection<Object> col0 = null;
-
-        if (col != null) {
-            col0 = new ArrayList<>(col.size());
-
-            for (Object o : col) {
-                List<Object> list = (List<Object>)o;
-                List<Object> list0 = new ArrayList<>(list.size());
-
-                for (Object obj : list)
-                    list0.add(obj != null ? ctx.marshaller().unmarshal((byte[])obj, ldr) : null);
-
-                col0.add(list0);
-            }
-        }
-
-        return col0;
-    }
-
-    /**
-     * @param out Object output.
-     * @throws IOException If failed.
-     */
-    @SuppressWarnings("TypeMayBeWeakened")
-    private void writeFieldsCollection(ObjectOutput out) throws IOException {
-        assert fields;
-
-        out.writeInt(data != null ? data.size() : -1);
-
-        if (data == null)
-            return;
-
-        for (Object o : data) {
-            List<IndexingEntity<?>> list = (List<IndexingEntity<?>>)o;
-
-            out.writeInt(list.size());
-
-            for (IndexingEntity<?> idxEnt : list) {
-                try {
-                    out.writeObject(idxEnt.value());
-                }
-                catch (IgniteSpiException e) {
-                    throw new IOException("Failed to write indexing entity: " + idxEnt, e);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param in Object input.
-     * @return Read collection.
-     * @throws IOException If failed.
-     * @throws ClassNotFoundException If failed.
-     */
-    private Collection<Object> readFieldsCollection(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert fields;
-
-        int size = in.readInt();
-
-        if (size == -1)
-            return null;
-
-        Collection<Object> res = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++) {
-            int size0 = in.readInt();
-
-            Collection<Object> col = new ArrayList<>(size0);
-
-            for (int j = 0; j < size0; j++)
-                col.add(in.readObject());
-
-            assert col.size() == size0;
-
-            res.add(col);
-        }
-
-        assert res.size() == size;
-
-        return res;
     }
 
     /** {@inheritDoc} */

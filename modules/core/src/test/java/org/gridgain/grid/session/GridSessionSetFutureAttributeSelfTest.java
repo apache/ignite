@@ -113,9 +113,9 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     /**
      * @param num Number.
      * @throws InterruptedException if failed.
-     * @throws GridException if failed.
+     * @throws IgniteCheckedException if failed.
      */
-    private void checkTask(int num) throws InterruptedException, GridException {
+    private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
@@ -170,7 +170,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Splitting job [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -185,7 +185,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
                     /** {@inheritDoc} */
-                    @Override public Serializable execute() throws GridException {
+                    @Override public Serializable execute() throws IgniteCheckedException {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -206,7 +206,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
                                 return 1;
                         }
                         catch (InterruptedException e) {
-                            throw new GridException("Failed to get attribute due to interruption.", e);
+                            throw new IgniteCheckedException("Failed to get attribute due to interruption.", e);
                         }
 
                         return 0;
@@ -219,7 +219,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws GridException {
+            throws IgniteCheckedException {
             if (result.getException() != null)
                 throw result.getException();
 
@@ -227,7 +227,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

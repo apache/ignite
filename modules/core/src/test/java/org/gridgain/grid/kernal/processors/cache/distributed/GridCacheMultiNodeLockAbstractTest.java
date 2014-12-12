@@ -498,9 +498,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
-    public void testLockReentry() throws GridException {
+    public void testLockReentry() throws IgniteCheckedException {
         GridCache<Integer, String> cache = ignite1.cache(null);
 
         assert cache.lock(1, 0L);

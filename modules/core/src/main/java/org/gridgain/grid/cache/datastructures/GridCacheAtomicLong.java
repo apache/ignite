@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This interface provides a rich API for working with distributedly cached atomic long value.
@@ -66,68 +66,68 @@ public interface GridCacheAtomicLong {
      * Gets current value of atomic long.
      *
      * @return Current value of atomic long.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long get() throws GridException;
+    public long get() throws IgniteCheckedException;
 
     /**
      * Increments and gets current value of atomic long.
      *
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long incrementAndGet() throws GridException;
+    public long incrementAndGet() throws IgniteCheckedException;
 
     /**
      * Gets and increments current value of atomic long.
      *
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndIncrement() throws GridException;
+    public long getAndIncrement() throws IgniteCheckedException;
 
     /**
      * Adds {@code l} and gets current value of atomic long.
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long addAndGet(long l) throws GridException;
+    public long addAndGet(long l) throws IgniteCheckedException;
 
     /**
      * Gets current value of atomic long and adds {@code l}.
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndAdd(long l) throws GridException;
+    public long getAndAdd(long l) throws IgniteCheckedException;
 
     /**
      * Decrements and gets current value of atomic long.
      *
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long decrementAndGet() throws GridException;
+    public long decrementAndGet() throws IgniteCheckedException;
 
     /**
      * Gets and decrements current value of atomic long.
      *
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndDecrement() throws GridException;
+    public long getAndDecrement() throws IgniteCheckedException;
 
     /**
      * Gets current value of atomic long and sets new value {@code l} of atomic long.
      *
      * @param l New value of atomic long.
      * @return Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public long getAndSet(long l) throws GridException;
+    public long getAndSet(long l) throws IgniteCheckedException;
 
     /**
      * Atomically compares current value to the expected value, and if they are equal, sets current value
@@ -136,9 +136,9 @@ public interface GridCacheAtomicLong {
      * @param expVal Expected atomic long's value.
      * @param newVal New atomic long's value to set if current value equal to expected value.
      * @return {@code True} if comparison succeeded, {@code false} otherwise.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean compareAndSet(long expVal, long newVal) throws GridException;
+    public boolean compareAndSet(long expVal, long newVal) throws IgniteCheckedException;
 
     /**
      * Gets status of atomic.

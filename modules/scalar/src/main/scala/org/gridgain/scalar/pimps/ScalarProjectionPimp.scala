@@ -13,6 +13,7 @@ package org.gridgain.scalar.pimps
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterNode}
 import org.apache.ignite.lang.{IgniteFutureCancelledException, IgniteFuture, IgnitePredicate}
+import org.apache.ignite._
 import org.gridgain.grid._
 import org.jetbrains.annotations._
 
@@ -588,13 +589,13 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param r Closure to affinity co-located on the node with given affinity key and execute.
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
-     * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
+     * @throws GridInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
      */
     def affinityRun$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run, @Nullable p: NF) {
         affinityRunAsync$(cacheName, affKey, r, p).get
@@ -632,14 +633,14 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param r Closure to affinity co-located on the node with given affinity key and execute.
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
-     * @throws GridException Thrown in case of any error.
+     * @throws IgniteCheckedException Thrown in case of any error.
      * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @return Non-cancellable future of this execution.
-     * @throws GridInterruptedException Subclass of `GridException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `GridException` thrown if computation was cancelled.
+     * @throws GridInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {

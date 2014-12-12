@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.schedule;
 
+import org.apache.ignite.*;
 import org.apache.ignite.scheduler.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 
 import java.util.concurrent.*;
@@ -39,8 +39,8 @@ public class GridNoopScheduleProcessor extends GridScheduleProcessorAdapter {
     /**
      * @return No-op processor usage exception;
      */
-    private GridRuntimeException processorException() {
-        return new GridRuntimeException("Current GridGain configuration does not support schedule functionality " +
+    private IgniteException processorException() {
+        return new IgniteException("Current GridGain configuration does not support schedule functionality " +
             "(consider adding gridgain-schedule module to classpath).");
     }
 }

@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.top;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -88,7 +88,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 final String ip = req0.nodeIp();
 
                 if (id == null && ip == null)
-                    return new GridFinishedFuture<>(ctx, new GridException(
+                    return new GridFinishedFuture<>(ctx, new IgniteCheckedException(
                         "Failed to handle request (either id or ip should be specified)."));
 
                 ClusterNode node;

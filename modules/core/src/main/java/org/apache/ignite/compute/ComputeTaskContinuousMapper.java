@@ -9,8 +9,8 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 
@@ -59,33 +59,33 @@ public interface ComputeTaskContinuousMapper {
      *
      * @param job Job instance to send. If {@code null} is passed, exception will be thrown.
      * @param node Grid node. If {@code null} is passed, exception will be thrown.
-     * @throws GridException If job can not be processed.
+     * @throws IgniteCheckedException If job can not be processed.
      */
-    public void send(ComputeJob job, ClusterNode node) throws GridException;
+    public void send(ComputeJob job, ClusterNode node) throws IgniteCheckedException;
 
     /**
      * Sends collection of grid jobs to assigned nodes.
      *
      * @param mappedJobs Map of grid jobs assigned to grid node. If {@code null}
      *      or empty list is passed, exception will be thrown.
-     * @throws GridException If job can not be processed.
+     * @throws IgniteCheckedException If job can not be processed.
      */
-    public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws GridException;
+    public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws IgniteCheckedException;
 
     /**
      * Sends job to a node automatically picked by the underlying load balancer.
      *
      * @param job Job instance to send. If {@code null} is passed, exception will be thrown.
-     * @throws GridException If job can not be processed.
+     * @throws IgniteCheckedException If job can not be processed.
      */
-    public void send(ComputeJob job) throws GridException;
+    public void send(ComputeJob job) throws IgniteCheckedException;
 
     /**
      * Sends collection of jobs to nodes automatically picked by the underlying load balancer.
      *
      * @param jobs Collection of grid job instances. If {@code null} or empty
      *      list is passed, exception will be thrown.
-     * @throws GridException If job can not be processed.
+     * @throws IgniteCheckedException If job can not be processed.
      */
-    public void send(Collection<? extends ComputeJob> jobs) throws GridException;
+    public void send(Collection<? extends ComputeJob> jobs) throws IgniteCheckedException;
 }

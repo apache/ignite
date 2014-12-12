@@ -34,7 +34,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws GridException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
@@ -57,7 +57,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() == 1 : "Results [received=" + results.size() + ", expected=" + 1 + ']';
 
         ComputeJobResult res = results.get(0);

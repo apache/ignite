@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.cache.store;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -31,13 +31,13 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
 
     /** {@inheritDoc} */
     @Override public String load(@Nullable GridCacheTx tx, String key)
-        throws GridException {
+        throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<String, String> clo,
-        @Nullable Object... args) throws GridException {
+        @Nullable Object... args) throws IgniteCheckedException {
         if (args.length > 0) {
             try {
                 int cnt = ((Number)args[0]).intValue();
@@ -49,7 +49,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
             catch (Exception e) {
                 X.println("Unexpected exception in loadAll: " + e);
 
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
         else {
@@ -60,37 +60,37 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
 
     /** {@inheritDoc} */
     @Override public void loadAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends String> keys, IgniteBiInClosure<String, String> c) throws GridException {
+        @Nullable Collection<? extends String> keys, IgniteBiInClosure<String, String> c) throws IgniteCheckedException {
         for (String key : keys)
             c.apply(key, "val" + key);
     }
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, String key, @Nullable String val)
-        throws GridException {
+        throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable GridCacheTx tx,
-        @Nullable Map<? extends String, ? extends String> map) throws GridException {
+        @Nullable Map<? extends String, ? extends String> map) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void remove(@Nullable GridCacheTx tx, String key)
-        throws GridException {
+        throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable GridCacheTx tx,
-        @Nullable Collection<? extends String> keys) throws GridException {
+        @Nullable Collection<? extends String> keys) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws GridException {
+    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 }

@@ -70,10 +70,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param size Size in bytes.
      * @param reader {@code True} if reader.
      * @param parent Parent logger.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        IgniteLogger parent) throws GridException {
+        IgniteLogger parent) throws IgniteCheckedException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
         log = parent.getLogger(GridIpcSharedMemorySpace.class);
@@ -105,10 +105,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param reader Reader flag.
      * @param shmemId Shared memory ID.
      * @param parent Logger.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        int shmemId, IgniteLogger parent) throws GridException {
+        int shmemId, IgniteLogger parent) throws IgniteCheckedException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
         log = parent.getLogger(GridIpcSharedMemorySpace.class);
@@ -130,10 +130,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param off Offset.
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
-    public void write(byte[] buf, int off, int len, long timeout) throws GridException,
+    public void write(byte[] buf, int off, int len, long timeout) throws IgniteCheckedException,
         GridIpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
@@ -146,7 +146,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         try {
             if (closed.get())
-                throw new GridException("Shared memory segment has been closed: " + this);
+                throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
             GridIpcSharedMemoryUtils.writeSharedMemory(shmemPtr, buf, off, len, timeout);
         }
@@ -160,10 +160,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param off Offset.
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
-    public void write(ByteBuffer buf, int off, int len, long timeout) throws GridException,
+    public void write(ByteBuffer buf, int off, int len, long timeout) throws IgniteCheckedException,
         GridIpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
@@ -175,7 +175,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         try {
             if (closed.get())
-                throw new GridException("Shared memory segment has been closed: " + this);
+                throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
             GridIpcSharedMemoryUtils.writeSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
         }
@@ -192,10 +192,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @return Read bytes count.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
-    public int read(byte[] buf, int off, int len, long timeout) throws GridException,
+    public int read(byte[] buf, int off, int len, long timeout) throws IgniteCheckedException,
         GridIpcSharedMemoryOperationTimedoutException{
         assert buf != null;
         assert len > 0;
@@ -207,7 +207,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         try {
             if (closed.get())
-                throw new GridException("Shared memory segment has been closed: " + this);
+                throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
             return (int) GridIpcSharedMemoryUtils.readSharedMemory(shmemPtr, buf, off, len, timeout);
         }
@@ -224,10 +224,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @return Read bytes count.
-     * @throws GridException If space has been closed.
+     * @throws IgniteCheckedException If space has been closed.
      * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
      */
-    public int read(ByteBuffer buf, int off, int len, long timeout) throws GridException,
+    public int read(ByteBuffer buf, int off, int len, long timeout) throws IgniteCheckedException,
         GridIpcSharedMemoryOperationTimedoutException{
         assert buf != null;
         assert len > 0;
@@ -238,7 +238,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         try {
             if (closed.get())
-                throw new GridException("Shared memory segment has been closed: " + this);
+                throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
             return (int) GridIpcSharedMemoryUtils.readSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
         }
@@ -302,14 +302,14 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
     /**
      * @return Bytes available for read.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public int unreadCount() throws GridException {
+    public int unreadCount() throws IgniteCheckedException {
         lock.readLock().lock();
 
         try {
             if (closed.get())
-                throw new GridException("Shared memory segment has been closed: " + this);
+                throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
             return GridIpcSharedMemoryUtils.unreadCount(shmemPtr);
         }

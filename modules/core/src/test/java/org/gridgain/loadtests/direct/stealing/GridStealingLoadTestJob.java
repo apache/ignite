@@ -34,7 +34,7 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
     private ComputeJobContext ctx;
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws GridException {
+    @Override public Serializable execute() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Executing job on node [nodeId=" + nodeId + ", jobId=" + ctx.getJobId() + ']');
 

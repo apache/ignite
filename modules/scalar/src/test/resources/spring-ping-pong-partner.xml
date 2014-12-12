@@ -116,27 +116,6 @@
                 </property>
             </bean>
         </property>
-
-        <!--
-            Allow indexing SPI to index primitive values.
-        -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <!-- Index primitives. -->
-                    <property name="defaultIndexPrimitiveKey" value="true"/>
-
-                    <!--
-                        Set to false to allow different key types for one value type.
-
-                        Note that this also means that '_key' column cannot participate in
-                        where clause queries either directly through API, through JDBC driver,
-                        or through Object Viewer in Visor DevOps Console.
-                    -->
-                    <!--property name="defaultIndexFixedTyping" value="false"/-->
-                </bean>
-            </list>
-        </property>
     </bean>
 </beans>
 

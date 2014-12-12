@@ -76,7 +76,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected grid exception: " + e);
         }
 
@@ -106,7 +106,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected grid exception: " + e);
         }
 
@@ -136,7 +136,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected grid exception: " + e);
         }
 
@@ -166,7 +166,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Got expected grid exception: " + e);
         }
 
@@ -217,7 +217,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
-            throws GridException {
+            throws IgniteCheckedException {
             if (log.isInfoEnabled())
                 log.info("Mapping job [job=" + this + ", grid=" + subgrid + ", arg=" + arg + ']');
 
@@ -239,7 +239,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws GridException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
             if (failType == FailType.RESULT)
                 throw new RuntimeException("Failing out of result method.");
 
@@ -251,7 +251,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results != null;
 
             if (failType == FailType.REDUCE)

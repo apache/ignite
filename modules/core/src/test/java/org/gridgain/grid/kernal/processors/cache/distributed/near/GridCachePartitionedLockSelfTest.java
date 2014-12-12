@@ -51,9 +51,9 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testLockAtomicCache() throws GridException {
+    public void testLockAtomicCache() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(getTestGridName(0));
@@ -66,13 +66,13 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             @Override public Object call() throws Exception {
                 return g0.cache(null).lock(1, Long.MAX_VALUE);
             }
-        }, GridException.class, "Locks are not supported");
+        }, IgniteCheckedException.class, "Locks are not supported");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return g0.cache(null).lockAll(Arrays.asList(1), Long.MAX_VALUE);
             }
-        }, GridException.class, "Locks are not supported");
+        }, IgniteCheckedException.class, "Locks are not supported");
 
         final IgniteFuture<Boolean> lockFut1 = g0.cache(null).lockAsync(1, Long.MAX_VALUE);
 
@@ -80,7 +80,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             @Override public Object call() throws Exception {
                 return lockFut1.get();
             }
-        }, GridException.class, "Locks are not supported");
+        }, IgniteCheckedException.class, "Locks are not supported");
 
         final IgniteFuture<Boolean> lockFut2 = g0.cache(null).lockAllAsync(Arrays.asList(1), Long.MAX_VALUE);
 
@@ -88,7 +88,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             @Override public Object call() throws Exception {
                 return lockFut2.get();
             }
-        }, GridException.class, "Locks are not supported");
+        }, IgniteCheckedException.class, "Locks are not supported");
 
     }
 }

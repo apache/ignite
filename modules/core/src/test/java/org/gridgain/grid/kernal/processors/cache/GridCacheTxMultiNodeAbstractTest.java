@@ -145,10 +145,10 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) throws GridException {
+    private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
         GridCache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -197,10 +197,10 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @param ignite Grid.
      * @param itemKey Item key.
      * @param retry Retry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) throws GridException {
+    private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
         GridCache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -250,10 +250,10 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
      * @param retry Retry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onRemoveItemQueried(boolean putCntr, Ignite ignite, int retry) throws GridException {
+    private void onRemoveItemQueried(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
         GridCache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -340,10 +340,10 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
      * @param retry Retry count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) throws GridException {
+    private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
         GridCache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
@@ -408,9 +408,9 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      *
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void retries(Ignite ignite, boolean putCntr) throws GridException {
+    private void retries(Ignite ignite, boolean putCntr) throws IgniteCheckedException {
         UUID nodeId = ignite.cluster().localNode().id();
 
         for (int i = 0; i < RETRIES; i++) {
@@ -436,9 +436,9 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      *
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void removeRetriesQueried(Ignite ignite, boolean putCntr) throws GridException {
+    private void removeRetriesQueried(Ignite ignite, boolean putCntr) throws IgniteCheckedException {
         for (int i = 0; i < RETRIES; i++) {
             if (DEBUG)
                 ignite.log().info("***");
@@ -460,9 +460,9 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
      *
      * @param putCntr Put counter to cache.
      * @param ignite Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void removeRetriesSimple(Ignite ignite, boolean putCntr) throws GridException {
+    private void removeRetriesSimple(Ignite ignite, boolean putCntr) throws IgniteCheckedException {
         for (int i = 0; i < RETRIES; i++) {
             if (DEBUG)
                 ignite.log().info("***");
@@ -545,8 +545,8 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
                         try {
                             retries(grid(gridId), false);
                         }
-                        catch (GridException e) {
-                            throw new GridRuntimeException(e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
                     }
                 });
@@ -588,8 +588,8 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
                         try {
                             retries(grid(gridId), true);
                         }
-                        catch (GridException e) {
-                            throw new GridRuntimeException(e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
                     }
                 });
@@ -773,8 +773,8 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
                         try {
                             removeRetriesQueried(grid(gridId), true);
                         }
-                        catch (GridException e) {
-                            throw new GridRuntimeException(e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
                     }
                 });
@@ -799,9 +799,9 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void printCounter() throws GridException {
+    private void printCounter() throws IgniteCheckedException {
         info("***");
         info("*** Peeked counter: " + grid(0).cache(null).peek(CNTR_KEY));
         info("*** Got counter: " + grid(0).cache(null).get(CNTR_KEY));
@@ -819,7 +819,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -846,7 +846,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -873,7 +873,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
@@ -900,7 +900,7 @@ public abstract class GridCacheTxMultiNodeAbstractTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Integer call() throws GridException {
+        @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");

@@ -459,7 +459,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
 
                     return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     throw new RuntimeException(e);
                 }
             }

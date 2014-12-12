@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
@@ -58,7 +59,7 @@ public interface GridHadoopCommunicationClient {
     /**
      * @param desc Process descriptor.
      * @param msg Message to send.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) throws GridException;
+    public void sendMessage(GridHadoopProcessDescriptor desc, GridHadoopMessage msg) throws IgniteCheckedException;
 }

@@ -12,11 +12,11 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -348,11 +348,11 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /**
-     * @throws GridException If query is invalid.
+     * @throws IgniteCheckedException If query is invalid.
      */
-    public void validate() throws GridException {
+    public void validate() throws IgniteCheckedException {
         if (type != SCAN && !cctx.config().isQueryIndexEnabled())
-            throw new GridException("Indexing is disabled for cache: " + cctx.cache().name());
+            throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
     /**
@@ -419,7 +419,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 cctx.deploy().registerClasses(filter, rmtReducer, rmtTransform);
                 cctx.deploy().registerClasses(args);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
             }
         }
@@ -436,7 +436,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == SQL_FIELDS)
+        if (type == SQL_FIELDS || type == SPI)
             return (GridCacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else

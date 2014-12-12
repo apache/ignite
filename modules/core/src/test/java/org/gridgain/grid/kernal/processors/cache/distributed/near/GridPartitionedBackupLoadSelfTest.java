@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -127,7 +127,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer load(@Nullable GridCacheTx tx, Integer key)
-            throws GridException {
+            throws IgniteCheckedException {
             cnt.incrementAndGet();
 
             return null;
@@ -135,12 +135,12 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void put(GridCacheTx tx, Integer key, @Nullable Integer val)
-            throws GridException {
+            throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
             // No-op
         }
 

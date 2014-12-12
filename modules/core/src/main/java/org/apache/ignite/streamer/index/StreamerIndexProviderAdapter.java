@@ -11,8 +11,8 @@ package org.apache.ignite.streamer.index;
 
 import com.romix.scala.*;
 import com.romix.scala.collection.concurrent.*;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -146,7 +146,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void add(StreamerIndexUpdateSync sync, E evt) throws GridException {
+    @Override public void add(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -174,7 +174,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void remove(StreamerIndexUpdateSync sync, E evt) throws GridException {
+    @Override public void remove(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -301,9 +301,9 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param evt Event.
      * @param key key.
      * @param sync Sync.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void add(E evt, K key, StreamerIndexUpdateSync sync) throws GridException;
+    protected abstract void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException;
 
     /**
      * Remove event from the index.
@@ -311,18 +311,18 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param evt Event.
      * @param key Key.
      * @param sync Sync.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected abstract void remove(E evt, K key, StreamerIndexUpdateSync sync) throws GridException;
+    protected abstract void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException;
 
     /**
      * Lock updates on particular key.
      *
      * @param key Key.
      * @param sync Sync.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void lockKey(K key, StreamerIndexUpdateSync sync) throws GridException {
+    private void lockKey(K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
         assert key != null;
         assert sync != null;
 
@@ -334,7 +334,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
                     old.await();
                 }
                 catch (InterruptedException e) {
-                    throw new GridException("Failed to lock on key (thread has been interrupted): " + key, e);
+                    throw new IgniteCheckedException("Failed to lock on key (thread has been interrupted): " + key, e);
                 }
 
                 // No point to replace or remove sync here.
@@ -362,9 +362,9 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      *
      * @param key Key.
      * @param sync Sync.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void lockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) throws GridException {
+    protected void lockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
         assert key != null;
         assert sync != null;
         assert isUnique();
@@ -377,7 +377,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
                     old.await();
                 }
                 catch (InterruptedException e) {
-                    throw new GridException("Failed to lock on key (thread has been interrupted): " + key, e);
+                    throw new IgniteCheckedException("Failed to lock on key (thread has been interrupted): " + key, e);
                 }
 
                 // No point to replace or remove sync here.

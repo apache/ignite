@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -64,7 +65,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
             try {
                 lsnr.onClose();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to notify stream event listener", e);
             }
@@ -72,7 +73,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.info(path);
         }
@@ -82,7 +83,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
             return ggfs.update(path, props);
         }
@@ -92,7 +93,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws GridException {
+    @Override public Boolean setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
         try {
             ggfs.setTimes(path, accessTime, modificationTime);
 
@@ -105,7 +106,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
+    @Override public Boolean rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
         try {
             ggfs.rename(src, dest);
 
@@ -117,7 +118,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
+    @Override public Boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
         try {
             return ggfs.delete(path, recursive);
         }
@@ -127,7 +128,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsStatus fsStatus() throws GridException {
+    @Override public GridGgfsStatus fsStatus() throws IgniteCheckedException {
         try {
             return ggfs.globalSpace();
         }
@@ -138,7 +139,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.listPaths(path);
         }
@@ -148,7 +149,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.listFiles(path);
         }
@@ -158,7 +159,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Override public Boolean mkdirs(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
             ggfs.mkdirs(path, props);
 
@@ -171,7 +172,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws GridException {
+    @Override public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.summary(path);
         }
@@ -183,7 +184,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             return ggfs.affinity(path, start, len);
         }
@@ -193,7 +194,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws GridException {
+    @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path) throws IgniteCheckedException {
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
 
@@ -206,7 +207,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate open(IgniteFsPath path, int seqReadsBeforePrefetch)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
 
@@ -219,7 +220,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate create(IgniteFsPath path, boolean overwrite, boolean colocate,
-        int replication, long blockSize, @Nullable Map<String, String> props) throws GridException {
+        int replication, long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
             IgniteFsOutputStream stream = ggfs.create(path, bufSize, overwrite,
                 colocate ? ggfs.nextAffinityKey() : null, replication, blockSize, props);
@@ -233,7 +234,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
     /** {@inheritDoc} */
     @Override public GridGgfsHadoopStreamDelegate append(IgniteFsPath path, boolean create,
-        @Nullable Map<String, String> props) throws GridException {
+        @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
             IgniteFsOutputStream stream = ggfs.append(path, bufSize, create, props);
 

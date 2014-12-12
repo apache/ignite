@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.ipc.shmem;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -43,7 +43,7 @@ public class GridIpcSharedMemoryInputStream extends InputStream {
 
             return buf[0] & 0xFF;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -53,7 +53,7 @@ public class GridIpcSharedMemoryInputStream extends InputStream {
         try {
             return in.read(b, off, len, 0);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }
@@ -63,7 +63,7 @@ public class GridIpcSharedMemoryInputStream extends InputStream {
         try {
             return in.unreadCount();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
     }

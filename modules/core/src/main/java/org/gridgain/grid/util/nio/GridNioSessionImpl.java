@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -93,7 +93,7 @@ public class GridNioSessionImpl implements GridNioSession {
 
             return chain().onSessionWrite(this, msg);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             close();
 
             return new GridNioFinishedFuture<Object>(e);
@@ -105,7 +105,7 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             return chain().onResumeReads(this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             close();
 
             return new GridNioFinishedFuture<Object>(e);
@@ -117,7 +117,7 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             return chain().onPauseReads(this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             close();
 
             return new GridNioFinishedFuture<Object>(e);
@@ -130,7 +130,7 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             return filterChain.onSessionClose(this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridNioFinishedFuture<>(e);
         }
     }
@@ -285,6 +285,16 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     @Override public boolean readsPaused() {
         return readsPaused;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+        return null;
     }
 
     /** {@inheritDoc} */

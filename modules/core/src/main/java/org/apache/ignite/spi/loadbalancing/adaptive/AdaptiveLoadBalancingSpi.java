@@ -113,7 +113,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    &#64;Override
- *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws GridException {
+ *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
  *
  *        for (int i = 0; i &lt; gridSize; i++) {
@@ -139,7 +139,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    GridComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
- *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws GridException {
+ *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
  *        Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
  *
  *        // In more complex cases, you can actually do
@@ -153,7 +153,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result
@@ -407,7 +407,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
     /** {@inheritDoc} */
     @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
-    throws GridException {
+    throws IgniteCheckedException {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
         A.notNull(job, "job");
@@ -433,10 +433,10 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
      * @param top List of all nodes.
      * @param node Node to get load for.
      * @return Node load.
-     * @throws GridException If returned load is negative.
+     * @throws IgniteCheckedException If returned load is negative.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws GridException {
+    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws IgniteCheckedException {
         assert !F.isEmpty(top);
 
         int jobsSentSinceLastUpdate = 0;
@@ -455,7 +455,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         double load = probe.getLoad(node, jobsSentSinceLastUpdate);
 
         if (load < 0)
-            throw new GridException("Failed to obtain non-negative load from adaptive load probe: " + load);
+            throw new IgniteCheckedException("Failed to obtain non-negative load from adaptive load probe: " + load);
 
         return load;
     }
@@ -469,9 +469,9 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
         /**
          * @param top Task topology.
-         * @throws GridException If any load was negative.
+         * @throws IgniteCheckedException If any load was negative.
          */
-        WeightedTopology(List<ClusterNode> top) throws GridException {
+        WeightedTopology(List<ClusterNode> top) throws IgniteCheckedException {
             assert !F.isEmpty(top);
 
             double totalLoad = 0;

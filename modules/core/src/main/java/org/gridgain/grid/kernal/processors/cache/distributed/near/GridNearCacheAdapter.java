@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -169,7 +169,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void reloadAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         dht().reloadAll(keys, filter);
 
         super.reloadAll(keys, filter);
@@ -192,7 +192,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public V reload(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         V val;
 
         try {
@@ -208,7 +208,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void reloadAll() throws GridException {
+    @Override public void reloadAll() throws IgniteCheckedException {
         super.reloadAll();
 
         dht().reloadAll();
@@ -269,7 +269,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, Object[] args) throws GridException {
+    @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, Object[] args) throws IgniteCheckedException {
         dht().loadCache(p, ttl, args);
     }
 
@@ -428,7 +428,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public boolean compact(K key,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return super.compact(key, filter) | dht().compact(key, filter);
     }
 
@@ -477,7 +477,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         GridTuple<V> val = null;
 
         if (!modes.contains(PARTITIONED_ONLY)) {
@@ -527,7 +527,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key, boolean deserializePortable) throws GridException {
+    @Override public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
@@ -535,7 +535,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key) throws GridException {
+    @Override public V promote(K key) throws IgniteCheckedException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
@@ -543,7 +543,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws GridException {
+    @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
 
         // Unswap only from dht(). Near cache does not have swap storage.
@@ -553,14 +553,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws GridException {
+    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
         ctx.denyOnFlags(F.asList(SKIP_SWAP));
 
         return dht().swapIterator();
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws GridException {
+    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
         return dht().offHeapIterator();
     }
 
@@ -575,12 +575,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public long swapSize() throws GridException {
+    @Override public long swapSize() throws IgniteCheckedException {
         return dht().swapSize();
     }
 
     /** {@inheritDoc} */
-    @Override public long swapKeys() throws GridException {
+    @Override public long swapKeys() throws IgniteCheckedException {
         return dht().swapKeys();
     }
 
@@ -735,8 +735,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             try {
                 GridNearCacheAdapter.this.remove(currEntry.getKey(), CU.<K, V>empty());
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
     }

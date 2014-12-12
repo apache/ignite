@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.direct.*;
-import org.jetbrains.annotations.*;
 import org.gridgain.grid.util.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,9 +28,9 @@ public interface GridCommunicationClient {
      * to both output and input streams.
      *
      * @param handshakeC Handshake.
-     * @throws GridException If handshake failed.
+     * @throws IgniteCheckedException If handshake failed.
      */
-    void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException;
+    void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if client has been closed by this call,
@@ -72,23 +72,24 @@ public interface GridCommunicationClient {
 
     /**
      * @param data Data to send.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void sendMessage(ByteBuffer data) throws GridException;
+    void sendMessage(ByteBuffer data) throws IgniteCheckedException;
 
     /**
      * @param data Data to send.
      * @param len Length.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void sendMessage(byte[] data, int len) throws GridException;
+    void sendMessage(byte[] data, int len) throws IgniteCheckedException;
 
     /**
      * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
      * @param msg Message to send.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
+     * @return {@code True} if should try to resend message.
      */
-    void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg) throws GridException;
+    boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg) throws IgniteCheckedException;
 
     /**
      * @param timeout Timeout.

@@ -62,10 +62,10 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
-     * @throws GridException If query failed.
+     * @throws IgniteCheckedException If query failed.
      */
     public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -89,10 +89,10 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @throws GridException If failed to add listener.
+     * @throws IgniteCheckedException If failed to add listener.
      */
     public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws GridException;
+        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteCheckedException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -127,11 +127,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @see #stopRemoteListen(UUID)
-     * @throws GridException If failed to add listener.
+     * @throws IgniteCheckedException If failed to add listener.
      */
     public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types) throws GridException;
+        @Nullable int... types) throws IgniteCheckedException;
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
@@ -142,9 +142,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param opId Operation ID that was returned from
      *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)} method.
      * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)
-     * @throws GridException If failed to stop listeners.
+     * @throws IgniteCheckedException If failed to stop listeners.
      */
-    public void stopRemoteListen(UUID opId) throws GridException;
+    public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /**
      * Waits for the specified events.
@@ -155,10 +155,10 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
      * @return Grid event.
-     * @throws GridException If wait was interrupted.
+     * @throws IgniteCheckedException If wait was interrupted.
      */
     public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.

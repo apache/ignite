@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 /**
@@ -22,9 +22,9 @@ public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testRemove() throws GridException {
+    public void testRemove() throws IgniteCheckedException {
         cache().put("key", 1);
 
         assert cache().remove("key", 1);

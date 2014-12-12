@@ -9,11 +9,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
@@ -74,7 +74,7 @@ public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractT
 
             fail("Expected SPI exception was not thrown.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             Throwable ex = e.getCause().getCause();
 
             assertTrue(ex instanceof IgniteSpiException);

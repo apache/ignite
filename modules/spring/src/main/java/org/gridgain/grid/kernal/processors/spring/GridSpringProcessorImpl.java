@@ -70,7 +70,7 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
 
     /** {@inheritDoc} */
     @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, String... excludedProps) throws GridException {
+        URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
         ApplicationContext springCtx;
 
         try {
@@ -78,11 +78,11 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
-                throw new GridException("Failed to instantiate Spring XML application context " +
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
                     "[springUrl=" + cfgUrl + ']', e);
             else
-                throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
@@ -92,18 +92,18 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null || cfgMap.isEmpty())
-            throw new GridException("Failed to find grid configuration in: " + cfgUrl);
+            throw new IgniteCheckedException("Failed to find grid configuration in: " + cfgUrl);
 
         return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws GridException {
+    @Override public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException {
         assert beanClasses.length > 0;
 
         GenericApplicationContext springCtx;
@@ -117,11 +117,11 @@ public class GridSpringProcessorImpl implements GridSpringProcessor {
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
-                throw new GridException("Failed to instantiate Spring XML application context " +
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
                     "[springUrl=" + cfgUrl + ']', e);
             else
-                throw new GridException("Failed to instantiate Spring XML application context [springUrl=" +
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 

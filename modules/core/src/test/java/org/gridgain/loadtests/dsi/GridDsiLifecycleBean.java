@@ -9,12 +9,10 @@
 
 package org.gridgain.loadtests.dsi;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.*;
 
 /**
  *
@@ -34,7 +32,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
-    @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+    @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
         switch (evt) {
             case BEFORE_GRID_START:
                 break;

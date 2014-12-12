@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.interop.os;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
@@ -36,12 +37,12 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitStart() throws GridException {
+    @Override public void awaitStart() throws IgniteCheckedException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 
     /** {@inheritDoc} */
-    @Override public long environmentPointer() throws GridException {
+    @Override public long environmentPointer() throws IgniteCheckedException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 
@@ -56,12 +57,12 @@ public class GridOsInteropProcessor extends GridInteropProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridInteropTarget projection() throws GridException {
+    @Override public GridInteropTarget projection() throws IgniteCheckedException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 
     /** {@inheritDoc} */
-    @Override public GridInteropTarget cache(@Nullable String name) throws GridException {
+    @Override public GridInteropTarget cache(@Nullable String name) throws IgniteCheckedException {
         throw new UnsupportedOperationException(ERR_MSG);
     }
 }

@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.kernal.managers.checkpoint;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
-import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -66,7 +66,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -87,7 +87,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -117,10 +117,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @param timeout Checkpoint timeout.
      * @param override Whether or not override checkpoint if it already exists.
      * @return {@code true} if checkpoint has been actually saved, {@code false} otherwise.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public boolean storeCheckpoint(GridTaskSessionInternal ses, String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean override) throws GridException {
+        long timeout, boolean override) throws IgniteCheckedException {
         assert ses != null;
         assert key != null;
 
@@ -221,7 +221,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             }
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to save checkpoint [key=" + key + ", val=" + state + ", scope=" +
+            throw new IgniteCheckedException("Failed to save checkpoint [key=" + key + ", val=" + state + ", scope=" +
                 scope + ", timeout=" + timeout + ']', e);
         }
 
@@ -274,9 +274,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @param ses Task session.
      * @param key Checkpoint key.
      * @return Loaded checkpoint.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Nullable public Serializable loadCheckpoint(GridTaskSessionInternal ses, String key) throws GridException {
+    @Nullable public Serializable loadCheckpoint(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
         assert ses != null;
         assert key != null;
 
@@ -294,7 +294,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             return state;
         }
         catch (IgniteSpiException e) {
-            throw new GridException("Failed to load checkpoint: " + key, e);
+            throw new IgniteCheckedException("Failed to load checkpoint: " + key, e);
         }
     }
 

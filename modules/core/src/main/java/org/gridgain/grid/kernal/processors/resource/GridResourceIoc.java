@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -90,10 +90,10 @@ class GridResourceIoc {
      * @param injector Resource to inject.
      * @param dep Deployment.
      * @param depCls Deployment class.
-     * @throws GridException Thrown in case of any errors during injection.
+     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
     void inject(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
-        @Nullable GridDeployment dep, @Nullable Class<?> depCls) throws GridException {
+        @Nullable GridDeployment dep, @Nullable Class<?> depCls) throws IgniteCheckedException {
         assert target != null;
         assert annCls != null;
         assert injector != null;
@@ -110,10 +110,10 @@ class GridResourceIoc {
      * @param dep Deployment.
      * @param depCls Deployment class.
      * @param checkedObjs Set of already inspected objects to avoid indefinite recursion.
-     * @throws GridException Thrown in case of any errors during injection.
+     * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
     private void injectInternal(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
-        @Nullable GridDeployment dep, @Nullable Class<?> depCls, Set<Object> checkedObjs) throws GridException {
+        @Nullable GridDeployment dep, @Nullable Class<?> depCls, Set<Object> checkedObjs) throws IgniteCheckedException {
         assert target != null;
         assert annCls != null;
         assert injector != null;
@@ -149,7 +149,7 @@ class GridResourceIoc {
                         injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
                 }
                 catch (IllegalAccessException e) {
-                    throw new GridException("Failed to inject resource [field=" + f.getName() +
+                    throw new IgniteCheckedException("Failed to inject resource [field=" + f.getName() +
                         ", target=" + target + ']', e);
                 }
             }

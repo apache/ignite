@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
+import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.worker.*;
 
 import java.util.*;
@@ -40,7 +40,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     private CountDownLatch kernalStartLatch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
-    @Override protected void start0() throws GridException {
+    @Override protected void start0() throws IgniteCheckedException {
         IgniteFsConfiguration ggfsCfg = ggfsCtx.configuration();
         Map<String,String> cfg = ggfsCfg.getIpcEndpointConfiguration();
 
@@ -74,9 +74,9 @@ public class GridGgfsServerManager extends GridGgfsManager {
      *
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt {@code True} if endpoint is management.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void bind(final Map<String,String> endpointCfg, final boolean mgmt) throws GridException {
+    private void bind(final Map<String,String> endpointCfg, final boolean mgmt) throws IgniteCheckedException {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
@@ -115,7 +115,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws GridException {
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (!F.isEmpty(srvrs)) {
             for (GridGgfsServer srv : srvrs)
                 srv.onKernalStart();
@@ -189,7 +189,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
 
                         it.remove();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (GridWorker.log.isDebugEnabled())
                             GridWorker.log.debug("Failed to bind GGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
                     }

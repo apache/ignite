@@ -10,6 +10,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
+import org.jetbrains.annotations.*;
 
 import java.net.*;
 
@@ -131,5 +132,15 @@ public class GridMockNioSession extends GridMetadataAwareAdapter implements Grid
     /** {@inheritDoc} */
     @Override public boolean readsPaused() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+        return null;
     }
 }

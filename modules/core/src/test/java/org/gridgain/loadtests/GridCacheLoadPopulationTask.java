@@ -25,12 +25,12 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
     private static final long serialVersionUID = 1L;
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
         Collection<ChunkPopulationJob> jobs = new ArrayList<>();
 
         int maxElements = 10000;
@@ -75,7 +75,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
 
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked", "ConstantConditions"})
-        @Override public Object execute() throws GridException {
+        @Override public Object execute() throws IgniteCheckedException {
             Map<Object, TestValue> map = new TreeMap<>();
 
             for (int i = startElementIdx; i < startElementIdx + maxElements; i++) {

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 
 /**
  * Convenient predicate subclass that allows for thrown grid exception. This class
  * implements {@link #apply()} method that calls {@link #applyx()} method
- * and properly wraps {@link GridException} into {@link GridClosureException} instance.
+ * and properly wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
  */
 public abstract class GridAbsPredicateX implements GridAbsPredicate {
     /** {@inheritDoc} */
@@ -23,16 +23,16 @@ public abstract class GridAbsPredicateX implements GridAbsPredicate {
         try {
             return applyx();
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             throw F.wrap(ex);
         }
     }
 
     /**
-     * Predicate body that can throw {@link GridException}.
+     * Predicate body that can throw {@link IgniteCheckedException}.
      *
      * @return Return value.
-     * @throws GridException Thrown in case of any error condition inside of the predicate.
+     * @throws IgniteCheckedException Thrown in case of any error condition inside of the predicate.
      */
-    public abstract boolean applyx() throws GridException;
+    public abstract boolean applyx() throws IgniteCheckedException;
 }

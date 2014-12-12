@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.ipc.shmem.benchmark;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.ipc.*;
 import org.gridgain.grid.util.ipc.shmem.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
 
 import javax.swing.*;
@@ -32,9 +32,9 @@ public class GridIpcSharedMemoryBenchmarkReader implements GridIpcSharedMemoryBe
 
     /**
      * @param args Args.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         GridIpcSharedMemoryNativeLoader.load();
 
         int nThreads = (args.length > 0 ? Integer.parseInt(args[0]) : 1);

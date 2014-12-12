@@ -9,13 +9,13 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Future computation cannot be retrieved because it was cancelled.
  */
-public class IgniteFutureCancelledException extends GridException {
+public class IgniteFutureCancelledException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

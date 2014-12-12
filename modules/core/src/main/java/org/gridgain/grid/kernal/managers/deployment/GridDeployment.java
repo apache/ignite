@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
@@ -370,9 +370,9 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     /**
      * @param cls Class to create new instance of (using default constructor).
      * @return New instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> T newInstance(Class<T> cls) throws GridException {
+    @Nullable public <T> T newInstance(Class<T> cls) throws IgniteCheckedException {
         assert cls != null;
 
         GridTuple<Constructor<?>> t = dfltCtorsCache.get(cls);
@@ -387,7 +387,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                 dfltCtorsCache.putIfAbsent(cls, t = F.<Constructor<?>>t(ctor));
             }
             catch (NoSuchMethodException e) {
-                throw new GridException("Failed to find empty constructor for class: " + cls, e);
+                throw new IgniteCheckedException("Failed to find empty constructor for class: " + cls, e);
             }
         }
 
@@ -400,7 +400,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
             return (T)ctor.newInstance();
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new GridException("Failed to create new instance for class: " + cls, e);
+            throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
         }
     }
 
@@ -522,9 +522,9 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param target Object to find a value in.
      * @param annCls Annotation class.
      * @return Value of annotated field or method.
-     * @throws GridException If failed to find.
+     * @throws IgniteCheckedException If failed to find.
      */
-    @Nullable public Object annotatedValue(Object target, Class<? extends Annotation> annCls) throws GridException {
+    @Nullable public Object annotatedValue(Object target, Class<? extends Annotation> annCls) throws IgniteCheckedException {
         return annotatedValue(target, annCls, null, false).get1();
     }
 
@@ -534,10 +534,10 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param visited Set of visited objects to avoid cycling.
      * @param annFound Flag indicating if value has already been found.
      * @return Value of annotated field or method.
-     * @throws GridException If failed to find.
+     * @throws IgniteCheckedException If failed to find.
      */
     private IgniteBiTuple<Object, Boolean> annotatedValue(Object target, Class<? extends Annotation> annCls,
-        @Nullable Set<Object> visited, boolean annFound) throws GridException {
+        @Nullable Set<Object> visited, boolean annFound) throws IgniteCheckedException {
         assert target != null;
 
         // To avoid infinite recursion.
@@ -557,7 +557,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                     fieldVal = f.get(target);
                 }
                 catch (IllegalAccessException e) {
-                    throw new GridException("Failed to get annotated field value [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Failed to get annotated field value [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName(), e);
                 }
 
@@ -580,7 +580,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                 }
                 else {
                     if (annFound)
-                        throw new GridException("Multiple annotations have been found [cls=" + cls.getName() +
+                        throw new IgniteCheckedException("Multiple annotations have been found [cls=" + cls.getName() +
                             ", ann=" + annCls.getSimpleName() + "]");
 
                     val = fieldVal;
@@ -592,7 +592,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
             // Methods.
             for (Method m : methodsWithAnnotation(cls, annCls)) {
                 if (annFound)
-                    throw new GridException("Multiple annotations have been found [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Multiple annotations have been found [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName() + "]");
 
                 m.setAccessible(true);
@@ -601,7 +601,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                     val = m.invoke(target);
                 }
                 catch (Exception e) {
-                    throw new GridException("Failed to get annotated method value [cls=" + cls.getName() +
+                    throw new IgniteCheckedException("Failed to get annotated method value [cls=" + cls.getName() +
                         ", ann=" + annCls.getSimpleName(), e);
                 }
 

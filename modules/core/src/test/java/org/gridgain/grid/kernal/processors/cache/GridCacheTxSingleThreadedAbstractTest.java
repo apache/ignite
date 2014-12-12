@@ -20,7 +20,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 @SuppressWarnings( {"BusyWait"})
 public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxAbstractTest {
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedCommit() throws Exception {
         checkCommit(PESSIMISTIC, READ_COMMITTED);
@@ -29,7 +29,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadCommit() throws Exception {
         checkCommit(PESSIMISTIC, REPEATABLE_READ);
@@ -38,7 +38,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableCommit() throws Exception {
         checkCommit(PESSIMISTIC, SERIALIZABLE);
@@ -47,7 +47,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void _testOptimisticReadCommittedCommit() throws Exception { // TODO GG-9141
         checkCommit(OPTIMISTIC, READ_COMMITTED);
@@ -56,7 +56,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadCommit() throws Exception {
         checkCommit(OPTIMISTIC, REPEATABLE_READ);
@@ -65,7 +65,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableCommit() throws Exception {
         checkCommit(OPTIMISTIC, SERIALIZABLE);
@@ -74,7 +74,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedRollback() throws Exception {
         checkRollback(PESSIMISTIC, READ_COMMITTED);
@@ -83,7 +83,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableReadRollback() throws Exception {
         checkRollback(PESSIMISTIC, REPEATABLE_READ);
@@ -92,7 +92,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableRollback() throws Exception {
         checkRollback(PESSIMISTIC, SERIALIZABLE);
@@ -101,7 +101,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedRollback() throws Exception {
         checkRollback(OPTIMISTIC, READ_COMMITTED);
@@ -110,7 +110,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadRollback() throws Exception {
         checkRollback(OPTIMISTIC, REPEATABLE_READ);
@@ -119,7 +119,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableRollback() throws Exception {
         checkRollback(OPTIMISTIC, SERIALIZABLE);

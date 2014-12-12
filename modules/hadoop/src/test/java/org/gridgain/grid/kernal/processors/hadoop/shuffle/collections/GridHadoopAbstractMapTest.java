@@ -45,19 +45,19 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopPartitioner partitioner() throws GridException {
+        @Override public GridHadoopPartitioner partitioner() throws IgniteCheckedException {
             assert false;
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopSerialization keySerialization() throws GridException {
+        @Override public GridHadoopSerialization keySerialization() throws IgniteCheckedException {
             return new GridHadoopWritableSerialization(IntWritable.class);
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopSerialization valueSerialization() throws GridException {
+        @Override public GridHadoopSerialization valueSerialization() throws IgniteCheckedException {
             return new GridHadoopWritableSerialization(IntWritable.class);
         }
 
@@ -72,7 +72,7 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void run() throws GridException {
+        @Override public void run() throws IgniteCheckedException {
             assert false;
         }
 
@@ -82,11 +82,11 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareTaskEnvironment() throws GridException {
+        @Override public void prepareTaskEnvironment() throws IgniteCheckedException {
             assert false;
         }
 
-        @Override public void cleanupTaskEnvironment() throws GridException {
+        @Override public void cleanupTaskEnvironment() throws IgniteCheckedException {
             assert false;
         }
     }
@@ -115,7 +115,7 @@ public abstract class GridHadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws GridException {
+        @Override public GridHadoopJob createJob(GridHadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
             assert false;
 
             return null;

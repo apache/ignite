@@ -13,12 +13,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.spi.indexing.h2.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -48,10 +47,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         c.setDiscoverySpi(disco);
 
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
-
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
-
-        c.setIndexingSpi(indexing);
 
         c.setCacheConfiguration(createCache("replicated", GridCacheMode.REPLICATED),
             createCache("partitioned", GridCacheMode.PARTITIONED));

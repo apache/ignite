@@ -8,7 +8,7 @@
  */
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,9 +33,9 @@ public interface GridNioParser {
      * @return Parsed user message or {@code null} if complete message has not been received yet. Note
      *         that in case of returning {@code null} given buffer must be completely read.
      * @throws IOException If exception occurred while reading data.
-     * @throws GridException If any user-specific error occurred.
+     * @throws IgniteCheckedException If any user-specific error occurred.
      */
-    @Nullable public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException;
+    @Nullable public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException;
 
     /**
      * This method is called whenever a message should be sent to the network connection
@@ -47,7 +47,7 @@ public interface GridNioParser {
      * @param msg Message to encode.
      * @return Buffer containing encoded message.
      * @throws IOException If exception occurred while encoding data.
-     * @throws GridException If any user-specific error occurred while encoding data.
+     * @throws IgniteCheckedException If any user-specific error occurred while encoding data.
      */
-    public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException;
+    public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException;
 }

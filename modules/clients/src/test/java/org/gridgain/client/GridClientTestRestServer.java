@@ -101,9 +101,9 @@ public class GridClientTestRestServer {
     /**
      * Starts the server.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void start() throws GridException {
+    public void start() throws IgniteCheckedException {
         try {
             String gridName = "test";
 
@@ -124,7 +124,7 @@ public class GridClientTestRestServer {
                 .build();
         }
         catch (UnknownHostException e) {
-            throw new GridException("Failed to determine localhost address.", e);
+            throw new IgniteCheckedException("Failed to determine localhost address.", e);
         }
 
         srv.start();

@@ -151,18 +151,18 @@ public class IgniteLog4jLogger extends GridMetadataAwareAdapter implements Ignit
      * Creates new logger with given configuration {@code path}.
      *
      * @param path Path to log4j configuration XML file.
-     * @throws GridException Thrown in case logger can't be created.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(String path) throws GridException {
+    public IgniteLog4jLogger(String path) throws IgniteCheckedException {
         if (path == null)
-            throw new GridException("Configuration XML file for Log4j must be specified.");
+            throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         this.path = path;
 
         final URL cfgUrl = U.resolveGridGainUrl(path);
 
         if (cfgUrl == null)
-            throw new GridException("Log4j configuration path was not found: " + path);
+            throw new IgniteCheckedException("Log4j configuration path was not found: " + path);
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -180,14 +180,14 @@ public class IgniteLog4jLogger extends GridMetadataAwareAdapter implements Ignit
      * Creates new logger with given configuration {@code cfgFile}.
      *
      * @param cfgFile Log4j configuration XML file.
-     * @throws GridException Thrown in case logger can't be created.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(File cfgFile) throws GridException {
+    public IgniteLog4jLogger(File cfgFile) throws IgniteCheckedException {
         if (cfgFile == null)
-            throw new GridException("Configuration XML file for Log4j must be specified.");
+            throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         if (!cfgFile.exists() || cfgFile.isDirectory())
-            throw new GridException("Log4j configuration path was not found or is a directory: " + cfgFile);
+            throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
         path = cfgFile.getAbsolutePath();
 
@@ -207,11 +207,11 @@ public class IgniteLog4jLogger extends GridMetadataAwareAdapter implements Ignit
      * Creates new logger with given configuration {@code cfgUrl}.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
-     * @throws GridException Thrown in case logger can't be created.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(final URL cfgUrl) throws GridException {
+    public IgniteLog4jLogger(final URL cfgUrl) throws IgniteCheckedException {
         if (cfgUrl == null)
-            throw new GridException("Configuration XML file for Log4j must be specified.");
+            throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         path = null;
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.tostring;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -482,7 +482,7 @@ public class GridToStringBuilder {
             }
 
             // No other option here.
-            throw new GridRuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 

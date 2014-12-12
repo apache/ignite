@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -84,8 +84,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.add(item);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -106,8 +106,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.offer(item);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -128,8 +128,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.addAll(items);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -151,8 +151,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.contains(item);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -173,8 +173,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.containsAll(items);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -198,8 +198,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
             else
                 delegate.clear();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -221,8 +221,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.remove(item);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -243,8 +243,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.removeAll(items);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -265,8 +265,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.isEmpty();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -287,8 +287,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.iterator();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -309,8 +309,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.toArray();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -332,8 +332,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.toArray(a);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -354,8 +354,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.retainAll(items);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -376,8 +376,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.size();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -398,8 +398,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.poll();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -420,8 +420,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.peek();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -445,8 +445,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
             else
                 delegate.clear(batchSize);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -467,8 +467,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.remainingCapacity();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -489,8 +489,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.drainTo(c);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -511,8 +511,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.drainTo(c, maxElements);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -533,8 +533,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.remove();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -555,8 +555,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.element();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -580,8 +580,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
             else
                 delegate.put(item);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -602,8 +602,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.offer(item, timeout, unit);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -624,8 +624,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.take();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -646,8 +646,8 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return delegate.poll(timeout, unit);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             gate.leave();
@@ -660,17 +660,17 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public int capacity() throws GridException {
+    @Override public int capacity() throws IgniteCheckedException {
         return delegate.capacity();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean bounded() throws GridException {
+    @Override public boolean bounded() throws IgniteCheckedException {
         return delegate.bounded();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean collocated() throws GridException {
+    @Override public boolean collocated() throws IgniteCheckedException {
         return delegate.collocated();
     }
 
@@ -723,7 +723,7 @@ public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable
 
             return t.get1().dataStructures().queue(t.get2(), 0, false, false);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {

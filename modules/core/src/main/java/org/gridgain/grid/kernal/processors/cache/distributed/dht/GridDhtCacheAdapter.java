@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -104,7 +104,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
         preldr.onKernalStart();
@@ -164,13 +164,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * Starts multi-update lock. Will wait for topology future is ready.
      *
      * @return Topology version.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long beginMultiUpdate() throws GridException {
+    public long beginMultiUpdate() throws IgniteCheckedException {
         IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup != null)
-            throw new GridException("Nested multi-update locks are not supported");
+            throw new IgniteCheckedException("Nested multi-update locks are not supported");
 
         top.readLock();
 
@@ -206,13 +206,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Ends multi-update lock.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void endMultiUpdate() throws GridException {
+    public void endMultiUpdate() throws IgniteCheckedException {
         IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
 
         if (tup == null)
-            throw new GridException("Multi-update was not started or released twice.");
+            throw new IgniteCheckedException("Multi-update was not started or released twice.");
 
         top.readLock();
 
@@ -336,7 +336,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws GridException {
+    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws IgniteCheckedException {
         if (ctx.store().isLocalStore()) {
             super.loadCache(p, ttl, args);
 
@@ -374,8 +374,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
                         }
-                        catch (GridException e) {
-                            throw new GridRuntimeException("Failed to put cache value: " + entry, e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException("Failed to put cache value: " + entry, e);
                         }
                         catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
@@ -441,7 +441,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public V reload(K key, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             return super.reload(key, filter);
         }
@@ -505,7 +505,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     res.entries(entries);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
 
                     res.error(e);
@@ -516,7 +516,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 try {
                     ctx.io().send(nodeId, res);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
                         ",req=" + req + ", res=" + res + ']', e);
                 }
@@ -581,8 +581,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 // Cannot use remove(key, val) since we may be in DHT cache and should go through near.
                 return entry(key).remove(val);
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 
@@ -640,7 +640,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             try {
                 part.onDeferredDelete(entry.key(), ver);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
             }
         }
@@ -677,7 +677,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheEntry<K, V> nextX() throws GridException {
+        @Override public GridCacheEntry<K, V> nextX() throws IgniteCheckedException {
             if (!hasNext())
                 throw new NoSuchElementException();
 
@@ -689,7 +689,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         /** {@inheritDoc} */
-        @Override public void removeX() throws GridException {
+        @Override public void removeX() throws IgniteCheckedException {
             if (last == null)
                 throw new IllegalStateException();
 

@@ -60,7 +60,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
-        @Nullable int... types) throws GridException {
+        @Nullable int... types) throws IgniteCheckedException {
         A.notNull(p, "p");
 
         guard();
@@ -75,14 +75,14 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws GridException {
+        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteCheckedException {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types) throws GridException {
+        @Nullable int... types) throws IgniteCheckedException {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
 
@@ -99,7 +99,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) throws GridException {
+    @Override public void stopRemoteListen(UUID opId) throws IgniteCheckedException {
         A.notNull(opId, "consumeId");
 
         guard();
@@ -114,7 +114,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
-        @Nullable int... types) throws GridException {
+        @Nullable int... types) throws IgniteCheckedException {
         guard();
 
         try {

@@ -9,13 +9,13 @@
 
 package org.apache.ignite.spi;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
@@ -189,9 +189,9 @@ public interface IgniteSpiContext {
      * @param cacheName Cache name.
      * @param key Object key.
      * @return Cached object.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V get(String cacheName, K key) throws GridException;
+    @Nullable public <K, V> V get(String cacheName, K key) throws IgniteCheckedException;
 
     /**
      * Puts object in cache.
@@ -203,9 +203,9 @@ public interface IgniteSpiContext {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Previous value associated with specified key, possibly {@code null}.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V put(String cacheName, K key, V val, long ttl) throws GridException;
+    @Nullable public <K, V> V put(String cacheName, K key, V val, long ttl) throws IgniteCheckedException;
 
     /**
      * Puts object into cache if there was no previous object associated with
@@ -218,9 +218,9 @@ public interface IgniteSpiContext {
      * @param <K> Cache key type.
      * @param <V> Cache value type.
      * @return Either existing value or {@code null} if there was no value for given key.
-     * @throws GridException If put failed.
+     * @throws IgniteCheckedException If put failed.
      */
-    @Nullable public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws GridException;
+    @Nullable public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws IgniteCheckedException;
 
     /**
      * Removes object from cache.
@@ -230,9 +230,9 @@ public interface IgniteSpiContext {
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Previous value associated with specified key, possibly {@code null}.
-     * @throws GridException Thrown if any exception occurs.
+     * @throws IgniteCheckedException Thrown if any exception occurs.
      */
-    @Nullable public <K, V> V remove(String cacheName, K key) throws GridException;
+    @Nullable public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException;
 
     /**
      * Returns {@code true} if this cache contains a mapping for the specified key.
@@ -251,10 +251,10 @@ public interface IgniteSpiContext {
      * @param key Key.
      * @param val Value.
      * @param ldr Class loader (optional).
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
     public void writeToSwap(String spaceName, Object key, @Nullable Object val, @Nullable ClassLoader ldr)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Reads object from swap.
@@ -263,10 +263,10 @@ public interface IgniteSpiContext {
      * @param key Key.
      * @param ldr Class loader (optional).
      * @return Swapped value.
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
     @Nullable public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-        throws GridException;
+        throws IgniteCheckedException;
 
 
     /**
@@ -278,10 +278,10 @@ public interface IgniteSpiContext {
      * @param keyBytes Key bytes.
      * @param ldr Class loader for unmarshalling.
      * @return Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> T readFromOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes,
-        @Nullable ClassLoader ldr) throws GridException;
+        @Nullable ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * Writes data to off-heap memory.
@@ -293,10 +293,10 @@ public interface IgniteSpiContext {
      * @param val Value.
      * @param valBytes Optional value bytes.
      * @param ldr Class loader.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public void writeToOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes, Object val,
-        @Nullable byte[] valBytes, @Nullable ClassLoader ldr) throws GridException;
+        @Nullable byte[] valBytes, @Nullable ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * Removes data from off-heap memory.
@@ -306,10 +306,10 @@ public interface IgniteSpiContext {
      * @param key Key.
      * @param keyBytes Optional key bytes.
      * @return {@code true} If succeeded.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes)
-        throws GridException;
+        throws IgniteCheckedException;
 
     /**
      * Calculates partition number for given key.
@@ -326,9 +326,9 @@ public interface IgniteSpiContext {
      * @param spaceName Swap space name.
      * @param key Key.
      * @param ldr Class loader (optional).
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
-    public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) throws GridException;
+    public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator
@@ -363,18 +363,18 @@ public interface IgniteSpiContext {
      * Gets collection of authenticated subjects together with their permissions.
      *
      * @return Collection of authenticated subjects.
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws GridException;
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
      * Gets security subject based on subject ID.
      *
      * @param subjId Subject ID.
      * @return Authorized security subject.
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws GridException;
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
      * Reads swapped cache value from off-heap and swap.
@@ -383,10 +383,10 @@ public interface IgniteSpiContext {
      * @param key Key.
      * @param ldr Class loader for unmarshalling.
      * @return Value.
-     * @throws GridException If any exception occurs.
+     * @throws IgniteCheckedException If any exception occurs.
      */
     @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-        @Nullable ClassLoader ldr) throws GridException;
+        @Nullable ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @return Message factory.

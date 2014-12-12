@@ -1755,8 +1755,8 @@ public class GridCacheConcurrentMap<K, V> {
             try {
                 ctx.cache().remove(e.key(), CU.<K, V>empty());
             }
-            catch (GridException ex) {
-                throw new GridRuntimeException(ex);
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
             }
         }
 
@@ -1928,8 +1928,8 @@ public class GridCacheConcurrentMap<K, V> {
             try {
                 return ctx.cache().remove(k, CU.<K, V>empty()) != null;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Failed to remove cache entry for key: " + k, e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to remove cache entry for key: " + k, e);
             }
         }
 
@@ -2121,8 +2121,8 @@ public class GridCacheConcurrentMap<K, V> {
             try {
                 return clone ? ctx.cloneValue(val) : val;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 

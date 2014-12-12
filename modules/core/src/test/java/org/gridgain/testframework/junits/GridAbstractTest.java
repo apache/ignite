@@ -741,10 +741,10 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @param ignite Grid
      * @param cnt Count
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"BusyWait"})
-    protected void waitForRemoteNodes(Ignite ignite, int cnt) throws GridException {
+    protected void waitForRemoteNodes(Ignite ignite, int cnt) throws IgniteCheckedException {
         while (true) {
             Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
@@ -755,7 +755,7 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(100);
             }
             catch (InterruptedException ignored) {
-                throw new GridException("Interrupted while waiting for remote nodes [gridName=" + ignite.name() +
+                throw new IgniteCheckedException("Interrupted while waiting for remote nodes [gridName=" + ignite.name() +
                     ", count=" + cnt + ']');
             }
         }
@@ -763,9 +763,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param ignites Grids
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void waitForDiscovery(Ignite... ignites) throws GridException {
+    protected void waitForDiscovery(Ignite... ignites) throws IgniteCheckedException {
         assert ignites != null;
         assert ignites.length > 1;
 
@@ -837,10 +837,10 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param springCfgPath Path to file.
      * @return Grid configuration.
-     * @throws GridException If load failed.
+     * @throws IgniteCheckedException If load failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration loadConfiguration(String springCfgPath) throws GridException {
+    protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
         URL cfgLocation = U.resolveGridGainUrl(springCfgPath);
 
         assert cfgLocation != null;
@@ -851,7 +851,7 @@ public abstract class GridAbstractTest extends TestCase {
             springCtx = new FileSystemXmlApplicationContext(cfgLocation.toString());
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate Spring XML application context.", e);
+            throw new IgniteCheckedException("Failed to instantiate Spring XML application context.", e);
         }
 
         Map cfgMap;
@@ -861,17 +861,17 @@ public abstract class GridAbstractTest extends TestCase {
             cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
         }
         catch (BeansException e) {
-            throw new GridException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
                 e.getMessage() + ']', e);
         }
 
         if (cfgMap == null)
-            throw new GridException("Failed to find a single grid factory configuration in: " + springCfgPath);
+            throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + springCfgPath);
 
         if (cfgMap.isEmpty())
-            throw new GridException("Can't find grid factory configuration in: " + springCfgPath);
+            throw new IgniteCheckedException("Can't find grid factory configuration in: " + springCfgPath);
         else if (cfgMap.size() > 1)
-            throw new GridException("More than one configuration provided for cache load test: " + cfgMap.values());
+            throw new IgniteCheckedException("More than one configuration provided for cache load test: " + cfgMap.values());
 
         IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 

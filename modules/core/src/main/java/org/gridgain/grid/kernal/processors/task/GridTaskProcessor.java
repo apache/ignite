@@ -9,11 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.task;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -21,7 +23,6 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -131,7 +132,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     catch (ComputeTaskCancelledException e) {
                         U.warn(log, e.getMessage());
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Task failed: " + task, e);
                     }
                 }
@@ -406,7 +407,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (endTime < 0)
             endTime = Long.MAX_VALUE;
 
-        GridException deployEx = null;
+        IgniteCheckedException deployEx = null;
         GridDeployment dep = null;
 
         // User provided task name.
@@ -428,10 +429,10 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
-                    throw new GridException("Failed to auto-deploy task (deployed class is not a task) [taskName=" +
+                    throw new IgniteCheckedException("Failed to auto-deploy task (deployed class is not a task) [taskName=" +
                         taskName + ", depCls=" + taskCls + ']');
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 deployEx = e;
             }
         }
@@ -449,7 +450,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 taskName = taskName(dep, taskCls, map);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 taskName = taskCls.getName();
 
                 deployEx = e;
@@ -488,7 +489,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 taskName = taskName(dep, taskCls, map);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 taskName = task.getClass().getName();
 
                 deployEx = e;
@@ -529,13 +530,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
 
-        GridException securityEx = null;
+        IgniteCheckedException securityEx = null;
 
         if (ctx.security().enabled() && deployEx == null) {
             try {
                 saveTaskMetadata(taskName);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 securityEx = e;
             }
         }
@@ -640,10 +641,10 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param cls Class.
      * @param map Thread context map.
      * @return Task name.
-     * @throws GridException If {@link @GridComputeTaskName} annotation is found, but has empty value.
+     * @throws IgniteCheckedException If {@link @GridComputeTaskName} annotation is found, but has empty value.
      */
     private String taskName(GridDeployment dep, Class<?> cls,
-        Map<GridTaskThreadContextKey, Object> map) throws GridException {
+        Map<GridTaskThreadContextKey, Object> map) throws IgniteCheckedException {
         assert dep != null;
         assert cls != null;
         assert map != null;
@@ -656,7 +657,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName = ann.value();
 
             if (F.isEmpty(taskName))
-                throw new GridException("Task name specified by @GridComputeTaskName annotation" +
+                throw new IgniteCheckedException("Task name specified by @GridComputeTaskName annotation" +
                     " cannot be empty for class: " + cls);
         }
         else
@@ -670,7 +671,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      *
      * @param taskName Task name.
      */
-    private void saveTaskMetadata(String taskName) throws GridException {
+    private void saveTaskMetadata(String taskName) throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
 
@@ -690,7 +691,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             existingName = tasksMetaCache.putIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
-            throw new GridException("Task name hash collision for security-enabled node [taskName=" + taskName +
+            throw new IgniteCheckedException("Task name hash collision for security-enabled node [taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');
     }
 
@@ -721,9 +722,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @param ses Task session.
      * @param attrs Attributes.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void setAttributes(GridTaskSessionImpl ses, Map<?, ?> attrs) throws GridException {
+    public void setAttributes(GridTaskSessionImpl ses, Map<?, ?> attrs) throws IgniteCheckedException {
         long timeout = ses.getEndTime() - U.currentTimeMillis();
 
         if (timeout <= 0) {
@@ -744,11 +745,11 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      *
      * @param attrs Deserialized session attributes.
      * @param ses Task session.
-     * @throws GridException If send to any of the jobs failed.
+     * @throws IgniteCheckedException If send to any of the jobs failed.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "BusyWait"})
     private void sendSessionAttributes(Map<?, ?> attrs, GridTaskSessionImpl ses)
-        throws GridException {
+        throws IgniteCheckedException {
         assert attrs != null;
         assert ses != null;
 
@@ -804,7 +805,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             ctx.event().record(evt);
         }
 
-        GridException ex = null;
+        IgniteCheckedException ex = null;
 
         // Every job gets an individual message to keep track of ghost requests.
         for (ComputeJobSibling s : ses.getJobSiblings()) {
@@ -842,7 +843,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                             timeout,
                             false);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         node = ctx.discovery().node(nodeId);
 
                         if (node != null) {
@@ -950,7 +951,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
             sendSessionAttributes(attrs, ses);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session request: " + msg, e);
         }
         finally {
@@ -1108,7 +1109,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         ctx.io().removeMessageListener(s.taskTopic(), msgLsnr);
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unregister job communication message listeners and counters.", e);
                 }
             }
@@ -1202,7 +1203,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         siblings = worker.getSession().getJobSiblings();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to get job siblings [request=" + msg +
                             ", ses=" + worker.getSession() + ']', e);
 
@@ -1233,7 +1234,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                             loc ? null : marsh.marshal(siblings)),
                         SYSTEM_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job sibling response.", e);
                 }
             }
@@ -1274,7 +1275,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         gridTaskWorker.getTaskFuture().cancel();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         log.warning("Failed to cancel task: " + gridTaskWorker.getTask(), e);
                     }
                 }

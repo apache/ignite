@@ -41,7 +41,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
     /** {@inheritDoc} */
     @Override public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
-        @Nullable GridHadoopMapReducePlan oldPlan) throws GridException {
+        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException {
         // Convert collection of topology nodes to collection of topology node IDs.
         Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
 
@@ -53,7 +53,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
         int rdcCnt = job.info().reducers();
 
         if (rdcCnt < 0)
-            throw new GridException("Number of reducers must be non-negative, actual: " + rdcCnt);
+            throw new IgniteCheckedException("Number of reducers must be non-negative, actual: " + rdcCnt);
 
         Map<UUID, int[]> reducers = reducers(top, mappers, rdcCnt);
 
@@ -67,10 +67,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param topIds Topology node IDs.
      * @param splits Splits.
      * @return Mappers map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private Map<UUID, Collection<GridHadoopInputSplit>> mappers(Collection<ClusterNode> top, Collection<UUID> topIds,
-        Iterable<GridHadoopInputSplit> splits) throws GridException {
+        Iterable<GridHadoopInputSplit> splits) throws IgniteCheckedException {
         Map<UUID, Collection<GridHadoopInputSplit>> mappers = new HashMap<>();
 
         Map<String, Collection<UUID>> nodes = hosts(top);
@@ -141,7 +141,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      */
     @SuppressWarnings("unchecked")
     private UUID nodeForSplit(GridHadoopInputSplit split, Collection<UUID> topIds, Map<String, Collection<UUID>> nodes,
-        Map<UUID, Integer> nodeLoads) throws GridException {
+        Map<UUID, Integer> nodeLoads) throws IgniteCheckedException {
         if (split instanceof GridHadoopFileBlock) {
             GridHadoopFileBlock split0 = (GridHadoopFileBlock)split;
 
@@ -278,10 +278,10 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
      * @param mappers Mappers map.
      * @param reducerCnt Reducers count.
      * @return Reducers map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private Map<UUID, int[]> reducers(Collection<ClusterNode> top,
-        Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) throws GridException {
+        Map<UUID, Collection<GridHadoopInputSplit>> mappers, int reducerCnt) throws IgniteCheckedException {
         // Determine initial node weights.
         int totalWeight = 0;
 

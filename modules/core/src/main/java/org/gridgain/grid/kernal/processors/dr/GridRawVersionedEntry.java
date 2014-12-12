@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.dr;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -121,7 +121,7 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(IgniteMarshaller marsh) throws GridException {
+    @Override public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         unmarshalKey(marsh);
 
         if (valBytes != null && val == null)
@@ -133,15 +133,15 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
      * its restored key/value are needed.
      *
      * @param marsh Marshaller.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void unmarshalKey(IgniteMarshaller marsh) throws GridException {
+    private void unmarshalKey(IgniteMarshaller marsh) throws IgniteCheckedException {
         if (key == null)
             key = marsh.unmarshal(keyBytes, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(IgniteMarshaller marsh) throws GridException {
+    @Override public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         if (keyBytes == null)
             keyBytes = marsh.marshal(key);
 

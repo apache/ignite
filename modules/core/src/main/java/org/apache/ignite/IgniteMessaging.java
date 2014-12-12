@@ -57,10 +57,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
-     * @throws GridException If failed to send a message to any of the nodes.
+     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
      * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
-    public void send(@Nullable Object topic, Object msg) throws GridException;
+    public void send(@Nullable Object topic, Object msg) throws IgniteCheckedException;
 
     /**
      * Sends given messages with specified topic to the nodes in this projection.
@@ -68,10 +68,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
      *      the exception none or some messages could have been sent already.
-     * @throws GridException If failed to send a message to any of the nodes.
+     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
      * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
-    public void send(@Nullable Object topic, Collection<?> msgs) throws GridException;
+    public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteCheckedException;
 
     /**
      * Sends given message with specified topic to the nodes in this projection. Messages sent with
@@ -87,10 +87,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param msg Message to send.
      * @param timeout Message timeout in milliseconds, {@code 0} for default
      *      which is {@link org.apache.ignite.configuration.IgniteConfiguration#getNetworkTimeout()}.
-     * @throws GridException If failed to send a message to any of the nodes.
+     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
      * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
      */
-    public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws GridException;
+    public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteCheckedException;
 
     /**
      * Adds local listener for given topic on local node only. This listener will be notified whenever any
@@ -123,9 +123,9 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
      *      then it will be unsubscribed from any further notifications.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @throws GridException If failed to add listener.
+     * @throws IgniteCheckedException If failed to add listener.
      */
-    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws GridException;
+    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException;
 
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
@@ -133,9 +133,9 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method.
-     * @throws GridException If failed to unregister listeners.
+     * @throws IgniteCheckedException If failed to unregister listeners.
      */
-    public void stopRemoteListen(UUID opId) throws GridException;
+    public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override

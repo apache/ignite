@@ -168,6 +168,13 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
     protected abstract void clone0(GridTcpCommunicationMessageAdapter _msg);
 
     /**
+     * @return {@code True} if should skip recovery for this message.
+     */
+    public boolean skipRecovery() {
+        return false;
+    }
+
+    /**
      * @param arr Array.
      * @return Array iterator.
      */

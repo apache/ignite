@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.proto;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -32,7 +33,7 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobStatus run(final ComputeJobContext jobCtx, GridHadoop hadoop,
-        GridHadoopProtocolTaskArguments args) throws GridException {
+        GridHadoopProtocolTaskArguments args) throws IgniteCheckedException {
         UUID nodeId = UUID.fromString(args.<String>get(0));
         Integer id = args.get(1);
         Long pollDelay = args.get(2);

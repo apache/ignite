@@ -9,8 +9,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -21,7 +23,6 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -140,7 +141,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         resetMetrics();
 
         preldr = new GridDhtPreloader<>(ctx);
@@ -229,7 +230,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws GridException {
+    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         GridTuple<V> val = null;
 
         if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
@@ -271,19 +272,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return putAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        long ttl, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         return putxAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return putxAsync(key, val, filter).get();
     }
 
@@ -302,7 +303,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V putIfAbsent(K key, V val) throws GridException {
+    @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
         return putIfAbsentAsync(key, val).get();
     }
 
@@ -312,7 +313,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putxIfAbsent(K key, V val) throws GridException {
+    @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
         return putxIfAbsentAsync(key, val).get();
     }
 
@@ -322,7 +323,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V replace(K key, V val) throws GridException {
+    @Override public V replace(K key, V val) throws IgniteCheckedException {
         return replaceAsync(key, val).get();
     }
 
@@ -332,7 +333,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(K key, V val) throws GridException {
+    @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
         return replacexAsync(key, val).get();
     }
 
@@ -342,7 +343,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws GridException {
+    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         return replaceAsync(key, oldVal, newVal).get();
     }
 
@@ -352,12 +353,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<V> removex(K key, V val) throws GridException {
+    @Override public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException {
         return removexAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws GridException {
+    @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
         return replacexAsync(key, oldVal, newVal).get();
     }
 
@@ -376,7 +377,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> m,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         putAllAsync(m, filter).get();
     }
 
@@ -387,7 +388,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws GridException {
+    @Override public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException {
         putAllDrAsync(drMap).get();
     }
 
@@ -399,13 +400,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws GridException {
+    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
         transformAsync(key, transformer).get();
     }
 
     /** {@inheritDoc} */
     @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws GridException {
+        throws IgniteCheckedException {
         return (R)updateAllAsync0(null,
             Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
             false, null, 0, null).get();
@@ -419,7 +420,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws GridException {
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
         transformAllAsync(m).get();
     }
 
@@ -433,7 +434,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         return removeAsync(key, entry, filter).get();
     }
 
@@ -446,7 +447,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll(Collection<? extends K> keys,
-        IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         removeAllAsync(keys, filter).get();
     }
 
@@ -458,7 +459,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         return removexAsync(key, entry, filter).get();
     }
 
@@ -470,7 +471,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(K key, V val) throws GridException {
+    @Override public boolean remove(K key, V val) throws IgniteCheckedException {
         return removeAsync(key, val).get();
     }
 
@@ -480,7 +481,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+    @Override public void removeAll(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         removeAllAsync(filter).get();
     }
 
@@ -490,7 +491,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws GridException {
+    @Override public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
         removeAllDrAsync(drMap).get();
     }
 
@@ -743,8 +744,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 success = false;
                             }
                             else {
-                                if (ctx.portableEnabled() && deserializePortable && v instanceof PortableObject)
-                                    v = ((PortableObject)v).deserialize();
+                                if (ctx.portableEnabled() && deserializePortable) {
+                                    key = (K)ctx.unwrapPortableIfNeeded(key, false);
+                                    v = (V)ctx.unwrapPortableIfNeeded(v, false);
+                                }
 
                                 locVals.put(key, v);
                             }
@@ -766,7 +769,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         break; // While.
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         return new GridFinishedFuture<>(ctx.kernalContext(), e);
                     }
                     finally {
@@ -1205,7 +1208,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 filtered.add(entry);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 res.addFailedKey(entry.key(), e);
             }
             catch (GridCacheFilterFailedException ignore) {
@@ -1432,7 +1435,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     retVal = new GridCacheReturn<>(req.returnValue() ? ret : null, updRes.success());
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 res.addFailedKey(k, e);
             }
         }
@@ -1645,7 +1648,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e);
         }
 
@@ -1828,7 +1831,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             return ctx.isAll(entry.wrapFilterLocked(), req.filter());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             res.addFailedKey(entry.key(), e);
 
             return false;
@@ -2082,8 +2085,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             catch (GridDhtInvalidPartitionException ignored) {
                 // Ignore.
             }
-            catch (GridException e) {
-                res.addFailedKey(key, new GridException("Failed to update key on backup node: " + key, e));
+            catch (IgniteCheckedException e) {
+                res.addFailedKey(key, new IgniteCheckedException("Failed to update key on backup node: " + key, e));
             }
         }
 
@@ -2102,7 +2105,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
                 req.nodeId());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
                 ", req=" + req + ']', e);
         }
@@ -2207,7 +2210,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +
                 nodeId);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send near update reply (did node leave grid?) [nodeId=" + nodeId +
                 ", res=" + res + ']', e);
         }
@@ -2482,7 +2485,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     log.debug("Failed to send deferred dht update response to remote node (did node leave grid?) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send deferred dht update response to remote node [nodeId="
                     + nodeId + ", msg=" + msg + ']', e);
             }

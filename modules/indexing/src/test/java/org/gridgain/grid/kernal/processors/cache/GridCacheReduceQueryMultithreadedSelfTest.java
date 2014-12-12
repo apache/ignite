@@ -14,7 +14,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.spi.indexing.h2.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
@@ -48,12 +47,6 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridH2IndexingSpi indexing = new GridH2IndexingSpi();
-
-        indexing.setDefaultIndexPrimitiveKey(true);
-
-        c.setIndexingSpi(indexing);
-
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return c;
@@ -66,6 +59,12 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+
+        cfg.setQueryConfiguration(qcfg);
 
         return cfg;
     }

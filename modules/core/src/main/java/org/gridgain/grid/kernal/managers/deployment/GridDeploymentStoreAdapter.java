@@ -68,7 +68,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Ignoring kernel started callback: " + this);
     }
@@ -79,7 +79,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws GridException {
+    @Nullable @Override public GridDeployment explicitDeploy(Class<?> cls, ClassLoader clsLdr) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Ignoring explicit deploy [cls=" + cls + ", clsLdr=" + clsLdr + ']');
 

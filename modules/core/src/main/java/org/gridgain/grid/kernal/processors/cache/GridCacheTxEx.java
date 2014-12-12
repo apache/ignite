@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.lang.*;
@@ -342,9 +342,9 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * Prepare state.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void prepare() throws GridException;
+    public void prepare() throws IgniteCheckedException;
 
     /**
      * Prepare stage.

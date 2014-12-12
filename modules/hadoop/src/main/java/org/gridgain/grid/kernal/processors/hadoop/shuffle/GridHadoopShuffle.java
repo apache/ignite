@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
@@ -36,7 +37,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
     /** {@inheritDoc} */
-    @Override public void start(GridHadoopContext ctx) throws GridException {
+    @Override public void start(GridHadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
 
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
@@ -57,7 +58,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             try {
                 job.close();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to close job.", e);
             }
         }
@@ -70,9 +71,9 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      *
      * @param jobId Job ID.
      * @return Created shuffle job.
-     * @throws GridException If job creation failed.
+     * @throws IgniteCheckedException If job creation failed.
      */
-    private GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws GridException {
+    private GridHadoopShuffleJob<UUID> newJob(GridHadoopJobId jobId) throws IgniteCheckedException {
         GridHadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
         GridHadoopShuffleJob<UUID> job = new GridHadoopShuffleJob<>(ctx.localNodeId(), log,
@@ -98,9 +99,9 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     /**
      * @param nodeId Node ID to send message to.
      * @param msg Message to send.
-     * @throws GridException If send failed.
+     * @throws IgniteCheckedException If send failed.
      */
-    private void send0(UUID nodeId, Object msg) throws GridException {
+    private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
         ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
@@ -110,7 +111,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param jobId Task info.
      * @return Shuffle job.
      */
-    private GridHadoopShuffleJob<UUID> job(GridHadoopJobId jobId) throws GridException {
+    private GridHadoopShuffleJob<UUID> job(GridHadoopJobId jobId) throws IgniteCheckedException {
         GridHadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
@@ -138,7 +139,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
     private void startSending(GridHadoopShuffleJob<UUID> shuffleJob) {
         shuffleJob.startSending(ctx.kernalContext().gridName(),
             new IgniteInClosure2X<UUID, GridHadoopShuffleMessage>() {
-                @Override public void applyx(UUID dest, GridHadoopShuffleMessage msg) throws GridException {
+                @Override public void applyx(UUID dest, GridHadoopShuffleMessage msg) throws IgniteCheckedException {
                     send0(dest, msg);
                 }
             }
@@ -159,7 +160,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             try {
                 job(m.jobId()).onShuffleMessage(m);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);
             }
 
@@ -167,7 +168,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
                 // Reply with ack.
                 send0(src, new GridHadoopShuffleAck(m.id(), m.jobId()));
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to reply back to shuffle message sender [snd=" + src + ", msg=" + msg + ']', e);
             }
         }
@@ -177,7 +178,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             try {
                 job(m.jobId()).onShuffleAck(m);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Message handling failed.", e);
             }
         }
@@ -192,7 +193,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param taskCtx Task info.
      * @return Output.
      */
-    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws GridException {
+    public GridHadoopTaskOutput output(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         return job(taskCtx.taskInfo().jobId()).output(taskCtx);
     }
 
@@ -200,7 +201,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param taskCtx Task info.
      * @return Input.
      */
-    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws GridException {
+    public GridHadoopTaskInput input(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         return job(taskCtx.taskInfo().jobId()).input(taskCtx);
     }
 
@@ -214,7 +215,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
             try {
                 job.close();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to close job: " + jobId, e);
             }
         }
@@ -235,7 +236,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
         try {
             return job.flush();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFutureEx<>(e);
         }
     }

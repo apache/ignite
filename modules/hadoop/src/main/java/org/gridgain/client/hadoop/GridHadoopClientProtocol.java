@@ -21,6 +21,7 @@ import org.apache.hadoop.mapreduce.v2.jobhistory.*;
 import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
+import org.apache.ignite.*;
 import org.gridgain.client.*;
 import org.gridgain.client.hadoop.counter.*;
 import org.gridgain.grid.*;
@@ -100,7 +101,7 @@ public class GridHadoopClientProtocol implements ClientProtocol {
 
             return processStatus(status);
         }
-        catch (GridClientException | GridException e) {
+        catch (GridClientException | IgniteCheckedException e) {
             throw new IOException("Failed to submit job.", e);
         }
     }

@@ -119,7 +119,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommitted() throws Throwable {
         // TODO:  GG-7437.
@@ -130,14 +130,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticRepeatableRead() throws Throwable {
         checkTransaction(PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
-     * @throws GridException If test failed.
+     * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializable() throws Throwable {
         checkTransaction(PESSIMISTIC, SERIALIZABLE);

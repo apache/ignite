@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.*;
@@ -50,7 +50,7 @@ public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFiel
 
             fail("We don't support updates.");
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             X.println("___ " + e.getMessage());
         }
     }

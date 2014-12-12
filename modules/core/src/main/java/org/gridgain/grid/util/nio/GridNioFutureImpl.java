@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -73,7 +74,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public R get() throws IOException, GridException {
+    @Override public R get() throws IOException, IgniteCheckedException {
         try {
             if (endTime == 0)
                 acquireSharedInterruptibly(0);
@@ -94,13 +95,13 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout) throws IOException, GridException {
+    @Override public R get(long timeout) throws IOException, IgniteCheckedException {
         // Do not replace with static import, as it may not compile.
         return get(timeout, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws IOException, GridException {
+    @Override public R get(long timeout, TimeUnit unit) throws IOException, IgniteCheckedException {
         A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
         A.notNull(unit, "unit");
 
@@ -118,10 +119,10 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timeout reached before computation completed.
-     * @throws GridException If error occurred.
+     * @throws IgniteFutureTimeoutException If timeout reached before computation completed.
+     * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable protected R get0(long nanosTimeout) throws InterruptedException, GridException {
+    @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
             throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
 
@@ -140,7 +141,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * and call {@link #onCancelled()} callback explicitly if cancellation
      * indeed did happen.
      */
-    @Override public boolean cancel() throws GridException {
+    @Override public boolean cancel() throws IgniteCheckedException {
         return false;
     }
 
@@ -304,6 +305,11 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
 
         // Always signal after setting final done status.
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipRecovery() {
+        return false;
     }
 
     /** {@inheritDoc} */

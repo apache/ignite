@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown whenever grid transactions time out.
  */
-public class GridCacheTxTimeoutException extends GridException {
+public class GridCacheTxTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

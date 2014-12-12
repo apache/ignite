@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -37,7 +38,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void run(GridHadoopTaskContext taskCtx) throws GridException {
+    @Override public void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException {
         GridHadoopJob job = taskCtx.job();
 
         GridHadoopV2TaskContext ctx = (GridHadoopV2TaskContext)taskCtx;
@@ -79,7 +80,7 @@ public class GridHadoopV1ReduceTask extends GridHadoopV1Task {
             if (collector != null)
                 collector.abort();
 
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 }

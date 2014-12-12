@@ -9,6 +9,7 @@
 
 package org.apache.ignite.scheduler;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 
@@ -83,9 +84,9 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @param cnt Array length.
      * @param start Start timestamp.
      * @return Array of the next execution times in milliseconds.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public long[] nextExecutionTimes(int cnt, long start) throws GridException;
+    public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException;
 
     /**
      * Gets total count of executions this task has already completed.
@@ -105,9 +106,9 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * Gets next execution time of scheduled task.
      *
      * @return Next execution time in milliseconds.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public long nextExecutionTime() throws GridException;
+    public long nextExecutionTime() throws IgniteCheckedException;
 
     /**
      * Gets result of the last execution of scheduled task, or
@@ -116,9 +117,9 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      *
      * @return Result of the last execution, or {@code null} if
      *      there isn't one yet.
-     * @throws GridException If last execution resulted in exception.
+     * @throws IgniteCheckedException If last execution resulted in exception.
      */
-    public R last() throws GridException;
+    public R last() throws IgniteCheckedException;
 
     /**
      * Waits for the completion of the next scheduled execution and returns its result.
@@ -126,9 +127,9 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @return Result of the next execution.
      * @throws CancellationException {@inheritDoc}
      * @throws GridInterruptedException {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public R get() throws GridException;
+    @Override public R get() throws IgniteCheckedException;
 
     /**
      * Waits for the completion of the next scheduled execution for
@@ -140,9 +141,9 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @throws CancellationException {@inheritDoc}
      * @throws GridInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public R get(long timeout) throws GridException;
+    @Override public R get(long timeout) throws IgniteCheckedException;
 
     /**
      * Waits for the completion of the next scheduled execution for
@@ -154,7 +155,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @throws CancellationException {@inheritDoc}
      * @throws GridInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
-     * @throws GridException {@inheritDoc}
+     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public R get(long timeout, TimeUnit unit) throws GridException;
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 }

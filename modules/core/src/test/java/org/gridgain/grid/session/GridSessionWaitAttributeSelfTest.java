@@ -238,10 +238,10 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param ses Session.
      * @param prefix Prefix.
      * @param type Type.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type)
-        throws GridException {
+        throws IgniteCheckedException {
         assert ses != null;
         assert type != null;
 
@@ -385,7 +385,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
             }
         }
         catch (InterruptedException e) {
-            throw new GridException("Got interrupted while waiting for session attributes.", e);
+            throw new IgniteCheckedException("Got interrupted while waiting for session attributes.", e);
         }
     }
 
@@ -393,7 +393,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     public static class TestSessionTask extends ComputeTaskSplitAdapter<WaitAttributeType, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<TestSessionJob> split(int gridSize, WaitAttributeType type) throws GridException {
+        @Override protected Collection<TestSessionJob> split(int gridSize, WaitAttributeType type) throws IgniteCheckedException {
             assert type != null;
 
             Collection<TestSessionJob> jobs = new ArrayList<>(JOB_NUM);
@@ -405,7 +405,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }
@@ -432,7 +432,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws GridException {
+        @Override public Serializable execute() throws IgniteCheckedException {
             WaitAttributeType m = argument(0);
 
             checkSessionAttributes(taskSes, "fut", m);
@@ -464,7 +464,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
                 taskSes.waitForAttribute("done", true, 0);
             }
             catch (InterruptedException e) {
-                throw new GridException("Got interrupted while waiting for 'done' attribute.", e);
+                throw new IgniteCheckedException("Got interrupted while waiting for 'done' attribute.", e);
             }
 
             return null;

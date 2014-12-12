@@ -188,7 +188,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     try {
                         tx.rollback();
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
                     }
                 }
@@ -325,7 +325,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
                                     "was rolled back: " + this));
                             else
-                                onError(null, null, new GridException("Invalid transaction state for prepare " +
+                                onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
                                     "[state=" + tx.state() + ", tx=" + this + ']'));
                         }
                         else
@@ -348,7 +348,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
                     onError(cctx.localNodeId(), null, e);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     tx.setRollbackOnly();
 
                     String msg = "Failed to prepare transaction (will attempt rollback): " + this;
@@ -412,7 +412,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
             markInitialized();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onDone(e);
         }
     }
@@ -420,12 +420,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /**
      * @param reads Read entries.
      * @param writes Write entries.
-     * @throws GridException If transaction is group-lock and some key was mapped to to the local node.
+     * @throws IgniteCheckedException If transaction is group-lock and some key was mapped to to the local node.
      */
     private void prepare(
         Iterable<GridCacheTxEntry<K, V>> reads,
         Iterable<GridCacheTxEntry<K, V>> writes
-    ) throws GridException {
+    ) throws IgniteCheckedException {
         assert tx.optimistic();
 
         GridDiscoveryTopologySnapshot snapshot = tx.topologySnapshot();
@@ -550,7 +550,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                 tx.userPrepare();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 onError(null, null, e);
             }
         }
@@ -616,7 +616,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             try {
                 cctx.io().send(n, req);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 fut.onResult(e);
             }
@@ -627,11 +627,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param entry Transaction entry.
      * @param topVer Topology version.
      * @param cur Current mapping.
-     * @throws GridException If transaction is group-lock and local node is not primary for key.
+     * @throws IgniteCheckedException If transaction is group-lock and local node is not primary for key.
      * @return Mapping.
      */
     private GridDistributedTxMapping<K, V> map(GridCacheTxEntry<K, V> entry, long topVer,
-        GridDistributedTxMapping<K, V> cur) throws GridException {
+        GridDistributedTxMapping<K, V> cur) throws IgniteCheckedException {
         GridCacheContext<K, V> cacheCtx = entry.context();
 
         List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
@@ -649,7 +649,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         }
 
         if (tx.groupLock() && !primary.isLocal())
-            throw new GridException("Failed to prepare group lock transaction (local node is not primary for " +
+            throw new IgniteCheckedException("Failed to prepare group lock transaction (local node is not primary for " +
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
@@ -825,7 +825,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                             catch (GridCacheEntryRemovedException ignored) {
                                 // Retry.
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 // Fail the whole compound future.
                                 onError(nodeId, mappings, e);
 

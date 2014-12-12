@@ -119,14 +119,14 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
     private static class CheckpointCountingTestTask extends ComputeTaskAdapter<ClusterNode, Object> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable ClusterNode arg)
-            throws GridException {
+            throws IgniteCheckedException {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg.id()))
                     return Collections.singletonMap(new ComputeJobAdapter() {
                         @IgniteTaskSessionResource
                         private ComputeTaskSession ses;
 
-                        @Nullable @Override public Object execute() throws GridException {
+                        @Nullable @Override public Object execute() throws IgniteCheckedException {
                             ses.saveCheckpoint("checkpoint-key", "checkpoint-value");
 
                             return null;
@@ -141,7 +141,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return null;
         }
     }

@@ -41,7 +41,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws GridException {
+    @Override public Serializable execute() throws IgniteCheckedException {
         assert taskSes != null;
 
         ClassLoader ldr = getClass().getClassLoader();

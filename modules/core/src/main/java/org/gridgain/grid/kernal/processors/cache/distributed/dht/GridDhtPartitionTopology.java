@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -59,18 +59,18 @@ public interface GridDhtPartitionTopology<K, V> {
      * Pre-initializes this topology.
      *
      * @param exchId Exchange ID for this pre-initialization.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionExchangeId exchId) throws GridException;
+    public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
 
     /**
      * Post-initializes this topology.
      *
      * @param exchId Exchange ID for this post-initialization.
      * @return {@code True} if mapping was changed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws GridException;
+    public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
 
     /**
      * @param topVer Topology version at the time of creation.

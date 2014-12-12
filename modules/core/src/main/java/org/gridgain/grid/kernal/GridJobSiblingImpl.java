@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -129,7 +129,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Comp
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() throws GridException {
+    @Override public void cancel() throws IgniteCheckedException {
         GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
         if (ses == null) {
@@ -152,7 +152,7 @@ public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements Comp
                 try {
                     ctx.io().send(node, TOPIC_JOB_CANCEL, new GridJobCancelRequest(ses.getId(), jobId), SYSTEM_POOL);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     // Avoid stack trace for left nodes.
                     if (ctx.discovery().node(node.id()) != null && ctx.discovery().pingNode(node.id()))
                         U.error(ctx.log(GridJobSiblingImpl.class), "Failed to send cancel request to node " +

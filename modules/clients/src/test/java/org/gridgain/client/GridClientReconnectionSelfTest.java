@@ -9,8 +9,8 @@
 
 package org.gridgain.client;
 
+import org.apache.ignite.*;
 import org.gridgain.client.impl.connection.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -213,9 +213,9 @@ public class GridClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @param idx Server index, same as in client configuration's servers property.
      * @param failOnConnect If {@code true} the server should fail incoming connection immediately.
      * @return Server instance.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridClientTestRestServer runServer(int idx, boolean  failOnConnect) throws GridException {
+    private GridClientTestRestServer runServer(int idx, boolean  failOnConnect) throws IgniteCheckedException {
         GridClientTestRestServer srv = new GridClientTestRestServer(FIRST_SERVER_PORT + idx, failOnConnect, log());
 
         srv.start();

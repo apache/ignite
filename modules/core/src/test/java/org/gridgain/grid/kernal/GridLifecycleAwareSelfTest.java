@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.gridgain.client.ssl.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -56,7 +56,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isValidSegment() throws GridException {
+        @Override public boolean isValidSegment() throws IgniteCheckedException {
             return true;
         }
     }
@@ -86,7 +86,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws GridException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
             // No-op.
         }
     }
@@ -98,12 +98,12 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws GridException {
+        @Override public void start() throws IgniteCheckedException {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws GridException {
+        @Override public void stop() throws IgniteCheckedException {
             lifecycleAware.stop();
         }
 
@@ -122,12 +122,12 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws GridException {
+        @Override public void start() throws IgniteCheckedException {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws GridException {
+        @Override public void stop() throws IgniteCheckedException {
             lifecycleAware.stop();
         }
 

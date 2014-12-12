@@ -348,7 +348,7 @@ public class IgniteJavaLogger extends GridMetadataAwareAdapter implements Ignite
         try {
             fileHnd.nodeId(nodeId);
         }
-        catch (GridException | IOException e) {
+        catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);
         }
     }

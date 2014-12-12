@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * Exception thrown from non-transactional cache in case when update succeeded only partially.
  * One can get list of keys for which update failed with method {@link #failedKeys()}.
  */
-public class GridCachePartialUpdateException extends GridException {
+public class GridCachePartialUpdateException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

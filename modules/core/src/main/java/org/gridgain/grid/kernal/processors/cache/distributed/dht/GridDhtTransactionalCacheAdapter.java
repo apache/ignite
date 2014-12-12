@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -64,7 +64,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         super.start();
 
         preldr = new GridDhtPreloader<>(ctx);
@@ -116,14 +116,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      * @param res Response.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable GridDhtTxRemote<K, V> startRemoteTx(UUID nodeId,
         GridDhtLockRequest<K, V> req,
         GridDhtLockResponse<K, V> res)
-        throws GridException, GridDistributedLockCancelledException {
+        throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<K> keys = req.keys();
         List<GridCacheTxEntry<K, V>> writes = req.writeEntries();
 
@@ -398,12 +398,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             fail = true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             String err = "Failed processing DHT lock request: " + req;
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), new GridException(err, e));
+            res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), new IgniteCheckedException(err, e));
 
             fail = true;
         }
@@ -431,7 +431,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 fail = true;
                 releaseAll = true;
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send lock reply to node (lock will not be acquired): " + nodeId, e);
 
                 fail = true;
@@ -779,7 +779,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (tx != null)
                                         tx.rollback();
 
-                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), new GridException(msg));
+                                    return new GridDhtFinishedFuture<>(ctx.kernalContext(), new IgniteCheckedException(msg));
                                 }
 
                                 tx.topologyVersion(req.topologyVersion());
@@ -828,7 +828,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                                             // Check for error.
                                                             f.get();
                                                         }
-                                                        catch (GridException e1) {
+                                                        catch (IgniteCheckedException e1) {
                                                             resp.error(e1);
                                                         }
 
@@ -875,7 +875,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 });
                         }
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         String err = "Failed to unmarshal at least one of the keys for lock request message: " + req;
 
                         U.error(log, err, e);
@@ -884,13 +884,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             try {
                                 tx.rollback();
                             }
-                            catch (GridException ex) {
+                            catch (IgniteCheckedException ex) {
                                 U.error(log, "Failed to rollback the transaction: " + tx, ex);
                             }
                         }
 
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(),
-                            new GridException(err, e));
+                            new IgniteCheckedException(err, e));
                     }
                 }
             },
@@ -1025,7 +1025,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             return res;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to get value for lock reply message for node [node=" +
                 U.toShortString(nearNode) + ", req=" + req + ']', e);
 
@@ -1059,7 +1059,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class))
                 ctx.io().send(nearNode, res);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send lock reply to originating node (will rollback transaction) [node=" +
                 U.toShortString(nearNode) + ", req=" + req + ']', e);
 
@@ -1186,7 +1186,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param readers Readers for this entry.
      * @param dhtMap DHT map.
      * @param nearMap Near map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void map(UUID nodeId,
         long topVer,
@@ -1194,7 +1194,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<UUID> readers,
         Map<ClusterNode, List<T2<K, byte[]>>> dhtMap,
         Map<ClusterNode, List<T2<K, byte[]>>> nearMap)
-        throws GridException {
+        throws IgniteCheckedException {
         Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
         ClusterNode primary = F.first(dhtNodes);
@@ -1234,12 +1234,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param entry Entry.
      * @param nodes Nodes.
      * @param map Map.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
     private void map(GridCacheEntryEx<K, V> entry,
         @Nullable Iterable<? extends ClusterNode> nodes,
-        Map<ClusterNode, List<T2<K, byte[]>>> map) throws GridException {
+        Map<ClusterNode, List<T2<K, byte[]>>> map) throws IgniteCheckedException {
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 List<T2<K, byte[]>> keys = map.get(n);
@@ -1347,7 +1347,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (log.isDebugEnabled())
                         log.debug("Received remove lock request for removed entry (will retry): " + entry);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to remove locks for keys: " + keys, e);
                 }
             }
@@ -1384,7 +1384,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (log.isDebugEnabled())
                     log.debug("Node left while sending unlock request: " + n);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send unlock request to node (will make best effort to complete): " + n, e);
             }
         }
@@ -1412,7 +1412,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (log.isDebugEnabled())
                         log.debug("Node left while sending unlock request: " + n);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send unlock request to node (will make best effort to complete): " + n, e);
                 }
             }
@@ -1422,9 +1422,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /**
      * @param key Key
      * @param ver Version.
-     * @throws GridException If invalidate failed.
+     * @throws IgniteCheckedException If invalidate failed.
      */
-    private void invalidateNearEntry(K key, GridCacheVersion ver) throws GridException {
+    private void invalidateNearEntry(K key, GridCacheVersion ver) throws IgniteCheckedException {
         GridCacheEntryEx<K, V> nearEntry = near().peekEx(key);
 
         if (nearEntry != null)

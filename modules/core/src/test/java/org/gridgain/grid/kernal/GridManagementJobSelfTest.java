@@ -1,13 +1,13 @@
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.task.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -123,7 +123,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
         protected ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object call() throws GridException {
+        @Nullable @Override public Object call() throws IgniteCheckedException {
             String threadName = Thread.currentThread().getName();
 
             assertFalse(threadName.startsWith(MGMT_THREAD_PREFIX));
@@ -139,7 +139,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
     @GridInternal
     private static class TestJobInternal implements Callable<Object>, Serializable {
         /** {@inheritDoc} */
-        @Nullable @Override public Object call() throws GridException {
+        @Nullable @Override public Object call() throws IgniteCheckedException {
             String threadName = Thread.currentThread().getName();
 
             assertTrue(threadName.startsWith(MGMT_THREAD_PREFIX));

@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;
 import java.util.*;
@@ -246,9 +246,9 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param errCode Error code.
      * @param err Error.
-     * @throws GridException Based on error code.
+     * @throws IgniteCheckedException Based on error code.
      */
-    public static void throwError(Integer errCode, String err) throws GridException {
+    public static void throwError(Integer errCode, String err) throws IgniteCheckedException {
         assert err != null;
         assert errCode != -1;
 
@@ -267,13 +267,13 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
         else if (errCode == ERR_GGFS_GENERIC)
             throw new IgniteFsException(err);
 
-        throw new GridException(err);
+        throw new IgniteCheckedException(err);
     }
 
     /**
-     * @throws GridException Based on error code.
+     * @throws IgniteCheckedException Based on error code.
      */
-    public void throwError() throws GridException {
+    public void throwError() throws IgniteCheckedException {
         throwError(errCode, err);
     }
 
@@ -287,7 +287,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     /**
      * @param e Error if occurred.
      */
-    public void error(GridException e) {
+    public void error(IgniteCheckedException e) {
         err = e.getMessage();
         errCode = errorCode(e);
     }
@@ -311,7 +311,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
      * @param e Exception to analyze.
      * @return Error code.
      */
-    private int errorCode(GridException e) {
+    private int errorCode(IgniteCheckedException e) {
         return errorCode(e, true);
     }
 
@@ -323,7 +323,7 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
      * @return Error code.
      */
     @SuppressWarnings("unchecked")
-    private int errorCode(GridException e, boolean checkIo) {
+    private int errorCode(IgniteCheckedException e, boolean checkIo) {
         if (X.hasCause(e, IgniteFsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
         else if (IgniteFsPathAlreadyExistsException.class.isInstance(e))

@@ -8,7 +8,7 @@
  */
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -48,7 +48,7 @@ public class GridBufferedParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, GridException {
+    @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
         GridNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
 
         // Decode for a given session is called per one thread, so there should not be any concurrency issues.
@@ -65,7 +65,7 @@ public class GridBufferedParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+    @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         byte[] msg0 = (byte[])msg;
 
         ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length + 4) : ByteBuffer.allocate(msg0.length + 4);

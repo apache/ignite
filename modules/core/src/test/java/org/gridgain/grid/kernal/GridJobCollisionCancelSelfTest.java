@@ -88,7 +88,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assert e.getCause() != null;
 
-            if (e.getCause() instanceof GridException)
+            if (e.getCause() instanceof IgniteCheckedException)
                 e = (Exception)e.getCause();
 
             if (e.getCause() instanceof IOException)

@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.service;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import java.util.*;
 
 /**
  * Exception thrown if service is not found.
  */
-public class GridServiceMethodNotFoundException extends GridRuntimeException {
+public class GridServiceMethodNotFoundException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

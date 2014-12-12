@@ -485,7 +485,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onError(e);
 
             return false;
@@ -694,7 +694,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 cctx.topology().readUnlock();
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onDone(e);
         }
     }
@@ -916,7 +916,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
             proceedMapping(mappings);
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             onError(ex);
         }
     }
@@ -926,10 +926,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * remote primary node.
      *
      * @param mappings Queue of mappings.
-     * @throws GridException If mapping can not be completed.
+     * @throws IgniteCheckedException If mapping can not be completed.
      */
     private void proceedMapping(final ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings)
-        throws GridException {
+        throws IgniteCheckedException {
         GridNearLockMapping<K, V> map = mappings.poll();
 
         // If there are no more mappings to process, complete the future.
@@ -968,7 +968,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                         }
 
                         if (res == null) {
-                            onError(new GridException("Lock response is null for future: " + this));
+                            onError(new IgniteCheckedException("Lock response is null for future: " + this));
 
                             return false;
                         }
@@ -1071,7 +1071,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             // Proceed and add new future (if any) before completing embedded future.
                             proceedMapping(mappings);
                         }
-                        catch (GridException ex) {
+                        catch (IgniteCheckedException ex) {
                             onError(ex);
 
                             return false;
@@ -1121,7 +1121,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             fut.onResult(ex);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             onError(e);
                         }
                     }
@@ -1135,10 +1135,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param key Key to map.
      * @param topVer Topology version.
      * @return Near lock mapping.
-     * @throws GridException If mapping for key failed.
+     * @throws IgniteCheckedException If mapping for key failed.
      */
     private GridNearLockMapping<K, V> map(K key, @Nullable GridNearLockMapping<K, V> mapping,
-        long topVer) throws GridException {
+        long topVer) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
@@ -1148,7 +1148,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             throw newTopologyException(null, primary.id());
 
         if (inTx() && tx.groupLock() && !primary.isLocal())
-            throw new GridException("Failed to start group lock transaction (local node is not primary for " +
+            throw new IgniteCheckedException("Failed to start group lock transaction (local node is not primary for " +
                 " key) [key=" + key + ", primaryNodeId=" + primary.id() + ']');
 
         if (mapping == null || !primary.id().equals(mapping.node().id()))
@@ -1340,7 +1340,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                         try {
                             if (res.dhtVersion(i) == null) {
-                                onDone(new GridException("Failed to receive DHT version from remote node " +
+                                onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
                                     "(will fail the lock): " + res));
 
                                 return;
@@ -1421,7 +1421,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             // Replace old entry with new one.
                             entries.set(i, (GridDistributedCacheEntry<K, V>)cctx.cache().entryEx(entry.key()));
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             onDone(e);
 
                             return;
@@ -1434,7 +1434,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 try {
                     proceedMapping(mappings);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     onDone(e);
                 }
 

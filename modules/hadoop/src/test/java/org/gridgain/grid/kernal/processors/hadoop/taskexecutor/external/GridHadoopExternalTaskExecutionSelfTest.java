@@ -128,7 +128,7 @@ public class GridHadoopExternalTaskExecutionSelfTest extends GridHadoopAbstractS
         try {
             fut.get();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             IOException exp = X.cause(e, IOException.class);
 
             assertNotNull(exp);

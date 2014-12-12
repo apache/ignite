@@ -83,11 +83,11 @@ public interface IgniteTransactions {
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws GridException If local node is not primary for any of provided keys.
+     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
     public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException;
+        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
@@ -119,11 +119,11 @@ public interface IgniteTransactions {
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws GridException If local node is not primary for any of provided keys.
+     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
     public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, GridException;
+        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does

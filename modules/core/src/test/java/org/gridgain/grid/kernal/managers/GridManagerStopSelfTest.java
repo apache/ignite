@@ -9,20 +9,10 @@
 
 package org.gridgain.grid.kernal.managers;
 
+import org.apache.ignite.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.checkpoint.*;
-import org.gridgain.grid.kernal.managers.collision.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.kernal.managers.discovery.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.kernal.managers.failover.*;
-import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.gridgain.grid.kernal.managers.swapspace.*;
-import org.gridgain.grid.kernal.processors.resource.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
@@ -38,6 +28,16 @@ import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.gridgain.grid.kernal.managers.checkpoint.*;
+import org.gridgain.grid.kernal.managers.collision.*;
+import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.managers.discovery.*;
+import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.managers.failover.*;
+import org.gridgain.grid.kernal.managers.loadbalancer.*;
+import org.gridgain.grid.kernal.managers.swapspace.*;
+import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -67,9 +67,9 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param target Target spi.
-     * @throws GridException If injection failed.
+     * @throws IgniteCheckedException If injection failed.
      */
-    private void injectLogger(IgniteSpi target) throws GridException {
+    private void injectLogger(IgniteSpi target) throws IgniteCheckedException {
         ctx.resource().injectBasicResource(
             target,
             IgniteLoggerResource.class,
@@ -119,6 +119,8 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         ctx.config().setMarshaller(new IgniteOptimizedMarshaller());
 
         GridIoManager mgr = new GridIoManager(ctx);
+
+        mgr.onKernalStop(true);
 
         mgr.stop(false);
     }

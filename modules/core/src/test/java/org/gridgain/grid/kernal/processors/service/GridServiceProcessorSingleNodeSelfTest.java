@@ -43,7 +43,7 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
 
             fail("Should never reach here.");
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             info("Got expected exception: " + e.getMessage());
         }
     }

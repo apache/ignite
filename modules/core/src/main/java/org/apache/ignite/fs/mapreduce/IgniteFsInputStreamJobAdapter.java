@@ -26,7 +26,7 @@ import java.io.*;
 public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
     /** {@inheritDoc} */
     @Override public final Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
-        throws GridException, IOException {
+        throws IgniteCheckedException, IOException {
         in.seek(range.start());
 
         return execute(ggfs, new IgniteFsRangeInputStream(in, range));
@@ -38,8 +38,8 @@ public abstract class IgniteFsInputStreamJobAdapter extends IgniteFsJobAdapter {
      * @param ggfs GGFS instance.
      * @param in Input stream.
      * @return Execution result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      * @throws IOException If IO exception encountered while working with stream.
      */
-    public abstract Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws GridException, IOException;
+    public abstract Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws IgniteCheckedException, IOException;
 }

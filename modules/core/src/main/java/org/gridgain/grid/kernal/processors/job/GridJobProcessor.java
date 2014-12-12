@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.job;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -176,9 +177,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (metricsUpdateFreq < -1)
-            throw new GridException("Invalid value for 'metricsUpdateFrequency' configuration property " +
+            throw new IgniteCheckedException("Invalid value for 'metricsUpdateFrequency' configuration property " +
                 "(should be greater than or equals to -1): " + metricsUpdateFreq);
 
         if (metricsUpdateFreq == -1)
@@ -291,7 +292,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sndReply {@code True} to send reply.
      */
     private void rejectJob(GridJobWorker job, boolean sndReply) {
-        GridException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
+        IgniteCheckedException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
             job.getSession().getId() + ", jobId=" + job.getJobId() + ", job=" + job.getJob() + ']');
 
         job.finishJob(null, e, sndReply);
@@ -325,9 +326,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * @param ses Session.
      * @param attrs Attributes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void setAttributes(GridJobSessionImpl ses, Map<?, ?> attrs) throws GridException {
+    public void setAttributes(GridJobSessionImpl ses, Map<?, ?> attrs) throws IgniteCheckedException {
         assert ses.isFullSupport();
 
         long timeout = ses.getEndTime() - U.currentTimeMillis();
@@ -344,7 +345,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ClusterNode taskNode = ctx.discovery().node(ses.getTaskNodeId());
 
         if (taskNode == null)
-            throw new GridException("Node that originated task execution has left grid: " +
+            throw new IgniteCheckedException("Node that originated task execution has left grid: " +
                 ses.getTaskNodeId());
 
         boolean loc = ctx.localNodeId().equals(taskNode.id()) && !ctx.config().isMarshalLocalJobs();
@@ -368,9 +369,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * @param ses Session.
      * @return Siblings.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Collection<ComputeJobSibling> requestJobSiblings(final ComputeTaskSession ses) throws GridException {
+    public Collection<ComputeJobSibling> requestJobSiblings(final ComputeTaskSession ses) throws IgniteCheckedException {
         assert ses != null;
 
         final UUID taskNodeId = ses.getTaskNodeId();
@@ -378,7 +379,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ClusterNode taskNode = ctx.discovery().node(taskNodeId);
 
         if (taskNode == null)
-            throw new GridException("Node that originated task execution has left grid: " + taskNodeId);
+            throw new IgniteCheckedException("Node that originated task execution has left grid: " + taskNodeId);
 
         // Tuple: error message-response.
         final IgniteBiTuple<String, GridJobSiblingsResponse> t = F.t2();
@@ -404,7 +405,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     try {
                         res.unmarshalSiblings(marsh);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal job siblings.", e);
 
                         err = e.getMessage();
@@ -473,7 +474,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             taskNode = ctx.discovery().node(taskNodeId);
 
             if (taskNode == null)
-                throw new GridException("Node that originated task execution has left grid: " + taskNodeId);
+                throw new IgniteCheckedException("Node that originated task execution has left grid: " + taskNodeId);
 
             // 6. Wait for result.
             lock.lock();
@@ -485,18 +486,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     cond.await(netTimeout, MILLISECONDS);
 
                 if (t.isEmpty())
-                    throw new GridException("Timed out waiting for job siblings (consider increasing" +
+                    throw new IgniteCheckedException("Timed out waiting for job siblings (consider increasing" +
                         "'networkTimeout' configuration property) [ses=" + ses + ", netTimeout=" + netTimeout + ']');
 
                 // Error is set?
                 if (t.get1() != null)
-                    throw new GridException(t.get1());
+                    throw new IgniteCheckedException(t.get1());
                 else
                     // Return result
                     return t.get2().jobSiblings();
             }
             catch (InterruptedException e) {
-                throw new GridException("Interrupted while waiting for job siblings response: " + ses, e);
+                throw new IgniteCheckedException("Interrupted while waiting for job siblings response: " + ses, e);
             }
             finally {
                 lock.unlock();
@@ -1009,8 +1010,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                         jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
                     }
-                    catch (GridException e) {
-                        GridException ex = new GridException("Failed to deserialize task attributes [taskName=" +
+                    catch (IgniteCheckedException e) {
+                        IgniteCheckedException ex = new IgniteCheckedException("Failed to deserialize task attributes [taskName=" +
                             req.getTaskName() + ", taskClsName=" + req.getTaskClassName() + ", codeVer=" +
                             req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
@@ -1090,7 +1091,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Deployment is null.
-                    GridException ex = new GridDeploymentException("Task was not deployed or was redeployed since " +
+                    IgniteCheckedException ex = new GridDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
                         ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
                         ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
@@ -1173,7 +1174,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job has been removed from another thread, we need to reject it
             // here since job has never been executed.
-            GridException e2 = new ComputeExecutionRejectedException(
+            IgniteCheckedException e2 = new ComputeExecutionRejectedException(
                 "Job was cancelled before execution [jobSes=" + jobWorker.
                     getSession() + ", job=" + jobWorker.getJob() + ']');
 
@@ -1221,7 +1222,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job was removed from another thread, we need to reject it
             // here since job has never been executed.
-            GridException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
+            IgniteCheckedException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
             if (metricsUpdateFreq > -1L)
@@ -1241,7 +1242,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param ex Exception that happened.
      * @param endTime Job end time.
      */
-    private void handleException(ClusterNode node, GridJobExecuteRequest req, GridException ex, long endTime) {
+    private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteCheckedException ex, long endTime) {
         UUID locNodeId = ctx.localNodeId();
 
         ClusterNode sndNode = ctx.discovery().node(node.id());
@@ -1319,7 +1320,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // Send response to common topic as unordered message.
                 ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
             if (isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
@@ -1399,7 +1400,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ses.setInternal(attrs);
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session attributes.", e);
         }
         finally {

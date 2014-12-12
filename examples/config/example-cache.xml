@@ -68,77 +68,6 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <!--
-                    Partitioned cache example configuration with portable objects enabled (Atomic mode).
-                    Used in .NET, C++ and Java client examples that are available only in
-                    enterprise edition.
-                -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned_portable"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-                    <property name="backups" value="1"/>
-                    <property name="portableEnabled" value="true"/>
-                    <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
-                            <property name="typeMetadata">
-                                <list>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
-                                        <property name="type" value="Organization"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
-                                        <property name="type" value="EmployeeKey"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="organizationId" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                    </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
-                                        <property name="type" value="Employee"/>
-                                        <property name="ascendingFields">
-                                            <map>
-                                                <entry key="address.zip" value="java.lang.Integer"/>
-                                            </map>
-                                        </property>
-                                        <property name="queryFields">
-                                            <map>
-                                                <entry key="name" value="java.lang.String"/>
-                                                <entry key="salary" value="java.lang.Long"/>
-                                            </map>
-                                        </property>
-                                        <property name="textFields">
-                                            <list>
-                                                <value>address.street</value>
-                                            </list>
-                                        </property>
-                                    </bean>
-                                </list>
-                            </property>
-                        </bean>
-                    </property>
-                </bean>
-
-                <!--
-                    Partitioned cache example configuration with portable objects enabled (Transactional mode).
-                    Used in .NET, C++ and Java client examples that are available only in
-                    enterprise edition.
-                -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned_portable_tx"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
-                    <property name="backups" value="1"/>
-                    <property name="portableEnabled" value="true"/>
-                </bean>
-
                 <!-- Replicated cache example configuration (Atomic mode). -->
                 <bean parent="cache-template">
                     <property name="name" value="replicated"/>
@@ -191,15 +120,6 @@
                 </property>
             </bean>
         </property>
-
-        <!-- Allow indexing SPI to index primitive values (required for CachePopularNumbersExample). -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <property name="defaultIndexPrimitiveKey" value="true"/>
-                </bean>
-            </list>
-        </property>
     </bean>
 
     <!-- Template for all example cache configurations. -->
@@ -215,5 +135,13 @@
 
         <!-- Set to true to enable indexing for query examples, default value is false. -->
         <property name="queryIndexEnabled" value="true"/>
+
+        <!-- Allow to index primitive values. -->
+        <property name="queryConfiguration">
+            <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                <!-- Index primitives. -->
+                <property name="indexPrimitiveKey" value="true"/>
+            </bean>
+        </property>
     </bean>
 </beans>

@@ -42,10 +42,10 @@ public interface IgniteFsJob {
      * @param in Input stream for split file. This input stream is not aligned to range and points to file start
      *     by default.
      * @return Execution result.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      * @throws IOException If file system operation resulted in IO exception.
      */
-    public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in) throws GridException,
+    public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in) throws IgniteCheckedException,
         IOException;
 
     /**

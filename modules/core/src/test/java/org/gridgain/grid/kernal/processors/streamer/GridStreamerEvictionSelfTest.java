@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -91,7 +91,7 @@ public class GridStreamerEvictionSelfTest extends GridCommonAbstractTest {
         SC stage = new SC() {
             @SuppressWarnings("unchecked")
             @Override public Map<String, Collection<?>> applyx(String stageName, StreamerContext ctx,
-                Collection<Object> evts) throws GridException {
+                Collection<Object> evts) throws IgniteCheckedException {
                 assert evts.size() == 1;
 
                 if (ctx.nextStageName() == null) {

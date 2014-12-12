@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.cloner;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -43,8 +43,8 @@ import org.jetbrains.annotations.*;
 public interface GridCacheCloner {
     /**
      * @param val Object to make a clone for.
-     * @throws GridException If failed to clone given object.
+     * @throws IgniteCheckedException If failed to clone given object.
      * @return Clone for given object.
      */
-    @Nullable public <T> T cloneValue(T val) throws GridException;
+    @Nullable public <T> T cloneValue(T val) throws IgniteCheckedException;
 }

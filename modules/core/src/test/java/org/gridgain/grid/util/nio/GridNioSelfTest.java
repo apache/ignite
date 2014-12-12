@@ -8,12 +8,12 @@
  */
 package org.gridgain.grid.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -642,7 +642,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                                     if (!Arrays.equals(data, res)) {
                                         info("Invalid response received.");
 
-                                        err.compareAndSet(null, new GridException("Invalid response received."));
+                                        err.compareAndSet(null, new IgniteCheckedException("Invalid response received."));
 
                                         barrier.reset();
 
@@ -650,7 +650,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                                     }
                                 }
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 info("Encountered unexpected exception: " + e);
 
                                 err.compareAndSet(null, e);
@@ -987,17 +987,17 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @param port Port to connect to.
      * @param locHost Local host.
      * @return Created client.
-     * @throws GridException If client cannot be created.
+     * @throws IgniteCheckedException If client cannot be created.
      */
-    protected TestClient createClient(InetAddress addr, int port, InetAddress locHost) throws GridException {
+    protected TestClient createClient(InetAddress addr, int port, InetAddress locHost) throws IgniteCheckedException {
         return new TestClient(createSocket(), addr, port, 0);
     }
 
     /**
      * @return Created socket.
-     * @throws GridException If socket creation failed.
+     * @throws IgniteCheckedException If socket creation failed.
      */
-    protected Socket createSocket() throws GridException {
+    protected Socket createSocket() throws IgniteCheckedException {
         return new Socket();
     }
 
@@ -1103,9 +1103,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      *
      * @param msg Message to serialize.
      * @return Serialized message.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private <T extends Serializable> byte[] serializeMessage(T msg) throws GridException {
+    private <T extends Serializable> byte[] serializeMessage(T msg) throws IgniteCheckedException {
         return getTestResources().getMarshaller().marshal(msg);
     }
 
@@ -1115,10 +1115,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @param data Serialized data.
      * @param <T> Message type.
      * @return Deserialized message.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    private <T> T deserializeMessage(byte[] data) throws GridException {
+    private <T> T deserializeMessage(byte[] data) throws IgniteCheckedException {
         return getTestResources().getMarshaller().<T>unmarshal(data, getClass().getClassLoader());
     }
 
@@ -1290,9 +1290,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
          * @param addr Address to connect to.
          * @param port Port to connect to.
          * @param connTimeout Connection timeout.
-         * @throws GridException If connect failed.
+         * @throws IgniteCheckedException If connect failed.
          */
-        private TestClient(Socket sock, InetAddress addr, int port, int connTimeout) throws GridException {
+        private TestClient(Socket sock, InetAddress addr, int port, int connTimeout) throws IgniteCheckedException {
             this.sock = sock;
 
             try {
@@ -1308,7 +1308,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             catch (IOException e) {
                 close();
 
-                throw new GridException(e);
+                throw new IgniteCheckedException(e);
             }
         }
 
@@ -1424,7 +1424,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, GridException {
+        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
             // IO manager creates array ready to send.
             return msg instanceof byte[] ? ByteBuffer.wrap((byte[])msg) : (ByteBuffer)msg;
         }

@@ -9,9 +9,10 @@
 
 package org.gridgain.grid.kernal.managers;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.tostring.*;
+
 import java.util.*;
 
 /**
@@ -25,9 +26,9 @@ public interface GridManager extends GridComponent {
      * Adds attributes from underlying SPI to map of all attributes.
      *
      * @param attrs Map of all attributes gotten from SPI's so far.
-     * @throws GridException Wrapper for exception thrown by underlying SPI.
+     * @throws IgniteCheckedException Wrapper for exception thrown by underlying SPI.
      */
-    public void addSpiAttributes(Map<String, Object> attrs) throws GridException;
+    public void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException;
 
     /**
      * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}

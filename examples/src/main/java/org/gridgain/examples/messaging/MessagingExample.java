@@ -43,7 +43,7 @@ public final class MessagingExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
@@ -92,9 +92,9 @@ public final class MessagingExample {
      * Start listening to messages on all grid nodes within passed in projection.
      *
      * @param msg Grid messaging.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void startListening(IgniteMessaging msg) throws GridException {
+    private static void startListening(IgniteMessaging msg) throws IgniteCheckedException {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
@@ -106,7 +106,7 @@ public final class MessagingExample {
                 try {
                     g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
 
@@ -125,7 +125,7 @@ public final class MessagingExample {
                 try {
                     g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
 

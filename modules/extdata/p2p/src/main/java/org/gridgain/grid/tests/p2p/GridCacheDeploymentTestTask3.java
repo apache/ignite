@@ -25,7 +25,7 @@ import java.util.*;
 public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable T2<ClusterNode, String> tup) throws GridException {
+        @Nullable T2<ClusterNode, String> tup) throws IgniteCheckedException {
         final String val = tup.getValue();
 
         return F.asMap(
@@ -33,7 +33,7 @@ public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterN
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @Override public Object execute() throws GridException {
+                    @Override public Object execute() throws IgniteCheckedException {
                         X.println("Executing GridCacheDeploymentTestTask3 job on node " +
                                 ignite.cluster().localNode().id());
 
@@ -48,7 +48,7 @@ public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterN
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return null;
     }
 }

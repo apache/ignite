@@ -270,14 +270,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void isolated(boolean isolated) throws GridException {
+    @Override public void isolated(boolean isolated) throws IgniteCheckedException {
         if (isolated())
             return;
 
         ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
         if (node == null)
-            throw new GridException("Failed to get node for cache: " + cacheName);
+            throw new IgniteCheckedException("Failed to get node for cache: " + cacheName);
 
         GridCacheAttributes a = U.cacheAttributes(node, cacheName);
 
@@ -365,7 +365,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             return resFut;
         }
-        catch (GridRuntimeException e) {
+        catch (IgniteException e) {
             return new GridFinishedFuture<>(ctx, e);
         }
         finally {
@@ -374,21 +374,21 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IllegalStateException {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(K key, V val) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(K key, V val) throws IgniteCheckedException, IllegalStateException {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeData(K key) throws GridException, IllegalStateException {
+    @Override public IgniteFuture<?> removeData(K key) throws IgniteCheckedException, IllegalStateException {
         return addData(key, null);
     }
 
@@ -407,7 +407,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         assert entries != null;
 
         if (remaps >= MAX_REMAP_CNT) {
-            resFut.onDone(new GridException("Failed to finish operation (too many remaps): " + remaps));
+            resFut.onDone(new IgniteCheckedException("Failed to finish operation (too many remaps): " + remaps));
 
             return;
         }
@@ -432,7 +432,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 node = ctx.affinity().mapKeyToNode(cacheName, key);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 resFut.onDone(e);
 
                 return;
@@ -479,12 +479,12 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         if (activeKeys.isEmpty())
                             resFut.onDone();
                     }
-                    catch (GridException e1) {
+                    catch (IgniteCheckedException e1) {
                         if (log.isDebugEnabled())
                             log.debug("Future finished with error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
                         if (cancelled) {
-                            resFut.onDone(new GridException("Data loader has been cancelled: " +
+                            resFut.onDone(new IgniteCheckedException("Data loader has been cancelled: " +
                                 IgniteDataLoaderImpl.this, e1));
                         }
                         else
@@ -518,9 +518,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /**
      * Performs flush.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void doFlush() throws GridException {
+    private void doFlush() throws IgniteCheckedException {
         lastFlushTime = U.currentTimeMillis();
 
         List<IgniteFuture> activeFuts0 = null;
@@ -567,7 +567,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     try {
                         fut.get();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to flush buffer: " + e);
 
@@ -605,7 +605,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public void flush() throws GridException {
+    @Override public void flush() throws IgniteCheckedException {
         enterBusy();
 
         try {
@@ -640,9 +640,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /**
      * @param cancel {@code True} to close with cancellation.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void close(boolean cancel) throws GridException {
+    @Override public void close(boolean cancel) throws IgniteCheckedException {
         if (!closed.compareAndSet(false, true))
             return;
 
@@ -651,7 +651,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (log.isDebugEnabled())
             log.debug("Closing data loader [ldr=" + this + ", cancel=" + cancel + ']');
 
-        GridException e = null;
+        IgniteCheckedException e = null;
 
         try {
             // Assuming that no methods are called on this loader after this method is called.
@@ -668,7 +668,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             ctx.io().removeMessageListener(topic);
         }
-        catch (GridException e0) {
+        catch (IgniteCheckedException e0) {
             e = e0;
         }
 
@@ -686,7 +686,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         close(false);
     }
 
@@ -802,7 +802,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                 submit(entries0, curFut0);
 
                 if (cancelled)
-                    curFut0.onDone(new GridException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this));
+                    curFut0.onDone(new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this));
             }
 
             return curFut0;
@@ -910,7 +910,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                             curFut.onDone(t.get());
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             curFut.onDone(e);
                         }
                     }
@@ -949,7 +949,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     if (topicBytes == null)
                         topicBytes = ctx.config().getMarshaller().marshal(topic);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal (request will not be sent).", e);
 
                     return;
@@ -971,7 +971,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         if (cache != null)
                             cache.context().deploy().onEnter();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         U.error(log, "Failed to deploy class (request will not be sent): " + jobPda0.deployClass(), e);
 
                         return;
@@ -1007,7 +1007,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
                         ((GridFutureAdapter<Object>)fut).onDone(e);
                     else
@@ -1071,8 +1071,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                         errBytes,
                         jobPda0 != null ? jobPda0.classLoader() : U.gridClassLoader());
                 }
-                catch (GridException e) {
-                    f.onDone(null, new GridException("Failed to unmarshal response.", e));
+                catch (IgniteCheckedException e) {
+                    f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
 
                     return;
                 }
@@ -1088,13 +1088,13 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
          *
          */
         void cancelAll() {
-            GridException err = new GridException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this);
+            IgniteCheckedException err = new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this);
 
             for (IgniteFuture<?> f : locFuts) {
                 try {
                     f.cancel();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to cancel mini-future.", e);
                 }
             }

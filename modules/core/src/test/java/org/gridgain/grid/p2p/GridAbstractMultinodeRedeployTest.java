@@ -96,7 +96,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 int[] res2 = fut2.get();
 
                 if (res1 == null || res2 == null || res1.length != 2 || res2.length != 2)
-                    throw new GridException("Received wrong result.");
+                    throw new IgniteCheckedException("Received wrong result.");
             }
         }
         finally {

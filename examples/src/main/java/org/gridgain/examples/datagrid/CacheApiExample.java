@@ -33,9 +33,9 @@ public class CacheApiExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
@@ -55,9 +55,9 @@ public class CacheApiExample {
      * Demonstrates cache operations similar to {@link ConcurrentMap} API. Note that
      * cache API is a lot richer than the JDK {@link ConcurrentMap}.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void atomicMapOperations() throws GridException {
+    private static void atomicMapOperations() throws IgniteCheckedException {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
@@ -80,7 +80,7 @@ public class CacheApiExample {
                 try {
                     System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     e.printStackTrace();
                 }
             }

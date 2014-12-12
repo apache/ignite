@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache.datastructures;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This interface provides a rich API for working with distributed atomic reference.
@@ -53,17 +53,17 @@ public interface GridCacheAtomicReference<T> {
      * Gets current value of an atomic reference.
      *
      * @return current value of an atomic reference.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public T get() throws GridException;
+    public T get() throws IgniteCheckedException;
 
     /**
      * Unconditionally sets the value.
      *
      * @param val Value.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public void set(T val) throws GridException;
+    public void set(T val) throws IgniteCheckedException;
 
     /**
      * Conditionally sets the new value. That will be set if {@code expVal} is equal
@@ -72,9 +72,9 @@ public interface GridCacheAtomicReference<T> {
      * @param expVal Expected value.
      * @param newVal New value.
      * @return Result of operation execution. If {@code true} than value have been updated.
-     * @throws GridException If operation failed.
+     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean compareAndSet(T expVal, T newVal) throws GridException;
+    public boolean compareAndSet(T expVal, T newVal) throws IgniteCheckedException;
 
     /**
      * Gets status of atomic.

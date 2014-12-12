@@ -9,6 +9,7 @@
 
 package org.apache.ignite.compute;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 
@@ -31,7 +32,7 @@ public interface ComputeJobSibling extends GridMetadataAware {
     /**
      * Sends a request to cancel this sibling.
      *
-     * @throws GridException If cancellation message could not be sent.
+     * @throws IgniteCheckedException If cancellation message could not be sent.
      */
-    public void cancel() throws GridException;
+    public void cancel() throws IgniteCheckedException;
 }

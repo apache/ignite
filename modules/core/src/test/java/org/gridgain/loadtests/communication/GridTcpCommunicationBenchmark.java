@@ -212,7 +212,7 @@
 //                        sndComm.sendMessage(rcvNode, buf, 0, len);
 //                    }
 //                }
-//                catch (GridException e) {
+//                catch (IgniteCheckedException e) {
 //                    X.println("Message send failed", e);
 //                }
 //                catch (InterruptedException ignored) {
@@ -283,7 +283,7 @@
 //
 //                    map.get(testMsg.id()).countDown();
 //                }
-//                catch (GridException e) {
+//                catch (IgniteCheckedException e) {
 //                    U.error(log, "Failed to ", e);
 //                }
 //                finally {
@@ -341,7 +341,7 @@
 //                        msgCntr.increment();
 //                    }
 //                }
-//                catch (GridException e) {
+//                catch (IgniteCheckedException e) {
 //                    X.println("Message send failed", e);
 //                }
 //                catch (InterruptedException ignored) {
@@ -415,7 +415,7 @@
 //                try {
 //                    msg = getTestResources().getMarshaller().unmarshal(buf, U.gridClassLoader());
 //                }
-//                catch (GridException e) {
+//                catch (IgniteCheckedException e) {
 //                    U.error(log, "Failed to unmarshal message.", e);
 //
 //                    fail();
@@ -492,7 +492,7 @@
 //                        }
 //                    }
 //                }
-//                catch (GridException e) {
+//                catch (IgniteCheckedException e) {
 //                    X.println("Message send failed", e);
 //                }
 //

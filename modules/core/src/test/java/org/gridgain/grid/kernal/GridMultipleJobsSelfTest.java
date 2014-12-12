@@ -125,7 +125,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         final AtomicInteger resCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (true) {
                     int cnt = jobsCnt.incrementAndGet();
 
@@ -138,7 +138,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         job = jobCls.newInstance();
                     }
                     catch (Exception e) {
-                        throw new GridException("Could not instantiate a job.", e);
+                        throw new IgniteCheckedException("Could not instantiate a job.", e);
                     }
 
                     IgniteCompute comp = ignite1.compute().enableAsync();
@@ -151,7 +151,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         X.println("Submitted jobs: " + cnt);
 
                     fut.listenAsync(new CIX1<IgniteFuture<Boolean>>() {
-                        @Override public void applyx(IgniteFuture<Boolean> f) throws GridException {
+                        @Override public void applyx(IgniteFuture<Boolean> f) throws IgniteCheckedException {
                             try {
                                 assert f.get();
                             }

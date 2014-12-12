@@ -36,7 +36,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws GridException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
         Collection<ComputeJob> jobs = new ArrayList<>();
 
         for (int i = 0; i < gridSize; i++)
@@ -46,7 +46,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         ComputeJobResultPolicy superRes = super.result(res, rcvd);
 
         // Deny failover.
@@ -57,7 +57,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         int stoppedCnt = 0;
 
         for (ComputeJobResult res : results)

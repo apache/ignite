@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 
 /**
@@ -20,9 +20,9 @@ public interface GridRestProtocolHandler {
     /**
      * @param req Request.
      * @return Response.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public GridRestResponse handle(GridRestRequest req) throws GridException;
+    public GridRestResponse handle(GridRestRequest req) throws IgniteCheckedException;
 
     /**
      * @param req Request.

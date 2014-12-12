@@ -44,14 +44,14 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class WordCountTask extends GridGgfsTask&lt;String, Integer&gt; {
  *     &#64;Override
- *     public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range, GridGgfsTaskArgs&lt;T&gt; args) throws GridException {
+ *     public GridGgfsJob createJob(GridGgfsPath path, GridGgfsFileRange range, GridGgfsTaskArgs&lt;T&gt; args) throws IgniteCheckedException {
  *         // New job will be created for each range within each file.
  *         // We pass user-provided argument (which is essentially a word to look for) to that job.
  *         return new WordCountJob(args.userArgument());
  *     }
  *
  *     // Aggregate results into one compound result.
- *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws GridException {
+ *     public Integer reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
  *         Integer total = 0;
  *
  *         for (GridComputeJobResult res : results) {
@@ -77,7 +77,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
 
     /** {@inheritDoc} */
     @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable IgniteFsTaskArgs<T> args) throws GridException {
+        @Nullable IgniteFsTaskArgs<T> args) throws IgniteCheckedException {
         assert ignite != null;
         assert args != null;
 
@@ -95,7 +95,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                 if (args.skipNonExistentFiles())
                     continue;
                 else
-                    throw new GridException("Failed to process GGFS file because it doesn't exist: " + path);
+                    throw new IgniteCheckedException("Failed to process GGFS file because it doesn't exist: " + path);
             }
 
             Collection<IgniteFsBlockLocation> aff = ggfs.affinity(path, 0, file.length(), args.maxRangeLength());
@@ -113,7 +113,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                 }
 
                 if (node == null)
-                    throw new GridException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
+                    throw new IgniteCheckedException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
                         ", subgrid=" + subgrid + ']');
 
                 IgniteFsJob job = createJob(path, new IgniteFsFileRange(file.path(), loc.start(), loc.length()), args);
@@ -143,10 +143,10 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
      *      realigned to record boundaries on destination node.
      * @param args Task argument.
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
-     * @throws GridException If job creation failed.
+     * @throws IgniteCheckedException If job creation failed.
      */
     @Nullable public abstract IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-        IgniteFsTaskArgs<T> args) throws GridException;
+        IgniteFsTaskArgs<T> args) throws IgniteCheckedException;
 
     /**
      * Maps list by node ID.

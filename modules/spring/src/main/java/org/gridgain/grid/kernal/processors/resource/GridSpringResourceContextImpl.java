@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.resource;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 import org.springframework.aop.framework.*;
 import org.springframework.context.*;
@@ -43,13 +43,13 @@ public class GridSpringResourceContextImpl implements GridSpringResourceContext 
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrapTarget(Object target) throws GridException {
+    @Override public Object unwrapTarget(Object target) throws IgniteCheckedException {
         if (target instanceof Advised) {
             try {
                 return ((Advised)target).getTargetSource().getTarget();
             }
             catch (Exception e) {
-                throw new GridException("Failed to unwrap Spring proxy target [cls=" + target.getClass().getName() +
+                throw new IgniteCheckedException("Failed to unwrap Spring proxy target [cls=" + target.getClass().getName() +
                     ", target=" + target + ']', e);
             }
         }

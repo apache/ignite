@@ -58,7 +58,7 @@ public class GridifySetToValueSpringAspect extends GridifySetToValueAbstractAspe
         String gridName = F.isEmpty(ann.gridName()) ? null : ann.gridName();
 
         if (G.state(gridName) != STARTED)
-            throw new GridException("Grid is not locally started: " + gridName);
+            throw new IgniteCheckedException("Grid is not locally started: " + gridName);
 
         GridifyNodeFilter nodeFilter = null;
 

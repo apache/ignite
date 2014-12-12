@@ -37,9 +37,9 @@ public class CacheSetExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws GridException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws GridException {
+    public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache set example started.");
@@ -63,9 +63,9 @@ public class CacheSetExample {
      * @param g Grid.
      * @param setName Name of set.
      * @return Set.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private static GridCacheSet<String> initializeSet(Ignite g, String setName) throws GridException {
+    private static GridCacheSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
         // Initialize new set.
         GridCacheSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
 
@@ -82,9 +82,9 @@ public class CacheSetExample {
      * Write items into set.
      *
      * @param g Grid.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private static void writeToSet(Ignite g) throws GridException {
+    private static void writeToSet(Ignite g) throws IgniteCheckedException {
         final String setName = set.name();
 
         // Write set items on each node.
@@ -120,9 +120,9 @@ public class CacheSetExample {
      * Clear and remove set.
      *
      * @param g Grid.
-     * @throws GridException If execution failed.
+     * @throws IgniteCheckedException If execution failed.
      */
-    private static void clearAndRemoveSet(Ignite g) throws GridException {
+    private static void clearAndRemoveSet(Ignite g) throws IgniteCheckedException {
         System.out.println("Set size before clearing: " + set.size());
 
         // Clear set.
@@ -139,7 +139,7 @@ public class CacheSetExample {
         try {
             set.contains("1");
         }
-        catch (GridRuntimeException expected) {
+        catch (IgniteException expected) {
             System.out.println("Expected exception - " + expected.getMessage());
         }
     }
@@ -178,7 +178,7 @@ public class CacheSetExample {
                     System.out.println("Set item has been added: " + item);
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -37,9 +38,9 @@ public class GridAtomicInitializer<T> {
      *
      * @param c Initialization operation.
      * @return Result of initialization.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public T init(Callable<T> c) throws GridException {
+    public T init(Callable<T> c) throws IgniteCheckedException {
         if (!finished) {
             synchronized (mux) {
                 if (!finished) {
@@ -59,7 +60,7 @@ public class GridAtomicInitializer<T> {
         }
 
         if (e != null)
-            throw e instanceof GridException ? (GridException)e : new GridException(e);
+            throw e instanceof IgniteCheckedException ? (IgniteCheckedException)e : new IgniteCheckedException(e);
 
         return res;
     }

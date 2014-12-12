@@ -9,8 +9,8 @@
 
 package org.apache.ignite.plugin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -57,26 +57,26 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *
      * @param ctx Plugin context.
      * @param attrs Attributes.
-     * @throws GridException Throws in case of any errors.
+     * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start(PluginContext ctx, Map<String, Object> attrs) throws GridException;
+    public void start(PluginContext ctx, Map<String, Object> attrs) throws IgniteCheckedException;
 
     /**
      * Stops grid component.
      *
      * @param cancel If {@code true}, then all ongoing tasks or jobs for relevant
      *      components need to be cancelled.
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void stop(boolean cancel) throws GridException;
+    public void stop(boolean cancel) throws IgniteCheckedException;
 
     /**
      * Callback that notifies that Ignite has successfully started,
      * including all internal components.
      *
-     * @throws GridException Thrown in case of any errors.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onIgniteStart() throws GridException;
+    public void onIgniteStart() throws IgniteCheckedException;
 
     /**
      * Callback to notify that Ignite is about to stop.

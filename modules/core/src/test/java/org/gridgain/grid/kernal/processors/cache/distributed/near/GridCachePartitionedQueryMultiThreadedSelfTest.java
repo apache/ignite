@@ -9,14 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -28,8 +28,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  * Tests for partitioned cache queries.
@@ -137,7 +137,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Start lucene query threads.
         IgniteFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     GridCacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
                         Person.class, "Master");
@@ -158,7 +158,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Start sql query threads.
         IgniteFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws GridException {
+            @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     GridCacheQuery<Map.Entry<UUID, Person>> bachelors =
                         cache0.queries().createSqlQuery(Person.class, "degree = 'Bachelor'");

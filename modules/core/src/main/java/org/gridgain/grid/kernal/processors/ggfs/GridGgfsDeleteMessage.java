@@ -9,9 +9,9 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,7 +32,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
     /** Optional error. */
     @GridDirectTransient
-    private GridException err;
+    private IgniteCheckedException err;
 
     /** */
     private byte[] errBytes;
@@ -61,7 +61,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
      * @param id Entry ID.
      * @param err Error.
      */
-    public GridGgfsDeleteMessage(IgniteUuid id, GridException err) {
+    public GridGgfsDeleteMessage(IgniteUuid id, IgniteCheckedException err) {
         assert err != null;
 
         this.id = id;
@@ -78,12 +78,12 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /**
      * @return Error.
      */
-    public GridException error() {
+    public IgniteCheckedException error() {
         return err;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(IgniteMarshaller marsh) throws GridException {
+    @Override public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
         if (err != null)
@@ -91,7 +91,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws GridException {
+    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)

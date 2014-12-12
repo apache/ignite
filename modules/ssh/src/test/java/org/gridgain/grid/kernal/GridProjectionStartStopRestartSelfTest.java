@@ -183,7 +183,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -213,7 +213,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -243,7 +243,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -284,7 +284,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -325,7 +325,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -349,7 +349,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -380,7 +380,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -410,7 +410,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -435,7 +435,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -470,7 +470,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -502,7 +502,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -537,7 +537,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -556,7 +556,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -600,7 +600,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -635,7 +635,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -677,7 +677,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -714,7 +714,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -751,7 +751,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -770,7 +770,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -817,7 +817,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -854,7 +854,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -893,7 +893,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
                 assert t.get1().equals(HOST);
 
                 if (!t.get2())
-                    throw new GridRuntimeException(t.get3());
+                    throw new IgniteException(t.get3());
             }
         });
 
@@ -1008,14 +1008,14 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
      * @param timeout Timeout.
      * @param maxConn Maximum connections.
      * @return Results collection.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private Collection<GridTuple3<String, Boolean, String>> startNodes(IgniteCluster cluster,
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,
         int timeout,
-        int maxConn) throws GridException {
+        int maxConn) throws IgniteCheckedException {
         cluster = cluster.enableAsync();
 
         assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));

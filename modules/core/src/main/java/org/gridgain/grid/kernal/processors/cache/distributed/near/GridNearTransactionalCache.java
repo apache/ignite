@@ -9,17 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
-import org.apache.ignite.plugin.security.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -53,7 +53,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         super.start();
 
         ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse<K, V>>() {
@@ -198,12 +198,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param nodeId Primary node ID.
      * @param req Request.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridNearTxRemote<K, V> startRemoteTx(UUID nodeId, GridDhtLockRequest<K, V> req)
-        throws GridException, GridDistributedLockCancelledException {
+        throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<K> nearKeys = req.nearKeys();
         List<byte[]> keyBytes = req.nearKeyBytes();
 
@@ -347,7 +347,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
             U.warn(log, err);
 
-            throw new GridException(err);
+            throw new IgniteCheckedException(err);
         }
 
         return tx;
@@ -475,7 +475,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             if (rmv != null) {
                                 if (!rmv.reentry()) {
                                     if (ver != null && !ver.equals(rmv.version()))
-                                        throw new GridException("Failed to unlock (if keys were locked separately, " +
+                                        throw new IgniteCheckedException("Failed to unlock (if keys were locked separately, " +
                                             "then they need to be unlocked separately): " + keys);
 
                                     if (!primary.isLocal()) {
@@ -529,7 +529,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     ctx.io().send(n, req);
             }
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
     }
@@ -633,7 +633,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 }
             }
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
     }

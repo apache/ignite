@@ -9,10 +9,10 @@
 
 package org.apache.ignite.marshaller;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.io.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -26,7 +26,7 @@ public abstract class IgniteAbstractMarshaller implements IgniteMarshaller {
     public static final int DFLT_BUFFER_SIZE = 512;
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(@Nullable Object obj) throws GridException {
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         GridByteArrayOutputStream out = null;
 
         try {
@@ -42,7 +42,7 @@ public abstract class IgniteAbstractMarshaller implements IgniteMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws GridException {
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         GridByteArrayInputStream in = null;
 
         try {

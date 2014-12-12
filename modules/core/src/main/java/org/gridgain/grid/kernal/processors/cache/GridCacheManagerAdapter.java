@@ -29,7 +29,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     private final AtomicBoolean starting = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
-    @Override public final void start(GridCacheContext<K, V> cctx) throws GridException {
+    @Override public final void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
             assert false : "Method start is called more than once for manager: " + this;
 
@@ -60,9 +60,9 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void start0() throws GridException {
+    protected void start0() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -86,7 +86,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws GridException {
+    @Override public final void onKernalStart() throws IgniteCheckedException {
         onKernalStart0();
 
         if (log != null && log.isDebugEnabled())
@@ -106,9 +106,9 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void onKernalStart0() throws GridException {
+    protected void onKernalStart0() throws IgniteCheckedException {
         // No-op.
     }
 

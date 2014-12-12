@@ -400,7 +400,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         private transient UserResource rsrcTask;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Boolean arg) throws GridException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Boolean arg) throws IgniteCheckedException {
             assert rsrcTask != null;
 
             for (ClusterNode node : subgrid) {
@@ -438,7 +438,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
                 }
             }
 
-            throw new GridException("Node not found");
+            throw new IgniteCheckedException("Node not found");
         }
 
         /**
@@ -449,7 +449,7 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert rsrcTask != null;
 
             return null;

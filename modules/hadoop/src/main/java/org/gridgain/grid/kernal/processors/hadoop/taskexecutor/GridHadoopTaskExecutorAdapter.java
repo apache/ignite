@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -25,9 +26,9 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
      *
      * @param job Job.
      * @param tasks Tasks.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws GridException;
+    public abstract void run(final GridHadoopJob job, Collection<GridHadoopTaskInfo> tasks) throws IgniteCheckedException;
 
     /**
      * Cancels all currently running tasks for given job ID and cancels scheduled execution of tasks
@@ -39,12 +40,12 @@ public abstract class GridHadoopTaskExecutorAdapter extends GridHadoopComponent 
      *
      * @param jobId Job ID to cancel.
      */
-    public abstract void cancelTasks(GridHadoopJobId jobId) throws GridException;
+    public abstract void cancelTasks(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * On job state change callback;
      *
      * @param meta Job metadata.
      */
-    public abstract void onJobStateChanged(GridHadoopJobMetadata meta) throws GridException;
+    public abstract void onJobStateChanged(GridHadoopJobMetadata meta) throws IgniteCheckedException;
 }

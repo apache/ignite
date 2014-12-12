@@ -299,7 +299,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             // cache is REPLICATED. This happens asynchronously, we
             // need to use condition wait.
             assert GridTestUtils.waitForCondition(new PAX() {
-                @Override public boolean applyx() throws GridException {
+                @Override public boolean applyx() throws IgniteCheckedException {
                     return cache2.get(1L) != null;
                 }
             }, getConditionTimeout());
@@ -321,7 +321,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             // At this point, old version of test resource should be undeployed
             // and removed from cache asynchronously.
             assert GridTestUtils.waitForCondition(new PAX() {
-                @Override public boolean applyx() throws GridException {
+                @Override public boolean applyx() throws IgniteCheckedException {
                     return cache2.get(1L) == null;
                 }
             }, getConditionTimeout()) : "2nd condition failed [entries1=" + cache1.entrySet() +

@@ -73,7 +73,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Task execution here throws {@link GridException}.
+     * Task execution here throws {@link IgniteCheckedException}.
      * This is correct behavior.
      *
      * @param g1 Grid 1.
@@ -87,14 +87,14 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             assert false; // Exception must be thrown.
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Throwing exception is a correct behaviour.
             info("Received correct exception: " + e);
         }
     }
 
     /**
-     * Querying events here throws {@link GridException}.
+     * Querying events here throws {@link IgniteCheckedException}.
      * This is correct behavior.
      *
      * @param g Grid.
@@ -106,7 +106,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             assert false; // Exception must be thrown.
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Throwing exception is a correct behaviour.
             info("Received correct exception: " + e);
         }

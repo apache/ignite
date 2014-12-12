@@ -33,12 +33,12 @@ public interface GridSpringProcessor {
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
      * @param excludedProps Properties to exclude.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
-     * @throws GridException If grid could not be started or configuration
+     * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
     public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, String... excludedProps) throws GridException;
+        URL cfgUrl, String... excludedProps) throws IgniteCheckedException;
 
     /**
      * Loads bean instances that match the given types from given configuration file.
@@ -47,9 +47,9 @@ public interface GridSpringProcessor {
      * @param beanClasses Beans classes.
      * @return Bean class -> loaded bean instance map, if configuration does not contain bean with required type the
      *       map value is {@code null}.
-     * @throws GridException If failed to load configuration.
+     * @throws IgniteCheckedException If failed to load configuration.
      */
-    public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws GridException;
+    public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException;
 
     /**
      * Gets user version for given class loader by checking

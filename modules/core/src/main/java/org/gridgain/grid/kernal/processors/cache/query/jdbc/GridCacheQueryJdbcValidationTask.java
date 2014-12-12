@@ -32,7 +32,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
 
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize,
-        @Nullable final String cacheName) throws GridException {
+        @Nullable final String cacheName) throws IgniteCheckedException {
         // Register big data usage.
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
 
@@ -51,7 +51,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return F.first(results).getData();
     }
 }

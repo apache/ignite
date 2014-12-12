@@ -272,13 +272,13 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                     takeLatch.countDown();
                 }
             }
-            catch (GridRuntimeException e) {
+            catch (IgniteException e) {
                 if (e.getCause() instanceof GridInterruptedException || e.getCause() instanceof InterruptedException)
                     log.info("Cancelling job due to interruption: " + e.getMessage());
                 else
                     fail("Unexpected error: " + e);
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 error("Failed to get value from the queue", e);
             }
             finally {

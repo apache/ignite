@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.future;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
@@ -109,7 +109,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
             assertFalse(fut.isDone());
         }
 
-        futs.get(3).onDone(new GridException("Test message"));
+        futs.get(3).onDone(new IgniteCheckedException("Test message"));
 
         assertTrue(fut.isDone());
     }
@@ -184,7 +184,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
                     else if (op == 8)
                         part.onDone(false);
                     else
-                        part.onDone(new GridException("TestMessage"));
+                        part.onDone(new IgniteCheckedException("TestMessage"));
                 }
             }
         }, 20);

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.dr.os;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -25,7 +25,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(GridCacheContext<K, V> cctx) throws GridException {
+    @Override public void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -35,7 +35,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -74,7 +74,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
         long ttl,
         long drTtl,
         long drExpireTime,
-        @Nullable GridCacheVersion drVer) throws GridException, GridCacheEntryRemovedException {
+        @Nullable GridCacheVersion drVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return null;
     }
 
@@ -86,12 +86,12 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
         V newVal,
         byte[] newValBytes,
         long newTtl,
-        long newDrExpireTime) throws GridException, GridCacheEntryRemovedException {
+        long newDrExpireTime) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(long topVer, boolean left) throws GridException {
+    @Override public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException {
         // No-op.
     }
 

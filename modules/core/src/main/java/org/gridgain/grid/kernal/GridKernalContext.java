@@ -43,6 +43,7 @@ import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.plugin.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
+import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.schedule.*;
@@ -327,6 +328,13 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Interop processor.
      */
     public GridInteropProcessor interop();
+
+    /**
+     * Gets query processor.
+     *
+     * @return Query processor.
+     */
+    public GridQueryProcessor query();
 
     /**
      * @return Plugin processor.

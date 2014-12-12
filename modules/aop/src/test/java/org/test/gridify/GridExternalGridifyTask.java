@@ -26,7 +26,7 @@ public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgu
     public static final String TASK_NAME = "org.test.gridify.GridExternalGridifyTask";
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws GridException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
         assert arg.getMethodParameters().length == 1;
 
         return Collections.singletonList(new ComputeJobAdapter((String)arg.getMethodParameters()[0]) {
@@ -64,7 +64,7 @@ public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgu
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         assert results.size() == 1;
 
         return results.get(0).getData();

@@ -9,19 +9,21 @@
 
 package org.apache.ignite.spi.communication;
 
-import mx4j.tools.adaptor.http.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.spi.*;
 
-import javax.management.*;
+import java.net.*;
 import java.util.*;
 import java.util.Map.*;
+
+import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 
 /**
  * Super class for all communication self tests.
@@ -47,22 +49,15 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     /** */
     private static final Object mux = new Object();
 
-    /** */
-    private static final ObjectName mBeanName;
-
+    /**
+     *
+     */
     static {
         GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
             @Override public GridTcpCommunicationMessageAdapter create(byte type) {
                 return new GridTestMessage();
             }
         }, GridTestMessage.DIRECT_TYPE);
-
-        try {
-            mBeanName = new ObjectName("mbeanAdaptor:protocol=HTTP");
-        }
-        catch (MalformedObjectNameException e) {
-            throw new GridRuntimeException(e);
-        }
     }
 
     /** */
@@ -237,6 +232,36 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            try {
+                startSpis();
+
+                break;
+            }
+            catch (IgniteCheckedException e) {
+                if (e.hasCause(BindException.class)) {
+                    if (i < 2) {
+                        info("Failed to start SPIs because of BindException, will retry after delay.");
+
+                        afterTestsStopped();
+
+                        U.sleep(30_000);
+                    }
+                    else
+                        throw e;
+                }
+                else
+                    throw e;
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void startSpis() throws Exception {
+        U.setWorkDirectory(null, U.getGridGainHome());
+
         spis.clear();
         nodes.clear();
         spiRsrcs.clear();
@@ -246,9 +271,13 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<GridTcpCommunicationMessageAdapter> spi = getSpi(i);
 
-            GridTestResources rsrcs = new GridTestResources(getMBeanServer(i));
+            GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
+
+            GridTestResources rsrcs = new GridTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
+
+            node.order(i);
 
             GridSpiTestContext ctx = initSpiContext();
 
@@ -263,6 +292,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spi.setListener(new MessageListener(rsrcs.getNodeId()));
 
             node.setAttributes(spi.getNodeAttributes());
+            node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
             nodes.add(node);
 
@@ -284,38 +314,17 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         }
     }
 
-    /**
-     * @param idx Node index.
-     * @return Configured MBean server.
-     * @throws Exception If failed.
-     */
-    private MBeanServer getMBeanServer(int idx) throws Exception {
-        HttpAdaptor mbeanAdaptor = new HttpAdaptor();
-
-        MBeanServer mbeanSrv = MBeanServerFactory.createMBeanServer();
-
-        mbeanAdaptor.setPort(
-            Integer.valueOf(GridTestProperties.getProperty("comm.mbeanserver.selftest.baseport")) + idx);
-
-        mbeanSrv.registerMBean(mbeanAdaptor, mBeanName);
-
-        mbeanAdaptor.start();
-
-        return mbeanSrv;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
+            spi.onContextDestroyed();
+
             spi.setListener(null);
 
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs) {
+        for (GridTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
-
-            rsrcs.getMBeanServer().unregisterMBean(mBeanName);
-        }
     }
 }

@@ -9,11 +9,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 /** Internal exception class for proper timeout handling. */
-class GridHadoopHandshakeTimeoutException extends GridException {
+class GridHadoopHandshakeTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

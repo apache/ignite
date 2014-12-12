@@ -89,7 +89,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         if (GRID_CNT < 2)
-            throw new GridException("GRID_CNT must not be less than 2.");
+            throw new IgniteCheckedException("GRID_CNT must not be less than 2.");
 
         startGrids(GRID_CNT);
     }

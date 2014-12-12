@@ -145,7 +145,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
                             info(stats.toString());
                     }
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     error("Failed to execute grid task.", e);
 
                     fail();

@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.*;
@@ -29,8 +29,8 @@ import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 
 /**
@@ -79,7 +79,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start0() throws GridException {
+    @Override public void start0() throws IgniteCheckedException {
         spaceName = CU.swapSpaceName(cctx);
 
         swapMgr = cctx.gridSwap();
@@ -116,7 +116,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     writeToSwap(part, null, kb, vb);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     log.error("Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
                 }
             }
@@ -155,9 +155,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @return Swap size.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapSize() throws GridException {
+    public long swapSize() throws IgniteCheckedException {
         return enabled ? swapMgr.swapSize(spaceName) : -1;
     }
 
@@ -165,9 +165,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Gets number of swap entries (keys).
      *
      * @return Swap keys count.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public long swapKeys() throws GridException {
+    public long swapKeys() throws IgniteCheckedException {
         return enabled ? swapMgr.swapKeys(spaceName) : -1;
     }
 
@@ -325,7 +325,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (it != null)
                     it.close();
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 log.error("Failed to close iterator.", e);
             }
             finally {
@@ -339,9 +339,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param e Swap entry to reconstitute.
      * @return Reconstituted swap entry or {@code null} if entry is obsolete.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e) throws GridException {
+    @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e) throws IgniteCheckedException {
         return swapEntry(e, true);
     }
 
@@ -351,9 +351,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param e Swap entry to reconstitute.
      * @param unmarshal If {@code true} then value is unmarshalled.
      * @return Reconstituted swap entry or {@code null} if entry is obsolete.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e, boolean unmarshal) throws GridException {
+    @Nullable private GridCacheSwapEntry<V> swapEntry(GridCacheSwapEntry<V> e, boolean unmarshal) throws IgniteCheckedException {
         assert e != null;
 
         checkIteratorQueue();
@@ -385,9 +385,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param key Key to check.
      * @param keyBytes Key bytes to check.
      * @return {@code True} if key is contained.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean containsKey(K key, byte[] keyBytes) throws GridException {
+    public boolean containsKey(K key, byte[] keyBytes) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return false;
 
@@ -417,10 +417,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param keyBytes Key bytes.
      * @param entryLocked {@code True} if cache entry is locked.
      * @return Value from swap or {@code null}.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable GridCacheSwapEntry<V> read(K key, byte[] keyBytes, boolean entryLocked) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(K key, byte[] keyBytes, boolean entryLocked) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -467,10 +467,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param key Key to remove.
      * @param keyBytes Key bytes.
      * @return Value from swap or {@code null}.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable GridCacheSwapEntry<V> readAndRemove(final K key, final byte[] keyBytes) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readAndRemove(final K key, final byte[] keyBytes) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -524,15 +524,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition.
      * @param keyBytes Key bytes.
      * @return Value from swap or {@code null}.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable private GridCacheSwapEntry<V> readAndRemoveSwap(final K key, final int part, final byte[] keyBytes)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!swapEnabled)
             return null;
 
         final GridTuple<GridCacheSwapEntry<V>> t = F.t1();
-        final GridTuple<GridException> err = F.t1();
+        final GridTuple<IgniteCheckedException> err = F.t1();
 
         swapMgr.remove(spaceName, new SwapKey(key, part, keyBytes), new CI1<byte[]>() {
             @Override public void apply(byte[] rmv) {
@@ -561,7 +561,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         if (qryMgr != null)
                             qryMgr.onUnswap(key, v, valBytes);
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         err.set(e);
                     }
                 }
@@ -578,9 +578,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param entry Entry to read.
      * @param locked {@code True} if cache entry is locked.
      * @return Read value.
-     * @throws GridException If read failed.
+     * @throws IgniteCheckedException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry, boolean locked) throws GridException {
+    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry, boolean locked) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -590,9 +590,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param entry Entry to read.
      * @return Read value address.
-     * @throws GridException If read failed.
+     * @throws IgniteCheckedException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> readOffheapPointer(GridCacheEntryEx<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readOffheapPointer(GridCacheEntryEx<K, V> entry) throws IgniteCheckedException {
         if (!offheapEnabled)
             return null;
 
@@ -617,9 +617,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param key Key to read swap entry for.
      * @return Read value.
-     * @throws GridException If read failed.
+     * @throws IgniteCheckedException If read failed.
      */
-    @Nullable public GridCacheSwapEntry<V> read(K key) throws GridException {
+    @Nullable public GridCacheSwapEntry<V> read(K key) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -629,9 +629,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param entry Entry to read.
      * @return Read value.
-     * @throws GridException If read failed.
+     * @throws IgniteCheckedException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> readAndRemove(GridCacheEntryEx<K, V> entry) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readAndRemove(GridCacheEntryEx<K, V> entry) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -641,9 +641,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param keys Collection of keys to remove from swap.
      * @return Collection of swap entries.
-     * @throws GridException If failed,
+     * @throws IgniteCheckedException If failed,
      */
-    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys) throws GridException {
+    public Collection<GridCacheBatchSwapEntry<K, V>> readAndRemove(Collection<? extends K> keys) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return Collections.emptyList();
 
@@ -706,15 +706,15 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         // Swap is enabled.
-        final GridTuple<GridException> err = F.t1();
+        final GridTuple<IgniteCheckedException> err = F.t1();
 
         Collection<SwapKey> converted = new ArrayList<>(F.viewReadOnly(keysList, new C1<K, SwapKey>() {
             @Override public SwapKey apply(K key) {
                 try {
                     return new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key));
                 }
-                catch (GridException e) {
-                    throw new GridRuntimeException(e);
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
             }
         }));
@@ -759,7 +759,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             if (qryMgr != null)
                                 qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             err.set(e);
                         }
                     }
@@ -776,9 +776,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param key Key to read swap entry for.
      * @return Read value.
-     * @throws GridException If read failed.
+     * @throws IgniteCheckedException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> readAndRemove(K key) throws GridException {
+    @Nullable GridCacheSwapEntry<V> readAndRemove(K key) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
@@ -789,9 +789,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param key Key to remove.
      * @param keyBytes Key bytes.
      * @return {@code True} If succeeded.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    boolean removeOffheap(final K key, byte[] keyBytes) throws GridException {
+    boolean removeOffheap(final K key, byte[] keyBytes) throws IgniteCheckedException {
         assert offheapEnabled;
 
         checkIteratorQueue();
@@ -813,9 +813,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      *
      * @param key Key.
      * @param keyBytes Key bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void enableOffheapEviction(final K key, byte[] keyBytes) throws GridException {
+    void enableOffheapEviction(final K key, byte[] keyBytes) throws IgniteCheckedException {
         if (!offheapEnabled)
             return;
 
@@ -829,9 +829,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param key Key to remove.
      * @param keyBytes Key bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void remove(final K key, byte[] keyBytes) throws GridException {
+    public void remove(final K key, byte[] keyBytes) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
@@ -852,8 +852,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                     qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
                 }
-                catch (GridException e) {
-                    throw new GridRuntimeException(e);
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
             }
         };
@@ -889,7 +889,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param expireTime Swap entry expiration time.
      * @param keyClsLdrId Class loader ID for entry key.
      * @param valClsLdrId Class loader ID for entry value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     void write(K key,
         byte[] keyBytes,
@@ -900,7 +900,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
         @Nullable IgniteUuid valClsLdrId)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
@@ -931,9 +931,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Performs batch write of swapped entries.
      *
      * @param swapped Collection of swapped entries.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    void writeAll(Iterable<GridCacheBatchSwapEntry<K, V>> swapped) throws GridException {
+    void writeAll(Iterable<GridCacheBatchSwapEntry<K, V>> swapped) throws IgniteCheckedException {
         assert offheapEnabled || swapEnabled;
 
         checkIteratorQueue();
@@ -983,9 +983,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param key Key. If {@code null} then it will be deserialized from {@code keyBytes}.
      * @param keyBytes Key bytes.
      * @param entry Entry bytes.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void writeToSwap(int part, @Nullable K key, byte[] keyBytes, byte[] entry) throws GridException{
+    private void writeToSwap(int part, @Nullable K key, byte[] keyBytes, byte[] entry) throws IgniteCheckedException{
         checkIteratorQueue();
 
         if (key == null)
@@ -1009,9 +1009,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Clears swap.
      *
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void clearSwap() throws GridException {
+    public void clearSwap() throws IgniteCheckedException {
         if (swapEnabled)
             swapMgr.clear(spaceName);
     }
@@ -1022,12 +1022,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition to iterate over.
      * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> iterator(
         final int part,
         final boolean unmarshal)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!swapEnabled() && !offHeapEnabled())
             return null;
 
@@ -1053,7 +1053,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 advance();
             }
 
-            private void advance() throws GridException {
+            private void advance() throws IgniteCheckedException {
                 if (it.hasNext())
                     return;
 
@@ -1076,7 +1076,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     done = true;
             }
 
-            @Override protected Map.Entry<byte[], GridCacheSwapEntry<V>> onNext() throws GridException {
+            @Override protected Map.Entry<byte[], GridCacheSwapEntry<V>> onNext() throws IgniteCheckedException {
                 if (done)
                     throw new NoSuchElementException();
 
@@ -1091,7 +1091,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return !done;
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 if (it != null)
                     it.close();
             }
@@ -1102,10 +1102,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * Gets offheap and swap iterator over partition.
      *
      * @return Iterator over partition.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator()
-        throws GridException {
+        throws IgniteCheckedException {
         if (!swapEnabled() && !offHeapEnabled())
             return new GridEmptyCloseableIterator<>();
 
@@ -1133,7 +1133,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 advance();
             }
 
-            private void advance() throws GridException {
+            private void advance() throws IgniteCheckedException {
                 if (it.hasNext())
                     return;
 
@@ -1154,7 +1154,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     done = true;
             }
 
-            @Override protected Map.Entry<byte[], byte[]> onNext() throws GridException {
+            @Override protected Map.Entry<byte[], byte[]> onNext() throws IgniteCheckedException {
                 if (done)
                     throw new NoSuchElementException();
 
@@ -1169,7 +1169,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return !done;
             }
 
-            @Override protected void onRemove() throws GridException {
+            @Override protected void onRemove() throws IgniteCheckedException {
                 if (offheapFlag) {
                     K key = unmarshalKey(cur.getKey(), cctx.deploy().globalLoader());
 
@@ -1181,7 +1181,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     it.removeX();
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 if (it != null)
                     it.close();
             }
@@ -1190,9 +1190,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @return Lazy swap iterator.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public Iterator<Map.Entry<K, V>> lazySwapIterator() throws GridException {
+    public Iterator<Map.Entry<K, V>> lazySwapIterator() throws IgniteCheckedException {
         if (!swapEnabled)
             return new GridEmptyIterator<>();
 
@@ -1252,8 +1252,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         try {
                             return unmarshalKey(cur0.getKey(), cctx.deploy().globalLoader());
                         }
-                        catch (GridException e) {
-                            throw new GridRuntimeException(e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
                     }
 
@@ -1265,8 +1265,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                             return e.value();
                         }
-                        catch (GridException ex) {
-                            throw new GridRuntimeException(ex);
+                        catch (IgniteCheckedException ex) {
+                            throw new IgniteException(ex);
                         }
                     }
 
@@ -1282,7 +1282,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return it.hasNext();
             }
 
-            @Override protected void onRemove() throws GridException {
+            @Override protected void onRemove() throws IgniteCheckedException {
                 if (cur == null)
                     throw new IllegalStateException("Method next() has not yet been called, or the remove() method " +
                         "has already been called after the last call to the next() method.");
@@ -1298,7 +1298,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 it.close();
             }
         };
@@ -1329,12 +1329,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition to iterate over.
      * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> offHeapIterator(
         int part,
         boolean unmarshal)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!offheapEnabled)
             return null;
 
@@ -1378,7 +1378,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return it.hasNext();
             }
 
-            @Override protected void onRemove() throws GridException {
+            @Override protected void onRemove() throws IgniteCheckedException {
                 K key = unmarshalKey(cur.getKey(), cctx.deploy().globalLoader());
 
                 int part = cctx.affinity().partition(key);
@@ -1386,7 +1386,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 offheap.removex(spaceName, part, key, cur.getKey());
             }
 
-            @Override protected void onClose() throws GridException {
+            @Override protected void onClose() throws IgniteCheckedException {
                 it.close();
             }
         };
@@ -1398,12 +1398,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param part Partition to iterate over.
      * @param unmarshal Unmarshal value flag.
      * @return Iterator over partition.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry<V>>> swapIterator(
         int part,
         boolean unmarshal)
-        throws GridException {
+        throws IgniteCheckedException {
         if (!swapEnabled)
             return null;
 
@@ -1414,9 +1414,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @return Raw off-heap iterator.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator() throws GridException {
+    public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawSwapIterator() throws IgniteCheckedException {
         if (!swapEnabled)
             return new GridEmptyCloseableIterator<>();
 
@@ -1475,7 +1475,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                                 }
                             }
                         }
-                        catch (GridException ex) {
+                        catch (IgniteCheckedException ex) {
                             U.error(log, "Failed to process swap entry.", ex);
                         }
                     }
@@ -1487,7 +1487,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 return undeployCnt;
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear cache swap space on undeploy.", e);
         }
 
@@ -1513,9 +1513,9 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param bytes Bytes to unmarshal.
      * @param ldr Class loader.
      * @return Unmarshalled value.
-     * @throws GridException If unmarshal failed.
+     * @throws IgniteCheckedException If unmarshal failed.
      */
-    private <T> T unmarshalKey(byte[] bytes, ClassLoader ldr) throws GridException {
+    private <T> T unmarshalKey(byte[] bytes, ClassLoader ldr) throws IgniteCheckedException {
         return (T)cctx.marshaller().unmarshal(bytes, ldr);
     }
 
@@ -1551,7 +1551,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Map.Entry<byte[], GridCacheSwapEntry<V>> onNext() throws GridException {
+        @Override protected Map.Entry<byte[], GridCacheSwapEntry<V>> onNext() throws IgniteCheckedException {
             Map.Entry<byte[], byte[]> e = iter.nextX();
 
             GridCacheSwapEntry<V> unmarshalled = unmarshalSwapEntry(e.getValue());
@@ -1560,12 +1560,12 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws GridException {
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
             return iter.hasNext();
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws GridException {
+        @Override protected void onClose() throws IgniteCheckedException {
             iter.close();
         }
 

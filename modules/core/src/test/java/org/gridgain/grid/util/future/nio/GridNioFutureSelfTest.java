@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.util.future.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -42,7 +42,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
         fut = new GridNioFutureImpl<>();
 
-        fut.onDone(new GridException("TestMessage"));
+        fut.onDone(new IgniteCheckedException("TestMessage"));
 
         final GridNioFutureImpl<String> callFut1 = fut;
 
@@ -50,11 +50,11 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 return callFut1.get();
             }
-        }, GridException.class, "TestMessage");
+        }, IgniteCheckedException.class, "TestMessage");
 
         fut = new GridNioFutureImpl<>();
 
-        fut.onDone("test", new GridException("TestMessage"));
+        fut.onDone("test", new IgniteCheckedException("TestMessage"));
 
         final GridNioFuture<String> callFut2 = fut;
 
@@ -62,7 +62,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 return callFut2.get();
             }
-        }, GridException.class, "TestMessage");
+        }, IgniteCheckedException.class, "TestMessage");
 
         fut = new GridNioFutureImpl<>();
 

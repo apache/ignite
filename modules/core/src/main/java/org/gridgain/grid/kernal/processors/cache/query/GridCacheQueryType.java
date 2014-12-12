@@ -19,6 +19,11 @@ import org.jetbrains.annotations.*;
  */
 public enum GridCacheQueryType {
     /**
+     * User provided indexing SPI based query.
+     */
+    SPI,
+
+    /**
      * Fully scans cache returning only entries that pass certain filters.
      */
     SCAN,

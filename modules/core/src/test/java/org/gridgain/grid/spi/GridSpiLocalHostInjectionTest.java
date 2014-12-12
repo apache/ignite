@@ -9,10 +9,10 @@
 
 package org.gridgain.grid.spi;
 
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -28,58 +28,58 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     public static final String SPI_LOCAL_ADDR_VALUE = "127.0.0.2";
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpDiscoverySpiBothSet() throws GridException {
+    public void testTcpDiscoverySpiBothSet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(true, true, SPI_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpDiscoverySpiOnlySet() throws GridException {
+    public void testTcpDiscoverySpiOnlySet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(false, true, SPI_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpDiscoverySpiConfigOnlySet() throws GridException {
+    public void testTcpDiscoverySpiConfigOnlySet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(true, false, CONFIG_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpDiscoverySpiBothNotSet() throws GridException {
+    public void testTcpDiscoverySpiBothNotSet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(false, false, null);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpCommunicationSpiBothSet() throws GridException {
+    public void testTcpCommunicationSpiBothSet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(true, true, SPI_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpCommunicationSpiOnlySet() throws GridException {
+    public void testTcpCommunicationSpiOnlySet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(false, true, SPI_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpCommunicationSpiConfigOnlySet() throws GridException {
+    public void testTcpCommunicationSpiConfigOnlySet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(true, false, CONFIG_LOCAL_ADDR_VALUE);
     }
 
     /**
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
-    public void testTcpCommunicationSpiBothNotSet() throws GridException {
+    public void testTcpCommunicationSpiBothNotSet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(false, false, null);
     }
 
@@ -89,10 +89,10 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
      * @param cfgVal {@code true} if {@code localHost} should be set in configuration adapter.
      * @param spiVal {@code true} if {@code localHost} should be set in SPI
      * @param exp Expected value of {@code localHost} property in SPI after injection.
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
     private void processTcpDiscoverySpiTestInjection(boolean cfgVal, boolean spiVal, @Nullable String exp)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceProcessor proc = getResourceProcessor(cfgVal);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -111,10 +111,10 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
      * @param cfgVal {@code true} if {@code localHost} should be set in configuration adapter.
      * @param spiVal {@code true} if {@code localHost} should be set in SPI
      * @param exp Expected value of {@code localHost} property in SPI after injection.
-     * @throws GridException If test fails.
+     * @throws IgniteCheckedException If test fails.
      */
     private void processTcpCommunicationSpiTestInjection(boolean cfgVal, boolean spiVal, @Nullable String exp)
-        throws GridException {
+        throws IgniteCheckedException {
         GridResourceProcessor proc = getResourceProcessor(cfgVal);
 
         TcpCommunicationSpi spi = new TcpCommunicationSpi();

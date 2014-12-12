@@ -44,27 +44,27 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionOpened(GridNioSession ses) throws GridException {
+    @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionOpened(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionClosed(GridNioSession ses) throws GridException {
+    @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionClosed(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, GridException ex) throws GridException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws GridException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         return proceedSessionWrite(ses, msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws GridException {
+    @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         // Verify only incoming connections.
         if (!ses.accepted()) {
             proceedMessageReceived(ses, msg);
@@ -116,17 +116,17 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws GridException {
+    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         return proceedSessionClose(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionIdleTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public void onSessionWriteTimeout(GridNioSession ses) throws GridException {
+    @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
         proceedSessionWriteTimeout(ses);
     }
 }

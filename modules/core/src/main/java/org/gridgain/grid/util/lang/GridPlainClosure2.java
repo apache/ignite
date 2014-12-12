@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Closure taking 2 arguments.
@@ -19,7 +19,7 @@ public interface GridPlainClosure2<T1, T2, R> {
      * @param arg1 Closure argument.
      * @param arg2 Closure argument.
      * @return Closure execution result.
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public R apply(T1 arg1, T2 arg2) throws GridException;
+    public R apply(T1 arg1, T2 arg2) throws IgniteCheckedException;
 }

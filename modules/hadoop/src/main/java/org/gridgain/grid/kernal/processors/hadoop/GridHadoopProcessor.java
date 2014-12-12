@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
@@ -49,7 +50,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
 
@@ -74,7 +75,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
             ok = true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.quietAndWarn(log, e.getMessage());
         }
 
@@ -100,7 +101,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
         if (hctx == null)
@@ -116,7 +117,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
         if (hctx == null)
@@ -176,22 +177,22 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws GridException {
+    @Override public GridHadoopJobStatus status(GridHadoopJobId jobId) throws IgniteCheckedException {
         return hctx.jobTracker().status(jobId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws GridException {
+    @Override public GridHadoopCounters counters(GridHadoopJobId jobId) throws IgniteCheckedException {
         return hctx.jobTracker().jobCounters(jobId);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws GridException {
+    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         return hctx.jobTracker().finishFuture(jobId);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean kill(GridHadoopJobId jobId) throws GridException {
+    @Override public boolean kill(GridHadoopJobId jobId) throws IgniteCheckedException {
         return hctx.jobTracker().killJob(jobId);
     }
 
@@ -209,11 +210,11 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
      * Validates Grid and Hadoop configuration for correctness.
      *
      * @param hadoopCfg Hadoop configuration.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void validate(GridHadoopConfiguration hadoopCfg) throws GridException {
+    private void validate(GridHadoopConfiguration hadoopCfg) throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled())
-            throw new GridException("Peer class loading cannot be used with Hadoop (disable it using " +
+            throw new IgniteCheckedException("Peer class loading cannot be used with Hadoop (disable it using " +
                 "GridConfiguration.setPeerClassLoadingEnabled()).");
     }
 }

@@ -86,10 +86,10 @@ class GridUpdateNotifier {
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param gw Kernal gateway.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     GridUpdateNotifier(String gridName, String ver, String site, GridKernalGateway gw, boolean reportOnlyNew)
-        throws GridException {
+        throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
@@ -115,7 +115,7 @@ class GridUpdateNotifier {
             vmProps = getSystemProperties();
         }
         catch (ParserConfigurationException e) {
-            throw new GridException("Failed to create xml parser.", e);
+            throw new IgniteCheckedException("Failed to create xml parser.", e);
         }
     }
 

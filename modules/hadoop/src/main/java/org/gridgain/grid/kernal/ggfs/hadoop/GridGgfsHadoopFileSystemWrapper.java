@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.ipc.*;
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.*;
 
@@ -46,9 +47,9 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
      *
      * @param uri URI of file system.
      * @param cfgPath Additional path to Hadoop configuration.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      */
-    public GridGgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws GridException {
+    public GridGgfsHadoopFileSystemWrapper(@Nullable String uri, @Nullable String cfgPath) throws IgniteCheckedException {
         Configuration cfg = new Configuration();
 
         if (cfgPath != null)
@@ -58,7 +59,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
             fileSys = uri == null ? FileSystem.get(cfg) : FileSystem.get(new URI(uri), cfg);
         }
         catch (IOException | URISyntaxException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
 
         uri = fileSys.getUri().toString();
@@ -138,7 +139,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) throws GridException {
+    @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return fileSys.exists(convert(path));
         }
@@ -148,7 +149,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws GridException {
+    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         GridGgfsHadoopFSProperties props0 = new GridGgfsHadoopFSProperties(props);
 
         try {
@@ -167,7 +168,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws GridException {
+    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
@@ -180,7 +181,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws GridException {
+    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
         try {
             return fileSys.delete(convert(path), recursive);
         }
@@ -190,10 +191,10 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
         try {
             if (!fileSys.mkdirs(convert(path)))
-                throw new GridException("Failed to make directories [path=" + path + "]");
+                throw new IgniteCheckedException("Failed to make directories [path=" + path + "]");
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + "]");
@@ -201,10 +202,10 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws GridException {
+    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
             if (!fileSys.mkdirs(convert(path), new GridGgfsHadoopFSProperties(props).permission()))
-                throw new GridException("Failed to make directories [path=" + path + ", props=" + props + "]");
+                throw new IgniteCheckedException("Failed to make directories [path=" + path + ", props=" + props + "]");
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + ", props=" + props + "]");
@@ -212,7 +213,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
@@ -235,7 +236,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws GridException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
@@ -268,7 +269,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) throws GridException {
+    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
         try {
             return fileSys.create(convert(path), overwrite);
         }
@@ -279,7 +280,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-        long blockSize, @Nullable Map<String, String> props) throws GridException {
+        long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
         GridGgfsHadoopFSProperties props0 =
             new GridGgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
 
@@ -296,7 +297,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Override public OutputStream append(IgniteFsPath path, int bufSize, boolean create,
-        @Nullable Map<String, String> props) throws GridException {
+        @Nullable Map<String, String> props) throws IgniteCheckedException {
         try {
             return fileSys.append(convert(path), bufSize);
         }
@@ -306,7 +307,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(final IgniteFsPath path) throws GridException {
+    @Override public IgniteFsFile info(final IgniteFsPath path) throws IgniteCheckedException {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -379,7 +380,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public long usedSpaceSize() throws GridException {
+    @Override public long usedSpaceSize() throws IgniteCheckedException {
         try {
             return fileSys.getContentSummary(new Path(fileSys.getUri())).getSpaceConsumed();
         }
@@ -394,12 +395,12 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws GridException {
+    @Override public void close() throws IgniteCheckedException {
         try {
             fileSys.close();
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 }

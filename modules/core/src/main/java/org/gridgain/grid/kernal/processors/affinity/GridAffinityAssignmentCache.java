@@ -344,8 +344,8 @@ public class GridAffinityAssignmentCache {
             if (fut != null)
                 fut.get();
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Failed to wait for affinity ready future for topology version: " + topVer,
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for affinity ready future for topology version: " + topVer,
                 e);
         }
     }

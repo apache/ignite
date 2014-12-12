@@ -99,9 +99,9 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
      * Waits for renting partitions.
      *
      * @return {@code True} if mapping was changed.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private boolean waitForRent() throws GridException {
+    private boolean waitForRent() throws IgniteCheckedException {
         boolean changed = false;
 
         // Synchronously wait for all renting partitions to complete.
@@ -188,7 +188,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) throws GridException {
+    @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
         waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -352,7 +352,7 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws GridException {
+    @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
         boolean changed = waitForRent();
 
         ClusterNode loc = cctx.localNode();

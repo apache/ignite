@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * Plain closure that does not accept any arguments, returns nothing and do not implement
@@ -19,7 +19,7 @@ public interface GridPlainAbsClosure {
     /**
      * Applies this closure.
      *
-     * @throws GridException If error occurred.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public void apply() throws GridException;
+    public void apply() throws IgniteCheckedException;
 }

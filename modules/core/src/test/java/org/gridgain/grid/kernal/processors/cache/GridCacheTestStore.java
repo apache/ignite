@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.*;
@@ -74,7 +74,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /**
-     * Sets a flag indicating if methods of this class should fail with {@link GridException}.
+     * Sets a flag indicating if methods of this class should fail with {@link IgniteCheckedException}.
      *
      * @param shouldFail {@code true} if should fail.
      */
@@ -176,7 +176,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public String load(GridCacheTx tx, Integer key) throws GridException {
+    @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "load";
@@ -190,7 +190,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiInClosure<Integer, String> clo, Object[] args)
-        throws GridException {
+        throws IgniteCheckedException {
         lastMtd = "loadAllFull";
 
         checkOperation();
@@ -208,7 +208,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
-        IgniteBiInClosure<Integer, String> c) throws GridException {
+        IgniteBiInClosure<Integer, String> c) throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "loadAll";
@@ -225,7 +225,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void put(@Nullable GridCacheTx tx, Integer key, String val)
-        throws GridException {
+        throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "put";
@@ -239,7 +239,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void putAll(GridCacheTx tx, Map<? extends Integer, ? extends String> map)
-        throws GridException {
+        throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "putAll";
@@ -252,7 +252,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(GridCacheTx tx, Integer key) throws GridException {
+    @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "remove";
@@ -264,7 +264,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /** {@inheritDoc} */
     @Override public void removeAll(GridCacheTx tx, Collection<? extends Integer> keys)
-        throws GridException {
+        throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "removeAll";
@@ -284,11 +284,11 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
      * Checks the flag and throws exception if it is set. Checks operation delay and sleeps
      * for specified amount of time, if needed.
      *
-     * @throws GridException Always if flag is set.
+     * @throws IgniteCheckedException Always if flag is set.
      */
-    private void checkOperation() throws GridException {
+    private void checkOperation() throws IgniteCheckedException {
         if (shouldFail)
-            throw new GridException("Store exception.");
+            throw new IgniteCheckedException("Store exception.");
 
         if (operationDelay > 0)
             U.sleep(operationDelay);
@@ -296,9 +296,9 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
     /**
      * @param tx Checks transaction.
-     * @throws GridException If transaction is incorrect.
+     * @throws IgniteCheckedException If transaction is incorrect.
      */
-    private void checkTx(GridCacheTx tx) throws GridException {
+    private void checkTx(GridCacheTx tx) throws IgniteCheckedException {
         if (tx == null)
             return;
 
@@ -307,9 +307,9 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
         GridCacheTxEx tx0 = (GridCacheTxEx)tx;
 
         if (!tx0.local())
-            throw new GridException("Tx is not local: " + tx);
+            throw new IgniteCheckedException("Tx is not local: " + tx);
 
         if (tx0.dht())
-            throw new GridException("Tx is DHT: " + tx);
+            throw new IgniteCheckedException("Tx is DHT: " + tx);
     }
 }

@@ -11,15 +11,29 @@
 
 package org.gridgain.visor
 
-import org.apache.ignite.lifecycle.IgniteListener
-import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.{IgniteSystemProperties, IgniteState, Ignition}
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
-import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.{IgniteEvent, IgniteDiscoveryEvent, IgniteEventType}
-import org.apache.ignite.lang.IgnitePredicate
+import org.gridgain.grid._
+import org.gridgain.grid.kernal.GridComponentType._
+import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.gridgain.grid.kernal.visor.VisorTaskArgument
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
+import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
+import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.gridgain.grid.util.typedef._
+import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+
+import org.apache.ignite.IgniteSystemProperties._
+import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent, IgniteEventType}
+import org.apache.ignite.lang.IgnitePredicate
+import org.apache.ignite.lifecycle.IgniteListener
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
+import org.apache.ignite.thread.IgniteThreadPoolExecutor
+import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.jetbrains.annotations.Nullable
 
 import java.io._
 import java.net._
@@ -27,20 +41,7 @@ import java.text._
 import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
-import IgniteSystemProperties._
-import IgniteEventType._
-import org.gridgain.grid.kernal.GridComponentType._
-import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
-import org.gridgain.grid.util.lang.{GridFunc => F}
-import org.gridgain.grid.util.typedef._
-import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
-import org.gridgain.grid._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -230,18 +231,18 @@ object visor extends VisorTag {
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws GridException if Visor is disconnected or node not found.
+     * @throws IgniteCheckedException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
-            throw new GridException("Visor disconnected")
+            throw new IgniteCheckedException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new GridException("Node is gone: " + nid)
+                throw new IgniteCheckedException("Node is gone: " + nid)
 
             node
         }
@@ -624,7 +625,7 @@ object visor extends VisorTag {
                     mem.remove(k)
                 }
                 catch {
-                    case ignored: Throwable => // no-op
+                    case ignored: Throwable => // No-op.
                 }
         })
     }
@@ -757,7 +758,7 @@ object visor extends VisorTag {
             for (i <- 0 until Int.MaxValue if mem.putIfAbsent(prefix + i, s) == null)
                 return prefix + i
 
-            throw new GridRuntimeException("No more memory.")
+            throw new IgniteException("No more memory.")
         }
     }
 
@@ -790,7 +791,7 @@ object visor extends VisorTag {
         for (i <- 0 until Int.MaxValue if mem.putIfAbsent(prefix + i, s) == null)
             return prefix + i
 
-        throw new GridRuntimeException("No more memory.")
+        throw new IgniteException("No more memory.")
     }
 
     /**
@@ -1473,7 +1474,7 @@ object visor extends VisorTag {
                             val url = U.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new GridException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1498,10 +1499,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new GridException("Can't find grid configuration in: " + url)
+                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new GridException("More than one grid configuration found in: " + url)
+                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1560,7 +1561,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: GridException =>
+            case e: IgniteCheckedException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1603,7 +1604,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new GridException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)

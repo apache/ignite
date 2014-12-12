@@ -69,7 +69,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
         try {
             return cache.get(key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -81,7 +81,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
         try {
             cache.putx(key, val);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -102,7 +102,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
 
             return null;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -117,7 +117,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null)
                 unlock(ctx, key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -144,7 +144,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
 
             return false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -163,7 +163,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -178,7 +178,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null)
                 cache.removex(key);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             rollbackCurrentTx();
 
             throw new CacheException(e);
@@ -189,9 +189,9 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
      *
      * @param ctx Transaction context.
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void unlock(TxContext ctx, Object key) throws GridException {
+    private void unlock(TxContext ctx, Object key) throws IgniteCheckedException {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 
@@ -226,16 +226,16 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
                     tx.rollback();
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             log.error("Failed to rollback cache transaction.", e);
         }
     }
 
     /**
      * @param key Key.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void lockKey(Object key) throws GridException {
+    private void lockKey(Object key) throws IgniteCheckedException {
         if (cache.tx() == null)
             cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 

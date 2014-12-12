@@ -76,9 +76,9 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                 futures.add(comp.<Integer>future());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 // Should not be thrown since uses asynchronous execution.
-                throw new GridRuntimeException(e);
+                throw new IgniteException(e);
             }
         }
     }
@@ -102,7 +102,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
                 catch (IgniteFutureCancelledException ignored) {
                     ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     ignite.log().warning(
                         ">>> Get operation for completed task failed: " + fut.getTaskSession().getId(), e);
                 }
@@ -127,7 +127,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
                 futToCancel.cancel();
                 ignite.log().info("Task canceled: " + futToCancel.getTaskSession().getId());
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 ignite.log().warning(">>> Future cancellation failed: " + futToCancel.getTaskSession().getId(), e);
             }
         }

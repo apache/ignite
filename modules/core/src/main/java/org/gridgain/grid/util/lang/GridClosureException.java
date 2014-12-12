@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 /**
  * This exception provides closures with facility to throw exceptions. Closures can't
@@ -18,12 +18,12 @@ import org.gridgain.grid.*;
  *
  * @see GridFunc#wrap(Throwable)
  */
-public class GridClosureException extends GridRuntimeException {
+public class GridClosureException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates wrapper closure exception for given {@link GridException}.
+     * Creates wrapper closure exception for given {@link IgniteCheckedException}.
      *
      * @param e Exception to wrap.
      */

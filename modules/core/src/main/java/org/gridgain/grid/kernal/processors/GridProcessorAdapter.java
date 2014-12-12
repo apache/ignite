@@ -44,7 +44,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws GridException {
+    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -64,12 +64,12 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws GridException {
+    @Override public void start() throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws GridException {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -88,11 +88,11 @@ public abstract class GridProcessorAdapter implements GridProcessor {
      *      </pre>
      *      Note that in case when variable name is the same as JavaBean property you
      *      can just copy Java condition expression into description as a string.
-     * @throws GridException Thrown if given condition is {@code false}
+     * @throws IgniteCheckedException Thrown if given condition is {@code false}
      */
-    protected final void assertParameter(boolean cond, String condDesc) throws GridException {
+    protected final void assertParameter(boolean cond, String condDesc) throws IgniteCheckedException {
         if (!cond)
-            throw new GridException("Grid configuration parameter invalid: " + condDesc);
+            throw new IgniteCheckedException("Grid configuration parameter invalid: " + condDesc);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void addAttributes(Map<String, Object> attrs)  throws GridException {
+    @Override public void addAttributes(Map<String, Object> attrs)  throws IgniteCheckedException {
         // No-op.
     }
 

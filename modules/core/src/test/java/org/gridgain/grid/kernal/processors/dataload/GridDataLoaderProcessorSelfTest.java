@@ -156,7 +156,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             // Cannot load local cache configured remotely.
             info("Caught expected exception: " + e);
         }

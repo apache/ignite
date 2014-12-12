@@ -72,27 +72,6 @@
             <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/>
         </property>
 
-        <!--
-            Allow indexing SPI to index primitive values.
-        -->
-        <property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <!-- Index primitives. -->
-                    <property name="defaultIndexPrimitiveKey" value="true"/>
-
-                    <!--
-                        Set to false to allow different key types for one value type.
-
-                        Note that this also means that '_key' column cannot participate in
-                        where clause queries either directly through API, through JDBC driver,
-                        or through Object Viewer in Visor DevOps Console.
-                    -->
-                    <!--property name="defaultIndexFixedTyping" value="false"/-->
-                </bean>
-            </list>
-        </property>
-
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
@@ -126,6 +105,14 @@
                         Default value is false.
                     -->
                     <property name="queryIndexEnabled" value="true"/>
+
+                    <!-- Allow to index primitive values. -->
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <!-- Index primitives. -->
+                            <property name="indexPrimitiveKey" value="true"/>
+                        </bean>
+                    </property>
 
                     <!--
                         This shows how to configure number of backups. The below configuration
@@ -168,6 +155,14 @@
                     -->
                     <property name="queryIndexEnabled" value="true"/>
 
+                    <!-- Allow to index primitive values. -->
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <!-- Index primitives. -->
+                            <property name="indexPrimitiveKey" value="true"/>
+                        </bean>
+                    </property>
+
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
@@ -206,6 +201,14 @@
                         Default value is false.
                     -->
                     <property name="queryIndexEnabled" value="true"/>
+
+                    <!-- Allow to index primitive values. -->
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <!-- Index primitives. -->
+                            <property name="indexPrimitiveKey" value="true"/>
+                        </bean>
+                    </property>
                 </bean>
 
                 <!--
@@ -227,6 +230,14 @@
                         Default value is false.
                     -->
                     <property name="queryIndexEnabled" value="true"/>
+
+                    <!-- Allow to index primitive values. -->
+                    <property name="queryConfiguration">
+                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                            <!-- Index primitives. -->
+                            <property name="indexPrimitiveKey" value="true"/>
+                        </bean>
+                    </property>
                 </bean>
             </list>
         </property>

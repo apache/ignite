@@ -11,22 +11,23 @@
 
 package org.gridgain.visor.commands.top
 
+import org.gridgain.grid.kernal.GridNodeAttributes._
+import org.gridgain.grid.util.typedef._
+import org.gridgain.grid.util.{GridUtils => U}
+
+import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.lang.IgnitePredicate
-import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.util.{GridUtils => U}
-import org.gridgain.grid.util.typedef._
 
 import java.net.{InetAddress, UnknownHostException}
-
-import scala.collection.JavaConversions._
-import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
+
+import scala.collection.JavaConversions._
+import scala.language.{implicitConversions, reflectiveCalls}
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -184,7 +185,7 @@ class VisorTopologyCommand {
             }
             catch {
                 case e: NumberFormatException => scold(e.getMessage)
-                case e: GridException => scold(e.getMessage)
+                case e: IgniteCheckedException => scold(e.getMessage)
             }
         }
     }
@@ -205,7 +206,7 @@ class VisorTopologyCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(v(n))
         else
-            throw new GridException("Invalid expression: " + exprStr)
+            throw new IgniteCheckedException("Invalid expression: " + exprStr)
     }
 
     /**

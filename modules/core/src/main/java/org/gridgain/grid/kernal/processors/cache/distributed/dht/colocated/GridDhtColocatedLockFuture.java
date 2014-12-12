@@ -245,9 +245,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return Non-reentry candidate if lock should be acquired on remote node,
      *      reentry candidate if locks has been already acquired and {@code null} if explicit locks is held and
      *      implicit transaction accesses locked entry.
-     * @throws GridException If failed to add entry due to external locking.
+     * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
-    @Nullable private GridCacheMvccCandidate<K> addEntry(GridDistributedCacheEntry<K, V> entry) throws GridException {
+    @Nullable private GridCacheMvccCandidate<K> addEntry(GridDistributedCacheEntry<K, V> entry) throws IgniteCheckedException {
         GridCacheMvccCandidate<K> cand = cctx.mvcc().explicitLock(threadId, entry.key());
 
         if (inTx()) {
@@ -257,7 +257,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             if (cand != null) {
                 if (!tx.implicit())
-                    throw new GridException("Cannot access key within transaction if lock is " +
+                    throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
                         "externally held [key=" + entry.key() + ", entry=" + entry + ']');
                 else
                     return null;
@@ -421,7 +421,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             return true;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onError(e);
 
             return false;
@@ -571,7 +571,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 cctx.topology().readUnlock();
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             onDone(e);
         }
     }
@@ -786,7 +786,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             proceedMapping(mappings);
         }
-        catch (GridException ex) {
+        catch (IgniteCheckedException ex) {
             onDone(false, ex);
         }
     }
@@ -796,10 +796,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * remote primary node.
      *
      * @param mappings Queue of mappings.
-     * @throws GridException If mapping can not be completed.
+     * @throws IgniteCheckedException If mapping can not be completed.
      */
     private void proceedMapping(final Deque<GridNearLockMapping<K, V>> mappings)
-        throws GridException {
+        throws IgniteCheckedException {
         GridNearLockMapping<K, V> map = mappings.poll();
 
         // If there are no more mappings to process, complete the future.
@@ -854,7 +854,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             fut.onResult(ex);
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             onError(e);
                         }
                     }
@@ -918,7 +918,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                         if (mappings != null)
                             proceedMapping(mappings);
                     }
-                    catch (GridException ex) {
+                    catch (IgniteCheckedException ex) {
                         onError(ex);
 
                         return false;
@@ -937,9 +937,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param keys Keys to lock.
      * @param topVer Topology version.
      * @return {@code True} if all keys were mapped locally, {@code false} if full mapping should be performed.
-     * @throws GridException If key cannot be added to mapping.
+     * @throws IgniteCheckedException If key cannot be added to mapping.
      */
-    private boolean mapAsPrimary(Collection<? extends K> keys, long topVer) throws GridException {
+    private boolean mapAsPrimary(Collection<? extends K> keys, long topVer) throws IgniteCheckedException {
         // Assign keys to primary nodes.
         Collection<K> distributedKeys = new ArrayList<>(keys.size());
 
@@ -985,9 +985,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param topVer Topology version.
      * @param distributedKeys Collection of keys needs to be locked.
      * @return {@code True} if transaction accesses key that was explicitly locked before.
-     * @throws GridException If lock is externally held and transaction is explicit.
+     * @throws IgniteCheckedException If lock is externally held and transaction is explicit.
      */
-    private boolean addLocalKey(K key, long topVer, Collection<K> distributedKeys) throws GridException {
+    private boolean addLocalKey(K key, long topVer, Collection<K> distributedKeys) throws IgniteCheckedException {
         GridDistributedCacheEntry<K, V> entry = cctx.colocated().entryExx(key, topVer, false);
 
         assert !entry.detached();
@@ -1014,10 +1014,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param key Key to map.
      * @param topVer Topology version.
      * @return Near lock mapping.
-     * @throws GridException If mapping failed.
+     * @throws IgniteCheckedException If mapping failed.
      */
     private GridNearLockMapping<K, V> map(K key, @Nullable GridNearLockMapping<K, V> mapping,
-        long topVer) throws GridException {
+        long topVer) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
@@ -1027,7 +1027,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             throw newTopologyException(null, primary.id());
 
         if (inTx() && tx.groupLock() && !primary.isLocal())
-            throw new GridException("Failed to start group lock transaction (local node is not primary for " +
+            throw new IgniteCheckedException("Failed to start group lock transaction (local node is not primary for " +
                 " key) [key=" + key + ", primaryNodeId=" + primary.id() + ']');
 
         if (mapping == null || !primary.id().equals(mapping.node().id()))
@@ -1231,7 +1231,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                         try {
                             if (res.dhtVersion(i) == null) {
-                                onDone(new GridException("Failed to receive DHT version from remote node " +
+                                onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
                                     "(will fail the lock): " + res));
 
                                 return;
@@ -1243,7 +1243,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             if (log.isDebugEnabled())
                                 log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                         }
-                        catch (GridException e) {
+                        catch (IgniteCheckedException e) {
                             onDone(e);
 
                             return;
@@ -1263,7 +1263,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 try {
                     proceedMapping(mappings);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     onDone(e);
                 }
 

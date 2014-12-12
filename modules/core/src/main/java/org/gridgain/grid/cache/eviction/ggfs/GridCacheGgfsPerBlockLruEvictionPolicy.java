@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.cache.eviction.ggfs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -261,9 +261,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicy implements GridCacheEviction
      *
      * @param path Path.
      * @return {@code True} in case non block of related file must be excluded.
-     * @throws GridException In case of faulty patterns.
+     * @throws IgniteCheckedException In case of faulty patterns.
      */
-    public boolean exclude(IgniteFsPath path) throws GridException {
+    public boolean exclude(IgniteFsPath path) throws IgniteCheckedException {
         assert path != null;
 
         Collection<Pattern> excludePatterns0;
@@ -280,7 +280,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicy implements GridCacheEviction
                         excludePatterns0.add(Pattern.compile(excludePath));
                     }
                     catch (PatternSyntaxException ignore) {
-                        throw new GridException("Invalid regex pattern: " + excludePath);
+                        throw new IgniteCheckedException("Invalid regex pattern: " + excludePath);
                     }
                 }
 

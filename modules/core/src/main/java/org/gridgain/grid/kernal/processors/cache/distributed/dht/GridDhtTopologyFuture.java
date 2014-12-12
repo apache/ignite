@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 
 /**
@@ -30,7 +30,7 @@ public interface GridDhtTopologyFuture extends IgniteFuture<Long> {
      * This method will block until the topology future is ready.
      *
      * @return Topology snapshot for particular topology version.
-     * @throws GridException If topology future failed.
+     * @throws IgniteCheckedException If topology future failed.
      */
-    public GridDiscoveryTopologySnapshot topologySnapshot() throws GridException;
+    public GridDiscoveryTopologySnapshot topologySnapshot() throws IgniteCheckedException;
 }

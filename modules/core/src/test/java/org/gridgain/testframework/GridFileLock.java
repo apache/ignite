@@ -9,7 +9,7 @@
 
 package org.gridgain.testframework;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -47,9 +47,9 @@ public class GridFileLock {
      * Performs an exclusive lock on a file, that
      * this lock instance was constructed with.
      *
-     * @throws GridException If failed to perform locking. The file remains open.
+     * @throws IgniteCheckedException If failed to perform locking. The file remains open.
      */
-    public void lock() throws GridException {
+    public void lock() throws IgniteCheckedException {
         lock(false);
     }
 
@@ -58,20 +58,20 @@ public class GridFileLock {
      * this lock instance was constructed with.
      *
      * @param shared Whether a lock is shared (non-exclusive).
-     * @throws GridException If failed to perform locking. The file remains open.
+     * @throws IgniteCheckedException If failed to perform locking. The file remains open.
      */
-    public void lock(boolean shared) throws GridException {
+    public void lock(boolean shared) throws IgniteCheckedException {
         if (fileLock != null)
-            throw new GridException("Already locked [lockFile=" + file + ']');
+            throw new IgniteCheckedException("Already locked [lockFile=" + file + ']');
 
         try {
             fileLock = raFile.getChannel().tryLock(0, Long.MAX_VALUE, shared);
 
             if (fileLock == null)
-                throw new GridException("Failed to get exclusive lock on lock file [lockFile=" + file + ']');
+                throw new IgniteCheckedException("Failed to get exclusive lock on lock file [lockFile=" + file + ']');
         }
         catch (IOException | OverlappingFileLockException e) {
-            throw new GridException("Failed to get exclusive lock on lock file [lockFile=" + file + ']', e);
+            throw new IgniteCheckedException("Failed to get exclusive lock on lock file [lockFile=" + file + ']', e);
         }
     }
 

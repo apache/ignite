@@ -226,7 +226,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -562,7 +562,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws GridException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
             return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
@@ -578,7 +578,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<ComputeJobResult> results) throws GridException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             return results.get(0).getData();
         }
     }
@@ -634,7 +634,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void applyx() throws GridException {
+        @Override public void applyx() throws IgniteCheckedException {
             assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
             assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
             assert jobCtx.affinityKey().equals(affKey);
@@ -670,7 +670,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call() throws GridException {
+        @Override public Object call() throws IgniteCheckedException {
             assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, affKey).id());
             assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(null, key).id());
             assert jobCtx.affinityKey().equals(affKey);

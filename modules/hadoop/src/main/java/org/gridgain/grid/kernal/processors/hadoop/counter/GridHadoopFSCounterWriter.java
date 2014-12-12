@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.hadoop.counter;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
@@ -39,7 +40,7 @@ public class GridHadoopFSCounterWriter implements GridHadoopCounterWriter {
 
     /** {@inheritDoc} */
     @Override public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs)
-        throws GridException {
+        throws IgniteCheckedException {
 
         Configuration hadoopCfg = new Configuration();
 
@@ -76,7 +77,7 @@ public class GridHadoopFSCounterWriter implements GridHadoopCounterWriter {
             }
         }
         catch (IOException e) {
-            throw new GridException(e);
+            throw new IgniteCheckedException(e);
         }
     }
 }

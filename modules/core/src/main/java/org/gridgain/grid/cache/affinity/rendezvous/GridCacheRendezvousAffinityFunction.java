@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache.affinity.rendezvous;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
@@ -66,7 +67,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
             catch (NoSuchAlgorithmException e) {
                 assert false : "Should have failed in constructor";
 
-                throw new GridRuntimeException("Failed to obtain message digest (digest was available in constructor)",
+                throw new IgniteException("Failed to obtain message digest (digest was available in constructor)",
                     e);
             }
         }
@@ -157,7 +158,7 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
             MessageDigest.getInstance("MD5");
         }
         catch (NoSuchAlgorithmException e) {
-            throw new GridRuntimeException("Failed to obtain MD5 message digest instance.", e);
+            throw new IgniteException("Failed to obtain MD5 message digest instance.", e);
         }
     }
 
@@ -305,8 +306,8 @@ public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFun
 
                 lst.add(F.t(hash, node));
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
 

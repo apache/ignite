@@ -243,10 +243,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     valPtr = 0;
                 }
             }
-            catch (GridException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to deserialize value [entry=" + this + ", val=" + val + ']');
 
-                throw new GridRuntimeException(e);
+                throw new IgniteException(e);
             }
         }
     }
@@ -278,8 +278,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (valPtr != 0 && cctx.offheapTiered())
                     return offheapValueBytes();
             }
-            catch (GridException e) {
-                throw new GridRuntimeException(e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
         else {
@@ -296,7 +296,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public int memorySize() throws GridException {
+    @Override public int memorySize() throws IgniteCheckedException {
         byte[] kb;
         GridCacheValueBytes vb;
 
@@ -447,15 +447,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Failed to unmarshal object while creating entry info: " + this, e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal object while creating entry info: " + this, e);
         }
 
         return info;
     }
 
     /** {@inheritDoc} */
-    @Override public V unswap() throws GridException {
+    @Override public V unswap() throws IgniteCheckedException {
         return unswap(false, true);
     }
 
@@ -465,9 +465,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param ignoreFlags Whether to ignore swap flags.
      * @param needVal If {@code false} then do not to deserialize value during unswap.
      * @return Value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws GridException {
+    @Nullable @Override public V unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
         boolean swapEnabled = cctx.swap().swapEnabled() && (ignoreFlags || !cctx.hasFlag(SKIP_SWAP));
 
         if (!swapEnabled && !cctx.isOffHeapEnabled())
@@ -535,9 +535,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void swap() throws GridException {
+    private void swap() throws IgniteCheckedException {
         if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && hasValueUnlocked() && !detached()) {
             assert Thread.holdsLock(this);
 
@@ -587,9 +587,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected final void releaseSwap() throws GridException {
+    protected final void releaseSwap() throws IgniteCheckedException {
         if (cctx.isSwapOrOffheapEnabled()) {
             synchronized (this){
                 cctx.swap().remove(key(), getOrMarshalKeyBytes());
@@ -633,7 +633,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 try {
                     val = cctx.store().loadFromStore(null, key);
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to refresh-ahead entry: " + GridCacheMapEntry.this, e);
                 }
                 finally {
@@ -660,7 +660,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                                 // Don't change version for read-through.
                                 update(val, null, expTime, ttl, ver);
                             }
-                            catch (GridException e) {
+                            catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to update cache index: " + GridCacheMapEntry.this, e);
                             }
                         }
@@ -678,11 +678,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @return Read value.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected V readThrough(@Nullable GridCacheTxEx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws GridException {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.store().loadFromStore(tx, key);
     }
 
@@ -699,7 +699,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
         return innerGet0(tx,
@@ -730,7 +730,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
             readThrough = false;
@@ -992,7 +992,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     @Nullable @Override public final V innerReload(IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridException, GridCacheEntryRemovedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         cctx.denyOnFlag(GridCacheFlag.READ);
 
         CU.checkStore(cctx);
@@ -1110,7 +1110,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName
-    ) throws GridException, GridCacheEntryRemovedException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         V old;
 
         boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
@@ -1248,7 +1248,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName
-    ) throws GridException, GridCacheEntryRemovedException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
         V old;
@@ -1436,7 +1436,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
-    ) throws GridException, GridCacheEntryRemovedException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
         V old;
@@ -1639,7 +1639,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
-    ) throws GridException, GridCacheEntryRemovedException, GridClosureException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
         V old;
@@ -2016,10 +2016,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param val Value.
      * @param valBytes Value bytes.
      * @param ver Version.
-     * @throws GridException In case of exception.
+     * @throws IgniteCheckedException In case of exception.
      */
     private void drReplicate(GridDrType drType, @Nullable V val, @Nullable byte[] valBytes, GridCacheVersion ver)
-        throws GridException {
+        throws IgniteCheckedException {
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
             cctx.dr().replicate(key, keyBytes, val, valBytes, rawTtl(), rawExpireTime(), ver.drVersion(), drType);
     }
@@ -2041,7 +2041,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         cctx.denyOnFlag(GridCacheFlag.READ);
 
         boolean ret;
@@ -2143,7 +2143,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws GridException {
+    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws IgniteCheckedException {
         boolean obsolete = false;
         boolean deferred = false;
 
@@ -2258,7 +2258,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public synchronized boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer)
-        throws GridException {
+        throws IgniteCheckedException {
         assert newVer != null;
 
         if (curVer == null || ver.equals(curVer)) {
@@ -2287,7 +2287,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public boolean invalidate(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridCacheEntryRemovedException, GridException {
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
         if (F.isEmptyOrNulls(filter)) {
             synchronized (this) {
                 checkObsolete();
@@ -2327,7 +2327,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public boolean compact(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridCacheEntryRemovedException, GridException {
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
         // For optimistic checking.
         GridCacheVersion startVer;
 
@@ -2492,8 +2492,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             return null;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to perform entry peek() operation.", e);
         }
     }
 
@@ -2514,8 +2514,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 return null;
             }
-            catch (GridException e) {
-                throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Unable to perform entry peek() operation.", e);
             }
         }
 
@@ -2531,8 +2531,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             return peek != null ? peek.get() : null;
         }
-        catch (GridException e) {
-            throw new GridRuntimeException("Unable to perform entry peek() operation.", e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to perform entry peek() operation.", e);
         }
     }
 
@@ -2542,14 +2542,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param filter Filter.
      * @param tx Transaction to peek value at (if mode is TX value).
      * @return Peeked value.
-     * @throws GridException In case of error.
+     * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
+        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
 
         long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
@@ -2596,7 +2596,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public V poke(V val) throws GridCacheEntryRemovedException, GridException {
+    @Override public V poke(V val) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert val != null;
 
         V old;
@@ -2637,16 +2637,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      *
      * @param tx Transaction to check.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
-     * @throws GridException If entry was externally locked.
+     * @throws IgniteCheckedException If entry was externally locked.
      */
-    private void groupLockSanityCheck(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException, GridException {
+    private void groupLockSanityCheck(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert tx.groupLock();
 
         GridCacheTxEntry<K, V> txEntry = tx.entry(txKey());
 
         if (txEntry.groupLockEntry()) {
             if (lockedByAny())
-                throw new GridException("Failed to update cache entry (entry was externally locked while " +
+                throw new IgniteCheckedException("Failed to update cache entry (entry was externally locked while " +
                     "accessing entry within group lock transaction) [entry=" + this + ", tx=" + tx + ']');
         }
     }
@@ -2658,10 +2658,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @return Peeked value.
      * @throws GridCacheFilterFailedException If filter failed.
      * @throws GridCacheEntryRemovedException If entry got removed.
-     * @throws GridException If unexpected cache failure occurred.
+     * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
     @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, GridException {
+        GridCacheTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, IgniteCheckedException {
         GridTuple<V> peek = peekTx(failFast, filter, tx);
 
         // If transaction has value (possibly null, which means value is to be deleted).
@@ -2693,12 +2693,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @return Peeked value.
      * @throws GridCacheFilterFailedException If filter failed.
      * @throws GridCacheEntryRemovedException If entry got removed.
-     * @throws GridException If unexpected cache failure occurred.
+     * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridTuple<V> peekGlobal(boolean failFast, long topVer,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, GridException {
+        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
 
@@ -2742,12 +2742,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param failFast Fail fast flag.
      * @param filter Filter.
      * @return Value from swap storage.
-     * @throws GridException In case of any errors.
+     * @throws IgniteCheckedException In case of any errors.
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private GridTuple<V> peekSwap(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridException, GridCacheFilterFailedException {
+        throws IgniteCheckedException, GridCacheFilterFailedException {
         if (!cctx.isAll(wrap(false), filter))
             return F.t((V)CU.failed(failFast));
 
@@ -2765,12 +2765,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param failFast Fail fast flag.
      * @param filter Filter.
      * @return Value from persistent store.
-     * @throws GridException In case of any errors.
+     * @throws IgniteCheckedException In case of any errors.
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peekDb(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
-        throws GridException, GridCacheFilterFailedException {
+        throws IgniteCheckedException, GridCacheFilterFailedException {
         if (!cctx.isAll(wrap(false), filter))
             return CU.failed(failFast);
 
@@ -2786,9 +2786,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * TODO: GG-4009: do we need to generate event and invalidate value?
      *
      * @return {@code true} if expired.
-     * @throws GridException In case of failure.
+     * @throws IgniteCheckedException In case of failure.
      */
-    private boolean checkExpired() throws GridException {
+    private boolean checkExpired() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         long expireTime = expireTimeExtras();
@@ -2819,16 +2819,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public synchronized V rawGetOrUnmarshal(boolean tmp) throws GridException {
+    @Nullable @Override public synchronized V rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException {
         return rawGetOrUnmarshalUnlocked(tmp);
     }
 
     /**
      * @param tmp If {@code true} can return temporary instance.
      * @return Value (unmarshalled if needed).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V rawGetOrUnmarshalUnlocked(boolean tmp) throws GridException {
+    @Nullable public V rawGetOrUnmarshalUnlocked(boolean tmp) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         V val = this.val;
@@ -2864,7 +2864,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     /*
-    @Override public synchronized GridDrEntry<K, V> drEntry() throws GridException {
+    @Override public synchronized GridDrEntry<K, V> drEntry() throws IgniteCheckedException {
         return new GridDrPlainEntry<>(key, isStartVersion() ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
             ttlExtras(), expireTimeExtras(), ver.drVersion());
     }
@@ -2882,7 +2882,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public boolean initialValue(V val, byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, long topVer, GridDrType drType) throws GridException, GridCacheEntryRemovedException {
+        boolean preload, long topVer, GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException {
         if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
@@ -2933,7 +2933,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public synchronized boolean initialValue(K key, GridCacheSwapEntry <V> unswapped) throws
-        GridException,
+        IgniteCheckedException,
         GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -2963,7 +2963,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public synchronized boolean versionedValue(V val, GridCacheVersion curVer, GridCacheVersion newVer)
-        throws GridException, GridCacheEntryRemovedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         checkObsolete();
 
         if (curVer == null || curVer.equals(ver)) {
@@ -3245,7 +3245,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             }
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to clean up expired cache entry: " + this, e);
         }
         finally {
@@ -3302,7 +3302,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] getOrMarshalKeyBytes() throws GridException {
+    @Override public byte[] getOrMarshalKeyBytes() throws IgniteCheckedException {
         byte[] bytes = keyBytes();
 
         if (bytes != null)
@@ -3326,7 +3326,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheValueBytes valueBytes(@Nullable GridCacheVersion ver)
-        throws GridException, GridCacheEntryRemovedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         V val = null;
         GridCacheValueBytes valBytes = GridCacheValueBytes.nil();
 
@@ -3371,10 +3371,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param expireTime Expire time.
      * @param ver New entry version.
      * @param prevVal Previous value.
-     * @throws GridException If update failed.
+     * @throws IgniteCheckedException If update failed.
      */
     protected void updateIndex(@Nullable V val, @Nullable byte[] valBytes, long expireTime, GridCacheVersion ver,
-        @Nullable V prevVal) throws GridException {
+        @Nullable V prevVal) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
         assert val != null || valBytes != null : "null values in update index for key: " + key;
 
@@ -3384,7 +3384,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (qryMgr != null)
                 qryMgr.store(key, keyBytes, val, valBytes, ver, expireTime);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
         }
     }
@@ -3393,9 +3393,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * Clears index.
      *
      * @param prevVal Previous value (if needed for index update).
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    protected void clearIndex(@Nullable V prevVal) throws GridException {
+    protected void clearIndex(@Nullable V prevVal) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         try {
@@ -3404,7 +3404,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (qryMgr != null)
                 qryMgr.remove(key(), keyBytes());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
         }
     }
@@ -3414,9 +3414,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * for Mongo caches). If previous value is not required, this method will return {@code null}.
      *
      * @return Previous value or {@code null}.
-     * @throws GridException If failed to retrieve previous value.
+     * @throws IgniteCheckedException If failed to retrieve previous value.
      */
-    protected V saveValueForIndexUnlocked() throws GridException {
+    protected V saveValueForIndexUnlocked() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         if (!cctx.cache().isMongoDataCache() && !cctx.cache().isMongoMetaCache())
@@ -3441,7 +3441,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws GridException {
+    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         return null;
     }
 
@@ -3452,7 +3452,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
@@ -3467,7 +3467,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                                     // Write to swap.
                                     swap();
                                 }
-                                catch (GridException e) {
+                                catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to write entry to swap storage: " + this, e);
                                 }
                             }
@@ -3510,7 +3510,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                                         // Write to swap.
                                         swap();
                                     }
-                                    catch (GridException e) {
+                                    catch (IgniteCheckedException e) {
                                         U.error(log, "Failed to write entry to swap storage: " + this, e);
                                     }
                                 }
@@ -3547,7 +3547,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public GridCacheBatchSwapEntry<K, V> evictInBatchInternal(GridCacheVersion obsoleteVer)
-        throws GridException {
+        throws IgniteCheckedException {
         assert Thread.holdsLock(this);
         assert cctx.isSwapOrOffheapEnabled();
 
@@ -3590,9 +3590,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * Create value bytes wrapper from the given object.
      *
      * @return Value bytes wrapper.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private ByteBuffer swapValueBytes() throws GridException {
+    private ByteBuffer swapValueBytes() throws IgniteCheckedException {
         assert val != null || valBytes != null || valPtr != 0;
 
         if (cctx.offheapTiered() && cctx.portableEnabled()) {
@@ -3624,7 +3624,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() && !cctx.isAll(wrap(false), filter)))
                 return false;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "An exception was thrown while filter checking.", e);
 
             RuntimeException ex = e.getCause(RuntimeException.class);
@@ -4063,9 +4063,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /**
      * @return Value bytes read from offheap.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridCacheValueBytes offheapValueBytes() throws GridException {
+    private GridCacheValueBytes offheapValueBytes() throws IgniteCheckedException {
         assert cctx.offheapTiered() && valPtr != 0;
 
         long ptr = valPtr;
@@ -4088,9 +4088,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      * @param tmp If {@code true} can return temporary object.
      * @return Unmarshalled value.
-     * @throws GridException If unmarshalling failed.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
-    private V unmarshalOffheap(boolean tmp) throws GridException {
+    private V unmarshalOffheap(boolean tmp) throws IgniteCheckedException {
         assert cctx.offheapTiered() && valPtr != 0;
 
         if (cctx.portableEnabled())

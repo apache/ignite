@@ -224,7 +224,7 @@ public class GridCacheTxHandler<K, V> {
             for (GridCacheTxEntry<K, V> e : F.concat(false, req.reads(), req.writes()))
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(ctx.kernalContext(), e);
         }
 
@@ -280,7 +280,7 @@ public class GridCacheTxHandler<K, V> {
                 try {
                     tx.rollback();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to rollback transaction: " + tx, e);
                 }
             }
@@ -292,7 +292,7 @@ public class GridCacheTxHandler<K, V> {
                     try {
                         txFut.get();
                     }
-                    catch (GridException e) {
+                    catch (IgniteCheckedException e) {
                         tx0.setRollbackOnly(); // Just in case.
 
                         if (!(e instanceof GridCacheTxOptimisticException))
@@ -466,7 +466,7 @@ public class GridCacheTxHandler<K, V> {
 
             // Always send finish response.
             GridCacheMessage<K, V> res = new GridNearTxFinishResponse<>(req.version(), req.threadId(), req.futureId(),
-                req.miniId(), new GridException("Transaction has been already completed."));
+                req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
                 ctx.io().send(nodeId, res);
@@ -644,7 +644,7 @@ public class GridCacheTxHandler<K, V> {
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitions(dhtTx.invalidPartitions());
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (e instanceof GridCacheTxRollbackException)
                 U.error(log, "Transaction was rolled back before prepare completed: " + dhtTx, e);
             else if (e instanceof GridCacheTxOptimisticException) {
@@ -667,7 +667,7 @@ public class GridCacheTxHandler<K, V> {
             // Reply back to sender.
             ctx.io().send(nodeId, res);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyException) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send tx response to remote node (node left grid) [node=" + nodeId +
@@ -733,7 +733,7 @@ public class GridCacheTxHandler<K, V> {
 
             return;
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to start remote DHT and Near transactions (will invalidate transactions) [dhtTx=" +
                 dhtTx + ", nearTx=" + nearTx + ']', e);
 
@@ -846,7 +846,7 @@ public class GridCacheTxHandler<K, V> {
             try {
                 tx.commit();
             }
-            catch (GridException ex) {
+            catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to invalidate transaction: " + tx, ex);
             }
         }
@@ -882,11 +882,11 @@ public class GridCacheTxHandler<K, V> {
      * @param req Request.
      * @param res Response.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable GridDhtTxRemote<K, V> startRemoteTx(UUID nodeId,
         GridDhtTxPrepareRequest<K, V> req,
-        GridDhtTxPrepareResponse<K, V> res) throws GridException {
+        GridDhtTxPrepareResponse<K, V> res) throws IgniteCheckedException {
         if (!F.isEmpty(req.writes())) {
             GridDhtTxRemote<K, V> tx = ctx.tm().tx(req.version());
 
@@ -981,10 +981,10 @@ public class GridCacheTxHandler<K, V> {
     /**
      * @param key Key
      * @param ver Version.
-     * @throws GridException If invalidate failed.
+     * @throws IgniteCheckedException If invalidate failed.
      */
     private void invalidateNearEntry(GridCacheContext<K, V> cacheCtx, K key, GridCacheVersion ver)
-        throws GridException {
+        throws IgniteCheckedException {
         GridNearCacheAdapter<K, V> near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
 
         GridCacheEntryEx<K, V> nearEntry = near.peekEx(key);
@@ -1000,10 +1000,10 @@ public class GridCacheTxHandler<K, V> {
      * @param nodeId Sender node ID.
      * @param req Request.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridNearTxRemote<K, V> startNearRemoteTx(ClassLoader ldr, UUID nodeId,
-        GridDhtTxPrepareRequest<K, V> req) throws GridException {
+        GridDhtTxPrepareRequest<K, V> req) throws IgniteCheckedException {
         assert F.isEmpty(req.candidatesByKey());
 
         if (!F.isEmpty(req.nearWrites())) {
@@ -1055,12 +1055,12 @@ public class GridCacheTxHandler<K, V> {
      * @param nodeId Primary node ID.
      * @param req Request.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable GridDhtTxRemote<K, V> startRemoteTxForFinish(UUID nodeId, GridDhtTxFinishRequest<K, V> req)
-        throws GridException, GridDistributedLockCancelledException {
+        throws IgniteCheckedException, GridDistributedLockCancelledException {
 
         GridDhtTxRemote<K, V> tx = null;
 
@@ -1207,12 +1207,12 @@ public class GridCacheTxHandler<K, V> {
      * @param nodeId Primary node ID.
      * @param req Request.
      * @return Remote transaction.
-     * @throws GridException If failed.
+     * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridNearTxRemote<K, V> startNearRemoteTxForFinish(UUID nodeId, GridDhtTxFinishRequest<K, V> req)
-        throws GridException, GridDistributedLockCancelledException {
+        throws IgniteCheckedException, GridDistributedLockCancelledException {
         assert req.groupLock();
 
         GridNearTxRemote<K, V> tx = null;
@@ -1341,7 +1341,7 @@ public class GridCacheTxHandler<K, V> {
 
             U.warn(log, err);
 
-            throw new GridException(err);
+            throw new IgniteCheckedException(err);
         }
 
         return tx;
@@ -1371,7 +1371,7 @@ public class GridCacheTxHandler<K, V> {
                 log.debug("Failed to send check prepared transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
         }
     }
@@ -1415,7 +1415,7 @@ public class GridCacheTxHandler<K, V> {
                 try {
                     info = infoFut.get();
                 }
-                catch (GridException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to obtain committed info for transaction (will rollback): " + req, e);
                 }
 
@@ -1471,7 +1471,7 @@ public class GridCacheTxHandler<K, V> {
                 log.debug("Failed to send check committed transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             U.error(log, "Failed to send response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
         }
     }

@@ -9,8 +9,8 @@
 
 package org.gridgain.loadtests.client;
 
+import org.apache.ignite.*;
 import org.gridgain.client.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -189,7 +189,7 @@ public class GridClientCacheBenchmark {
      * @param args Command-line arguments.
      * @throws GridClientException If failed.
      */
-    public static void main(String[] args) throws GridClientException, GridException {
+    public static void main(String[] args) throws GridClientException, IgniteCheckedException {
         GridFileLock fileLock = GridLoadTestUtils.fileLock();
 
         fileLock.lock();

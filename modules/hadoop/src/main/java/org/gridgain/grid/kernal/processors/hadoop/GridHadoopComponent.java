@@ -25,7 +25,7 @@ public abstract class GridHadoopComponent {
     /**
      * @param ctx Hadoop context.
      */
-    public void start(GridHadoopContext ctx) throws GridException {
+    public void start(GridHadoopContext ctx) throws IgniteCheckedException {
         this.ctx = ctx;
 
         log = ctx.kernalContext().log(getClass());
@@ -41,7 +41,7 @@ public abstract class GridHadoopComponent {
     /**
      * Callback invoked when all grid components are started.
      */
-    public void onKernalStart() throws GridException {
+    public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 

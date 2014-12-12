@@ -25,9 +25,9 @@ public class GridIpcEndpointFactory {
      * @param endpointAddr Endpoint address.
      * @param log Log.
      * @return Connected client endpoint.
-     * @throws GridException If failed to establish connection.
+     * @throws IgniteCheckedException If failed to establish connection.
      */
-    public static GridIpcEndpoint connectEndpoint(String endpointAddr, IgniteLogger log) throws GridException {
+    public static GridIpcEndpoint connectEndpoint(String endpointAddr, IgniteLogger log) throws IgniteCheckedException {
         A.notNull(endpointAddr, "endpointAddr");
 
         String[] split = endpointAddr.split(":");
@@ -39,7 +39,7 @@ public class GridIpcEndpointFactory {
                 port = Integer.parseInt(split[1]);
             }
             catch (NumberFormatException e) {
-                throw new GridException("Failed to parse port number: " + endpointAddr, e);
+                throw new IgniteCheckedException("Failed to parse port number: " + endpointAddr, e);
             }
         }
         else
@@ -57,9 +57,9 @@ public class GridIpcEndpointFactory {
      * @param host Loopback host.
      * @param port Loopback endpoint port.
      * @return Connected client endpoint.
-     * @throws GridException If connection failed.
+     * @throws IgniteCheckedException If connection failed.
      */
-    private static GridIpcEndpoint connectTcpEndpoint(String host, int port) throws GridException {
+    private static GridIpcEndpoint connectTcpEndpoint(String host, int port) throws IgniteCheckedException {
        return new GridIpcClientTcpEndpoint(host, port);
     }
 
@@ -69,9 +69,9 @@ public class GridIpcEndpointFactory {
      * @param port Endpoint port.
      * @param log Log.
      * @return Connected client endpoint.
-     * @throws GridException If connection failed.
+     * @throws IgniteCheckedException If connection failed.
      */
-    private static GridIpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws GridException {
+    private static GridIpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws IgniteCheckedException {
         return new GridIpcSharedMemoryClientEndpoint(port, log);
     }
 }

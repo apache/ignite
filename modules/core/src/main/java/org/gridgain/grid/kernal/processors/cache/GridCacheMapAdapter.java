@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
@@ -61,8 +62,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.get((K)key);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -72,8 +73,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.put(key, value);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -84,8 +85,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.remove((K)key);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -94,8 +95,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             prj.putAll(map);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -105,8 +106,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.putIfAbsent(key, val);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -116,8 +117,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.remove((K)key, (V)val);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -126,8 +127,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.replace(key, oldVal, newVal);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -137,8 +138,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
         try {
             return prj.replace(key, val);
         }
-        catch (GridException e) {
-            throw new GridRuntimeException(e);
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 

@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * GridGain.grid().scheduler().scheduleLocal(
  *     GridSchedulerFuture&lt;?&gt; = GridGain.grid().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
- *         &#64;Override public Object call() throws GridException {
+ *         &#64;Override public Object call() throws IgniteCheckedException {
  *             g.broadcast(new GridCallable() {...}).get();
  *         }
  *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.

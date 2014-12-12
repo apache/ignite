@@ -9,9 +9,9 @@
 
 package org.gridgain.loadtests.job;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -24,7 +24,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParams, Integer> {
     /**{@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg)
-        throws GridException {
+        throws IgniteCheckedException {
         assert !subgrid.isEmpty();
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
@@ -46,13 +46,13 @@ public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParam
      *
      * {@inheritDoc}
      */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws GridException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
         return res.getException() == null ? WAIT :
             res.getException().getCause() instanceof AssertionError ? REDUCE : FAILOVER;
     }
 
     /**{@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws GridException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         int sum = 0;
 
         for (ComputeJobResult r: results) {

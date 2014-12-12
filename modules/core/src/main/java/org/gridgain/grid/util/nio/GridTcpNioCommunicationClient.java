@@ -9,11 +9,11 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.util.direct.*;
-import org.jetbrains.annotations.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -23,27 +23,24 @@ import java.util.*;
  * Grid client for NIO server.
  */
 public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClient {
-    /** Socket. */
+    /** Session. */
     private final GridNioSession ses;
 
-    /**
-     * Constructor for test purposes only.
-     */
-    public GridTcpNioCommunicationClient() {
-        super(null);
-
-        ses = null;
-    }
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * @param ses Session.
+     * @param log Logger.
      */
-    public GridTcpNioCommunicationClient(GridNioSession ses) {
+    public GridTcpNioCommunicationClient(GridNioSession ses, IgniteLogger log) {
         super(null);
 
         assert ses != null;
+        assert log != null;
 
         this.ses = ses;
+        this.log = log;
     }
 
     /**
@@ -54,7 +51,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws GridException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
@@ -76,14 +73,14 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(byte[] data, int len) throws GridException {
+    @Override public void sendMessage(byte[] data, int len) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ByteBuffer data) throws GridException {
+    @Override public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
         if (closed())
-            throw new GridException("Client was closed: " + this);
+            throw new IgniteCheckedException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(data);
 
@@ -92,19 +89,16 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
-        throws GridException {
+    @Override public boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+        throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
-
-        if (closed())
-            throw new GridException("Client was closed: " + this);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -113,9 +107,23 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IOException e) {
-                throw new GridException("Failed to send message [client=" + this + ']', e);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
+
+                return true;
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message [client=" + this + ", err=" +e + ']');
+
+                if (e.getCause() instanceof IOException)
+                    return true;
+                else
+                    throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
+
+        return false;
     }
 
     /**

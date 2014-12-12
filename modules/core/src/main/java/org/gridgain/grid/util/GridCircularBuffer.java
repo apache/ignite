@@ -9,12 +9,12 @@
 
 package org.gridgain.grid.util;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -111,9 +111,9 @@ public class GridCircularBuffer<T> {
      * @param c Closure to by applied on evicted object before eviction.
      * @return Evicted object or {@code null} if nothing evicted.
      * @throws InterruptedException If interrupted.
-     * @throws GridException If closure throws exception.
+     * @throws IgniteCheckedException If closure throws exception.
      */
-    @Nullable public T add(T t, @Nullable IgniteInClosureX<T> c) throws InterruptedException, GridException {
+    @Nullable public T add(T t, @Nullable IgniteInClosureX<T> c) throws InterruptedException, IgniteCheckedException {
         long idx = idxGen.getAndIncrement();
 
         int idx0 = (int)(idx & sizeMask);
@@ -183,10 +183,10 @@ public class GridCircularBuffer<T> {
          * @param c Closure applied on evicted object before eviction.
          * @return Evicted value on success or {@code null} if update failed.
          * @throws InterruptedException If interrupted.
-         * @throws GridException If closure throws exception.
+         * @throws IgniteCheckedException If closure throws exception.
          */
         @Nullable synchronized V update(long newIdx, V newItem, long maxIdxDiff, @Nullable IgniteInClosureX<V> c)
-            throws InterruptedException, GridException {
+            throws InterruptedException, IgniteCheckedException {
             assert newIdx >= 0;
 
             // Thread should wait and allow previous update to finish.

@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.future.*;
@@ -77,7 +77,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepare() throws GridException {
+    @Override public void prepare() throws IgniteCheckedException {
         if (!state(PREPARING)) {
             GridCacheTxState state = state();
 
@@ -87,7 +87,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             setRollbackOnly();
 
-            throw new GridException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
+            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
         }
 
         try {
@@ -95,7 +95,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             state(PREPARED);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             setRollbackOnly();
 
             throw e;
@@ -109,7 +109,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             return new GridFinishedFuture<GridCacheTxEx<K, V>>(cctx.kernalContext(), this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
     }
@@ -117,9 +117,9 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /**
      * Commits without prepare.
      *
-     * @throws GridException If commit failed.
+     * @throws IgniteCheckedException If commit failed.
      */
-    void commit0() throws GridException {
+    void commit0() throws IgniteCheckedException {
         if (state(COMMITTING)) {
             try {
                 userCommit();
@@ -146,7 +146,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         try {
             prepare();
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             state(UNKNOWN);
 
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -168,7 +168,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void rollback() throws GridException {
+    @Override public void rollback() throws IgniteCheckedException {
         rollbackAsync().get();
     }
 
@@ -182,13 +182,13 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             return new GridFinishedFuture<GridCacheTx>(cctx.kernalContext(), this);
         }
-        catch (GridException e) {
+        catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean finish(boolean commit) throws GridException {
+    @Override public boolean finish(boolean commit) throws IgniteCheckedException {
         assert false;
 
         return false;
