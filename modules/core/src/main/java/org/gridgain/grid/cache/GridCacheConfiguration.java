@@ -380,6 +380,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
+        expiryPolicyFactory = cc.getExpiryPolicyFactory();
         indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();

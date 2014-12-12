@@ -34,6 +34,13 @@ public class IgniteCacheTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        startGrids();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void startGrids() throws Exception {
         int cnt = gridCount();
 
         assert cnt >= 1 : "At least one grid must be started";
