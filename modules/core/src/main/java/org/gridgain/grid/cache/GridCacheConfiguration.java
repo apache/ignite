@@ -19,6 +19,7 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 /**
@@ -33,7 +34,7 @@ import java.util.*;
  * properties are optional, so users should only change what they need.
  */
 @SuppressWarnings("RedundantFieldInitialization")
-public class GridCacheConfiguration {
+public class GridCacheConfiguration extends MutableConfiguration {
     /** DGC tracing logger name. */
     public static final String DGC_TRACE_LOGGER_NAME =
         "org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace";
