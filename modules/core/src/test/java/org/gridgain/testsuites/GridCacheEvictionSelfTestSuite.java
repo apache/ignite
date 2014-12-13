@@ -39,7 +39,7 @@ public class GridCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionTouchSelfTest.class));
-//        suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
         suite.addTest(new TestSuite(GridCacheBatchEvictUnswapSelfTest.class));
         suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));

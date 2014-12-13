@@ -202,7 +202,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testGroupLock() throws Exception { // TODO GG-9141
+    public void testGroupLock() throws Exception {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
@@ -248,7 +248,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testPartitionGroupLock() throws Exception { // TODO GG-9141
+    public void testPartitionGroupLock() throws Exception {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
