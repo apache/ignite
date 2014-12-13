@@ -635,10 +635,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         for (GridCacheTxKey<K> key : keys) {
             GridCacheTxEntry<K, V> txEntry = entry(key);
 
-            if (!txEntry.groupLockEntry())
+            if (!txEntry.groupLockEntry() || txEntry.context().isNear())
                 continue;
 
-            assert txEntry.cached() instanceof GridDhtCacheEntry;
+            assert txEntry.cached() instanceof GridDhtCacheEntry : "Invalid entry type: " + txEntry.cached();
 
             while (true) {
                 try {
@@ -674,10 +674,10 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()), txEntry.keyBytes());
                 }
             }
-
-            if (locNearMap != null)
-                addNearMapping(locNearMap);
         }
+
+        if (locNearMap != null)
+            addNearMapping(locNearMap);
     }
 
     /** {@inheritDoc} */

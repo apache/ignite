@@ -52,8 +52,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -3138,106 +3136,21 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
-        A.notNull(concurrency, "concurrency");
-        A.notNull(isolation, "isolation");
-        A.ensure(timeout >= 0, "timeout cannot be negative");
-        A.ensure(txSize >= 0, "transaction size cannot be negative");
-
-        GridTransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
-
-        if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-            throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                "'txSerializableEnabled' configuration property)");
-
-        GridCacheTxEx<K, V> tx = (GridCacheTxEx<K, V>)ctx.tm().userTx();
-
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
-
-        tx = ctx.tm().newTx(
-            false,
-            false,
-            concurrency,
-            isolation,
-            timeout,
-            false,
-            txSize,
-            /** group lock keys */null,
-            /** partition lock */false
-        );
-
-        assert tx != null;
-
-        // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx, ctx.shared());
+        return ctx.kernalContext().cache().transactions().txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return txStartGroupLock(ctx.txKey((K)affinityKey), concurrency, isolation, false, timeout, txSize);
+        return ctx.kernalContext().cache().transactions().txStartAffinity(name(), affinityKey, concurrency, isolation,
+            timeout, txSize);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        Object grpLockKey = ctx.affinity().partitionAffinityKey(partId);
-
-        return txStartGroupLock(ctx.txKey((K)grpLockKey), concurrency, isolation, true, timeout, txSize);
-    }
-
-    /**
-     * Internal method to start group-lock transaction.
-     *
-     * @param grpLockKey Group lock key.
-     * @param concurrency Transaction concurrency control.
-     * @param isolation Transaction isolation level.
-     * @param partLock {@code True} if this is a partition-lock transaction. In this case {@code grpLockKey}
-     *      should be a unique partition-specific key.
-     * @param timeout Tx timeout.
-     * @param txSize Expected transaction size.
-     * @return Started transaction.
-     * @throws IllegalStateException If other transaction was already started.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCacheTx txStartGroupLock(GridCacheTxKey grpLockKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize)
-        throws IllegalStateException, IgniteCheckedException {
-        GridCacheTx tx = ctx.tm().userTx();
-
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
-
-        GridCacheTxLocalEx<K, V> tx0 = ctx.tm().newTx(
-            false,
-            false,
-            concurrency,
-            isolation,
-            timeout,
-            ctx.hasFlag(INVALIDATE),
-            txSize,
-            grpLockKey,
-            partLock
-        );
-
-        assert tx0 != null;
-
-        IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
-
-        try {
-            lockFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            tx0.rollback();
-
-            throw e;
-        }
-
-        // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx0, ctx.shared());
+        return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
+            timeout, txSize);
     }
 
     /** {@inheritDoc} */

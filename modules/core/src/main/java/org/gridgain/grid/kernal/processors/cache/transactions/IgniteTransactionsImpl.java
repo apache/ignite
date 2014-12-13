@@ -10,12 +10,16 @@
 package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
+import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 
 /**
@@ -115,22 +119,86 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
+    @Override public GridCacheTx txStartAffinity(String cacheName, Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        // TODO: implement.
-        return null;
+        GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
+
+        if (cache == null)
+            throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
+                cacheName);
+
+        return txStartGroupLock(cache.context(), affinityKey, concurrency, isolation, false, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
+    @Override public GridCacheTx txStartPartition(String cacheName, int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        // TODO: implement.
-        return null;
+        GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
+
+        if (cache == null)
+            throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
+                cacheName);
+
+        Object grpLockKey = cache.context().affinity().partitionAffinityKey(partId);
+
+        return txStartGroupLock(cache.context(), grpLockKey, concurrency, isolation, true, timeout, txSize);
+    }
+
+    /**
+     * Internal method to start group-lock transaction.
+     *
+     * @param grpLockKey Group lock key.
+     * @param concurrency Transaction concurrency control.
+     * @param isolation Transaction isolation level.
+     * @param partLock {@code True} if this is a partition-lock transaction. In this case {@code grpLockKey}
+     *      should be a unique partition-specific key.
+     * @param timeout Tx timeout.
+     * @param txSize Expected transaction size.
+     * @return Started transaction.
+     * @throws IllegalStateException If other transaction was already started.
+     * @throws IgniteCheckedException In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    private GridCacheTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, GridCacheTxConcurrency concurrency,
+        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize)
+        throws IllegalStateException, IgniteCheckedException {
+        GridCacheTx tx = cctx.tm().userTx();
+
+        if (tx != null)
+            throw new IllegalStateException("Failed to start new transaction " +
+                "(current thread already has a transaction): " + tx);
+
+        GridCacheTxLocalEx<K, V> tx0 = cctx.tm().newTx(
+            false,
+            false,
+            concurrency,
+            isolation,
+            timeout,
+            ctx.hasFlag(INVALIDATE),
+            txSize,
+            ctx.txKey(grpLockKey),
+            partLock
+        );
+
+        assert tx0 != null;
+
+        IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
+
+        try {
+            lockFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            tx0.rollback();
+
+            throw e;
+        }
+
+        // Wrap into proxy.
+        return new GridCacheTxProxyImpl<>(tx0, cctx);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheTx tx() {
-        // TODO: implement.
-        return null;
+        return cctx.tm().userTx();
     }
 }

@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.store.*;
@@ -73,8 +73,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        boolean txBatchUpdate = batchUpdate();
-
         cacheCfg.setStore(store);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -85,6 +83,12 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }
@@ -797,8 +801,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            assertNull("For cache: " + i, cache(i).peek("val1"));
-            assertNull("For cache: " + i, cache(i).peek("val2"));
+            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key1) + ']', cache(i).peek(key1));
+            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key2) + ']', cache(i).peek(key2));
 
             assertTrue("For cache [idx=" + i + ", keySet=" + cache(i).keySet() + ']', cache(i).size() <= 1);
         }
@@ -911,7 +915,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         cache(0).put(key, "val");
 
-        try (GridCacheTx tx = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency,
+        try (GridCacheTx ignored = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency,
             REPEATABLE_READ, 0, 1)) {
             assertEquals("val", cache(0).get(key));
         }
@@ -939,7 +943,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+        try (GridCacheTx ignored = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.put(new GridCacheAffinityKey<>("key1", UUID.randomUUID()), "val1");
 
@@ -978,7 +982,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         cache.put(key, "val");
 
-        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+        try (GridCacheTx ignored = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
             // Key with affinity key different from enlisted on tx start should raise exception.
             cache.remove(key);
 
@@ -1062,9 +1066,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testGroupLockWriteThroughBatchUpdateOptimistic() throws Exception {
-        // Configuration changed according to test name.
-        assert batchUpdate();
-
         checkGroupLockWriteThrough(OPTIMISTIC);
     }
 
@@ -1072,25 +1073,6 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testGroupLockWriteThroughBatchUpdatePessimistic() throws Exception {
-        // Configuration changed according to test name.
-        assert batchUpdate();
-
-        checkGroupLockWriteThrough(PESSIMISTIC);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGroupLockWriteThroughSingleUpdateOptimistic() throws Exception {
-        // Configuration changed according to test name.
-        checkGroupLockWriteThrough(OPTIMISTIC);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGroupLockWriteThroughSingleUpdatePessimistic() throws Exception {
-        // Configuration changed according to test name.
         checkGroupLockWriteThrough(PESSIMISTIC);
     }
 
@@ -1142,12 +1124,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         // Check the store.
         assertTrue(store.storeMap().equals(putMap));
-        assertEquals(batchUpdate() ? 1 : 4, store.putCount());
-    }
-
-    /** @return {@code True} if batch update should be enabled. */
-    private boolean batchUpdate() {
-        return getName().contains("testGroupLockWriteThroughBatchUpdate");
+        assertEquals(1, store.putCount());
     }
 
     /** @return {@code True} if sanity check should be enabled. */

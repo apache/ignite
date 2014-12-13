@@ -2541,7 +2541,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             ", part=" + part + ", groupLockKey=" + grpLockKey + ']');
                 }
                 else {
-                    Object affinityKey = cacheCtx.config().getAffinityMapper().affinityKey(key);
+                    GridCacheTxKey affinityKey = cacheCtx.txKey((K)cacheCtx.config().getAffinityMapper().affinityKey(key));
 
                     if (!grpLockKey.equals(affinityKey))
                         throw new IgniteCheckedException("Failed to enlist key into group-lock transaction (affinity key was " +
