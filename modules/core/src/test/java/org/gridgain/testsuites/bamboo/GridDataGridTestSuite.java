@@ -61,7 +61,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
-        //suite.addTestSuite(GridDataLoaderProcessorSelfTest.class); TODO GG-9141
+        suite.addTestSuite(GridDataLoaderProcessorSelfTest.class);
         suite.addTestSuite(GridDataLoaderImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
@@ -284,7 +284,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         // Group locking.
-//        suite.addTest(GridCacheGroupLockSelfTestSuite.suite());
+        suite.addTest(GridCacheGroupLockSelfTestSuite.suite());
 
         // Full API.
         suite.addTest(GridCacheFullApiSelfTestSuite.suite());
