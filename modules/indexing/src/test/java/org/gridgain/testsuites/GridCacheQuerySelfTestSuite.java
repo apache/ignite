@@ -54,7 +54,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSqlQueryMultiThreadedSelfTest.class);
 
         // Fields queries.
-//        suite.addTestSuite(GridCacheLocalFieldsQuerySelfTest.class); // TODO GG-9141
+        suite.addTestSuite(GridCacheLocalFieldsQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFieldsQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCachePartitionedFieldsQuerySelfTest.class);
@@ -64,7 +64,7 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheFieldsQueryNoDataSelfTest.class);
 
         // Continuous queries.
-//        suite.addTestSuite(GridCacheContinuousQueryLocalSelfTest.class); // TODO GG-9141
+        suite.addTestSuite(GridCacheContinuousQueryLocalSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryLocalAtomicSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryReplicatedAtomicSelfTest.class);
