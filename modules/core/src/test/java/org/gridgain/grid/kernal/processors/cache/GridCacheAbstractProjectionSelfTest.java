@@ -588,7 +588,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     /**
      * @throws Exception if failed.
      */
-    public void _testSkipStoreFlag() throws Exception { // TODO GG-9141
+    public void testSkipStoreFlag() throws Exception {
         assertNull(cache().put("kk1", 100500));
         assertEquals(100500, map.get("kk1"));
 
@@ -616,7 +616,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             startGrid(i);
 
         try {
-            _testSkipStoreFlag();
+            testSkipStoreFlag();
         }
         finally {
             for (int i = 1; i < nGrids; i++)
