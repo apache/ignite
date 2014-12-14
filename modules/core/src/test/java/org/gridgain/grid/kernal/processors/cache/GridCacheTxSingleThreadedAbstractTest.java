@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
@@ -49,7 +49,7 @@ public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxA
     /**
      * @throws IgniteCheckedException If test failed.
      */
-    public void _testOptimisticReadCommittedCommit() throws Exception { // TODO GG-9141
+    public void testOptimisticReadCommittedCommit() throws Exception {
         checkCommit(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();
