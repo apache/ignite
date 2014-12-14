@@ -61,7 +61,7 @@ public class GridCacheSharedContext<K, V> {
     private Map<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
-    private GridCacheTxMetricsAdapter txMetrics;
+    private volatile IgniteTxMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
     private IgniteFuture<Object> preloadersStartFut;
@@ -88,7 +88,7 @@ public class GridCacheSharedContext<K, V> {
         this.exchMgr = add(exchMgr);
         this.ioMgr = add(ioMgr);
 
-        txMetrics = new GridCacheTxMetricsAdapter();
+        txMetrics = new IgniteTxMetricsAdapter();
 
         ctxMap = new HashMap<>();
     }
@@ -206,8 +206,15 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Transactional metrics adapter.
      */
-    public GridCacheTxMetricsAdapter txMetrics() {
+    public IgniteTxMetricsAdapter txMetrics() {
         return txMetrics;
+    }
+
+    /**
+     * Resets tx metrics.
+     */
+    public void resetTxMetrics() {
+        txMetrics = new IgniteTxMetricsAdapter();
     }
 
     /**

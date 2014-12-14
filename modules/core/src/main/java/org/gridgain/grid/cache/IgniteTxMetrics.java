@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Transaction metrics, shared across all caches.
  */
-public interface GridCacheTxMetrics extends Serializable {
+public interface IgniteTxMetrics extends Serializable {
     /**
      * Gets last time transaction was committed.
      *

@@ -9,15 +9,14 @@
 
 package org.gridgain.grid.cache;
 
-import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * TODO: Add class description.
+ * Tx metrics adapter.
  */
-public class GridCacheTxMetricsAdapter implements GridCacheTxMetrics, Externalizable {
+public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
     /** Number of transaction commits. */
     private volatile int txCommits;
 
@@ -33,14 +32,14 @@ public class GridCacheTxMetricsAdapter implements GridCacheTxMetrics, Externaliz
     /**
      *
      */
-    public GridCacheTxMetricsAdapter() {
+    public IgniteTxMetricsAdapter() {
 
     }
 
     /**
      * @param m Transaction metrics to copy.
      */
-    public GridCacheTxMetricsAdapter(GridCacheTxMetrics m) {
+    public IgniteTxMetricsAdapter(IgniteTxMetrics m) {
         commitTime = m.commitTime();
         rollbackTime = m.rollbackTime();
         txCommits = m.txCommits();
@@ -103,6 +102,6 @@ public class GridCacheTxMetricsAdapter implements GridCacheTxMetrics, Externaliz
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheTxMetricsAdapter.class, this);
+        return S.toString(IgniteTxMetricsAdapter.class, this);
     }
 }

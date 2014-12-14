@@ -133,4 +133,14 @@ public interface IgniteTransactions {
      *      does not have a transaction.
      */
     @Nullable public GridCacheTx tx();
+
+    /**
+     * @return Transaction metrics.
+     */
+    public IgniteTxMetrics metrics();
+
+    /**
+     * Resets transaction metrics.
+     */
+    public void resetMetrics();
 }

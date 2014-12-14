@@ -206,4 +206,14 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
     @Nullable @Override public GridCacheTx tx() {
         return cctx.tm().userTx();
     }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxMetrics metrics() {
+        return cctx.txMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        cctx.resetTxMetrics();
+    }
 }
