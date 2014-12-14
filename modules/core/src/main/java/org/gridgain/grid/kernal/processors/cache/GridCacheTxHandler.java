@@ -524,7 +524,9 @@ public class GridCacheTxHandler<K, V> {
                     return null;
                 }
 
-                tx.syncCommit(req.syncCommit());
+                if (!tx.syncCommit())
+                    tx.syncCommit(req.syncCommit());
+
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
                 tx.recoveryWrites(req.recoveryWrites());

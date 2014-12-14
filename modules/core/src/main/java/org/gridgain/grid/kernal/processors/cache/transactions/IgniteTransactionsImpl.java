@@ -106,6 +106,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             isolation,
             timeout,
             false,
+            true,
             txSize,
             /** group lock keys */null,
             /** partition lock */false
@@ -168,19 +169,23 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             throw new IllegalStateException("Failed to start new transaction " +
                 "(current thread already has a transaction): " + tx);
 
-        GridCacheTxLocalEx<K, V> tx0 = cctx.tm().newTx(
+        GridCacheTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
             false,
             false,
             concurrency,
             isolation,
             timeout,
             ctx.hasFlag(INVALIDATE),
+            !ctx.hasFlag(SKIP_STORE),
             txSize,
             ctx.txKey(grpLockKey),
             partLock
         );
 
         assert tx0 != null;
+
+        if (ctx.hasFlag(SYNC_COMMIT))
+            tx0.syncCommit(true);
 
         IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
 

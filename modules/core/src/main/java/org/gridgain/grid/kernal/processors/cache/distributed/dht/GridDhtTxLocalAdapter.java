@@ -52,9 +52,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     private long dhtThreadId;
 
     /** */
-    private boolean explicitLock;
-
-    /** */
     private boolean needsCompletedVers;
 
     /** Versions of pending locks for entries of this tx. */
@@ -75,7 +72,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param explicitLock Explicit lock flag.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock If this is a group-lock transaction and the whole partition should be locked.
@@ -89,19 +85,17 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
-        boolean explicitLock,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, txSize, grpLockKey,
-            partLock, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, storeEnabled, txSize,
+            grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
-
-        this.explicitLock = explicitLock;
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
@@ -163,13 +157,6 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      */
     public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
         this.pendingVers = pendingVers;
-    }
-
-    /**
-     * @return Explicit lock flag.
-     */
-    boolean explicitLock() {
-        return explicitLock;
     }
 
     /**

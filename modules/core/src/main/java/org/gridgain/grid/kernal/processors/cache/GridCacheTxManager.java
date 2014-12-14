@@ -365,6 +365,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
@@ -380,6 +381,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             isolation,
             timeout,
             invalidate,
+            storeEnabled,
             txSize,
             grpLockKey,
             partLock,

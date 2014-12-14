@@ -3210,7 +3210,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             val = (V)ctx.marshalToPortable(val);
                         }
 
-                        GridRawVersionedEntry<K, V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
+                        GridVersionedEntry<K,V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
 
@@ -3607,10 +3607,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
+                !ctx.hasFlag(SKIP_STORE),
                 0,
                 /** group lock keys */null,
                 /** partition lock */false
             );
+
+            if (ctx.hasFlag(SYNC_COMMIT))
+                tx.syncCommit(true);
 
             assert tx != null;
 
@@ -3669,7 +3673,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        if (tx == null || tx.implicit())
+        if (tx == null || tx.implicit()) {
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
@@ -3677,9 +3681,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
+                !ctx.hasFlag(SKIP_STORE),
                 0,
                 null,
                 false);
+
+            if (ctx.hasFlag(SYNC_COMMIT))
+                tx.syncCommit(true);
+        }
 
         return asyncOp(tx, op);
     }

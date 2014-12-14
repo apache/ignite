@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.util.*;
@@ -188,7 +187,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     protected String taskName;
 
     /** Store used flag. */
-    protected boolean storeUsed;
+    protected boolean storeEnabled = true;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -219,6 +218,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
@@ -236,6 +236,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.isolation = isolation;
         this.timeout = timeout;
         this.invalidate = invalidate;
+        this.storeEnabled = storeEnabled;
         this.txSize = txSize;
         this.grpLockKey = grpLockKey;
         this.subjId = subjId;
@@ -381,8 +382,37 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeEnabled() {
+        return storeEnabled;
+    }
+
+    /**
+     * @param storeEnabled Store enabled flag.
+     */
+    public void storeEnabled(boolean storeEnabled) {
+        this.storeEnabled = storeEnabled;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean storeUsed() {
-        return storeUsed;
+        return storeEnabled() && store() != null;
+    }
+
+    /**
+     * Store manager for current transaction.
+     *
+     * @return Store manager.
+     */
+    protected GridCacheStoreManager<K, V> store() {
+        if (!activeCacheIds().isEmpty()) {
+            int cacheId = F.first(activeCacheIds());
+
+            GridCacheStoreManager<K, V> store = cctx.cacheContext(cacheId).store();
+
+            return store.configured() ? store : null;
+        }
+
+        return null;
     }
 
     /**
