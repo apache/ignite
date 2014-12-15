@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
@@ -380,4 +381,15 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Primary entry set.
      */
     public Set<GridCacheEntry<K, V>> primaryEntrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * @return {@link ExpiryPolicy} associated with this projection.
+     */
+    public @Nullable ExpiryPolicy expiry();
+
+    /**
+     * @param plc {@link ExpiryPolicy} to associate with this projection.
+     * @return New projection based on this one, but with the specified expiry policy.
+     */
+    public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc);
 }

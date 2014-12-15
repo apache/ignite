@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
@@ -390,7 +391,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param valBytes Value bytes. Can be non-null only if operation is UPDATE.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param primary If update is performed on primary node (the one which assigns version).
@@ -422,7 +423,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,

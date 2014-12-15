@@ -17,6 +17,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
@@ -429,11 +430,28 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
-        GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
-        @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
-        boolean metrics, boolean primary, boolean checkVer, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve,
-        boolean intercept, UUID subjId, String taskName) throws IgniteCheckedException,
+        GridCacheVersion ver,
+        UUID evtNodeId,
+        UUID affNodeId,
+        GridCacheOperation op,
+        @Nullable Object val,
+        @Nullable byte[] valBytes,
+        boolean writeThrough,
+        boolean retval,
+        ExpiryPolicy expiryPlc,
+        boolean evt,
+        boolean metrics,
+        boolean primary,
+        boolean checkVer,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        GridDrType drType,
+        long drTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer,
+        boolean drResolve,
+        boolean intercept,
+        UUID subjId,
+        String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
     }

@@ -26,6 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -93,8 +94,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Cached entry if keys size is 1. */
     private GridCacheEntryEx<K, V> cached;
 
-    /** Time to live. */
-    private final long ttl;
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPlc;
 
     /** Future map topology version. */
     private long topVer;
@@ -141,7 +142,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         futVer = null;
         retval = false;
         fastMap = false;
-        ttl = 0;
+        expiryPlc = null;
         filter = null;
         syncMode = null;
         op = null;
@@ -162,7 +163,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param cached Cached entry if keys size is 1.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param filter Entry filter.
      */
     public GridNearAtomicUpdateFuture(
@@ -177,7 +178,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean retval,
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         final IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
@@ -201,7 +202,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.drRmvVals = drRmvVals;
         this.retval = retval;
         this.cached = cached;
-        this.ttl = ttl;
+        this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -556,7 +557,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 op,
                 retval,
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
-                ttl,
+                expiryPlc,
                 filter,
                 subjId,
                 taskNameHash);
@@ -662,7 +663,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             op,
                             retval,
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
-                            ttl,
+                            expiryPlc,
                             filter,
                             subjId,
                             taskNameHash);

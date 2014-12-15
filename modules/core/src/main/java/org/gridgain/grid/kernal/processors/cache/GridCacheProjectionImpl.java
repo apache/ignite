@@ -24,6 +24,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,6 +74,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** */
     private boolean keepPortable;
 
+    /** */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -95,7 +99,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         @Nullable IgnitePredicate<? super GridCacheEntry<K, V>> entryFilter,
         @Nullable Set<GridCacheFlag> flags,
         @Nullable UUID subjId,
-        boolean keepPortable) {
+        boolean keepPortable,
+        @Nullable ExpiryPolicy expiryPlc) {
         assert parent != null;
         assert cctx != null;
 
@@ -125,6 +130,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         qry = new GridCacheQueriesImpl<>(cctx, this);
 
         this.keepPortable = keepPortable;
+
+        this.expiryPlc = expiryPlc;
     }
 
     /**
@@ -367,8 +374,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         A.notNull(subjId, "subjId");
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -415,7 +428,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             (IgnitePredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
             flags,
             subjId,
-            keepPortable);
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
@@ -439,8 +453,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -463,8 +483,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            filter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            filter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -482,8 +508,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            res,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -500,8 +532,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            res,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -516,7 +554,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
                 (IgnitePredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
                 flags,
                 subjId,
-                true);
+                true,
+                expiryPlc);
 
             return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
         }
@@ -1239,6 +1278,24 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public Iterator<GridCacheEntry<K, V>> iterator() {
         return cache.entrySet(entryFilter(true)).iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable ExpiryPolicy expiry() {
+        return expiryPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        return new GridCacheProjectionImpl<>(
+            this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            true,
+            plc);
     }
 
     /** {@inheritDoc} */

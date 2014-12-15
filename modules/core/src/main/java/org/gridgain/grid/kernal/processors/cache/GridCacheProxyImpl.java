@@ -24,6 +24,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1876,6 +1877,16 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public ExpiryPolicy expiry() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -201,10 +202,16 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param drTtl DR TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      */
-    public void addWriteEntry(GridDhtCacheEntry<K, V> entry, @Nullable V val, @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
+    public void addWriteEntry(GridDhtCacheEntry<K, V> entry,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        IgniteClosure<V, V> transformC,
+        long drTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer,
+        @Nullable ExpiryPolicy expiryPlc) {
         long topVer = updateReq.topologyVersion();
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
@@ -230,7 +237,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                         writeVer,
                         syncMode,
                         topVer,
-                        ttl,
+                        expiryPlc,
                         forceTransformBackups,
                         this.updateReq.subjectId(),
                         this.updateReq.taskNameHash());
@@ -249,10 +256,14 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy..
      */
-    public void addNearWriteEntries(Iterable<UUID> readers, GridDhtCacheEntry<K, V> entry, @Nullable V val,
-        @Nullable byte[] valBytes, IgniteClosure<V, V> transformC, long ttl) {
+    public void addNearWriteEntries(Iterable<UUID> readers,
+        GridDhtCacheEntry<K, V> entry,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        IgniteClosure<V, V> transformC,
+        @Nullable ExpiryPolicy expiryPlc) {
         GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         keys.add(entry.key());
@@ -276,7 +287,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     writeVer,
                     syncMode,
                     topVer,
-                    ttl,
+                    expiryPlc,
                     forceTransformBackups,
                     this.updateReq.subjectId(),
                     this.updateReq.taskNameHash());

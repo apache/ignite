@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.tostring.*;
@@ -36,25 +35,32 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Context. */
+    /** */
     private GridCacheContext<K, V> ctx;
 
     /** Gateway. */
     private GridCacheGateway<K, V> gate;
 
-    /** Cache. */
+    /** Delegate. */
     @GridToStringInclude
-    private GridCacheAdapter<K, V> delegate;
+    private GridCacheProjectionEx<K, V> delegate;
+
+    /** Projection. */
+    private GridCacheProjectionImpl<K, V> prj;
 
     /**
      * @param delegate Delegate.
+     * @param prj Projection.
      */
-    public IgniteCacheProxy(GridCacheAdapter<K, V> delegate) {
+    public IgniteCacheProxy(GridCacheContext<K, V> ctx,
+        GridCacheProjectionEx<K, V> delegate,
+        @Nullable GridCacheProjectionImpl<K, V> prj) {
+        assert ctx != null;
         assert delegate != null;
 
+        this.ctx = ctx;
         this.delegate = delegate;
-
-        ctx = delegate.context();
+        this.prj = prj;
 
         gate = ctx.gate();
     }
@@ -73,8 +79,16 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            GridCacheProjectionEx<K, V> prj0 = prj != null ? prj.withExpiryPolicy(plc) : delegate.withExpiryPolicy(plc);
+
+            return new IgniteCacheProxy<>(ctx, prj0, (GridCacheProjectionImpl<K, V>)prj0);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -92,7 +106,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.putIfAbsent(key, val);
@@ -126,7 +140,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.isLocked(key);
@@ -138,7 +152,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.isLockedByThread(key);
@@ -162,7 +176,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             delegate.evictAll(keys);
@@ -175,13 +189,23 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        if (peekModes.length != 0)
+            throw new UnsupportedOperationException();
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.peek(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void localPromote(Set<? extends K> keys) throws CacheException {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 delegate.promoteAll(keys);
@@ -216,7 +240,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public V get(K key) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.get(key);
@@ -233,7 +257,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.getAll(keys);
@@ -264,10 +288,10 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.putx(key, val, null);
+                delegate.putx(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -281,7 +305,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.put(key, val);
@@ -298,10 +322,10 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.putAll(map, null);
+                delegate.putAll(map);
             }
             finally {
                 gate.leave(prev);
@@ -315,7 +339,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.putxIfAbsent(key, val);
@@ -332,7 +356,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public boolean remove(K key) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.removex(key);
@@ -349,7 +373,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.remove(key, oldVal);
@@ -366,10 +390,10 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.remove(key, (GridCacheEntryEx<K, V>)null);
+                return delegate.remove(key);
             }
             finally {
                 gate.leave(prev);
@@ -383,7 +407,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.replace(key, oldVal, newVal);
@@ -400,7 +424,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.replacex(key, val);
@@ -417,7 +441,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 return delegate.replace(key, val);
@@ -434,7 +458,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(null);
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
                 delegate.removeAll(keys);
@@ -581,15 +605,17 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
         out.writeObject(delegate);
+        out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        delegate = (GridCacheAdapter<K, V>)in.readObject();
-
-        ctx = delegate.context();
+        ctx = (GridCacheContext<K, V>)in.readObject();
+        delegate = (GridCacheProjectionEx<K, V>)in.readObject();
+        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
 
         gate = ctx.gate();
     }

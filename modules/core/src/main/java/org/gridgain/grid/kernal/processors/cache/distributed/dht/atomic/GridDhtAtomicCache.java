@@ -33,6 +33,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -594,7 +595,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
-        UUID subjId = ctx.subjectIdPerCall(null);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = ctx.subjectIdPerCall(null); // TODO IGNITE-41.
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -611,7 +614,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             retval,
             rawRetval,
             cached,
-            ttl,
+            prj != null ? prj.expiry() : null,
             filter,
             subjId,
             taskNameHash);
@@ -651,7 +654,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
-        UUID subjId = ctx.subjectIdPerCall(null);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = ctx.subjectIdPerCall(null); // TODO IGNITE-41.
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -667,7 +672,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             retval,
             rawRetval,
             cached,
-            0,
+            (filter != null && prj != null) ? prj.expiry() : null,
             filter,
             subjId,
             taskNameHash);
@@ -897,7 +902,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        if (storeEnabled() && keys.size() > 1 && ctx.dr().receiveEnabled()) {
+                        if (storeEnabled() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node, hasNear, req, res, locked, ver,
                                 dhtFut, completionCb, replicate, taskName);
@@ -1023,6 +1028,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             try {
                 if (!checkFilter(entry, req, res)) {
+                    // TODO IGNITE-41 update TTL.
+
                     if (log.isDebugEnabled())
                         log.debug("Entry did not pass the filter (will skip write) [entry=" + entry +
                             ", filter=" + Arrays.toString(req.filter()) + ", res=" + res + ']');
@@ -1284,6 +1291,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean intercept = ctx.config().getInterceptor() != null;
 
+        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
+
         // Avoid iterator creation.
         for (int i = 0; i < keys.size(); i++) {
             K k = keys.get(i);
@@ -1331,7 +1340,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     newValBytes,
                     primary && storeEnabled(),
                     req.returnValue(),
-                    req.ttl(),
+                    expiry,
                     true,
                     true,
                     primary,
@@ -1372,14 +1381,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             transformC = (IgniteClosure<V, V>)writeVal;
 
                         if (!readersOnly)
-                            dhtFut.addWriteEntry(entry, updRes.newValue(), newValBytes, transformC,
-                                drExpireTime >= 0L ? ttl : -1L, drExpireTime, newDrVer, drExpireTime < 0L ? ttl : 0L);
+                            dhtFut.addWriteEntry(entry,
+                                updRes.newValue(),
+                                newValBytes,
+                                transformC,
+                                drExpireTime >= 0L ? ttl : -1L,
+                                drExpireTime,
+                                newDrVer,
+                                drExpireTime < 0L ? req.expiry() : null);
 
                         if (!F.isEmpty(filteredReaders))
                             dhtFut.addNearWriteEntries(filteredReaders, entry, updRes.newValue(), newValBytes,
-                                transformC, drExpireTime < 0L ? ttl : 0L);
+                                transformC, drExpireTime < 0L ? req.expiry() : null);
                     }
                     else {
+                        // TODO IGNITE-41 ttl could be changed.
+
                         if (log.isDebugEnabled())
                             log.debug("Entry did not pass the filter or conflict resolution (will skip write) " +
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
@@ -1391,7 +1408,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
                             GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
-                            res.nearTtl(updRes.newTtl());
+                            // TODO IGNITE-41 dr ttl for near cache.
 
                             if (ctx != null && ctx.isMerge())
                                 newValBytes = null;
@@ -1524,6 +1541,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             boolean intercept = ctx.config().getInterceptor() != null;
 
+            ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
+
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry<K, V> entry = entries.get(i);
@@ -1562,12 +1581,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        req.ttl(),
+                        expiry,
                         true,
                         true,
                         primary,
                         ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
-                        req.filter(),
+                        req.filter(), // TODO IGNITE-41 filter already evaluated?
                         replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
                         -1L,
                         -1L,
@@ -1605,11 +1624,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         IgniteClosure<V, V> transformC = transformMap == null ? null : transformMap.get(entry.key());
 
                         if (!batchRes.readersOnly())
-                            dhtFut.addWriteEntry(entry, writeVal, valBytes, transformC, -1, -1, null, req.ttl());
+                            dhtFut.addWriteEntry(entry, writeVal, valBytes, transformC, -1, -1, null, req.expiry());
 
                         if (!F.isEmpty(filteredReaders))
                             dhtFut.addNearWriteEntries(filteredReaders, entry, writeVal, valBytes, transformC,
-                                req.ttl());
+                                req.expiry());
                     }
 
                     if (hasNear) {
@@ -1624,8 +1643,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                     res.addNearValue(idx, writeVal, valBytes);
                                 }
-
-                                res.nearTtl(req.ttl());
 
                                 if (writeVal != null || !entry.valueBytes().isNull()) {
                                     IgniteFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -1861,9 +1878,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drPutVals = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                Long ttl = req.drTtl(i);
+                long ttl = req.drTtl(i);
 
-                if (ttl == null)
+                if (ttl == -1L)
                     drPutVals.add(new GridCacheDrInfo<>(req.value(i), req.drVersion(i)));
                 else
                     drPutVals.add(new GridCacheDrExpirationInfo<>(req.value(i), req.drVersion(i), ttl,
@@ -1894,7 +1911,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.returnValue(),
             false,
             null,
-            req.ttl(),
+            req.expiry(),
             req.filter(),
             req.subjectId(),
             req.taskNameHash());
@@ -2020,6 +2037,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
+        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
+
         for (int i = 0; i < req.size(); i++) {
             K key = req.key(i);
 
@@ -2048,7 +2067,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
-                            req.ttl(),
+                            expiry,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,

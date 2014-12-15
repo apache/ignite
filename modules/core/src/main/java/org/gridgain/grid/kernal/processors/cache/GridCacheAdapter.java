@@ -40,6 +40,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -52,8 +53,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -367,8 +366,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            null, subjId, false);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            ctx,
+            null,
+            null,
+            null,
+            subjId,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -378,8 +383,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (F.isEmpty(flags))
             return this;
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, null, null,
-            EnumSet.copyOf(F.asList(flags)), null, false);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            ctx,
+            null,
+            null,
+            EnumSet.copyOf(F.asList(flags)),
+            null,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -398,9 +409,28 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             null,
             null,
             null,
-            ctx.portableEnabled());
+            ctx.portableEnabled(),
+            null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public ExpiryPolicy expiry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        return new GridCacheProjectionImpl<>(
+            this,
+            ctx,
+            null,
+            null,
+            null,
+            null,
+            ctx.portableEnabled(),
+            plc);
     }
 
     /** {@inheritDoc} */
@@ -423,8 +453,13 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((GridCacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx, CU.<K1, V1>typeFilter(keyType, valType), /*filter*/null, /*flags*/null,
-            /*clientId*/null, false);
+            (GridCacheContext<K1, V1>)ctx,
+            CU.<K1, V1>typeFilter(keyType, valType),
+            /*filter*/null,
+            /*flags*/null,
+            /*clientId*/null,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
     }
@@ -443,7 +478,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, ctx, p, null, null, null, false);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            ctx,
+            p,
+            null,
+            null,
+            null,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -463,7 +505,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(
-            this, ctx, null, filter, null, null, false);
+            this,
+            ctx,
+            null,
+            filter,
+            null,
+            null,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }

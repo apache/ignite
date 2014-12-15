@@ -1596,7 +1596,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
-        return new IgniteCacheProxy<>(cache);
+        return new IgniteCacheProxy<>(cache.context(), cache, null);
     }
 
     /**

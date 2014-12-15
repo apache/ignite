@@ -46,6 +46,8 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -170,6 +172,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
+    /** */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -275,6 +280,20 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         else
             cacheId = 1;
+
+        Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
+
+        expiryPlc = factory.create();
+
+        if (expiryPlc instanceof EternalExpiryPolicy)
+            expiryPlc = null;
+    }
+
+    /**
+     * @return Cache default {@link ExpiryPolicy}.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -1054,6 +1073,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * Gets thread local projection.
+     *
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {

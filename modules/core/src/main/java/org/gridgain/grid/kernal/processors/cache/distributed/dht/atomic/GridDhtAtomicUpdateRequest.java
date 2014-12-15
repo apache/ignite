@@ -20,6 +20,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -79,8 +80,11 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode syncMode;
 
-    /** Time to live. */
-    private long ttl;
+    /** Expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
+    /** Expiry policy bytes. */
+    private byte[] expiryPlcBytes;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -150,7 +154,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param writeVer Write version for cache values.
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param forceTransformBackups Force transform backups flag.
      * @param subjId Subject ID.
      */
@@ -161,7 +165,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridCacheVersion writeVer,
         GridCacheWriteSynchronizationMode syncMode,
         long topVer,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean forceTransformBackups,
         UUID subjId,
         int taskNameHash
@@ -171,7 +175,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.futVer = futVer;
         this.writeVer = writeVer;
         this.syncMode = syncMode;
-        this.ttl = ttl;
+        this.expiryPlc = expiryPlc;
         this.topVer = topVer;
         this.forceTransformBackups = forceTransformBackups;
         this.subjId = subjId;
@@ -360,10 +364,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
-     * @return Time to live.
+     * @return Expiry policy.
      */
-    public long ttl() {
-        return ttl;
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -621,7 +625,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.drTtls = drTtls;
         _clone.drExpireTimes = drExpireTimes;
         _clone.syncMode = syncMode;
-        _clone.ttl = ttl;
+        _clone.expiryPlc = expiryPlc;
         _clone.nearKeys = nearKeys;
         _clone.nearKeyBytes = nearKeyBytes;
         _clone.nearVals = nearVals;
@@ -742,7 +746,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 11:
-                if (!commState.putLong(ttl))
+                if (!commState.putByteArray(expiryPlcBytes))
                     return false;
 
                 commState.idx++;
@@ -1037,10 +1041,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 11:
-                if (buf.remaining() < 8)
+                byte[] expiryPlcBytes0 = commState.getByteArray();
+
+                if (expiryPlcBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
-                ttl = commState.getLong();
+                expiryPlcBytes = expiryPlcBytes0;
 
                 commState.idx++;
 

@@ -14,12 +14,14 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -88,8 +90,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /** Return value flag. */
     private boolean retval;
 
-    /** Time to live. */
-    private long ttl;
+    /** Expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
+    /** Expiry policy bytes. */
+    private byte[] expiryPlcBytes;
 
     /** Filter. */
     @GridDirectTransient
@@ -132,7 +137,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param filter Optional filter for atomic check.
      */
     public GridNearAtomicUpdateRequest(
@@ -146,7 +151,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridCacheOperation op,
         boolean retval,
         boolean forceTransformBackups,
-        long ttl,
+        ExpiryPolicy expiryPlc,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         int taskNameHash
@@ -162,7 +167,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         this.op = op;
         this.retval = retval;
         this.forceTransformBackups = forceTransformBackups;
-        this.ttl = ttl;
+        this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -240,10 +245,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     }
 
     /**
-     * @return Time to live.
+     * @return Expiry policy.
      */
-    public long ttl() {
-        return ttl;
+    public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -485,6 +490,9 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         keyBytes = marshalCollection(keys, ctx);
         valBytes = marshalValuesCollection(vals, ctx);
         filterBytes = marshalFilter(filter, ctx);
+
+        if (expiryPlc != null)
+            expiryPlcBytes = CU.marshal(ctx, new GridCacheExpiryPolicy(expiryPlc));
     }
 
     /** {@inheritDoc} */
@@ -494,6 +502,9 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         keys = unmarshalCollection(keyBytes, ctx, ldr);
         vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
         filter = unmarshalFilter(filterBytes, ctx, ldr);
+
+        if (expiryPlcBytes != null)
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -527,7 +538,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.drTtls = drTtls;
         _clone.drExpireTimes = drExpireTimes;
         _clone.retval = retval;
-        _clone.ttl = ttl;
+        _clone.expiryPlc = expiryPlc;
         _clone.filter = filter;
         _clone.filterBytes = filterBytes;
         _clone.hasPrimary = hasPrimary;
@@ -688,7 +699,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 15:
-                if (!commState.putLong(ttl))
+                if (!commState.putByteArray(expiryPlcBytes))
                     return false;
 
                 commState.idx++;
@@ -928,10 +939,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 15:
-                if (buf.remaining() < 8)
+                byte[] expiryPlcBytes0 = commState.getByteArray();
+
+                if (expiryPlcBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
-                ttl = commState.getLong();
+                expiryPlcBytes = expiryPlcBytes0;
 
                 commState.idx++;
 

@@ -23,6 +23,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
@@ -148,7 +149,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
 
             try {
-                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId(),
+                processNearAtomicUpdateResponse(ver,
+                    key,
+                    val,
+                    valBytes,
+                    req.expiry(),
+                    req.nodeId(),
+                    req.subjectId(),
                     taskName);
             }
             catch (IgniteCheckedException e) {
@@ -162,7 +169,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param nodeId Node ID.
      * @throws IgniteCheckedException If failed.
      */
@@ -171,7 +178,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         K key,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        Long ttl,
+        ExpiryPolicy expiryPlc,
         UUID nodeId,
         UUID subjId,
         String taskName
@@ -196,7 +203,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         valBytes,
                         /*write-through*/false,
                         /*retval*/false,
-                        ttl,
+                        expiryPlc != null ? expiryPlc : ctx.expiry(),
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,
@@ -253,6 +260,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
+        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
+
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
 
@@ -292,7 +301,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
-                            req.ttl(),
+                            expiry,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
