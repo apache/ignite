@@ -167,8 +167,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Whether DHT transaction can write to store from DHT.
      */
     public boolean writeToStoreFromDht() {
-        // TODO GG-9141
-        return false;
+        return cctx.config().isWriteBehindEnabled() || locStore;
     }
 
     /**
@@ -193,9 +192,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     return true;
                 }
 
-                Collection<? extends K> keys0;
-
-                keys0 = convertPortable ?
+                Collection<? extends K> keys0 = convertPortable ?
                     F.viewReadOnly(keys, new C1<K, K>() {
                         @Override public K apply(K k) {
                             return (K)cctx.unwrapPortableIfNeeded(k, false);
@@ -443,9 +440,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         if (store != null) {
-            Collection<? extends K> keys0;
-
-            keys0 = convertPortable ?
+            Collection<? extends K> keys0 = convertPortable ?
                 F.viewReadOnly(keys, new C1<K, K>() {
                     @Override public K apply(K k) {
                         return (K)cctx.unwrapPortableIfNeeded(k, false);

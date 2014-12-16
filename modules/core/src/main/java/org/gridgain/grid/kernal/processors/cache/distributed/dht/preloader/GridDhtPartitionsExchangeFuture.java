@@ -912,8 +912,10 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                                         // If local node is just joining.
                                         if (exchId.nodeId().equals(cctx.localNodeId())) {
                                             try {
-                                                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-                                                    cacheCtx.topology().beforeExchange(exchId);
+                                                for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                                                    if (!cacheCtx.isLocal())
+                                                        cacheCtx.topology().beforeExchange(exchId);
+                                                }
                                             }
                                             catch (IgniteCheckedException e) {
                                                 onDone(e);
