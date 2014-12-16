@@ -365,6 +365,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock) {
@@ -380,6 +381,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             isolation,
             timeout,
             invalidate,
+            storeEnabled,
             txSize,
             grpLockKey,
             partLock,
@@ -1237,8 +1239,15 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             txContextReset();
 
             // 15. Update metrics.
-            if (!tx.dht() && tx.local())
+            if (!tx.dht() && tx.local()) {
                 cctx.txMetrics().onTxCommit();
+
+                for (int cacheId : tx.activeCacheIds()) {
+                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+                    cacheCtx.cache().metrics0().onTxCommit();
+                }
+            }
 
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)
@@ -1303,8 +1312,15 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             txContextReset();
 
             // 11. Update metrics.
-            if (!tx.dht() && tx.local())
+            if (!tx.dht() && tx.local()) {
                 cctx.txMetrics().onTxRollback();
+
+                for (int cacheId : tx.activeCacheIds()) {
+                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+                    cacheCtx.cache().metrics0().onTxRollback();
+                }
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Rolled back from TM: " + tx);

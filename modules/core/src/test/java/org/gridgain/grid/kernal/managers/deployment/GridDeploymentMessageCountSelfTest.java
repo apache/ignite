@@ -114,7 +114,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCacheValueDeploymentOnPut() throws Exception { // TODO GG-9141
+    public void testCacheValueDeploymentOnPut() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
         Class valCls = ldr.loadClass(TEST_VALUE);

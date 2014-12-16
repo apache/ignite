@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -704,6 +703,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         timeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
+                                        inTx() && tx.syncCommit(),
                                         inTx() ? tx.groupLockKey() : null,
                                         inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,

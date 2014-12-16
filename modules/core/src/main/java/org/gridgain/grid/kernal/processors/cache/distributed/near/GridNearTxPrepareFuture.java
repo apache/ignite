@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -384,19 +383,46 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (tx.activeCacheIds().isEmpty())
             return cctx.exchange().lastTopologyFuture();
 
-        GridCacheContext<K, V> cacheCtx = cctx.cacheContext(F.first(tx.activeCacheIds()));
+        GridCacheContext<K, V> nonLocalCtx = null;
 
-        cacheCtx.topology().readLock();
+        for (int cacheId : tx.activeCacheIds()) {
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-        return cacheCtx.topology().topologyVersionFuture();
+            if (!cacheCtx.isLocal()) {
+                nonLocalCtx = cacheCtx;
+
+                break;
+            }
+        }
+
+        if (nonLocalCtx == null)
+            return cctx.exchange().lastTopologyFuture();
+
+        nonLocalCtx.topology().readLock();
+
+        return nonLocalCtx.topology().topologyVersionFuture();
     }
 
     /**
      * Releases topology read lock.
      */
     private void topologyReadUnlock() {
-        if (!tx.activeCacheIds().isEmpty())
-            cctx.cacheContext(F.first(tx.activeCacheIds())).topology().readUnlock();
+        if (!tx.activeCacheIds().isEmpty()) {
+            GridCacheContext<K, V> nonLocalCtx = null;
+
+            for (int cacheId : tx.activeCacheIds()) {
+                GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+                if (!cacheCtx.isLocal()) {
+                    nonLocalCtx = cacheCtx;
+
+                    break;
+                }
+            }
+
+            if (nonLocalCtx != null)
+                nonLocalCtx.topology().readUnlock();
+        }
     }
 
     /**

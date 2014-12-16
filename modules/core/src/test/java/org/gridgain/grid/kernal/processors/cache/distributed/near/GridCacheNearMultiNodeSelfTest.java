@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.store.*;
@@ -362,7 +361,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void _testOptimisticWriteThrough() throws Exception { // TODO GG-9141
+    public void testOptimisticWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
@@ -377,7 +376,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNull(dht(primaryGrid(2)).peek(2));
+                GridDhtCacheEntry<Integer, String> entry = dht(primaryGrid(2)).peekExx(2);
+
+                if (entry != null)
+                    assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
+
                 assertNotNull(dht(primaryGrid(3)).peek(3));
 
                 tx.commit();

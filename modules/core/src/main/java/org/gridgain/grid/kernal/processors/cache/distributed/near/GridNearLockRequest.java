@@ -69,6 +69,9 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(3)
     private boolean hasTransforms;
 
+    /** Sync commit flag. */
+    private boolean syncCommit;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -110,6 +113,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         long timeout,
         int keyCnt,
         int txSize,
+        boolean syncCommit,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
@@ -137,6 +141,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.topVer = topVer;
         this.implicitTx = implicitTx;
         this.implicitSingleTx = implicitSingleTx;
+        this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
@@ -190,6 +195,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public void onePhaseCommit(boolean onePhaseCommit) {
         this.onePhaseCommit = onePhaseCommit;
+    }
+
+    /**
+     * @return Sync commit flag.
+     */
+    public boolean syncCommit() {
+        return syncCommit;
     }
 
     /**
@@ -316,6 +328,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
         _clone.hasTransforms = hasTransforms;
+        _clone.syncCommit = syncCommit;
     }
 
     /** {@inheritDoc} */
@@ -436,6 +449,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
+            case 34:
+                if (!commState.putBoolean(syncCommit))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -576,6 +594,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
+            case 34:
+                if (buf.remaining() < 1)
+                    return false;
+
+                syncCommit = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

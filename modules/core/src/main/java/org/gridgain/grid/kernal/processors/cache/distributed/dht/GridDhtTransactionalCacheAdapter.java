@@ -768,6 +768,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.subjectId(),
                                     req.taskNameHash());
 
+                                tx.syncCommit(req.syncCommit());
+
                                 tx = ctx.tm().onCreated(tx);
 
                                 if (tx == null || !tx.init()) {

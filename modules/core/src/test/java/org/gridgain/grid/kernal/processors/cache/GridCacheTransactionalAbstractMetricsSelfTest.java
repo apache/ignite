@@ -210,15 +210,22 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            // TODO GG-9141
-            GridCacheTxMetrics metrics = null; //grid(i).cache(null).metrics();
+            IgniteTxMetrics metrics = grid(i).transactions().metrics();
+            GridCacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
-            if (i == 0)
+            if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
-            else
+
+                if (put)
+                    assertEquals(TX_CNT, cacheMetrics.txCommits());
+            }
+            else {
                 assertEquals(0, metrics.txCommits());
+                assertEquals(0, cacheMetrics.txCommits());
+            }
 
             assertEquals(0, metrics.txRollbacks());
+            assertEquals(0, cacheMetrics.txRollbacks());
         }
     }
 
@@ -233,7 +240,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            GridCacheTx tx = cache.txStart(concurrency ,isolation);
+            GridCacheTx tx = cache.txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)
@@ -243,15 +250,22 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            // TODO GG-9141
-            GridCacheTxMetrics metrics = null;//grid(i).cache(null).metrics();
+            IgniteTxMetrics metrics = grid(i).transactions().metrics();
+            GridCacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
+            assertEquals(0, cacheMetrics.txCommits());
 
-            if (i == 0)
+            if (i == 0) {
                 assertEquals(TX_CNT, metrics.txRollbacks());
-            else
+
+                if (put)
+                    assertEquals(TX_CNT, cacheMetrics.txRollbacks());
+            }
+            else {
                 assertEquals(0, metrics.txRollbacks());
+                assertEquals(0, cacheMetrics.txRollbacks());
+            }
         }
     }
 }

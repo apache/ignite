@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -70,7 +69,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setPreloadMode(SYNC);
-        cfg.setDgcFrequency(0);
 
         return cfg;
     }

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
@@ -71,7 +70,6 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(GridCachePreloadMode.SYNC);
-        cc.setDgcFrequency(0);
 
         c.setCacheConfiguration(cc);
 

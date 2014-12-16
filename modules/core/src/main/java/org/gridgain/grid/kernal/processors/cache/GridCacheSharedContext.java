@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -62,7 +61,7 @@ public class GridCacheSharedContext<K, V> {
     private Map<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
-    private GridCacheTxMetricsAdapter txMetrics;
+    private volatile IgniteTxMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
     private IgniteFuture<Object> preloadersStartFut;
@@ -89,7 +88,7 @@ public class GridCacheSharedContext<K, V> {
         this.exchMgr = add(exchMgr);
         this.ioMgr = add(ioMgr);
 
-        txMetrics = new GridCacheTxMetricsAdapter();
+        txMetrics = new IgniteTxMetricsAdapter();
 
         ctxMap = new HashMap<>();
     }
@@ -207,8 +206,15 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Transactional metrics adapter.
      */
-    public GridCacheTxMetricsAdapter txMetrics() {
+    public IgniteTxMetricsAdapter txMetrics() {
         return txMetrics;
+    }
+
+    /**
+     * Resets tx metrics.
+     */
+    public void resetTxMetrics() {
+        txMetrics = new IgniteTxMetricsAdapter();
     }
 
     /**

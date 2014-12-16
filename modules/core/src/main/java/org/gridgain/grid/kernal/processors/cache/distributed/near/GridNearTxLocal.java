@@ -96,6 +96,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
@@ -111,7 +112,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             isolation,
             timeout,
             invalidate,
-            /*TODO explicit lock???*/false,
+            storeEnabled,
             txSize,
             grpLockKey,
             partLock,
@@ -191,6 +192,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @return {@code True} if transaction is fully synchronous.
      */
     private boolean sync() {
+        if (super.syncCommit())
+            return true;
+
         for (int cacheId : activeCacheIds()) {
             if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
                 return true;
@@ -280,9 +284,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 }
             });
         }
-        else {
-            assert cacheCtx.isColocated();
-
+        else if (cacheCtx.isColocated()) {
             return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
                 CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
                 .chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
@@ -304,6 +306,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                         }
                     }
                 });
+        }
+        else {
+            assert cacheCtx.isLocal();
+
+            return super.loadMissing(cacheCtx, async, keys, deserializePortable, c);
         }
     }
 

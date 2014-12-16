@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -525,7 +524,9 @@ public class GridCacheTxHandler<K, V> {
                     return null;
                 }
 
-                tx.syncCommit(req.syncCommit());
+                if (!tx.syncCommit())
+                    tx.syncCommit(req.syncCommit());
+
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
                 tx.recoveryWrites(req.recoveryWrites());
@@ -1229,13 +1230,14 @@ public class GridCacheTxHandler<K, V> {
 
                 while (true) {
                     try {
-                        entry = cacheCtx.dht().near().peekExx(txEntry.key());
+                        entry = cacheCtx.near().peekExx(txEntry.key());
 
                         if (entry != null) {
                             entry.keyBytes(txEntry.keyBytes());
 
                             // Handle implicit locks for pessimistic transactions.
-                            tx = ctx.tm().tx(req.version());
+                            if (tx == null)
+                                tx = ctx.tm().nearTx(req.version());
 
                             if (tx == null) {
                                 tx = new GridNearTxRemote<>(

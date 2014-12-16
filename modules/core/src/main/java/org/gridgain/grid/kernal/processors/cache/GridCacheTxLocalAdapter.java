@@ -110,6 +110,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
@@ -117,7 +118,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         int taskNameHash
     ) {
         super(cctx, xidVer, implicit, implicitSingle, /*local*/true, concurrency, isolation, timeout, invalidate,
-            txSize, grpLockKey, subjId, taskNameHash);
+            storeEnabled, txSize, grpLockKey, subjId, taskNameHash);
 
         assert !partLock || grpLockKey != null;
 
@@ -423,23 +424,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /**
-     * Store manager for current transaction.
-     *
-     * @return Store manager.
-     */
-    protected GridCacheStoreManager<K, V> store() {
-        if (!activeCacheIds.isEmpty()) {
-            int cacheId = F.first(activeCacheIds);
-
-            GridCacheStoreManager<K, V> store = cctx.cacheContext(cacheId).store();
-
-            return store.configured() ? store : null;
-        }
-
-        return null;
-    }
-
-    /**
      * Performs batch database operations. This commit must be called
      * before {@link #userCommit()}. This way if there is a DB failure,
      * cache transaction can still be rolled back.
@@ -451,7 +435,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
-        if (store != null && (!internal() || groupLock())) {
+        if (store != null && storeEnabled() && (!internal() || groupLock())) {
             try {
                 // Implicit transactions are always updated at the end.
                 if (isBatchUpdate()) {
@@ -985,7 +969,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * Checks if there is a cached or swapped value for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.apache.ignite.lang.IgnitePredicate[])} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, IgnitePredicate[])} method.
      *
      *
      * @param keys Key to enlist.
@@ -1232,7 +1216,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * Loads all missed keys for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, org.apache.ignite.lang.IgnitePredicate[])} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, IgnitePredicate[])} method.
      *
      * @param map Return map.
      * @param missedMap Missed keys.
@@ -2109,7 +2093,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in putAllAsync method (will retry): " + cached);
 
-                    txEntry.cached(entryEx(cacheCtx, txEntry.txKey()), txEntry.keyBytes());
+                    txEntry.cached(entryEx(cached.context(), txEntry.txKey()), txEntry.keyBytes());
                 }
             }
         }
@@ -2541,7 +2525,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             ", part=" + part + ", groupLockKey=" + grpLockKey + ']');
                 }
                 else {
-                    Object affinityKey = cacheCtx.config().getAffinityMapper().affinityKey(key);
+                    GridCacheTxKey affinityKey = cacheCtx.txKey(
+                        (K)cacheCtx.config().getAffinityMapper().affinityKey(key));
 
                     if (!grpLockKey.equals(affinityKey))
                         throw new IgniteCheckedException("Failed to enlist key into group-lock transaction (affinity key was " +

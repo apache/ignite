@@ -43,7 +43,13 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public int size();
 
     /**
-     * @return {@code True} if transaction involves caches with cache store configured.
+     * @return {@code True} if transaction is allowed to use store.
+     */
+    public boolean storeEnabled();
+
+    /**
+     * @return {@code True} if transaction is allowed to use store and transactions spans one or more caches with
+     *      store enabled.
      */
     public boolean storeUsed();
 

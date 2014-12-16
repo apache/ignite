@@ -3187,106 +3187,21 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
-        A.notNull(concurrency, "concurrency");
-        A.notNull(isolation, "isolation");
-        A.ensure(timeout >= 0, "timeout cannot be negative");
-        A.ensure(txSize >= 0, "transaction size cannot be negative");
-
-        GridTransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
-
-        if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-            throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                "'txSerializableEnabled' configuration property)");
-
-        GridCacheTxEx<K, V> tx = (GridCacheTxEx<K, V>)ctx.tm().userTx();
-
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
-
-        tx = ctx.tm().newTx(
-            false,
-            false,
-            concurrency,
-            isolation,
-            timeout,
-            false,
-            txSize,
-            /** group lock keys */null,
-            /** partition lock */false
-        );
-
-        assert tx != null;
-
-        // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx, ctx.shared());
+        return ctx.kernalContext().cache().transactions().txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        return txStartGroupLock(ctx.txKey((K)affinityKey), concurrency, isolation, false, timeout, txSize);
+        return ctx.kernalContext().cache().transactions().txStartAffinity(name(), affinityKey, concurrency, isolation,
+            timeout, txSize);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
-        Object grpLockKey = ctx.affinity().partitionAffinityKey(partId);
-
-        return txStartGroupLock(ctx.txKey((K)grpLockKey), concurrency, isolation, true, timeout, txSize);
-    }
-
-    /**
-     * Internal method to start group-lock transaction.
-     *
-     * @param grpLockKey Group lock key.
-     * @param concurrency Transaction concurrency control.
-     * @param isolation Transaction isolation level.
-     * @param partLock {@code True} if this is a partition-lock transaction. In this case {@code grpLockKey}
-     *      should be a unique partition-specific key.
-     * @param timeout Tx timeout.
-     * @param txSize Expected transaction size.
-     * @return Started transaction.
-     * @throws IllegalStateException If other transaction was already started.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCacheTx txStartGroupLock(GridCacheTxKey grpLockKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize)
-        throws IllegalStateException, IgniteCheckedException {
-        GridCacheTx tx = ctx.tm().userTx();
-
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
-
-        GridCacheTxLocalEx<K, V> tx0 = ctx.tm().newTx(
-            false,
-            false,
-            concurrency,
-            isolation,
-            timeout,
-            ctx.hasFlag(INVALIDATE),
-            txSize,
-            grpLockKey,
-            partLock
-        );
-
-        assert tx0 != null;
-
-        IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
-
-        try {
-            lockFut.get();
-        }
-        catch (IgniteCheckedException e) {
-            tx0.rollback();
-
-            throw e;
-        }
-
-        // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx0, ctx.shared());
+        return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
+            timeout, txSize);
     }
 
     /** {@inheritDoc} */
@@ -3346,7 +3261,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                             val = (V)ctx.marshalToPortable(val);
                         }
 
-                        GridRawVersionedEntry<K, V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
+                        GridVersionedEntry<K,V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
                         e.marshal(ctx.marshaller());
 
@@ -3743,10 +3658,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
+                !ctx.hasFlag(SKIP_STORE),
                 0,
                 /** group lock keys */null,
                 /** partition lock */false
             );
+
+            if (ctx.hasFlag(SYNC_COMMIT))
+                tx.syncCommit(true);
 
             assert tx != null;
 
@@ -3805,7 +3724,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        if (tx == null || tx.implicit())
+        if (tx == null || tx.implicit()) {
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
@@ -3813,9 +3732,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
+                !ctx.hasFlag(SKIP_STORE),
                 0,
                 null,
                 false);
+
+            if (ctx.hasFlag(SYNC_COMMIT))
+                tx.syncCommit(true);
+        }
 
         return asyncOp(tx, op);
     }

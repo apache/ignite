@@ -67,7 +67,6 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
         c.setDiscoverySpi(spi);
 
         cc.setCacheMode(PARTITIONED);
-        cc.setDgcFrequency(0);
         cc.setQueryIndexEnabled(true);
         cc.setSwapEnabled(false);
 

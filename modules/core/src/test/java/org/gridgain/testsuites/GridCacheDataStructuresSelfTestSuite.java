@@ -35,7 +35,7 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
 //        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class)); // TODO GG-9141
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
-//        suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
@@ -76,8 +76,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         // TODO: GG-4807 Uncomment when fix
         // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
-//        suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class)); // TODO GG-9141
-//        suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceMultiThreadedTest.class));
 

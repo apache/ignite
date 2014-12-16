@@ -15,6 +15,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -135,22 +136,24 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void _testOptimisticTxWriteThrough() throws Exception { // TODO GG-9141
+    public void testOptimisticTxWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache();
-        GridCache<Integer, String> dht = dht();
+        GridCacheAdapter<Integer, String> dht = dht();
 
-        GridCacheTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ);
+        try (GridCacheTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
+            near.putx(2, "2");
+            near.put(3, "3");
 
-        near.putx(2, "2");
-        near.put(3, "3");
+            assert "2".equals(near.get(2));
+            assert "3".equals(near.get(3));
 
-        assert "2".equals(near.get(2));
-        assert "3".equals(near.get(3));
+            GridCacheEntryEx<Integer, String> entry = dht.peekEx(2);
 
-        assert dht.peek(2) == null;
-        assert dht.peek(3) != null;
+            assert entry == null || entry.rawGetOrUnmarshal(false) == null : "Invalid entry: " + entry;
+            assert dht.peek(3) != null;
 
-        tx.commit();
+            tx.commit();
+        }
 
         assert "2".equals(near.get(2));
         assert "3".equals(near.get(3));

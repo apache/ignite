@@ -9,7 +9,7 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -64,7 +64,7 @@ public interface IgniteTransactions {
      * transaction. All updates to the keys involved should always go through {@code affinity-group-locked}
      * transaction, otherwise cache may be left in inconsistent state.
      * <p>
-     * If cache sanity check is enabled ({@link org.apache.ignite.configuration.IgniteConfiguration#isCacheSanityCheckEnabled()}),
+     * If cache sanity check is enabled ({@link IgniteConfiguration#isCacheSanityCheckEnabled()}),
      * the following checks are performed:
      * <ul>
      *     <li>
@@ -86,7 +86,7 @@ public interface IgniteTransactions {
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
+    public GridCacheTx txStartAffinity(String cacheName, Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
@@ -100,7 +100,7 @@ public interface IgniteTransactions {
      * transaction. All updates to the keys involved should always go through {@code partition-group-locked}
      * transaction, otherwise, cache may be left in inconsistent state.
      * <p>
-     * If cache sanity check is enabled ({@link org.apache.ignite.configuration.IgniteConfiguration#isCacheSanityCheckEnabled()}),
+     * If cache sanity check is enabled ({@link IgniteConfiguration#isCacheSanityCheckEnabled()}),
      * the following checks are performed:
      * <ul>
      *     <li>
@@ -122,7 +122,7 @@ public interface IgniteTransactions {
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
+    public GridCacheTx txStartPartition(String cacheName, int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
@@ -133,4 +133,14 @@ public interface IgniteTransactions {
      *      does not have a transaction.
      */
     @Nullable public GridCacheTx tx();
+
+    /**
+     * @return Transaction metrics.
+     */
+    public IgniteTxMetrics metrics();
+
+    /**
+     * Resets transaction metrics.
+     */
+    public void resetMetrics();
 }

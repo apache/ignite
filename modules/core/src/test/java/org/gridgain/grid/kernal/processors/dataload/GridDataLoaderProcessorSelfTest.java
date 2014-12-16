@@ -14,7 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -303,11 +302,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO GG-4121
-     *
      * @throws Exception If failed.
      */
-    public void _testReplicatedMultiThreadedGroupLock() throws Exception {
+    public void testReplicatedMultiThreadedGroupLock() throws Exception {
         mode = REPLICATED;
         useGrpLock = true;
 
