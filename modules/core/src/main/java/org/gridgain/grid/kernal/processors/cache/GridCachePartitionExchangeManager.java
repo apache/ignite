@@ -470,6 +470,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
         }
 
+        for (GridClientPartitionTopology<K, V> top : cctx.exchange().clientTopologies())
+            m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
+
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
@@ -587,7 +590,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (!cacheCtx.isLocal()) {
                         GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
 
-                        updated |= top.update(null, msg.partitions().get(cacheCtx.cacheId())) != null;
+                        GridDhtPartitionFullMap partMap = msg.partitions().get(cacheCtx.cacheId());
+
+                        updated |= top.update(null, partMap) != null;
                     }
                 }
 
