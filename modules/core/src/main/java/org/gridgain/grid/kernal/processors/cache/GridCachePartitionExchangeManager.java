@@ -756,7 +756,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     busy = true;
 
-                    Map<Integer, GridDhtPreloaderAssignments<K, V>> assignsMap = null;
+                    Map<Integer, GridDhtPreloaderAssignments<K, V>> assignsMap = new HashMap<>();
 
                     boolean dummyReassign = exchFut.dummyReassign();
                     boolean forcePreload = exchFut.forcePreload();
@@ -820,17 +820,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                             long delay = cacheCtx.config().getPreloadPartitionedDelay();
 
+                            GridDhtPreloaderAssignments<K, V> assigns = null;
+
                             // Don't delay for dummy reassigns to avoid infinite recursion.
-                            if (delay == 0 || forcePreload) {
-                                GridDhtPreloaderAssignments<K, V> assigns = cacheCtx.preloader().assign(exchFut);
+                            if (delay == 0 || forcePreload)
+                                assigns = cacheCtx.preloader().assign(exchFut);
 
-                                if (assigns != null) {
-                                    if (assignsMap == null)
-                                        assignsMap = new HashMap<>();
-
-                                    assignsMap.put(cacheCtx.cacheId(), assigns);
-                                }
-                            }
+                            assignsMap.put(cacheCtx.cacheId(), assigns);
                         }
                     }
                     finally {

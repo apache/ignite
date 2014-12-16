@@ -37,10 +37,6 @@ public class VisorCacheDgcConfiguration implements Serializable {
     public static VisorCacheDgcConfiguration from(GridCacheConfiguration ccfg) {
         VisorCacheDgcConfiguration cfg = new VisorCacheDgcConfiguration();
 
-        cfg.frequency(ccfg.getDgcFrequency());
-        cfg.removedLocks(ccfg.isDgcRemoveLocks());
-        cfg.suspectLockTimeout(ccfg.getDgcSuspectLockTimeout());
-
         return cfg;
     }
 

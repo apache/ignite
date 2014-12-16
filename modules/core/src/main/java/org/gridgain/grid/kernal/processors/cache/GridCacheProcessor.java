@@ -1071,24 +1071,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Default query timeout", locAttr.defaultQueryTimeout(), rmtAttr.defaultQueryTimeout(),
                             false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcFrequency",
-                            "Distributed garbage collector frequency", locAttr.dgcFrequency(), rmtAttr.dgcFrequency(),
-                            false);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultTimeToLive",
                             "Default time to live", locAttr.defaultTimeToLive(), rmtAttr.defaultTimeToLive(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcFrequency",
-                            "Distributed garbage collector frequency", locAttr.dgcFrequency(), rmtAttr.dgcFrequency(),
-                            false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcRemoveLocks",
-                            "Distributed garbage collector remove locks", locAttr.dgcRemoveLocks(),
-                            rmtAttr.dgcRemoveLocks(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "dgcSuspectLockTimeout",
-                            "Distributed garbage collector suspect lock timeout", locAttr.dgcSuspectLockTimeout(),
-                            rmtAttr.dgcSuspectLockTimeout(), false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
                             "Preload batch size", locAttr.preloadBatchSize(), rmtAttr.preloadBatchSize(), false);

@@ -30,7 +30,6 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(2); // 2 backups, so all nodes are involved.
-        cc.setDgcFrequency(0);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 

@@ -56,7 +56,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(mode);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setDgcRemoveLocks(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 

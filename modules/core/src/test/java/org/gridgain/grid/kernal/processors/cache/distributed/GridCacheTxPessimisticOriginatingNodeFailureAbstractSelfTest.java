@@ -429,7 +429,6 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setStore(null);
-        cfg.setDgcFrequency(0);
 
         return cfg;
     }
