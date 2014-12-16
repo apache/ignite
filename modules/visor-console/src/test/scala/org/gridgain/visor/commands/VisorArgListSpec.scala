@@ -11,8 +11,9 @@
 
 package org.gridgain.visor.commands
 
-import org.gridgain.visor.visor._
 import org.scalatest._
+
+import org.gridgain.visor.visor._
 
 /**
  * Test for visor's argument list parsing.

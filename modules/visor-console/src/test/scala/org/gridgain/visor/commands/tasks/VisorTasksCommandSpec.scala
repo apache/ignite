@@ -11,16 +11,17 @@
 
 package org.gridgain.visor.commands.tasks
 
-import java.util
-
 import org.apache.ignite.Ignition
-import org.apache.ignite.compute.{ComputeJobAdapter, ComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
+import org.apache.ignite.compute.{ComputeJob, ComputeJobAdapter, ComputeJobResult, ComputeTaskSplitAdapter}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.IgniteEventType
-import IgniteEventType._
+import org.apache.ignite.events.IgniteEventType._
+import org.scalatest._
+
+import java.util
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.tasks.VisorTasksCommand._
-import org.scalatest._
 
 import scala.collection.JavaConversions._
 import scala.collection._

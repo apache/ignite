@@ -11,8 +11,9 @@
 
 package org.gridgain.visor
 
-import org.gridgain.visor.commands.VisorTextTable
 import org.scalatest._
+
+import org.gridgain.visor.commands.VisorTextTable
 
 import scala.collection._
 
