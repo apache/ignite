@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -93,6 +94,12 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     /** Version generated on primary node to be used for originating node's near cache update. */
     @GridDirectVersion(1)
     private GridCacheVersion nearVer;
+
+    /** Near TTLs. */
+    private GridLongList nearTtls;
+
+    /** Near expire times. */
+    private GridLongList nearExpireTimes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -186,17 +193,84 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
      * @param keyIdx Key index.
      * @param val Value.
      * @param valBytes Value bytes.
+     * @param ttl TTL for near cache update.
+     * @param expireTime Expire time for near cache update.
      */
-    public void addNearValue(int keyIdx, @Nullable V val, @Nullable byte[] valBytes) {
+    public void addNearValue(int keyIdx,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        long ttl,
+        long expireTime) {
         if (nearValsIdxs == null) {
             nearValsIdxs = new ArrayList<>();
             nearValBytes = new ArrayList<>();
             nearVals = new ArrayList<>();
         }
 
+        addNearTtl(keyIdx, ttl, expireTime);
+
         nearValsIdxs.add(keyIdx);
         nearVals.add(val);
         nearValBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
+    }
+
+    /**
+     * @param ttl TTL for near cache update.
+     * @param expireTime Expire time for near cache update.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public void addNearTtl(int keyIdx, long ttl, long expireTime) {
+        if (ttl >= 0) {
+            if (nearTtls == null) {
+                nearTtls = new GridLongList(16);
+
+                for (int i = 0; i < keyIdx; i++)
+                    nearTtls.add(-1L);
+            }
+        }
+
+        if (nearTtls != null)
+            nearTtls.add(ttl);
+
+        if (expireTime >= 0) {
+            if (nearExpireTimes == null) {
+                nearExpireTimes = new GridLongList(16);
+
+                for (int i = 0; i < keyIdx; i++)
+                    nearExpireTimes.add(-1);
+            }
+        }
+
+        if (nearExpireTimes != null)
+            nearExpireTimes.add(expireTime);
+    }
+
+    /**
+     * @param idx Index.
+     * @return Expire time for near cache update.
+     */
+    public long nearExpireTime(int idx) {
+        if (nearExpireTimes != null) {
+            assert idx >= 0 && idx < nearExpireTimes.size();
+
+            return nearExpireTimes.get(idx);
+        }
+
+        return -1L;
+    }
+
+    /**
+     * @param idx Index.
+     * @return TTL for near cache update.
+     */
+    public long nearTtl(int idx) {
+        if (nearTtls != null) {
+            assert idx >= 0 && idx < nearTtls.size();
+
+            return nearTtls.get(idx);
+        }
+
+        return -1L;
     }
 
     /**
@@ -221,6 +295,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
             nearSkipIdxs = new ArrayList<>();
 
         nearSkipIdxs.add(keyIdx);
+
+        addNearTtl(keyIdx, -1L, -1L);
     }
 
     /**
@@ -366,6 +442,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
         _clone.nearVer = nearVer;
+        _clone.nearTtls = nearTtls;
+        _clone.nearExpireTimes = nearExpireTimes;
     }
 
     /** {@inheritDoc} */
@@ -501,6 +579,17 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
+            case 12:
+                if (!commState.putLongList(nearExpireTimes))
+                    return false;
+
+                commState.idx++;
+
+            case 13:
+                if (!commState.putLongList(nearTtls))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -659,6 +748,26 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                     return false;
 
                 nearVer = nearVer0;
+
+                commState.idx++;
+
+            case 12:
+                GridLongList nearExpireTimes0 = commState.getLongList();
+
+                if (nearExpireTimes0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                nearExpireTimes = nearExpireTimes0;
+
+                commState.idx++;
+
+            case 13:
+                GridLongList nearTtls0 = commState.getLongList();
+
+                if (nearTtls0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                nearTtls = nearTtls0;
 
                 commState.idx++;
 

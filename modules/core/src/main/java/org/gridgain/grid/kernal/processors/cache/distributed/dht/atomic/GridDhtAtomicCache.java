@@ -1355,6 +1355,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     req.subjectId(),
                     taskName);
 
+                assert updRes.newTtl() == -1L || (expiry != null || updRes.drExpireTime() >= 0);
+
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
 
@@ -1366,7 +1368,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
                         long ttl = updRes.newTtl();
-                        long drExpireTime = updRes.drExpireTime();
+                        long expireTime = updRes.drExpireTime();
 
                         if (ctx == null)
                             newDrVer = null;
@@ -1380,19 +1382,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (req.forceTransformBackups() && op == TRANSFORM)
                             transformC = (IgniteClosure<V, V>)writeVal;
 
-                        if (!readersOnly)
+                        if (!readersOnly) {
                             dhtFut.addWriteEntry(entry,
                                 updRes.newValue(),
                                 newValBytes,
                                 transformC,
-                                drExpireTime >= 0L ? ttl : -1L,
-                                drExpireTime,
-                                newDrVer,
-                                drExpireTime < 0L ? req.expiry() : null);
+                                updRes.newTtl(),
+                                expireTime,
+                                newDrVer);
+                        }
 
                         if (!F.isEmpty(filteredReaders))
-                            dhtFut.addNearWriteEntries(filteredReaders, entry, updRes.newValue(), newValBytes,
-                                transformC, drExpireTime < 0L ? req.expiry() : null);
+                            dhtFut.addNearWriteEntries(filteredReaders,
+                                entry,
+                                updRes.newValue(),
+                                newValBytes,
+                                transformC,
+                                ttl,
+                                expireTime);
                     }
                     else {
                         // TODO IGNITE-41 ttl could be changed.
@@ -1408,14 +1415,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
                             GridDrResolveResult<V> ctx = updRes.drResolveResult();
 
-                            // TODO IGNITE-41 dr ttl for near cache.
+                            long ttl = updRes.newTtl();
+                            long expireTime = updRes.drExpireTime();
 
                             if (ctx != null && ctx.isMerge())
                                 newValBytes = null;
 
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue())
-                                res.addNearValue(i, updRes.newValue(), newValBytes);
+                                res.addNearValue(i,
+                                    updRes.newValue(),
+                                    newValBytes,
+                                    ttl,
+                                    expireTime);
+                            else
+                                res.addNearTtl(i, ttl, expireTime);
 
                             if (updRes.newValue() != null || newValBytes != null) {
                                 IgniteFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -1596,6 +1610,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         req.subjectId(),
                         taskName);
 
+                    assert updRes.newTtl() == -1L || expiry != null;
+
                     if (intercept) {
                         if (op == UPDATE)
                             ctx.config().getInterceptor().onAfterPut(entry.key(), updRes.newValue());
@@ -1624,25 +1640,42 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         IgniteClosure<V, V> transformC = transformMap == null ? null : transformMap.get(entry.key());
 
                         if (!batchRes.readersOnly())
-                            dhtFut.addWriteEntry(entry, writeVal, valBytes, transformC, -1, -1, null, req.expiry());
+                            dhtFut.addWriteEntry(entry,
+                                writeVal,
+                                valBytes,
+                                transformC,
+                                updRes.newTtl(),
+                                -1,
+                                null);
 
                         if (!F.isEmpty(filteredReaders))
-                            dhtFut.addNearWriteEntries(filteredReaders, entry, writeVal, valBytes, transformC,
-                                req.expiry());
+                            dhtFut.addNearWriteEntries(filteredReaders,
+                                entry,
+                                writeVal,
+                                valBytes,
+                                transformC,
+                                updRes.newTtl(),
+                                -1);
                     }
 
                     if (hasNear) {
                         if (primary) {
                             if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                                if (req.operation() == TRANSFORM) {
-                                    int idx = firstEntryIdx + i;
+                                int idx = firstEntryIdx + i;
 
+                                if (req.operation() == TRANSFORM) {
                                     GridCacheValueBytes valBytesTuple = entry.valueBytes();
 
                                     byte[] valBytes = valBytesTuple.getIfMarshaled();
 
-                                    res.addNearValue(idx, writeVal, valBytes);
+                                    res.addNearValue(idx,
+                                        writeVal,
+                                        valBytes,
+                                        updRes.newTtl(),
+                                        -1);
                                 }
+                                else
+                                    res.addNearTtl(idx, updRes.newTtl(), -1);
 
                                 if (writeVal != null || !entry.valueBytes().isNull()) {
                                     IgniteFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -2037,8 +2070,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
-
         for (int i = 0; i < req.size(); i++) {
             K key = req.key(i);
 
@@ -2058,6 +2089,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 UPDATE :
                                 DELETE;
 
+                        long ttl = req.drTtl(i);
+                        long expireTime = req.drExpireTime(i);
+
+                        if (ttl != -1L && expireTime == -1L)
+                            expireTime = GridCacheMapEntry.toExpireTime(ttl);
+
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
@@ -2067,15 +2104,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
-                            expiry,
+                            null,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             replicate ? DR_BACKUP : DR_NONE,
-                            req.drTtl(i),
-                            req.drExpireTime(i),
+                            ttl,
+                            expireTime,
                             req.drVersion(i),
                             false,
                             intercept,

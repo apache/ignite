@@ -2043,8 +2043,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "put [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));

@@ -148,12 +148,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
             }
 
+            long ttl = res.nearTtl(i);
+            long expireTime = res.nearExpireTime(i);
+
+            if (ttl != -1L && expireTime == -1L)
+                expireTime = GridCacheMapEntry.toExpireTime(ttl);
+
             try {
                 processNearAtomicUpdateResponse(ver,
                     key,
                     val,
                     valBytes,
-                    req.expiry(),
+                    ttl,
+                    expireTime,
                     req.nodeId(),
                     req.subjectId(),
                     taskName);
@@ -169,7 +176,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param expiryPlc Expiry policy.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
      * @param nodeId Node ID.
      * @throws IgniteCheckedException If failed.
      */
@@ -178,7 +186,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         K key,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        ExpiryPolicy expiryPlc,
+        long ttl,
+        long expireTime,
         UUID nodeId,
         UUID subjId,
         String taskName
@@ -203,15 +212,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         valBytes,
                         /*write-through*/false,
                         /*retval*/false,
-                        expiryPlc != null ? expiryPlc : ctx.expiry(),
+                        null,
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,
                         /*check version*/true,
                         CU.<K, V>empty(),
                         DR_NONE,
-                        -1,
-                        -1,
+                        ttl,
+                        expireTime,
                         null,
                         false,
                         false,
@@ -260,8 +269,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
-
         for (int i = 0; i < req.nearSize(); i++) {
             K key = req.nearKey(i);
 
@@ -292,6 +299,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                                 UPDATE :
                                 DELETE;
 
+                        long ttl = req.nearTtl(i);
+                        long expireTime = req.nearExpireTime(i);
+
+                        if (ttl != -1L && expireTime == -1L)
+                            expireTime = GridCacheMapEntry.toExpireTime(ttl);
+
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
@@ -301,15 +314,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
-                            expiry,
+                            null,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             DR_NONE,
-                            -1,
-                            -1,
+                            ttl,
+                            expireTime,
                             null,
                             false,
                             intercept,

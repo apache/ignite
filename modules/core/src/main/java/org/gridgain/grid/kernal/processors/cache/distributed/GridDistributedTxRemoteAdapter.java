@@ -446,6 +446,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
+            log.info("commitIfLocked");
+
             for (GridCacheTxEntry<K, V> txEntry : writeMap.values()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 

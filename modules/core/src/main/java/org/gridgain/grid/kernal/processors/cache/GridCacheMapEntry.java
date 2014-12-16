@@ -151,7 +151,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     protected GridCacheMapEntry(GridCacheContext<K, V> cctx, K key, int hash, V val,
         GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
-        log = U.logger(cctx.kernalContext(), logRef, this);
+        log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
 
         if (cctx.portableEnabled())
             key = (K)cctx.kernalContext().portable().detachPortable(key);
@@ -1112,6 +1112,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable UUID subjId,
         String taskName
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        log.info("Inner set " + key + " " + val + " " + ttl);
+
         V old;
 
         boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
@@ -1630,7 +1632,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return toTtl(duration);
     }
 
-    private static long toTtl(Duration duration) {
+    public static long toTtl(Duration duration) {
         if (duration == null)
             return -1;
 
@@ -1685,7 +1687,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridDrResolveResult<V> drRes = null;
 
-        long newTtl = 0L;
+        long newTtl = -1L;
         long newExpireTime = 0L;
         long newDrExpireTime = -1L; // Explicit DR expire time which possibly will be sent to DHT node.
 
@@ -1869,12 +1871,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
 
+                long ttl0 = newTtl;
+
                 if (drRes == null) {
                     // Calculate TTL and expire time for local update.
                     if (drTtl >= 0L) {
                         assert drExpireTime >= 0L;
 
-                        newTtl = drTtl;
+                        ttl0 = drTtl;
                         newExpireTime = drExpireTime;
                     }
                     else {
@@ -1902,10 +1906,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         else
                             newTtl = -1L;
 
-                        if (newTtl < 0)
-                            newTtl = ttlExtras();
+                        ttl0 = newTtl < 0 ? ttlExtras() : newTtl;
 
-                        newExpireTime = toExpireTime(newTtl);
+                        newExpireTime = toExpireTime(ttl0);
                     }
                 }
 
@@ -1937,7 +1940,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 // in load methods without actually holding entry lock.
                 updateIndex(updated, valBytes, newExpireTime, newVer, old);
 
-                update(updated, valBytes, newExpireTime, newTtl, newVer);
+                update(updated, valBytes, newExpireTime, ttl0, newVer);
 
                 drReplicate(drType, updated, valBytes, newVer);
 
@@ -2048,7 +2051,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 res = hadVal;
 
                 // Do not propagate zeroed TTL and expire time.
-                newTtl = 0L;
+                newTtl = -1L;
                 newDrExpireTime = -1L;
             }
 
@@ -2500,7 +2503,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param ttl Time to live.
      * @return Expiration time.
      */
-    protected long toExpireTime(long ttl) {
+    public static long toExpireTime(long ttl) {
         long expireTime = ttl == 0 ? 0 : U.currentTimeMillis() + ttl;
 
         // Account for overflow.
@@ -2951,14 +2954,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         return val != null || valBytes != null || valPtr != 0;
     }
-
-    /** {@inheritDoc} */
-    /*
-    @Override public synchronized GridDrEntry<K, V> drEntry() throws IgniteCheckedException {
-        return new GridDrPlainEntry<>(key, isStartVersion() ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
-            ttlExtras(), expireTimeExtras(), ver.drVersion());
-    }
-    */
 
     /** {@inheritDoc} */
     @Override public synchronized V rawPut(V val, long ttl) {

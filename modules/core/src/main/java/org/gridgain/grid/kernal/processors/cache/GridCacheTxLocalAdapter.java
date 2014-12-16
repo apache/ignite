@@ -25,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -585,6 +586,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             addGroupTxMapping(writeSet());
 
         if (!empty) {
+            log.info("User commit");
+
             // We are holding transaction-level locks for entries here, so we can get next write version.
             writeVersion(cctx.versions().next(topologyVersion()));
 
@@ -648,6 +651,19 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     GridCacheOperation op = res.get1();
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
+
+                                    if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
+                                        ExpiryPolicy expiry = cacheCtx.expiry();
+
+                                        if (expiry != null) {
+                                            Duration duration = cached.hasValue() ?
+                                                expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                                            txEntry.ttl(GridCacheMapEntry.toTtl(duration));
+
+                                            log.info("Calculated expiry (userCommit), update=" + cached.hasValue() + ", ttl=" + txEntry.ttl() + ", detached=" + cached.detached());
+                                        }
+                                    }
 
                                     // Preserve TTL if needed.
                                     if (txEntry.ttl() < 0)
@@ -1154,7 +1170,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             missed.put(key, ver);
 
                         if (!readCommitted()) {
-                            txEntry = addEntry(READ, val, null, entry, -1, filter, true, -1L, -1L, null);
+                            txEntry = addEntry(READ, val, null, entry, null, filter, true, -1L, -1L, null);
 
                             if (groupLock())
                                 txEntry.groupLockEntry(true);
@@ -1179,7 +1195,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             // Value for which failure occurred.
                             V val = e.<V>value();
 
-                            txEntry = addEntry(READ, val, null, entry, -1, CU.<K, V>empty(), false, -1L, -1L, null);
+                            txEntry = addEntry(READ, val, null, entry, null, CU.<K, V>empty(), false, -1L, -1L, null);
 
                             // Mark as checked immediately for non-pessimistic.
                             if (val != null && !pessimistic())
@@ -1698,7 +1714,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *
      * @param keys Keys to enlist.
      * @param cached Cached entry.
-     * @param ttl Time to live for entry. If negative, leave unchanged.
+     * @param expiry Expiry policy for entry. If {@code null}, leave unchanged.
      * @param implicit Implicit flag.
      * @param lookup Value lookup map ({@code null} for remove).
      * @param transformMap Map with transform closures if this is a transform operation.
@@ -1715,7 +1731,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl,
+        @Nullable ExpiryPolicy expiry,
         boolean implicit,
         @Nullable Map<? extends K, ? extends V> lookup,
         @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> transformMap,
@@ -1856,7 +1872,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 if (!readCommitted() && old != null) {
                                     // Enlist failed filters as reads for non-read-committed mode,
                                     // so future ops will get the same values.
-                                    txEntry = addEntry(READ, old, null, entry, -1, CU.<K, V>empty(), false, -1L, -1L,
+                                    txEntry = addEntry(READ, old, null, entry, null, CU.<K, V>empty(), false, -1L, -1L,
                                         null);
 
                                     txEntry.markValid();
@@ -1869,7 +1885,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             }
 
                             txEntry = addEntry(lockOnly ? NOOP : rmv ? DELETE : transformClo != null ? TRANSFORM :
-                                old != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
+                                old != null ? UPDATE : CREATE, val, transformClo, entry, expiry, filter, true, drTtl,
                                 drExpireTime, drVer);
 
                             if (!implicit() && readCommitted())
@@ -1956,7 +1972,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         }
 
                         txEntry = addEntry(rmv ? DELETE : transformClo != null ? TRANSFORM :
-                            v != null ? UPDATE : CREATE, val, transformClo, entry, ttl, filter, true, drTtl,
+                            v != null ? UPDATE : CREATE, val, transformClo, entry, expiry, filter, true, drTtl,
                             drExpireTime, drVer);
 
                         enlisted.add(key);
@@ -2219,11 +2235,13 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
             Collection<K> enlisted = new LinkedList<>();
 
+            GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
+
             final IgniteFuture<Set<K>> loadFut = enlistWrite(
                 cacheCtx,
                 keySet,
                 cached,
-                ttl,
+                prj != null ? prj.expiry() : null,
                 implicit,
                 map0,
                 transformMap0,
@@ -2404,7 +2422,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 cacheCtx,
                 keys0,
                 /** cached entry */null,
-                /** ttl */-1,
+                /** expiry */null,
                 implicit,
                 /** lookup map */null,
                 /** transform map */null,
@@ -2555,7 +2573,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 cacheCtx,
                 keys,
                 /** cached entry */null,
-                /** ttl - leave unchanged */-1,
+                /** expiry - leave unchanged */null,
                 /** implicit */false,
                 /** lookup map */null,
                 /** transform map */null,
@@ -2652,7 +2670,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /**
      * @param op Cache operation.
      * @param val Value.
-     * @param ttl Time to leave to set to tx entry. If {@code null}, leave unchanged.
+     * @param expiryPlc Expiry policy, if {@code null}, leave unchanged.
      * @param transformClos Transform closure.
      * @param entry Cache entry.
      * @param filter Filter.
@@ -2662,10 +2680,16 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param drVer DR version.
      * @return Transaction entry.
      */
-    protected final GridCacheTxEntry<K, V> addEntry(GridCacheOperation op, @Nullable V val,
-        @Nullable IgniteClosure<V, V> transformClos, GridCacheEntryEx<K, V> entry, long ttl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean filtersSet, long drTtl,
-        long drExpireTime, @Nullable GridCacheVersion drVer) {
+    protected final GridCacheTxEntry<K, V> addEntry(GridCacheOperation op,
+        @Nullable V val,
+        @Nullable IgniteClosure<V, V> transformClos,
+        GridCacheEntryEx<K, V> entry,
+        @Nullable ExpiryPolicy expiryPlc, // TODO IGNITE-41
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean filtersSet,
+        long drTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer) {
         GridCacheTxKey<K> key = entry.txKey();
 
         checkInternal(key);
@@ -2706,6 +2730,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             old.cached(entry, old.keyBytes());
             old.filters(filter);
 
+            long ttl = -1L;
+
             // Update ttl if specified.
             if (drTtl >= 0L) {
                 assert drExpireTime >= 0L;
@@ -2721,6 +2747,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 log.debug("Updated transaction entry: " + txEntry);
         }
         else {
+            long ttl = -1L;
+
             if (drTtl >= 0L)
                 ttl = drTtl;
 

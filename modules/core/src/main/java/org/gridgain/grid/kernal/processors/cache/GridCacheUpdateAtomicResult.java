@@ -98,7 +98,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
     }
 
     /**
-     * @return New TTL.
+     * @return {@code -1} if TTL did not change, otherwise new TTL.
      */
     public long newTtl() {
         return newTtl;

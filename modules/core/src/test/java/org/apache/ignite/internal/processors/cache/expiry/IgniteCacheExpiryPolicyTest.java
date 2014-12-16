@@ -36,6 +36,9 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
     /** */
     private Factory<? extends ExpiryPolicy> factory;
 
+    /** */
+    private boolean nearCache;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
@@ -48,7 +51,160 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
+        return 3;
+    }
+
+    public void testPrimary() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
+
+        nearCache = false;
+
+        boolean inTx = false;
+
+        startGrids();
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        GridCache<Integer, Object> cache0 = cache(0);
+
+        Integer key = primaryKey(cache0);
+
+        log.info("Create: " + key);
+
+        GridCacheTx tx = inTx ? grid(0).transactions().txStart() : null;
+
+        cache.put(key, 1);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 60_000);
+
+        tx = inTx ? grid(0).transactions().txStart() : null;
+
+        log.info("Update: " + key);
+
+        cache.put(key, 2);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 61_000);
+    }
+
+    public void testBackup() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
+
+        nearCache = false;
+
+        boolean inTx = false;
+
+        startGrids();
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        GridCache<Integer, Object> cache0 = cache(0);
+
+        Integer key = backupKey(cache0);
+
+        log.info("Create: " + key);
+
+        GridCacheTx tx = inTx ? grid(0).transactions().txStart() : null;
+
+        cache.put(key, 1);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 60_000);
+
+        tx = inTx ? grid(0).transactions().txStart() : null;
+
+        log.info("Update: " + key);
+
+        cache.put(key, 2);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 61_000);
+    }
+
+    public void testNear() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
+
+        nearCache = false;
+
+        boolean inTx = true;
+
+        startGrids();
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        GridCache<Integer, Object> cache0 = cache(0);
+
+        Integer key = nearKey(cache0);
+
+        log.info("Create: " + key);
+
+        GridCacheTx tx = inTx ? grid(0).transactions().txStart() : null;
+
+        cache.put(key, 1);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 60_000);
+
+        tx = inTx ? grid(0).transactions().txStart() : null;
+
+        log.info("Update: " + key);
+
+        cache.put(key, 2);
+
+        if (tx != null)
+            tx.commit();
+
+        checkTtl(key, 61_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void test1() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, null, null));
+
+        nearCache = false;
+
+        boolean inTx = true;
+
+        startGrids();
+
+        Collection<Integer> keys = keys();
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        for (final Integer key : keys) {
+            log.info("Test key1: " + key);
+
+            GridCacheTx tx = inTx ? grid(0).transactions().txStart() : null;
+
+            cache.put(key, 1);
+
+            if (tx != null)
+                tx.commit();
+        }
+
+        for (final Integer key : keys) {
+            log.info("Test key2: " + key);
+
+            GridCacheTx tx = inTx ? grid(0).transactions().txStart() : null;
+
+            cache.put(key, 2);
+
+            if (tx != null)
+                tx.commit();
+        }
     }
 
     /**
@@ -93,6 +249,94 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNearPut() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, null, null));
+
+        nearCache = true;
+
+        startGrids();
+
+        GridCache<Integer, Object> cache0 = cache(0);
+
+        Integer key = nearKey(cache0);
+
+        IgniteCache<Integer, Integer> jcache0 = jcache(0);
+
+        jcache0.put(key, 1);
+
+        checkTtl(key, 60_000);
+
+        IgniteCache<Integer, Integer> jcache1 = jcache(1);
+
+        // Update from another node with provided TTL.
+        jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 2);
+
+        checkTtl(key, 1000);
+
+        waitExpired(key);
+
+        jcache1.remove(key);
+
+        jcache0.put(key, 1);
+
+        checkTtl(key, 60_000);
+
+        // Update from near node with provided TTL.
+        jcache0.withExpiryPolicy(new TestPolicy(null, 1100L, null)).put(key, 2);
+
+        checkTtl(key, 1100);
+
+        waitExpired(key);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearPutAll() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, null, null));
+
+        nearCache = true;
+
+        startGrids();
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            vals.put(i, i);
+
+        IgniteCache<Integer, Integer> jcache0 = jcache(0);
+
+        jcache0.putAll(vals);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 60_000);
+
+        IgniteCache<Integer, Integer> jcache1 = jcache(1);
+
+        // Update from another node with provided TTL.
+        jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).putAll(vals);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 1000);
+
+        waitExpired(vals.keySet());
+
+        jcache0.removeAll(vals.keySet());
+
+        jcache0.putAll(vals);
+
+        // Update from near node with provided TTL.
+        jcache1.withExpiryPolicy(new TestPolicy(null, 1101L, null)).putAll(vals);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 1101L);
+
+        waitExpired(vals.keySet());
+    }
+
+    /**
      * @return Test keys.
      * @throws Exception If failed.
      */
@@ -106,7 +350,7 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
         if (gridCount() > 1) {
             keys.add(backupKey(cache));
 
-            if (cache.configuration().getDistributionMode() == NEAR_PARTITIONED)
+            if (cache.configuration().getCacheMode() != REPLICATED)
                 keys.add(nearKey(cache));
         }
 
@@ -117,16 +361,27 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
      * @param key Key.
      * @throws Exception If failed.
      */
-    private void waitExpired(final Integer key) throws Exception {
+    private void waitExpired(Integer key) throws Exception {
+        waitExpired(Collections.singleton(key));
+    }
+
+    /**
+     * @param keys Keys.
+     * @throws Exception If failed.
+     */
+    private void waitExpired(final Collection<Integer> keys) throws Exception {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
-                    Object val = jcache(i).localPeek(key);
+                    for (Integer key : keys) {
+                        Object val = jcache(i).localPeek(key);
 
-                    log.info("Value [grid=" + i + ", val=" + val + ']');
+                        if (val != null) {
+                            // log.info("Value [grid=" + i + ", val=" + val + ']');
 
-                    if (val != null)
-                        return false;
+                            return false;
+                        }
+                    }
                 }
 
                 return false;
@@ -138,17 +393,23 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();
 
-            Object val = jcache(i).localPeek(key);
+            for (Integer key : keys) {
+                Object val = jcache(i).localPeek(key);
 
-            log.info("Value [grid=" + i +
-                ", primary=" + cache.affinity().isPrimary(node, key) +
-                ", backup=" + cache.affinity().isBackup(node, key) + ']');
+                if (val != null) {
+                    log.info("Unexpected value [grid=" + i +
+                        ", primary=" + cache.affinity().isPrimary(node, key) +
+                        ", backup=" + cache.affinity().isBackup(node, key) + ']');
+                }
 
-            assertNull("Unexpected non-null value for grid " + i, val);
+                assertNull("Unexpected non-null value for grid " + i, val);
+            }
         }
 
-        for (int i = 0; i < gridCount(); i++)
-            assertNull("Unexpected non-null value for grid " + i, jcache(i).get(key));
+        for (int i = 0; i < gridCount(); i++) {
+            for (Integer key : keys)
+                assertNull("Unexpected non-null value for grid " + i, jcache(i).get(key));
+        }
     }
 
     /**
@@ -167,11 +428,8 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
 
-            if (e == null) {
-                assertTrue(i > 0);
-
+            if (e == null)
                 assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
-            }
             else
                 assertEquals("Unexpected ttl for grid " + i, ttl, e.ttl());
         }
@@ -184,10 +442,16 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setAtomicityMode(ATOMIC);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+
+        //cfg.setAtomicityMode(ATOMIC);
+
         cfg.setBackups(1);
 
-        cfg.setDistributionMode(PARTITIONED_ONLY);
+        if (nearCache && gridName.equals(getTestGridName(0)))
+            cfg.setDistributionMode(NEAR_PARTITIONED);
+        else
+            cfg.setDistributionMode(PARTITIONED_ONLY);
 
         cfg.setExpiryPolicyFactory(factory);
 
@@ -213,11 +477,11 @@ public class IgniteCacheExpiryPolicyTest extends IgniteCacheTest {
          * @param update TTL for update.
          */
         TestPolicy(@Nullable Long create,
-           @Nullable Long access,
-           @Nullable Long update) {
+            @Nullable Long update,
+            @Nullable Long access) {
             this.create = create;
-            this.access = access;
             this.update = update;
+            this.access = access;
         }
 
         /** {@inheritDoc} */
