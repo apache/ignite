@@ -11,8 +11,6 @@ package org.apache.ignite.logger.java;
 
 import org.apache.ignite.*;
 import org.apache.ignite.logger.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -75,7 +73,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class IgniteJavaLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware {
+public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 

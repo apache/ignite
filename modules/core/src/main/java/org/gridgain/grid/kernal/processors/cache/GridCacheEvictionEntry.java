@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -383,21 +382,6 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public <V> Map<String, V> allMeta() {
-        return cached.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        return cached.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name, Object val) {
-        return cached.hasMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V> V putMetaIfAbsent(String name, V val) {
         return cached.putMetaIfAbsent(name, val);
     }
@@ -408,28 +392,8 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
-        return cached.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, Callable<V> c) {
-        return cached.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
         return cached.replaceMeta(name, curVal, newVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
-        cached.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        cached.copyMeta(data);
     }
 
     /** {@inheritDoc} */

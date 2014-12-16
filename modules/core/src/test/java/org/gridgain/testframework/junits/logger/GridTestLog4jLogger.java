@@ -58,7 +58,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware {
+public class GridTestLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 

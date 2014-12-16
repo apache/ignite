@@ -66,7 +66,7 @@ import java.util.concurrent.*;
  * </pre>
  * <p>
  */
-public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, DisposableBean, InitializingBean,
+public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -52,8 +52,6 @@ import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -62,7 +60,7 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
+public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

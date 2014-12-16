@@ -35,7 +35,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Implementation of {@link org.apache.ignite.scheduler.SchedulerFuture} interface.
  */
-class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements SchedulerFuture<R>, Externalizable {
+class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -772,8 +772,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
      *
      * @param <R>
      */
-    private static class ScheduleFutureSnapshot<R> extends GridMetadataAwareAdapter implements
-        SchedulerFuture<R> {
+    private static class ScheduleFutureSnapshot<R> implements SchedulerFuture<R> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -11,7 +11,6 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -93,7 +92,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface ComputeLoadBalancer extends GridMetadataAware {
+public interface ComputeLoadBalancer {
     /**
      * Gets the next balanced node according to the underlying load balancing policy.
      *

@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
@@ -63,7 +62,7 @@ import java.util.concurrent.*;
  *
  */
 @GridToStringExclude
-public interface GridKernalContext extends GridMetadataAware, Iterable<GridComponent> {
+public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * Gets list of all grid components in the order they were added.
      *

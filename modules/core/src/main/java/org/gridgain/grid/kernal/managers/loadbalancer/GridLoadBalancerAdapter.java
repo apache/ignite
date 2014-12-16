@@ -10,15 +10,13 @@
 package org.gridgain.grid.kernal.managers.loadbalancer;
 
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.util.lang.*;
 
 import java.io.*;
 
 /**
  * This adapter allows for graceful exception when load balancer gets marshalled.
  */
-public abstract class GridLoadBalancerAdapter extends GridMetadataAwareAdapter implements ComputeLoadBalancer,
-    Externalizable {
+public abstract class GridLoadBalancerAdapter implements ComputeLoadBalancer, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

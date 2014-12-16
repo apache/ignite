@@ -11,11 +11,11 @@ package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.Map.*;
+import java.util.concurrent.*;
 
 /**
  * This interface provides a rich API for working with individual cache entries. It
@@ -78,7 +78,7 @@ import java.util.Map.*;
  * @param <K> Key type.
  * @param <V> Value type.
  */
-public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware {
+public interface GridCacheEntry<K, V> extends Map.Entry<K, V> {
     /**
      * Cache projection to which this entry belongs. Note that entry and its
      * parent projections have same flags and filters.
@@ -557,4 +557,77 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @throws IgniteCheckedException If failed to evaluate entry size.
      */
     public int memorySize() throws IgniteCheckedException;
+
+    /**
+     * Removes metadata by name.
+     *
+     * @param name Name of the metadata to remove.
+     * @param <V> Type of the value.
+     * @return Value of removed metadata or {@code null}.
+     */
+    public <V> V removeMeta(String name);
+
+    /**
+     * Removes metadata only if its current value is equal to {@code val} passed in.
+     *
+     * @param name Name of metadata attribute.
+     * @param val Value to compare.
+     * @param <V> Value type.
+     * @return {@code True} if value was removed, {@code false} otherwise.
+     */
+    public <V> boolean removeMeta(String name, V val);
+
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <V> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
+    public <V> V meta(String name);
+
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param c Factory closure to produce value to add if it's not attached already.
+     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
+     *      not be called unless the value is required and therefore value will only be created
+     *      when it is actually needed.
+     * @param <V> Type of the value.
+     * @return {@code null} if new value was put, or current value if put didn't happen.
+     */
+    @Nullable public <V> V putMetaIfAbsent(String name, Callable<V> c);
+
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param val Value to add if it's not attached already.
+     * @param <V> Type of the value.
+     * @return {@code null} if new value was put, or current value if put didn't happen.
+     */
+    @Nullable public <V> V putMetaIfAbsent(String name, V val);
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <V> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <V> V addMeta(String name, V val);
+
+    /**
+     * Replaces given metadata with new {@code newVal} value only if its current value
+     * is equal to {@code curVal}. Otherwise, it is no-op.
+     *
+     * @param name Name of the metadata.
+     * @param curVal Current value to check.
+     * @param newVal New value.
+     * @return {@code true} if replacement occurred, {@code false} otherwise.
+     */
+    public <V> boolean replaceMeta(String name, V curVal, V newVal);
 }

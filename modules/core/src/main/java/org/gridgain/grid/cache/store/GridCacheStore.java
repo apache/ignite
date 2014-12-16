@@ -12,7 +12,6 @@ package org.gridgain.grid.cache.store;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
 import org.jetbrains.annotations.*;
@@ -43,8 +42,8 @@ import java.util.Date;
  * </ul>
  * <p>
  * All transactional operations of this API are provided with ongoing {@link GridCacheTx},
- * if any. As transaction is {@link GridMetadataAware}, you can attach any metadata to
- * it, e.g. to recognize if several operations belong to the same transaction or not.
+ * if any. You can attach any metadata to it, e.g. to recognize if several operations belong
+ * to the same transaction or not.
  * Here is an example of how attach a JDBC connection as transaction metadata:
  * <pre name="code" class="java">
  * Connection conn = tx.meta("some.name");

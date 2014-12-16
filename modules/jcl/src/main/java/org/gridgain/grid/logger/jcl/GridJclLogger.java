@@ -65,7 +65,7 @@ import org.jetbrains.annotations.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridJclLogger extends GridMetadataAwareAdapter implements IgniteLogger {
+public class GridJclLogger implements IgniteLogger {
     /** */
     private static final long serialVersionUID = 0L;
 
