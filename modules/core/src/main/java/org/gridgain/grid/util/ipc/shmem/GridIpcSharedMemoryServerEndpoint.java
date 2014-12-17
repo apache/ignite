@@ -93,11 +93,9 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     private IgniteLogger log;
 
     /** Local node ID. */
-    @IgniteLocalNodeIdResource
     private UUID locNodeId;
 
     /** Grid name. */
-    @IgniteNameResource
     private String gridName;
 
     /** Flag allowing not to print out of resources warning. */
@@ -314,6 +312,25 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         } // while
 
         throw new GridInterruptedException("Socket accept was interrupted.");
+    }
+
+    /**
+     * Injects resources.
+     *
+     * @param ignite Ignite
+     */
+    @IgniteInstanceResource
+    private void injectResources(Ignite ignite){
+        if (ignite != null) {
+            // Inject resources.
+            gridName = ignite.name();
+            locNodeId = ignite.configuration().getNodeId();
+        }
+        else {
+            // Cleanup resources.
+            gridName = null;
+            locNodeId = null;
+        }
     }
 
     /**

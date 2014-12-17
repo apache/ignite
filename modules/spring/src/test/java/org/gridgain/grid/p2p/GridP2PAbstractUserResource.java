@@ -39,22 +39,6 @@ abstract class GridP2PAbstractUserResource {
     private Ignite ignite;
 
     /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
-
-    /** */
-    @IgniteMBeanServerResource
-    private MBeanServer mbeanSrv;
-
-    /** */
-    @IgniteExecutorServiceResource
-    private ExecutorService exec;
-
-    /** */
-    @IgniteHomeResource
-    private String ggHome;
-
-    /** */
     @IgniteSpringApplicationContextResource
     private ApplicationContext springCtx;
 
@@ -131,10 +115,6 @@ abstract class GridP2PAbstractUserResource {
 
         assert log != null;
         assert ignite != null;
-        assert nodeId != null;
-        assert mbeanSrv != null;
-        assert exec != null;
-        assert ggHome != null;
         assert springCtx != null;
 
         log.info("Deploying resource: " + this);
@@ -148,10 +128,6 @@ abstract class GridP2PAbstractUserResource {
 
         assert log != null;
         assert ignite != null;
-        assert nodeId != null;
-        assert mbeanSrv != null;
-        assert exec != null;
-        assert ggHome != null;
         assert springCtx != null;
 
         log.info("Undeploying resource: " + this);

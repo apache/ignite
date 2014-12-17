@@ -111,11 +111,6 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
         @IgniteUserResource
         private transient UserResource1 rsrc;
 
-        /** Grid ID. */
-        @SuppressWarnings("unused")
-        @IgniteLocalNodeIdResource
-        private UUID gridId;
-
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
             return true;

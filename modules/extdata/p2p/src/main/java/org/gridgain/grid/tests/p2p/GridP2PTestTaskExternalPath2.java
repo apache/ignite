@@ -86,9 +86,9 @@ public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int
         @IgniteUserResource
         private transient GridTestUserResource rsrc;
 
-        /** Local node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** Task session. */
         @IgniteTaskSessionResource
@@ -115,7 +115,7 @@ public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, int
          * {@inheritDoc}
          */
         @Override public int[] execute() throws IgniteCheckedException {
-            assert locNodeId.equals(argument(0));
+            assert ignite.configuration().getNodeId().equals(argument(0));
 
             if (sleep) {
                 try {

@@ -253,9 +253,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             @IgniteUserResource
             private transient UserResource rsrc;
 
-            /** Local node ID. */
-            @IgniteLocalNodeIdResource
-            private UUID locNodeId;
+            /** Ignite instance. */
+            @IgniteInstanceResource
+            private Ignite ignite;
 
             /**
              * @param nodeId Node ID for node this job is supposed to execute on.
@@ -264,7 +264,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             /** {@inheritDoc} */
             @Override public Serializable execute() throws IgniteCheckedException {
-                assert locNodeId.equals(argument(0)) == true;
+                assert ignite.configuration().getNodeId().equals(argument(0));
 
                 jobRsrc = rsrc;
 

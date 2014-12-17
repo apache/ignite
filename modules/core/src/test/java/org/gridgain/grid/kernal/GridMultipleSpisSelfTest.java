@@ -261,9 +261,9 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
      * Job that always throws exception.
      */
     private static class GridTestMultipleSpisJob extends ComputeJobAdapter {
-        /** Local node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID locId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** */
         @IgniteTaskSessionResource
@@ -278,12 +278,12 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public UUID execute() throws IgniteCheckedException {
-            assert locId != null;
+            assert ignite != null;
             assert jobSes != null;
             assert argument(0) != null;
 
             // Should always fail on task originating node and work on another one.
-            if (locId.equals(argument(0)))
+            if (ignite.configuration().getNodeId().equals(argument(0)))
                 throw new IgniteCheckedException("Expected exception to failover job.");
 
             // Use checkpoint on job side. This will happen on remote node.

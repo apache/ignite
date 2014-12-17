@@ -190,10 +190,6 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             ses.setAttribute("fail", true);
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                /** Local node ID. */
-                @IgniteLocalNodeIdResource
-                private UUID locId;
-
                 /** {@inheritDoc} */
                 @SuppressWarnings({"RedundantTypeArguments"})
                 @Override

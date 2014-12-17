@@ -137,8 +137,8 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private IgniteLogger log;
 
     /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Init guard. */
     @GridToStringExclude
@@ -525,7 +525,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return ignite.configuration().getMarshaller().marshal(obj);
     }
 
     /**
@@ -540,6 +540,6 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return ignite.configuration().getMarshaller().unmarshal(bytes, getClass().getClassLoader());
     }
 }

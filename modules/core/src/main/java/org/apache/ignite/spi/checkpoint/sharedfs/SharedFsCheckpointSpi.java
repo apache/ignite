@@ -115,7 +115,6 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     private IgniteLogger log;
 
     /** Grid marshaller. */
-    @IgniteMarshallerResource
     private IgniteMarshaller marsh;
 
     /** List of checkpoint directories where all files are stored. */
@@ -175,6 +174,12 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         this.dirPaths.clear();
         this.dirPaths.addAll(dirPaths);
+    }
+
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        if (ignite != null)
+            marsh = ignite.configuration().getMarshaller();
     }
 
     /** {@inheritDoc} */

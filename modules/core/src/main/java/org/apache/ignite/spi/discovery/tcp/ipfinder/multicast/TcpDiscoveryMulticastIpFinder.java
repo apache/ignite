@@ -75,10 +75,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Grid name. */
-    @IgniteNameResource
+    /** Ignite instance . */
+    @IgniteInstanceResource
     @GridToStringExclude
-    private String gridName;
+    private Ignite ignite;
 
     /** Multicast IP address as string. */
     private String mcastGrp = DFLT_MCAST_GROUP;
@@ -589,7 +589,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param sockAddr Optional address multicast socket should be bound to.
          */
         private AddressReceiver(InetAddress mcastAddr, InetAddress sockAddr) {
-            super(gridName, "tcp-disco-multicast-addr-rcvr", log);
+            super(ignite.name(), "tcp-disco-multicast-addr-rcvr", log);
             this.mcastAddr = mcastAddr;
             this.sockAddr = sockAddr;
         }
@@ -633,7 +633,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          */
         private AddressSender(InetAddress mcastGrp, @Nullable InetAddress sockItf, Collection<InetSocketAddress> addrs)
             throws IOException {
-            super(gridName, "tcp-disco-multicast-addr-sender", log);
+            super(ignite.name(), "tcp-disco-multicast-addr-sender", log);
             this.mcastGrp = mcastGrp;
             this.addrs = addrs;
             this.sockItf = sockItf;

@@ -233,9 +233,9 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
@@ -243,7 +243,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
-                if (!node.id().equals(nodeId))
+                if (!node.id().equals(ignite.configuration().getNodeId()))
                     map.put(new GridP2PTestJob(null) , node);
             }
 

@@ -179,9 +179,9 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
@@ -536,7 +536,7 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return ignite.configuration().getMarshaller().marshal(obj);
     }
 
     /**
@@ -551,6 +551,6 @@ public class GridCacheHibernateBlobStore<K, V> extends GridCacheStoreAdapter<K, 
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return ignite.configuration().getMarshaller().unmarshal(bytes, getClass().getClassLoader());
     }
 }

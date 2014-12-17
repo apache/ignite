@@ -232,10 +232,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         /** */
         private int delayTime;
 
-        /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
-
         /**
          * Creates test communication spi.
          *

@@ -142,14 +142,15 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
             return F.asMap(
                 new ComputeJobAdapter() {
-                    @IgniteLocalNodeIdResource
-                    private UUID nodeId;
+                    /** Ignite instance. */
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
                     @IgniteTaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() throws IgniteCheckedException {
-                        X.println("Executing FailoverTestTask job on node " + nodeId);
+                        X.println("Executing FailoverTestTask job on node " + ignite.configuration().getNodeId());
 
                         Boolean cpVal = ses.loadCheckpoint(CP_KEY);
 
@@ -196,14 +197,15 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
             return F.asMap(
                 new ComputeJobAdapter() {
-                    @IgniteLocalNodeIdResource
-                    private UUID nodeId;
+                    /** Ignite instance. */
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
                     @IgniteTaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() throws IgniteCheckedException {
-                        X.println("Executing ReduceTestTask job on node " + nodeId);
+                        X.println("Executing ReduceTestTask job on node " + ignite.configuration().getNodeId());
 
                         ses.saveCheckpoint(CP_KEY, true);
 

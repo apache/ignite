@@ -132,17 +132,26 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
-    /** Local node ID. */
-    @IgniteLocalNodeIdResource
-    protected UUID locNodeId;
-
-    /** Name of the grid. */
-    @IgniteNameResource
-    protected String gridName;
+    /** Grid instance. */
+    protected Ignite ignite;
 
     /** Logger. */
     @IgniteLoggerResource
     protected IgniteLogger log;
+
+    /**
+     * Sets {@link Ignite ignite}.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+
+        // Inject resource.
+        if (ignite != null)
+            setLocalAddress(ignite.configuration().getLocalHost());
+    }
 
     /**
      * Sets local host IP address that discovery SPI uses.
@@ -154,7 +163,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param locAddr IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -755,7 +763,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          *
          */
         SocketTimeoutWorker() {
-            super(gridName, "tcp-disco-sock-timeout-worker", log);
+            super(ignite.name(), "tcp-disco-sock-timeout-worker", log);
 
             setPriority(threadPri);
         }
@@ -923,7 +931,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param name Thread name.
          */
         protected MessageWorkerAdapter(String name) {
-            super(gridName, name, log);
+            super(ignite.name(), name, log);
 
             setPriority(threadPri);
         }
@@ -931,7 +939,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
+                log.debug("Message worker started [locNodeId=" + ignite.configuration().getNodeId() + ']');
 
             while (!isInterrupted()) {
                 TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);

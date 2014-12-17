@@ -48,11 +48,6 @@ import org.apache.ignite.*;
  * The following grid resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>

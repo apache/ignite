@@ -615,30 +615,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /** Marshaller. */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marshaller;
-
-        /** Executor. */
-        @IgniteExecutorServiceResource
-        private Executor exec;
-
-        /** MBean server. */
-        @IgniteMBeanServerResource
-        private MBeanServer mbeanSrv;
-
-        /** Grid home. */
-        @IgniteHomeResource
-        private String gridHome;
-
-        /** Grid name. */
-        @IgniteNameResource
-        private String gridName;
-
-        /** Local node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
-
         /** */
         @IgniteSpringApplicationContextResource
         private ApplicationContext appCtx;
@@ -681,14 +657,9 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
          */
         void checkState(String gridName, boolean exec) {
             assert log != null;
-            assert marshaller != null;
-            assert this.exec != null;
-            assert mbeanSrv != null;
-            assert gridHome != null;
-            assert nodeId != null;
             assert appCtx != null;
 
-            assert F.eq(gridName, this.gridName);
+            assert F.eq(gridName, ignite.name());
 
             if (exec)
                 // Execute any grid method.

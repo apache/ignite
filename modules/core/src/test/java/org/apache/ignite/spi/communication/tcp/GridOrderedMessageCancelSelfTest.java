@@ -138,10 +138,6 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * Communication SPI.
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
-
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
             IgniteRunnable msgC) {

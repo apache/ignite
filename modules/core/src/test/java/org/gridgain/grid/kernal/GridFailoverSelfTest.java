@@ -82,13 +82,15 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
             nodeRef.set(subgrid.get(0));
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                /** Local node ID. */
-                @IgniteLocalNodeIdResource
-                private UUID locId;
+                /** Ignite instance. */
+                @IgniteInstanceResource
+                private Ignite ignite;
 
                 /** {@inheritDoc} */
                 @Override public Serializable execute() throws IgniteCheckedException {
                     boolean fail;
+
+                    UUID locId = ignite.configuration().getNodeId();
 
                     try {
                         fail = ses.<String, Boolean>waitForAttribute("fail", 0);

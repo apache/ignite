@@ -100,7 +100,6 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     private IgniteLogger log;
 
     /** Marshaller. */
-    @IgniteMarshallerResource
     private IgniteMarshaller marsh;
 
     /** Task that takes care about outdated files. */
@@ -131,10 +130,6 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     /** AWS Credentials. */
     @GridToStringExclude
     private AWSCredentials cred;
-
-    @IgniteNameResource
-    /** Grid name. */
-    private String gridName;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -234,6 +229,12 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     @IgniteSpiConfiguration(optional = false)
     public void setAwsCredentials(AWSCredentials cred) {
         this.cred = cred;
+    }
+
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        if (ignite != null)
+            marsh = ignite.configuration().getMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -559,7 +560,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
          * Constructor.
          */
         GridS3TimeoutWorker() {
-            super(gridName, "grid-s3-checkpoint-worker", log);
+            super(ignite.name(), "grid-s3-checkpoint-worker", log);
         }
 
         /** {@inheritDoc} */

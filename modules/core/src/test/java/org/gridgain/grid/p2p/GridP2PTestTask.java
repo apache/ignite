@@ -29,9 +29,9 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
@@ -50,7 +50,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
         Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
         for (ClusterNode node : subgrid)
-            if (!node.id().equals(nodeId))
+            if (!node.id().equals(ignite.configuration().getNodeId()))
                 map.put(new GridP2PTestJob(arg1), node);
 
         return map;

@@ -86,10 +86,6 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         @IgniteUserResource
         private transient GridTestUserResource rsrc;
 
-        /** Local node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
-
         /** Task session. */
         @IgniteTaskSessionResource
         private ComputeTaskSession ses;
@@ -124,7 +120,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
 
         /** {@inheritDoc} */
         @Override public int[] execute() throws IgniteCheckedException {
-            assert locNodeId.equals(argument(0));
+            assert g.configuration().getNodeId().equals(argument(0));
 
             log.info("Running job on node: " + g.cluster().localNode().id());
 

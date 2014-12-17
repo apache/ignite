@@ -111,10 +111,6 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
         @IgniteUserResource(resourceName = "rsrc4")
         private transient GridUserExternalResource2 rsrc8;
 
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID locId;
-
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})
         @Override public Serializable execute() {
@@ -123,7 +119,6 @@ public class GridUserExternalResourceTask2 extends ComputeTaskSplitAdapter<Objec
             assert rsrc3 != null;
             assert rsrc4 != null;
             assert log != null;
-            assert locId != null;
 
             assert rsrc5 != null;
             assert rsrc6 != null;

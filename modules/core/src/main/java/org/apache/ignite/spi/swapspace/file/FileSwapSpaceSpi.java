@@ -144,18 +144,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Local node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Name of the grid. */
-    @IgniteNameResource
-    private String gridName;
-
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
-
     /** {@inheritDoc} */
     @Override public String getBaseDirectory() {
         return baseDir;
@@ -262,7 +250,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + locNodeId;
+        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
 
         try {
             dir = U.resolveWorkDirectory(path, true);
@@ -554,7 +542,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         if (keyBytes == null) {
             try {
-                keyBytes = marsh.marshal(key.key());
+                keyBytes = ignite.configuration().getMarshaller().marshal(key.key());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal key: " + key.key(), e);
@@ -1422,7 +1410,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
                         final Object mux = new Object();
 
-                        writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
+                        String gridName = ignite.name();
+
+                        writer = new IgniteSpiThread(gridName, "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 while (!isInterrupted()) {
                                     SwapValues vals = que.take();

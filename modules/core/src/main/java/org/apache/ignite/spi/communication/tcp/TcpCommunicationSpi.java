@@ -619,14 +619,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
-
     /** Local IP address. */
     private String locAddr;
 
@@ -641,10 +633,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Local port which node uses to accept shared memory connections. */
     private int shmemPort = DFLT_SHMEM_PORT;
-
-    /** Grid name. */
-    @IgniteNameResource
-    private String gridName;
 
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
@@ -877,11 +865,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteAddressResolverResource
     public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Sets {@link Ignite ignite}.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    @IgniteInstanceResource
+    public void setIgnite(Ignite ignite) {
+        // Inject resources.
+        if (ignite != null && ignite.configuration() != null) {
+            setAddressResolver(ignite.configuration().getAddressResolver());
+            setLocalAddress(ignite.configuration().getLocalHost());
+        }
     }
 
     /**
@@ -902,7 +904,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *      IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -1353,7 +1354,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        nodeIdMsg = new NodeIdMessage(locNodeId);
+        nodeIdMsg = new NodeIdMessage(ignite.configuration().getNodeId());
 
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
@@ -1555,7 +1556,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .listener(srvLsnr)
                         .logger(log)
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .gridName(ignite.name())
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -1612,7 +1613,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(log, locNodeId, gridName);
+                GridIpcSharedMemoryServerEndpoint srv =
+                    new GridIpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), ignite.name());
 
                 srv.setPort(port);
 
@@ -1751,6 +1753,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
+
+        UUID locNodeId = ignite.configuration().getNodeId();
 
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
@@ -2246,7 +2250,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ch.write(ByteBuffer.wrap(U.GG_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(locNodeId,
+                        HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2446,7 +2450,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", log);
+            super(ignite.name(), "shmem-communication-acceptor", log);
 
             this.srv = srv;
         }
@@ -2490,7 +2494,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(GridIpcEndpoint endpoint) {
-            super(gridName, "shmem-worker", log);
+            super(ignite.name(), "shmem-worker", log);
 
             this.endpoint = endpoint;
         }
@@ -2545,7 +2549,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         IdleClientWorker() {
-            super(gridName, "nio-idle-client-collector", log);
+            super(ignite.name(), "nio-idle-client-collector", log);
         }
 
         /** {@inheritDoc} */
@@ -2658,7 +2662,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         ClientFlushWorker() {
-            super(gridName, "nio-client-flusher", log);
+            super(ignite.name(), "nio-client-flusher", log);
         }
 
         /** {@inheritDoc} */
@@ -2724,7 +2728,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         SocketTimeoutWorker() {
-            super(gridName, "tcp-comm-sock-timeout-worker", log);
+            super(ignite.name(), "tcp-comm-sock-timeout-worker", log);
         }
 
         /**
@@ -2807,7 +2811,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         private RecoveryWorker() {
-            super(gridName, "tcp-comm-recovery-worker", log);
+            super(ignite.name(), "tcp-comm-recovery-worker", log);
         }
 
         /** {@inheritDoc} */
@@ -3010,7 +3014,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 out.flush();
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent local node ID [locNodeId=" + locNodeId + ", rmtNodeId=" + rmtNodeId + ']');
+                    log.debug("Sent local node ID [locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId="
+                        + rmtNodeId + ']');
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to perform handshake.", e);

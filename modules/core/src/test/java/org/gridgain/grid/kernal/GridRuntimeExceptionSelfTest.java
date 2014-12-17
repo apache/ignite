@@ -207,9 +207,9 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** */
         private FailType failType;
@@ -229,7 +229,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
             Map<ComputeJob, ClusterNode> map = new HashMap<>(2);
 
             assert subgrid.size() == 1;
-            assert subgrid.get(0).id().equals(nodeId);
+            assert subgrid.get(0).id().equals(ignite.configuration().getNodeId());
 
             map.put(new GridTaskFailedTestJob(null), subgrid.get(0));
             map.put(new GridTaskFailedTestJob(failType), subgrid.get(0));

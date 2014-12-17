@@ -162,22 +162,22 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         @IgniteTaskSessionResource
         private ComputeTaskSession ses;
 
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID locId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             ses.setAttribute("fail", true);
 
-            ClusterNode node = F.view(subgrid, F.<ClusterNode>remoteNodes(locId)).iterator().next();
+            ClusterNode node = F.view(subgrid, F.remoteNodes(ignite.configuration().getNodeId())).iterator().next();
 
             nodeRef.set(node);
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                /** Local node ID. */
-                @IgniteLocalNodeIdResource
-                private UUID locId;
+                /** Ignite instance. */
+                @IgniteInstanceResource
+                private Ignite ignite;
 
                 /** Logger. */
                 @IgniteLoggerResource
@@ -189,6 +189,12 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                     log.info("Starting to execute job with fail attribute: " + ses.getAttribute("fail"));
 
                     boolean fail;
+
+                    assert ignite != null;
+
+                    UUID locId = ignite.configuration().getNodeId();
+
+                    assert locId != null;
 
                     try {
                         fail = ses.waitForAttribute("fail", 0);

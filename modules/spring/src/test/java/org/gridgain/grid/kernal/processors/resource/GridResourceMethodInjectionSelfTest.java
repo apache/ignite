@@ -201,25 +201,10 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         private Ignite ignite;
 
         /** */
-        private UUID nodeId;
-
-        /** */
-        private MBeanServer mbeanSrv;
-
-        /** */
-        private ExecutorService exec;
-
-        /** */
         private String ggHome;
 
         /** */
-        private String gridName;
-
-        /** */
         private String locHost;
-
-        /** */
-        private IgniteMarshaller marshaller;
 
         /** */
         private ApplicationContext springCtx;
@@ -288,54 +273,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         }
 
         /**
-         * @param nodeId Node ID.
-         */
-        @IgniteLocalNodeIdResource
-        public void setNodeId(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /**
-         * @param mbeanSrv MBean server.
-         */
-        @IgniteMBeanServerResource
-        public void setMbeanServer(MBeanServer mbeanSrv) {
-            this.mbeanSrv = mbeanSrv;
-        }
-
-        /**
-         * @param exec Executor.
-         */
-        @IgniteExecutorServiceResource
-        public void setExecutor(ExecutorService exec) {
-            this.exec = exec;
-        }
-
-        /**
-         * @param ggHome GridGain home.
-         */
-        @IgniteHomeResource
-        public void setGridgainHome(String ggHome) {
-            this.ggHome = ggHome;
-        }
-
-        /**
-         * @param gridName Grid name.
-         */
-        @IgniteNameResource
-        public void setGridName(String gridName) {
-            this.gridName = gridName;
-        }
-
-        /**
-         * @param marshaller Marshaller.
-         */
-        @IgniteMarshallerResource
-        public void setMarshaller(IgniteMarshaller marshaller) {
-            this.marshaller = marshaller;
-        }
-
-        /**
          * @param springCtx Spring context.
          */
         @IgniteSpringApplicationContextResource
@@ -349,14 +286,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         @IgniteTaskSessionResource
         public void setSession(ComputeTaskSession ses) {
             this.ses = ses;
-        }
-
-        /**
-         * @param locHost Local host.
-         */
-        @IgniteLocalHostResource
-        public void setLocalHost(String locHost) {
-            this.locHost = locHost;
         }
 
         /**
@@ -399,13 +328,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
-            assert nodeId != null;
-            assert mbeanSrv != null;
-            assert exec != null;
             assert ggHome != null;
-            assert gridName != null;
             assert locHost != null;
-            assert marshaller != null;
             assert springCtx != null;
             assert ses != null;
             assert balancer != null;
@@ -421,13 +345,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
             log.info("Injected grid resource into task: " + ignite);
-            log.info("Injected nodeId resource into task: " + nodeId);
-            log.info("Injected mbean server resource into task: " + mbeanSrv);
-            log.info("Injected executor service resource into task: " + exec);
             log.info("Injected gridgain home resource into task: " + ggHome);
-            log.info("Injected grid name resource into task: " + gridName);
             log.info("Injected local host resource into task: " + locHost);
-            log.info("Injected marshaller resource into task: " + marshaller);
             log.info("Injected spring context resource into task: " + springCtx);
             log.info("Injected session resource into task: " + ses);
             log.info("Injected load balancer into task: " + balancer);
@@ -527,13 +446,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         assert rsrc4 != null;
                         assert log != null;
                         assert ignite != null;
-                        assert nodeId != null;
-                        assert mbeanSrv != null;
-                        assert exec != null;
                         assert ggHome != null;
-                        assert gridName != null;
                         assert locHost != null;
-                        assert marshaller != null;
                         assert springCtx != null;
                         assert ses != null;
                         assert jobCtx != null;
@@ -559,13 +473,9 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
                         log.info("Injected shared resource10 into job: " + rsrc10);
                         log.info("Injected log resource into job: " + log);
                         log.info("Injected grid resource into job: " + ignite);
-                        log.info("Injected nodeId resource into job: " + nodeId);
                         log.info("Injected local Host resource into job: " + locHost);
-                        log.info("Injected mbean server resource into job: " + mbeanSrv);
-                        log.info("Injected executor service resource into job: " + exec);
                         log.info("Injected gridgain home resource into job: " + ggHome);
                         log.info("Injected grid name resource into job: " + ggHome);
-                        log.info("Injected marshaller resource into job: " + marshaller);
                         log.info("Injected spring context resource into job: " + springCtx);
                         log.info("Injected session resource into job: " + ses);
                         log.info("Injected job context resource into job: " + jobCtx);
@@ -587,12 +497,8 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
             assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
-            assert nodeId != null;
             assert locHost != null;
-            assert mbeanSrv != null;
-            assert exec != null;
             assert ggHome != null;
-            assert marshaller != null;
             assert springCtx != null;
             assert ses != null;
             assert balancer != null;

@@ -39,26 +39,6 @@ public abstract class GridAbstractUserExternalResource {
     private Ignite ignite;
 
     /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
-
-    /** */
-    @IgniteMBeanServerResource
-    private MBeanServer mbeanSrv;
-
-    /** */
-    @IgniteExecutorServiceResource
-    private ExecutorService exec;
-
-    /** */
-    @IgniteHomeResource
-    private String ggHome;
-
-    /** */
-    @IgniteNameResource
-    private String ggName;
-
-    /** */
     @IgniteSpringApplicationContextResource
     private ApplicationContext springCtx;
 
@@ -75,11 +55,6 @@ public abstract class GridAbstractUserExternalResource {
 
         assert log != null;
         assert ignite != null;
-        assert nodeId != null;
-        assert mbeanSrv != null;
-        assert exec != null;
-        assert ggHome != null;
-        assert ggName != null;
         assert springCtx != null;
 
         log.info("Deploying resource: " + this);
@@ -93,11 +68,6 @@ public abstract class GridAbstractUserExternalResource {
 
         assert log != null;
         assert ignite != null;
-        assert nodeId != null;
-        assert mbeanSrv != null;
-        assert exec != null;
-        assert ggHome != null;
-        assert ggName != null;
         assert springCtx != null;
 
         log.info("Undeploying resource: " + this);

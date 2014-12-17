@@ -41,9 +41,9 @@ public class GridJobLoadTestJob implements ComputeJob {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Local node id. */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Job context. */
     @IgniteJobContextResource
@@ -135,7 +135,8 @@ public class GridJobLoadTestJob implements ComputeJob {
                 // We shouldn't run in situation when some elements emitted before are missed and the current exists.
                 assert ! (valMissed && val != null) :
                     "Inconsistent session attribute set was received [missedAttribute=" + i +
-                    ", jobId=" + cntx.getJobId() + ", attrs=" + attrs + ", nodeId=" + nodeId + "]";
+                    ", jobId=" + cntx.getJobId() + ", attrs=" + attrs + ", nodeId=" +
+                    ignite.configuration().getNodeId() + "]";
 
                 valMissed = (val == null);
             }
@@ -148,6 +149,7 @@ public class GridJobLoadTestJob implements ComputeJob {
      * @return String with current job representation.
      */
     private String getJobInfo() {
-        return "[taskId=" + taskSes.getId() + ", jobId=" + cntx.getJobId() + ", nodeId=" + nodeId + "]";
+        return "[taskId=" + taskSes.getId() + ", jobId=" + cntx.getJobId() + ", nodeId=" +
+            ignite.configuration().getNodeId() + "]";
     }
 }

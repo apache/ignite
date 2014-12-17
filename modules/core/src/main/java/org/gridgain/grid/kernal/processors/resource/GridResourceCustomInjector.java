@@ -263,11 +263,6 @@ class GridResourceCustomInjector implements GridResourceInjector {
             // Clean up injected resources.
             cleanup(rsrc, IgniteLoggerResource.class);
             cleanup(rsrc, IgniteInstanceResource.class);
-            cleanup(rsrc, IgniteExecutorServiceResource.class);
-            cleanup(rsrc, IgniteLocalNodeIdResource.class);
-            cleanup(rsrc, IgniteMBeanServerResource.class);
-            cleanup(rsrc, IgniteHomeResource.class);
-            cleanup(rsrc, IgniteMarshallerResource.class);
             cleanup(rsrc, IgniteSpringApplicationContextResource.class);
             cleanup(rsrc, IgniteSpringResource.class);
         }
@@ -446,12 +441,6 @@ class GridResourceCustomInjector implements GridResourceInjector {
             ioc.inject(rsrc, IgniteLoggerResource.class, new GridResourceBasicInjector<>(
                 log.getLogger(rsrcCls)), dep, depCls);
             ioc.inject(rsrc, IgniteInstanceResource.class, gridInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteExecutorServiceResource.class, execInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteLocalNodeIdResource.class, nodeIdInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteMBeanServerResource.class, mbeanServerInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteHomeResource.class, ggHomeInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteNameResource.class, ggNameInjector, dep, depCls);
-            ioc.inject(rsrc, IgniteMarshallerResource.class, marshallerInjector, dep, depCls);
             ioc.inject(rsrc, IgniteSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
             ioc.inject(rsrc, IgniteSpringResource.class, springBeanInjector, dep, depCls);
             ioc.inject(rsrc, IgniteLoggerResource.class, logInjector, dep, depCls);

@@ -423,14 +423,6 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
-
-        /** */
-        @IgniteExecutorServiceResource
-        private ExecutorService exec;
-
         /**
          * @param prj Projection.
          * @param ret Return value.
@@ -443,15 +435,14 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID nodeId, Object msg) {
             assertNotNull(ignite);
-            assertNotNull(locNodeId);
-            assertNotNull(exec);
+            assertNotNull(ignite.configuration().getNodeId());
 
             X.println("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() + ']');
 
             assertEquals(prj.ignite().cluster().localNode().id(), nodeId);
             assertEquals(MSG, msg);
 
-            nodes.add(locNodeId);
+            nodes.add(ignite.configuration().getNodeId());
             cnt.incrementAndGet();
             latch.countDown();
 

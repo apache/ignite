@@ -668,12 +668,12 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public boolean apply(UUID uuid, Object msg) {
-            X.println(">>> Received [locNodeId=" + nodeId + ", msg=" + msg + ']');
+            X.println(">>> Received [locNodeId=" + ignite.configuration().getNodeId() + ", msg=" + msg + ']');
 
             msgLatch.countDown();
 

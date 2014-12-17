@@ -143,8 +143,8 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         private ComputeTaskSession ses;
 
         /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marshaller;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -201,16 +201,17 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 // Check task and job states.
                 for (int i =  0; i < SPLIT_COUNT; i++) {
                     // Check task map state.
-                    checkRunningState("map:session:key:" + i, "map:session:testval:" + i,
-                        "map:global:key:" + i, "map:global:testval:" + i, marshaller, getClass().getClassLoader());
+                    checkRunningState("map:session:key:" + i, "map:session:testval:" + i, "map:global:key:" + i,
+                        "map:global:testval:" + i, ignite.configuration().getMarshaller(), getClass().getClassLoader());
 
                     // Check task reduce state.
                     checkRunningState("reduce:session:key:" + i, "reduce:session:testval:" + i,
-                        "reduce:global:key:" + i, "reduce:global:testval:" + i, marshaller, getClass().getClassLoader());
+                            "reduce:global:key:" + i, "reduce:global:testval:" + i,
+                            ignite.configuration().getMarshaller(), getClass().getClassLoader());
 
                     // Check task map state.
-                    checkRunningState("job:session:key:" + i, "job:session:testval:" + i,
-                        "job:global:key:" + i, "job:global:testval:" + i, marshaller, getClass().getClassLoader());
+                    checkRunningState("job:session:key:" + i, "job:session:testval:" + i, "job:global:key:" + i,
+                        "job:global:testval:" + i, ignite.configuration().getMarshaller(), getClass().getClassLoader());
                 }
             }
             catch (Exception e) {

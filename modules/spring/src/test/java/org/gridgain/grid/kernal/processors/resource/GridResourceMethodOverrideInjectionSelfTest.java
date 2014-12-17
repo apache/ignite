@@ -98,15 +98,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected Ignite ignite;
 
         /** */
-        protected UUID nodeId;
-
-        /** */
-        protected MBeanServer mbeanSrv;
-
-        /** */
-        protected ExecutorService exec;
-
-        /** */
         protected String ggHome;
 
         /** */
@@ -173,44 +164,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         @IgniteInstanceResource
         @SuppressWarnings("unused")
         void setIgnite(Ignite ignite) { this.ignite = ignite; }
-
-        /**
-         * @param nodeId UUID.
-         */
-        @IgniteLocalNodeIdResource
-        public void setNodeId(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /**
-         * @param mbeanSrv MBeanServer.
-         */
-        @IgniteMBeanServerResource
-        @SuppressWarnings("unused")
-        protected void setMbeanServer(MBeanServer mbeanSrv) { this.mbeanSrv = mbeanSrv; }
-
-        /**
-         * @param exec ExecutorService.
-         */
-        @IgniteExecutorServiceResource
-        @SuppressWarnings("unused")
-        public void setExecutor(ExecutorService exec) {
-            this.exec = exec;
-        }
-
-        /**
-         * @param ggHome GridGain Home.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteHomeResource
-        private void setGridGainHome(String ggHome) { this.ggHome = ggHome; }
-
-        /**
-         * @param gridName Grid name.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteHomeResource
-        private void setGridName(String gridName) { this.gridName = gridName; }
 
         /**
          * @param springCtx Spring Application Context.
@@ -318,9 +271,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
-            assert nodeId != null;
-            assert mbeanSrv != null;
-            assert exec != null;
             assert ggHome != null;
             assert gridName != null;
             assert springCtx != null;
@@ -337,9 +287,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
             log.info("Injected grid resource into task: " + ignite);
-            log.info("Injected nodeId resource into task: " + nodeId);
-            log.info("Injected mbean server resource into task: " + mbeanSrv);
-            log.info("Injected executor service resource into task: " + exec);
             log.info("Injected gridgain home resource into task: " + ggHome);
             log.info("Injected grid name resource into task: " + gridName);
             log.info("Injected spring context resource into task: " + springCtx);
@@ -408,9 +355,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                         assert rsrc4 != null;
                         assert log != null;
                         assert ignite != null;
-                        assert nodeId != null;
-                        assert mbeanSrv != null;
-                        assert exec != null;
                         assert ggHome != null;
                         assert gridName != null;
                         assert springCtx != null;
@@ -436,9 +380,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
                         log.info("Injected shared resource8 into job: " + rsrc8);
                         log.info("Injected log resource into job: " + log);
                         log.info("Injected grid resource into job: " + ignite);
-                        log.info("Injected nodeId resource into job: " + nodeId);
-                        log.info("Injected mbean server resource into job: " + mbeanSrv);
-                        log.info("Injected executor service resource into job: " + exec);
                         log.info("Injected gridgain home resource into job: " + ggHome);
                         log.info("Injected grid grid name resource into job: " + gridName);
                         log.info("Injected spring context resource into job: " + springCtx);
@@ -461,9 +402,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
             assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
-            assert nodeId != null;
-            assert mbeanSrv != null;
-            assert exec != null;
             assert ggHome != null;
             assert gridName != null;
             assert springCtx != null;

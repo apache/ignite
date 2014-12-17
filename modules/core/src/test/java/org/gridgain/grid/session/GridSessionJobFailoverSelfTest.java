@@ -86,10 +86,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                /** */
-                @IgniteLocalNodeIdResource
-                private UUID locNodeId;
-
+                /** {@inheritDoc} */
                 @Override public Serializable execute() throws IgniteCheckedException {
                     boolean fail;
 

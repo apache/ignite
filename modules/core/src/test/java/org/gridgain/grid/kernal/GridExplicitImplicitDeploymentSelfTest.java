@@ -391,14 +391,16 @@ public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTe
     @ComputeTaskName("GridDeploymentResourceTestTask")
     public static class GridDeploymentResourceTestTask extends ComputeTaskAdapter<String, Integer> {
         /** */
-        @IgniteLocalNodeIdResource
-        private UUID locId;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
+
+            UUID locId = ignite.configuration().getNodeId();
 
             if (subgrid.size() == 1)
                 assert subgrid.get(0).id().equals(locId) : "Wrong node id.";

@@ -22,12 +22,6 @@ import java.lang.annotation.*;
  * The following grid resources can be injected:
  * <ul>
  * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteLocalNodeIdResource}</li>
- * <li>{@link IgniteHomeResource}</li>
- * <li>{@link IgniteNameResource}</li>
- * <li>{@link IgniteMBeanServerResource}</li>
- * <li>{@link IgniteExecutorServiceResource}</li>
- * <li>{@link IgniteMarshallerResource}</li>
  * <li>{@link IgniteSpringApplicationContextResource}</li>
  * <li>{@link IgniteSpringResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
