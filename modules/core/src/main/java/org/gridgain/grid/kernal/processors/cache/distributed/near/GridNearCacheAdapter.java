@@ -259,8 +259,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter,
-            subjId, taskName, deserializePortable);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
+            keys,
+            reload,
+            forcePrimary,
+            txx,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();

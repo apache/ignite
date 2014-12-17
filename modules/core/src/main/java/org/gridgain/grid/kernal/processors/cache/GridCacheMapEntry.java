@@ -699,7 +699,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable GridCacheAccessExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
@@ -714,7 +715,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             subjId,
             transformClo,
             taskName,
-            filter);
+            filter,
+            expirePlc);
     }
 
     /** {@inheritDoc} */
@@ -730,7 +732,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable GridCacheAccessExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -877,6 +880,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 // No more notifications.
                 evt = false;
             }
+
+            if (ret != null && expiryPlc != null) {
+                long ttl = expiryPlc.ttl();
+
+                assert ttl >= 0 : ttl;
+
+                updateTtl(ttl);
+
+                expiryPlc.ttlUpdated(key(), getOrMarshalKeyBytes(), version());
+            }
         }
 
         if (asyncRefresh && !readThrough && cctx.isStoreEnabled()) {
@@ -906,7 +919,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 subjId,
                 transformClo,
                 taskName,
-                filter);
+                filter,
+                expiryPlc);
         }
 
         boolean loadedFromStore = false;
@@ -987,7 +1001,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             subjId,
             transformClo,
             taskName,
-            filter);
+            filter,
+            expiryPlc);
     }
 
     /** {@inheritDoc} */
@@ -1658,6 +1673,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return toTtl(duration);
     }
 
+    /**
+     * @param duration Duration.
+     * @return TTL.
+     */
     public static long toTtl(Duration duration) {
         if (duration == null)
             return -1;
@@ -1826,17 +1845,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
                 if (!pass) {
-                    if (!isNew() && expiryPlc != null) {
+                    if (hasValueUnlocked() && expiryPlc != null) {
                         Duration duration = expiryPlc.getExpiryForAccess();
 
-                        if (duration != null)
-                            updateTtl(toTtl(duration));
+                        newTtl = toTtl(duration);
+
+                        if (newTtl != -1L)
+                            updateTtl(newTtl);
                     }
 
                     return new GridCacheUpdateAtomicResult<>(false,
                         retval ? old : null,
                         null,
-                        0L,
+                        newTtl,
                         -1L,
                         null,
                         null,

@@ -207,11 +207,20 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param keys Keys to load.
      * @param reload Reload flag.
      * @param forcePrimary Force get from primary node flag.
+     * @param topVer Topology version.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Filter.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, long topVer, @Nullable UUID subjId, String taskName, boolean deserializePortable,
+    public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
+        boolean reload,
+        boolean forcePrimary,
+        long topVer,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -248,7 +257,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 subjId,
                                 null,
                                 taskName,
-                                filter);
+                                filter,
+                                null);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -301,8 +311,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
-            filter, subjId, taskName, deserializePortable);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
+            keys,
+            topVer,
+            reload,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable);
 
         fut.init();
 

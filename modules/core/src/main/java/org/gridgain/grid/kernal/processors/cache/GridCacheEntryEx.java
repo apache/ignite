@@ -270,10 +270,11 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      *        temporary object can used for filter evaluation or transform closure execution and
      *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
+     * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param filter Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
-     * @param transformClo Transform closure to record event.
+     * @param expiryPlc Expiry policy.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -290,7 +291,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable GridCacheAccessExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**

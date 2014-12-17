@@ -92,6 +92,24 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.io().addHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheTtlUpdateRequest<K, V> req) {
+                processTtlUpdateRequest(req);
+            }
+        });
+    }
+
+    /**
+     * @param req Request.
+     */
+    private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
+        log.info("Ttl update: " + req);
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         super.stop();
 
@@ -470,11 +488,26 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param filter Optional filter.
      * @return DHT future.
      */
-    public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
-        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
-        int taskNameHash, boolean deserializePortable, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
-            topVer, filter, subjId, taskNameHash, deserializePortable);
+    public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader,
+        long msgId,
+        LinkedHashMap<? extends K, Boolean> keys,
+        boolean reload,
+        long topVer,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        boolean deserializePortable,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
+            msgId,
+            reader,
+            keys,
+            reload,
+            /*tx*/null,
+            topVer,
+            filter,
+            subjId,
+            taskNameHash,
+            deserializePortable);
 
         fut.init();
 
@@ -489,13 +522,22 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert isAffinityNode(cacheCfg);
 
         IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
-                req.taskNameHash(), false, req.filter());
+            getDhtAsync(nodeId,
+                req.messageId(),
+                req.keys(),
+                req.reload(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                false,
+                req.filter());
 
         fut.listenAsync(new CI1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
                 GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
-                    req.futureId(), req.miniId(), req.version());
+                    req.futureId(),
+                    req.miniId(),
+                    req.version());
 
                 GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
                     (GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>>)f;

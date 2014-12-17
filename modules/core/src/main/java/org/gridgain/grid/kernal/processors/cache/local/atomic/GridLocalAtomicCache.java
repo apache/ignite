@@ -607,7 +607,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             null,
                             taskName,
-                            filter);
+                            filter,
+                            null);
 
                         if (v != null)
                             vals.put(key, v);
@@ -924,7 +925,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             transform,
                             taskName,
-                            CU.<K, V>empty());
+                            CU.<K, V>empty(),
+                            null);
 
                         V updated = transform.apply(old);
 
@@ -1004,7 +1006,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                CU.<K, V>empty());
+                                CU.<K, V>empty(),
+                                null);
 
                             val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
 
@@ -1034,7 +1037,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                CU.<K, V>empty());
+                                CU.<K, V>empty(),
+                                null);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                                 entry.key(), old);

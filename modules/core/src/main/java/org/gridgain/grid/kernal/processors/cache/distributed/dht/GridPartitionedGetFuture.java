@@ -293,8 +293,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    cache().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
-                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
+                    cache().getDhtAsync(n.id(),
+                        -1,
+                        mappedKeys,
+                        reload,
+                        topVer,
+                        subjId,
+                        taskName == null ? 0 : taskName.hashCode(),
+                        deserializePortable,
+                        filters);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -405,7 +412,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 subjId,
                                 null,
                                 taskName,
-                                filters);
+                                filters,
+                                null);
 
                             colocated.context().evicts().touch(entry, topVer);
 

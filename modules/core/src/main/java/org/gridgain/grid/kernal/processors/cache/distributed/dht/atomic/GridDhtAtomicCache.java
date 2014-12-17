@@ -16,6 +16,7 @@ import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -141,6 +142,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         resetMetrics();
 
         preldr = new GridDhtPreloader<>(ctx);
@@ -258,13 +261,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean deserializePortable,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        subjId = ctx.subjectIdPerCall(null, prj);
 
         final UUID subjId0 = subjId;
 
+        final ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+
         return asyncOp(new CO<IgniteFuture<Map<K, V>>>() {
             @Override public IgniteFuture<Map<K, V>> apply() {
-                return getAllAsync0(keys, false, forcePrimary, filter, subjId0, taskName, deserializePortable);
+                return getAllAsync0(keys,
+                    false,
+                    forcePrimary,
+                    filter,
+                    expiryPlc,
+                    subjId0,
+                    taskName,
+                    deserializePortable);
             }
         });
     }
@@ -595,7 +609,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null); // TODO IGNITE-41.
+        UUID subjId = ctx.subjectIdPerCall(null, prj);
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -691,10 +705,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param reload Reload flag.
      * @param forcePrimary Force primary flag.
      * @param filter Filter.
+     * @param expiryPlc Expiry policy.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
      * @return Get future.
      */
-    private IgniteFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys, boolean reload,
-        boolean forcePrimary, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName,
+    private IgniteFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys,
+        boolean reload,
+        boolean forcePrimary,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable ExpiryPolicy expiryPlc,
+        UUID subjId,
+        String taskName,
         boolean deserializePortable) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
@@ -711,6 +734,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
 
             boolean success = true;
+
+            final GridCacheAccessExpiryPolicy expiry =
+                GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
@@ -735,7 +761,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                filter);
+                                filter,
+                                expiry);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -785,13 +812,42 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     break;
             }
 
-            if (success)
+            if (success) {
+                if (expiry != null && expiry.request() != null) {
+                    ctx.closures().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                GridCacheTtlUpdateRequest<K, V> req = expiry.request();
+
+                                assert !F.isEmpty(req.keys());
+
+                                Collection<ClusterNode> nodes = ctx.affinity().remoteNodes(req.keys(), -1);
+
+                                req.cacheId(ctx.cacheId());
+
+                                ctx.io().safeSend(nodes, req, null);
+                            }
+                            catch (IgniteCheckedException e) {
+                                log.error("Failed to send TTL update request.", e);
+                            }
+                        }
+                    });
+                }
+
                 return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+            }
         }
 
         // Either reload or not all values are available locally.
-        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx, keys, topVer, reload, forcePrimary,
-            filter, subjId, taskName, deserializePortable);
+        GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
+            keys,
+            topVer,
+            reload,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable);
 
         fut.init();
 
@@ -1066,7 +1122,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         req.subjectId(),
                         transform,
                         taskName,
-                        CU.<K, V>empty());
+                        CU.<K, V>empty(),
+                        null);
 
                     if (transformMap == null)
                         transformMap = new HashMap<>();
@@ -1174,7 +1231,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.subjectId(),
                             null,
                             taskName,
-                            CU.<K, V>empty());
+                            CU.<K, V>empty(),
+                            null);
 
                         updated = (V)ctx.config().getInterceptor().onBeforePut(entry.key(), old, updated);
 
@@ -1207,7 +1265,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.subjectId(),
                             null,
                             taskName,
-                            CU.<K, V>empty());
+                            CU.<K, V>empty(),
+                            null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(
                             entry.key(), old);

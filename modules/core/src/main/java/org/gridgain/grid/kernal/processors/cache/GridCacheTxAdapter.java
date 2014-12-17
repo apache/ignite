@@ -1166,7 +1166,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
                         resolveTaskName(),
-                        CU.<K, V>empty());
+                        CU.<K, V>empty(),
+                        null);
 
                 try {
                     for (IgniteClosure<V, V> clos : txEntry.transformClosures())

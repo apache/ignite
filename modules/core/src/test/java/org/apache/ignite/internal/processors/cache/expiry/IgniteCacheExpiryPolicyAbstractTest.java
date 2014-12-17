@@ -125,6 +125,37 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    public void testAccess() throws Exception {
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test access [key=" + key + ']');
+
+            access(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void access(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertEquals((Integer)1, cache.get(key));
+
+        checkTtl(key, 62_000L);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCreateUpdate() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
 
@@ -299,83 +330,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 0L);
     }
 
-    public void _testPrimary() throws Exception {
-        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
-
-        nearCache = true;
-
-        boolean inTx = true;
-
-        startGrids();
-
-        IgniteCache<Integer, Integer> cache = jcache(0);
-
-        GridCache<Integer, Object> cache0 = cache(0);
-
-        Integer key = primaryKey(cache0);
-
-        log.info("Create: " + key);
-
-        GridCacheTx tx = inTx ? grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED) : null;
-
-        cache.put(key, 1);
-
-        if (tx != null)
-            tx.commit();
-
-        checkTtl(key, 60_000);
-
-        tx = inTx ? grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED) : null;
-
-        log.info("Update: " + key);
-
-        cache.put(key, 2);
-
-        if (tx != null)
-            tx.commit();
-
-        checkTtl(key, 61_000);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void _test1() throws Exception {
-        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
-
-        nearCache = false;
-
-        boolean inTx = true;
-
-        startGrids();
-
-        Collection<Integer> keys = keys();
-
-        IgniteCache<Integer, Integer> cache = jcache(0);
-
-        for (final Integer key : keys) {
-            log.info("Test key1: " + key);
-
-            GridCacheTx tx = inTx ? grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED) : null;
-
-            cache.put(key, 1);
-
-            if (tx != null)
-                tx.commit();
-
-            log.info("Test key2: " + key);
-
-            tx = inTx ? grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED) : null;
-
-            cache.put(key, 2);
-
-            if (tx != null)
-                tx.commit();
-
-            log.info("Done");
-        }
-    }
-
     /**
      * @param key Key.
      * @param txConcurrency Not null transaction concurrency mode if explicit transaction should be started.
@@ -436,7 +390,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @return Transaction.
      */
     @Nullable private GridCacheTx startTx(@Nullable GridCacheTxConcurrency txConcurrency) {
-        return txConcurrency == null ? null : ignite(0).transactions().txStart(txConcurrency, READ_COMMITTED);
+        return txConcurrency == null ? null : ignite(0).transactions().txStart(txConcurrency, REPEATABLE_READ);
     }
 
     /**

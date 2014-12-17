@@ -16,7 +16,7 @@ import junit.framework.*;
  */
 public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
     /**
-     * @return Cache API test suite.
+     * @return Cache Expiry Policy test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {

@@ -250,7 +250,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, final long topVer) {
+    private void map(Collection<? extends K> keys,
+        Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped,
+        final long topVer) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
@@ -402,7 +404,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         null,
                         taskName,
-                        filters);
+                        filters,
+                        null);
 
                 ClusterNode primary = null;
 
@@ -427,7 +430,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 subjId,
                                 null,
                                 taskName,
-                                filters);
+                                filters,
+                                null);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))

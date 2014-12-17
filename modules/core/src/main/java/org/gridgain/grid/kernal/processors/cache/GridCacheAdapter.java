@@ -1812,7 +1812,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 subjId,
                                 null,
                                 taskName,
-                                filter);
+                                filter,
+                                null);
 
                             GridCacheVersion ver = entry.version();
 

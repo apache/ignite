@@ -663,8 +663,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
                                             txEntry.ttl(GridCacheMapEntry.toTtl(duration));
-
-                                            log.info("Calculated expiry (userCommit), update=" + cached.hasValue() + ", ttl=" + txEntry.ttl() + ", plc=" + expiry);
                                         }
                                     }
 
@@ -1081,7 +1079,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     CU.subjectId(this, cctx),
                                     transformClo,
                                     resolveTaskName(),
-                                    filter);
+                                    filter,
+                                    null);
 
                                 if (val != null) {
                                     if (!readCommitted())
@@ -1155,7 +1154,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 CU.subjectId(this, cctx),
                                 null,
                                 resolveTaskName(),
-                                filter);
+                                filter,
+                                null);
 
                             if (val != null) {
                                 V val0 = val;
@@ -1501,7 +1501,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
                                         transformClo,
                                         resolveTaskName(),
-                                        filter);
+                                        filter,
+                                        null);
 
                                     // If value is in cache and passed the filter.
                                     if (val != null) {
@@ -1844,7 +1845,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                             if (optimistic()) {
                                 try {
-                                    //Should read through if filter is specified.
+                                    // Should read through if filter is specified.
                                     old = entry.innerGet(this,
                                         /*swap*/false,
                                         /*read-through*/readThrough,
@@ -1856,7 +1857,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         CU.subjectId(this, cctx),
                                         transformClo,
                                         resolveTaskName(),
-                                        CU.<K, V>empty());
+                                        CU.<K, V>empty(),
+                                        null);
                                 }
                                 catch (GridCacheFilterFailedException e) {
                                     e.printStackTrace();
@@ -2065,7 +2067,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         CU.subjectId(this, cctx),
                                         null,
                                         resolveTaskName(),
-                                        CU.<K, V>empty());
+                                        CU.<K, V>empty(),
+                                        null);
                             }
                             catch (GridCacheFilterFailedException e) {
                                 e.printStackTrace();
