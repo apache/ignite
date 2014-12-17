@@ -37,7 +37,7 @@ public class GridDataGridTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain In-Memory Data Grid Test Suite");
 
-        suite.addTestSuite(IgniteCacheTest.class);
+        suite.addTestSuite(IgniteCacheAbstractTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);

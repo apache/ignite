@@ -692,8 +692,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         GridDhtLockFuture<K, V> fut = null;
 
                         if (!req.inTx()) {
-                            fut = new GridDhtLockFuture<>(ctx, nearNode.id(), req.version(),
-                                req.topologyVersion(), cnt, req.txRead(), req.timeout(), tx, req.threadId(), filter);
+                            fut = new GridDhtLockFuture<>(ctx,
+                                nearNode.id(),
+                                req.version(),
+                                req.topologyVersion(),
+                                cnt,
+                                req.txRead(),
+                                req.timeout(),
+                                tx,
+                                req.threadId(),
+                                filter);
 
                             // Add before mapping.
                             if (!ctx.mvcc().addFuture(fut))

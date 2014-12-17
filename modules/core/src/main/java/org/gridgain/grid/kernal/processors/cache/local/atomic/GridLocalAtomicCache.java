@@ -22,6 +22,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -103,7 +104,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (V)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
-            ttl,
+            expiryPerCall(),
             true,
             false,
             filter,
@@ -124,7 +125,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
-            ttl,
+            expiryPerCall(),
             false,
             false,
             filter,
@@ -142,7 +143,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
-            -1,
+            expiryPerCall(),
             false,
             false,
             filter,
@@ -239,7 +240,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (GridCacheReturn<V>)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(newVal),
-            0,
+            expiryPerCall(),
             true,
             true,
             ctx.equalsPeekArray(oldVal),
@@ -256,7 +257,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (GridCacheReturn<V>)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            0,
+            null,
             true,
             true,
             ctx.equalsPeekArray(val),
@@ -292,7 +293,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         updateAllInternal(UPDATE,
             m.keySet(),
             m.values(),
-            0,
+            expiryPerCall(),
             false,
             false,
             filter,
@@ -314,7 +315,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         updateAllInternal(TRANSFORM,
             Collections.singleton(key),
             Collections.singleton(transformer),
-            -1,
+            expiryPerCall(),
             false,
             false,
             null,
@@ -328,7 +329,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (R)updateAllInternal(TRANSFORM,
             Collections.singleton(key),
             Collections.singleton(new GridCacheTransformComputeClosure<>(transformer)),
-            -1,
+            expiryPerCall(),
             true,
             false,
             null,
@@ -356,7 +357,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         updateAllInternal(TRANSFORM,
             m.keySet(),
             m.values(),
-            0,
+            expiryPerCall(),
             false,
             false,
             null,
@@ -383,7 +384,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            0,
+            null,
             true,
             false,
             filter,
@@ -409,7 +410,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         updateAllInternal(DELETE,
             keys,
             null,
-            0,
+            null,
             false,
             false,
             filter,
@@ -436,7 +437,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            0,
+            null,
             false,
             false,
             filter,
@@ -464,7 +465,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            0,
+            null,
             false,
             false,
             ctx.equalsPeekArray(val),
@@ -678,13 +679,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             map != null ? map.keySet() : transformMap != null ? transformMap.keySet() : null;
         final Collection<?> vals = map != null ? map.values() : transformMap != null ? transformMap.values() : null;
         final boolean storeEnabled = ctx.isStoreEnabled();
+        final ExpiryPolicy expiry = expiryPerCall();
 
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(op,
                     keys,
                     vals,
-                    ttl,
+                    expiry,
                     retval,
                     rawRetval,
                     filter,
@@ -715,7 +717,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 return updateAllInternal(DELETE,
                     keys,
                     null,
-                    0,
+                    null,
                     retval,
                     rawRetval,
                     filter,
@@ -730,7 +732,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param op Operation.
      * @param keys Keys.
      * @param vals Values.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter.
@@ -742,7 +744,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     private Object updateAllInternal(GridCacheOperation op,
         Collection<? extends K> keys,
         @Nullable Iterable<?> vals,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean retval,
         boolean rawRetval,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
@@ -762,7 +764,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         UUID subjId = ctx.subjectIdPerCall(null);
 
         if (storeEnabled && keys.size() > 1) {
-            updateWithBatch(op, keys, vals, ver, filter, subjId, taskName);
+            updateWithBatch(op, keys, vals, expiryPlc, ver, filter, subjId, taskName);
 
             return null;
         }
@@ -793,7 +795,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         val,
                         storeEnabled,
                         retval,
-                        ttl,
+                        expiryPlc,
                         true,
                         true,
                         filter,
@@ -860,6 +862,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         GridCacheOperation op,
         Collection<? extends K> keys,
         @Nullable Iterable<?> vals,
+        @Nullable ExpiryPolicy expiryPlc,
         GridCacheVersion ver,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
@@ -941,6 +944,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     ver,
                                     putMap,
                                     null,
+                                    expiryPlc,
                                     err,
                                     subjId,
                                     taskName);
@@ -971,6 +975,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     ver,
                                     null,
                                     rmvKeys,
+                                    expiryPlc,
                                     err,
                                     subjId,
                                     taskName);
@@ -1067,6 +1072,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     ver,
                     putMap,
                     rmvKeys,
+                    expiryPlc,
                     err,
                     subjId,
                     taskName);
@@ -1087,16 +1093,19 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ver Cache version.
      * @param putMap Values to put.
      * @param rmvKeys Keys to remove.
+     * @param expiryPlc Expiry policy.
      * @param err Optional partial update exception.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @return Partial update exception.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
-    @Nullable private GridCachePartialUpdateException updatePartialBatch(List<GridCacheEntryEx<K, V>> entries,
+    @Nullable private GridCachePartialUpdateException updatePartialBatch(
+        List<GridCacheEntryEx<K, V>> entries,
         final GridCacheVersion ver,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
+        @Nullable ExpiryPolicy expiryPlc,
         @Nullable GridCachePartialUpdateException err,
         UUID subjId,
         String taskName
@@ -1151,7 +1160,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     writeVal,
                     false,
                     false,
-                    0,
+                    expiryPlc,
                     true,
                     true,
                     null,
@@ -1272,6 +1281,20 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         throw new UnsupportedOperationException("Locks are not supported for " +
             "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)");
+    }
+
+    /**
+     * @return Expiry policy.
+     */
+    @Nullable private ExpiryPolicy expiryPerCall() {
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        ExpiryPolicy expiry = prj != null ? prj.expiry() : null;
+
+        if (expiry == null)
+            expiry = ctx.expiry();
+
+        return expiry;
     }
 
     /**

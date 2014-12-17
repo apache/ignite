@@ -794,6 +794,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param idx Index.
+     * @return Ignite instance.
+     */
+    protected Ignite ignite(int idx) {
+        return G.ignite(getTestGridName(idx));
+    }
+
+    /**
      * Gets grid for given test.
      *
      * @return Grid for given test.

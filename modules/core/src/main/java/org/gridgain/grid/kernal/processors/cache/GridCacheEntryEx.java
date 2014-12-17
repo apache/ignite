@@ -447,7 +447,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param writeObj Value. Type depends on operation.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy..
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
@@ -464,7 +464,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         @Nullable Object writeObj,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,

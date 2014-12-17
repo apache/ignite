@@ -653,7 +653,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     byte[] valBytes = res.get3();
 
                                     if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
-                                        ExpiryPolicy expiry = cacheCtx.expiry();
+                                        ExpiryPolicy expiry = txEntry.expiry();
+
+                                        if (expiry == null)
+                                            expiry = cacheCtx.expiry();
 
                                         if (expiry != null) {
                                             Duration duration = cached.hasValue() ?
@@ -661,7 +664,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                             txEntry.ttl(GridCacheMapEntry.toTtl(duration));
 
-                                            log.info("Calculated expiry (userCommit), update=" + cached.hasValue() + ", ttl=" + txEntry.ttl() + ", detached=" + cached.detached());
+                                            log.info("Calculated expiry (userCommit), update=" + cached.hasValue() + ", ttl=" + txEntry.ttl() + ", plc=" + expiry);
                                         }
                                     }
 
@@ -2684,7 +2687,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable V val,
         @Nullable IgniteClosure<V, V> transformClos,
         GridCacheEntryEx<K, V> entry,
-        @Nullable ExpiryPolicy expiryPlc, // TODO IGNITE-41
+        @Nullable ExpiryPolicy expiryPlc,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         boolean filtersSet,
         long drTtl,
@@ -2739,7 +2742,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 entryTtlDr(key, drTtl, drExpireTime);
             }
             else
-                entryTtl(key, ttl);
+                entryExpiry(key, expiryPlc);
 
             txEntry = old;
 
@@ -2747,14 +2750,22 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 log.debug("Updated transaction entry: " + txEntry);
         }
         else {
-            long ttl = -1L;
+            boolean hasDrTtl = drTtl >= 0;
 
-            if (drTtl >= 0L)
-                ttl = drTtl;
-
-            txEntry = new GridCacheTxEntry<>(entry.context(), this, op, val, transformClos, ttl, entry, filter, drVer);
+            txEntry = new GridCacheTxEntry<>(entry.context(),
+                this,
+                op,
+                val,
+                transformClos,
+                hasDrTtl ? drTtl : -1L,
+                entry,
+                filter,
+                drVer);
 
             txEntry.drExpireTime(drExpireTime);
+
+            if (!hasDrTtl)
+                txEntry.expiry(expiryPlc);
 
             txMap.put(key, txEntry);
 
@@ -2844,6 +2855,19 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /**
      * @param key Key.
+     * @param expiryPlc Expiry policy.
+     */
+    void entryExpiry(GridCacheTxKey<K> key, @Nullable ExpiryPolicy expiryPlc) {
+        assert key != null;
+
+        GridCacheTxEntry<K, V> e = entry(key);
+
+        if (e != null)
+            e.expiry(expiryPlc);
+    }
+
+    /**
+     * @param key Key.
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @return {@code true} if tx entry exists for this key, {@code false} otherwise.
@@ -2856,7 +2880,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         if (e != null) {
             e.ttl(ttl);
+
             e.drExpireTime(expireTime);
+
+            e.expiry(null);
         }
 
         return e != null;

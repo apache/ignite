@@ -13,12 +13,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -128,6 +130,12 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /** Data center replication version. */
     private GridCacheVersion drVer;
 
+    /** Expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
+    /** */
+    private boolean transferExpiryPlc;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -147,8 +155,14 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param entry Cache entry.
      * @param drVer Data center replication version.
      */
-    public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op, V val,
-        long ttl, long drExpireTime, GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion drVer) {
+    public GridCacheTxEntry(GridCacheContext<K, V> ctx,
+        GridCacheTxEx<K, V> tx,
+        GridCacheOperation op,
+        V val,
+        long ttl,
+        long drExpireTime,
+        GridCacheEntryEx<K, V> entry,
+        @Nullable GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -183,9 +197,15 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param filters Put filters.
      * @param drVer Data center replication version.
      */
-    public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op,
-        V val, IgniteClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K,V> entry,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
+    public GridCacheTxEntry(GridCacheContext<K, V> ctx,
+        GridCacheTxEx<K, V> tx,
+        GridCacheOperation op,
+        V val,
+        IgniteClosure<V, V> transformClos,
+        long ttl,
+        GridCacheEntryEx<K,V> entry,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filters,
+        GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -285,6 +305,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         cp.grpLock = grpLock;
         cp.depEnabled = depEnabled;
         cp.drVer = drVer;
+        cp.expiryPlc = expiryPlc;
 
         return cp;
     }
@@ -708,6 +729,13 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     }
 
     /**
+     * Marks expiry policy for transfer if it explicitly set and differs from default one.
+     */
+    public void transferExpiryPolicyIfNeeded() {
+        transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
+    }
+
+    /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
@@ -768,6 +796,20 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         val.unmarshal(this.ctx, clsLdr, depEnabled);
     }
 
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    public void expiry(@Nullable ExpiryPolicy expiryPlc) {
+        this.expiryPlc = expiryPlc;
+    }
+
+    /**
+     * @return Expiry policy.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeBoolean(depEnabled);
@@ -793,6 +835,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         CU.writeVersion(out, explicitVer);
         out.writeBoolean(grpLock);
         CU.writeVersion(out, drVer);
+
+        out.writeObject(transferExpiryPlc ? new GridCacheExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */
@@ -821,6 +865,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         explicitVer = CU.readVersion(in);
         grpLock = in.readBoolean();
         drVer = CU.readVersion(in);
+
+        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /** {@inheritDoc} */

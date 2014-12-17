@@ -330,7 +330,12 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         assert ctx != null;
 
         if (txEntries != null) {
+            boolean transferExpiry = transferExpiryPolicy();
+
             for (GridCacheTxEntry<K, V> e : txEntries) {
+                if (transferExpiry)
+                    e.transferExpiryPolicyIfNeeded();
+
                 e.marshal(ctx);
 
                 if (ctx.deploymentEnabled()) {
@@ -340,6 +345,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
                 }
             }
         }
+    }
+
+    protected boolean transferExpiryPolicy() {
+        return false;
     }
 
     /**

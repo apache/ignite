@@ -200,7 +200,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             unmarshall(nodeId, cacheMsg);
 
-            log.info("Message: " + cacheMsg);
+            //log.info("Message: " + cacheMsg);
 
             if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);

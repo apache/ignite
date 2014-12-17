@@ -421,9 +421,18 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
-        @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean intercept, UUID subjId, String taskName)
+    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        boolean writeThrough,
+        boolean retval,
+        ExpiryPolicy expiryPlc,
+        boolean evt,
+        boolean metrics,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean intercept,
+        UUID subjId,
+        String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return new IgniteBiTuple<>(false, null);
     }

@@ -283,7 +283,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
-        expiryPlc = factory.create();
+        expiryPlc = factory != null ? factory.create() : null;
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;

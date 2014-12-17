@@ -18,19 +18,20 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+
 /**
- *
+ * Abstract class for cache tests.
  */
-public class IgniteCacheTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @return Grids count to start.
      */
-    protected int gridCount() {
-        return 2;
-    }
+    protected abstract int gridCount();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -85,26 +86,53 @@ public class IgniteCacheTest extends GridCommonAbstractTest {
     protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = defaultCacheConfiguration();
 
+        cfg.setSwapEnabled(swapEnabled());
+        cfg.setCacheMode(cacheMode());
+        cfg.setAtomicityMode(atomicityMode());
+        cfg.setWriteSynchronizationMode(writeSynchronization());
+        cfg.setDistributionMode(distributionMode());
+        cfg.setPortableEnabled(portableEnabled());
+
+        if (cacheMode() == PARTITIONED)
+            cfg.setBackups(1);
+
         return cfg;
     }
 
     /**
-     * @throws Exception If failed.
+     * @return Default cache mode.
      */
-    public void testPutGetRemove() throws Exception {
-        IgniteCache<Integer, String> cache = jcache();
+    protected abstract GridCacheMode cacheMode();
 
-        for (int i = 0; i < 10; i++)
-            cache.put(i, String.valueOf(i));
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected abstract GridCacheAtomicityMode atomicityMode();
 
-        for (int i = 0; i < 10; i++)
-            assertEquals(String.valueOf(i), cache.get(i));
+    /**
+     * @return Partitioned mode.
+     */
+    protected abstract GridCacheDistributionMode distributionMode();
 
-        for (int i = 0; i < 10; i++)
-            cache.remove(i);
+    /**
+     * @return Write synchronization.
+     */
+    protected GridCacheWriteSynchronizationMode writeSynchronization() {
+        return FULL_SYNC;
+    }
 
-        for (int i = 0; i < 10; i++)
-            assertNull(cache.get(i));
+    /**
+     * @return Whether portable mode is enabled.
+     */
+    protected boolean portableEnabled() {
+        return false;
+    }
+
+    /**
+     * @return {@code true} if swap should be enabled.
+     */
+    protected boolean swapEnabled() {
+        return false;
     }
 
     /**

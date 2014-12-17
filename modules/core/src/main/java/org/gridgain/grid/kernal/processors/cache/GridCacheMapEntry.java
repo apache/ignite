@@ -1112,7 +1112,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable UUID subjId,
         String taskName
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        log.info("Inner set " + key + " " + val + " " + ttl);
+       // log.info("Inner set " + key + " " + val + " " + ttl);
 
         V old;
 
@@ -1432,7 +1432,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable Object writeObj,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
@@ -1455,13 +1455,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             // Load and remove from swap if it is new.
             if (isNew())
                 unswap(true, retval);
-
-            long newTtl = ttl;
-
-            if (newTtl < 0)
-                newTtl = ttlExtras();
-
-            long newExpireTime = toExpireTime(newTtl);
 
             // Possibly get old value form store.
             old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
@@ -1541,11 +1534,36 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().putToStore(null, key, updated, ver);
 
+                long ttl;
+                long expireTime;
+
+                if (expiryPlc != null) {
+                    if (!hadVal) {
+                        Duration duration = expiryPlc.getExpiryForCreation();
+
+                        if (duration != null && duration.isZero())
+                            return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(old));
+
+                        ttl = toTtl(duration);
+                    }
+                    else
+                        ttl = toTtl(expiryPlc.getExpiryForUpdate());
+
+                    ttl = ttl < 0 ? ttlExtras() : ttl;
+
+                    expireTime = toExpireTime(ttl);
+                }
+                else {
+                    ttl = ttlExtras();
+
+                    expireTime = toExpireTime(ttl);
+                }
+
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
-                updateIndex(updated, null, newExpireTime, ver, old);
+                updateIndex(updated, null, expireTime, ver, old);
 
-                update(updated, null, newExpireTime, newTtl, ver);
+                update(updated, null, expireTime, ttl, ver);
 
                 if (evt) {
                     V evtOld = null;

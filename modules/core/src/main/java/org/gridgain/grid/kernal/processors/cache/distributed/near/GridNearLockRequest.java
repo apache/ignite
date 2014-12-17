@@ -284,8 +284,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         return dhtVers[idx];
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
+    @Override protected boolean transferExpiryPolicy() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
