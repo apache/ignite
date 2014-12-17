@@ -1334,10 +1334,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
 
                 if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                    if (!deletedUnlocked())
+                    if (!deletedUnlocked()) {
                         deletedUnlocked(true);
 
-                    enqueueVer = newVer;
+                        if (tx != null) {
+                            GridCacheMvcc<K> mvcc = mvccExtras();
+
+                            if (mvcc == null || mvcc.isEmpty(tx.xidVersion()))
+                                clearReaders();
+                            else
+                                clearReader(tx.originatingNodeId());
+                        }
+                    }
                 }
 
                 drReplicate(drType, null, null, newVer);
@@ -2036,6 +2044,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      *
      */
     protected void clearReaders() {
+        // No-op.
+    }
+
+    /**
+     * @param nodeId Node ID to clear.
+     */
+    protected void clearReader(UUID nodeId) throws GridCacheEntryRemovedException {
         // No-op.
     }
 

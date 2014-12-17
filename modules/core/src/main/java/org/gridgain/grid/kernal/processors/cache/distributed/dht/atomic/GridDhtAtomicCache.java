@@ -13,8 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -1002,6 +1000,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue(); // Should not request return values for putAll.
 
+        if (!F.isEmpty(req.filter())) {
+            try {
+                reloadIfNeeded(locked);
+            }
+            catch (IgniteCheckedException e) {
+                res.addFailedKeys(req.keys(), e);
+
+                return new UpdateBatchResult<>();
+            }
+        }
+
         int size = req.keys().size();
 
         Map<K, V> putMap = null;
@@ -1241,6 +1250,56 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updRes.dhtFuture(dhtFut);
 
         return updRes;
+    }
+
+    /**
+     * @param entries Entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void reloadIfNeeded(final List<GridDhtCacheEntry<K, V>> entries) throws IgniteCheckedException {
+        Map<K, Integer> needReload = null;
+
+        for (int i = 0; i < entries.size(); i++) {
+            GridDhtCacheEntry<K, V> entry = entries.get(i);
+
+            if (entry == null)
+                continue;
+
+            V val = entry.rawGetOrUnmarshal(false);
+
+            if (val == null) {
+                if (needReload == null)
+                    needReload = new HashMap<>(entries.size(), 1.0f);
+
+                needReload.put(entry.key(), i);
+            }
+        }
+
+        if (needReload != null) {
+            final Map<K, Integer> idxMap = needReload;
+
+            ctx.store().loadAllFromStore(null, needReload.keySet(), new CI2<K, V>() {
+                @Override public void apply(K k, V v) {
+                    Integer idx = idxMap.get(k);
+
+                    if (idx != null) {
+                        GridDhtCacheEntry<K, V> entry = entries.get(idx);
+                        try {
+                            GridCacheVersion ver = entry.version();
+
+                            entry.versionedValue(v, null, ver);
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            assert false : "Entry should not get obsolete while holding lock [entry=" + entry +
+                                ", e=" + e + ']';
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**
