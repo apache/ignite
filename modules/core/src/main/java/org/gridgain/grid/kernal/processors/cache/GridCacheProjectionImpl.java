@@ -1084,7 +1084,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removeAsync(key, entry, and(filter, true));
+        return cache.removeAsync(key, entry, and(filter, false));
     }
 
     /** {@inheritDoc} */
@@ -1118,7 +1118,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removexAsync(key, entry, and(filter, true));
+        return cache.removexAsync(key, entry, and(filter, false));
     }
 
     /** {@inheritDoc} */
@@ -1162,24 +1162,24 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        cache.removeAll(keys, and(filter, true));
+        cache.removeAll(keys, and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return cache.removeAllAsync(keys, and(filter, true));
+        return cache.removeAllAsync(keys, and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
-        cache.removeAll(and(filter, true));
+        cache.removeAll(and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removeAllAsync(and(filter, true));
+        return cache.removeAllAsync(and(filter, false));
     }
 
     /** {@inheritDoc} */

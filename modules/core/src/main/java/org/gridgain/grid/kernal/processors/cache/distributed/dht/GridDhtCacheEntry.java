@@ -393,12 +393,13 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             if (reader == null) {
                 reader = new ReaderId<>(nodeId, msgId);
 
-                rdrs = new LinkedList<>(rdrs);
+                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() + 1);
 
+                rdrs.addAll(this.rdrs);
                 rdrs.add(reader);
 
                 // Seal.
-                rdrs = Collections.unmodifiableList(rdrs);
+                this.rdrs = Collections.unmodifiableList(rdrs);
 
                 // No transactions in ATOMIC cache.
                 if (!cctx.atomic()) {
@@ -472,15 +473,18 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         ReaderId reader = readerId(nodeId);
 
-        if (reader == null || reader.messageId() > msgId)
+        if (reader == null || (reader.messageId() > msgId && msgId >= 0))
             return false;
 
-        rdrs = new LinkedList<>(rdrs);
+        List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size());
 
-        rdrs.remove(reader);
+        for (ReaderId<K, V> rdr : this.rdrs) {
+            if (!rdr.equals(reader))
+                rdrs.add(rdr);
+        }
 
         // Seal.
-        rdrs = Collections.unmodifiableList(rdrs);
+        this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() : Collections.unmodifiableList(rdrs);
 
         return true;
     }
@@ -490,6 +494,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      */
     @Override public synchronized void clearReaders() {
         rdrs = Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void clearReader(UUID nodeId) throws GridCacheEntryRemovedException {
+        removeReader(nodeId, -1);
     }
 
     /**
@@ -553,24 +562,28 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         checkObsolete();
 
         if (!rdrs.isEmpty()) {
-            List<ReaderId> rmv = null;
+            Collection<ReaderId> rmv = null;
 
             for (ReaderId reader : rdrs) {
                 if (!cctx.discovery().alive(reader.nodeId())) {
                     if (rmv == null)
-                        rmv = new LinkedList<>();
+                        rmv = new HashSet<>();
 
                     rmv.add(reader);
                 }
             }
 
             if (rmv != null) {
-                rdrs = new LinkedList<>(rdrs);
+                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() - rmv.size());
 
-                for (ReaderId rdr : rmv)
-                    rdrs.remove(rdr);
+                for (ReaderId<K, V> rdr : this.rdrs) {
+                    if (!rmv.contains(rdr))
+                        rdrs.add(rdr);
+                }
 
-                rdrs = Collections.unmodifiableList(rdrs);
+                // Seal.
+                this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() :
+                    Collections.unmodifiableList(rdrs);
             }
         }
 
@@ -705,6 +718,29 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             this.txFut = null;
 
             return txFut;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ReaderId))
+                return false;
+
+            ReaderId readerId = (ReaderId)o;
+
+            return msgId == readerId.msgId && nodeId.equals(readerId.nodeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = nodeId.hashCode();
+
+            res = 31 * res + (int)(msgId ^ (msgId >>> 32));
+
+            return res;
         }
 
         /** {@inheritDoc} */

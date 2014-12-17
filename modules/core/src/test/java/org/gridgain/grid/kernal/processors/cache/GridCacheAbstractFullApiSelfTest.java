@@ -17,6 +17,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -2928,6 +2929,107 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys) {
             if (!first.equals(key)) // Should not have peek value.
                 assertNull(cache.peek(key));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAfterClear() throws Exception {
+        GridEx grid = grid(0);
+
+        GridCacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
+
+        if (distroMode == GridCacheDistributionMode.NEAR_ONLY || distroMode == GridCacheDistributionMode.CLIENT_ONLY) {
+            if (gridCount() < 2)
+                return;
+
+            grid = grid(1);
+        }
+
+        GridCacheProjection<Integer, Integer> cache = grid.cache(null)
+            .projection(Integer.class, Integer.class);
+
+        int key = 0;
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int k = 0; k < 2; k++) {
+            while (!grid.cache(null).affinity().isPrimary(grid.localNode(), key))
+                key++;
+
+            keys.add(key);
+
+            key++;
+        }
+
+        System.out.println(keys);
+
+        for (Integer k : keys)
+            cache.put(k, k);
+
+        cache.clear(keys.get(0));
+        cache.clear(keys.get(1));
+
+        for (int g = 0; g < gridCount(); g++) {
+            Ignite grid0 = grid(g);
+
+            grid0.cache(null).projection(Integer.class, Integer.class).removeAll();
+
+            assertTrue(grid0.cache(null).isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveFilteredAfterClear() throws Exception {
+        GridEx grid = grid(0);
+
+        GridCacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
+
+        if (distroMode == GridCacheDistributionMode.NEAR_ONLY || distroMode == GridCacheDistributionMode.CLIENT_ONLY) {
+            if (gridCount() < 2)
+                return;
+
+            grid = grid(1);
+        }
+
+        GridCacheProjection<Integer, Integer> cache = grid.cache(null);
+
+        List<Integer> keys = new ArrayList<>();
+
+        int key = 0;
+
+        for (int k = 0; k < 2; k++) {
+            while (!grid.cache(null).affinity().isPrimary(grid.localNode(), key))
+                key++;
+
+            keys.add(key);
+
+            key++;
+        }
+
+        System.out.println(keys);
+
+        for (Integer k : keys)
+            cache.put(k, k + 1);
+
+        cache.clear(keys.get(0));
+        cache.clear(keys.get(1));
+
+        for (int g = 0; g < gridCount(); g++) {
+            Ignite grid0 = grid(g);
+
+            grid0.cache(null).removeAll(new IgnitePredicate<GridCacheEntry<Object,Object>>() {
+                @Override public boolean apply(GridCacheEntry<Object, Object> e) {
+                    Object val = e.peek();
+
+                    return val instanceof Integer && (Integer)val > 0;
+                }
+            });
+
+            assertTrue(grid0.cache(null).isEmpty());
         }
     }
 
