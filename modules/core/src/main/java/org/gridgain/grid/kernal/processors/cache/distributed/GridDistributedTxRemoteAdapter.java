@@ -486,10 +486,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    // Preserve TTL if needed.
-                                    if (txEntry.ttl() < 0)
-                                        txEntry.ttl(cached.rawTtl());
-
                                     GridCacheVersion explicitVer = txEntry.drVersion();
 
                                     if (finalizationStatus() == FinalizationStatus.RECOVERY_FINISH || optimistic()) {

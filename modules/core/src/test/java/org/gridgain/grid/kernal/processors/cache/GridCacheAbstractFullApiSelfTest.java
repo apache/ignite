@@ -24,6 +24,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -4143,10 +4144,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         long ttl = 500;
 
-        entry.timeToLive(ttl);
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-        // Update is required for TTL to have effect.
-        entry.set(1);
+        grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
         Thread.sleep(ttl + 100);
 
@@ -4191,12 +4191,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         int ttl = 500;
 
-        GridCacheEntry<String, Integer> entry = c.entry(key);
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-        entry.timeToLive(ttl);
-
-        // Update is required for TTL to have effect.
-        entry.set(1);
+        grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
         Thread.sleep(ttl + 100);
 
@@ -4217,12 +4214,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             String key = "1";
             int ttl = 500;
 
-            try (GridCacheTx tx = c.txStart()) {
-                GridCacheEntry<String, Integer> entry = c.entry(key);
+            try (GridCacheTx tx = grid(0).ignite().transactions().txStart()) {
+                final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-                entry.timeToLive(ttl);
-
-                entry.set(1);
+                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
                 tx.commit();
             }
@@ -4263,6 +4258,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
+        int ttl = 1000;
+
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+
         final GridCache<String, Integer> c = cache();
 
         final String key = primaryKeysForCache(c, 1).get(0);
@@ -4277,40 +4276,36 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(0, entry.timeToLive());
         assertEquals(0, entry.expirationTime());
 
-        int ttl = 1000;
-
         long startTime = System.currentTimeMillis();
 
         if (inTx) {
             // Rollback transaction for the first time.
-            GridCacheTx tx = c.txStart();
+            GridCacheTx tx = grid(0).transactions().txStart();
 
             try {
-                entry.timeToLive(ttl);
+                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
-                entry.set(1);
-
-                assertEquals(ttl, entry.timeToLive());
-                assertTrue(entry.expirationTime() > 0);
+                // TODO IGNITE-41.
+                //assertEquals(ttl, entry.timeToLive());
+                //assertTrue(entry.expirationTime() > 0);
             }
             finally {
                 tx.rollback();
             }
 
-            assertEquals(ttl, entry.timeToLive());
-            assertTrue(entry.expirationTime() > 0);
+            assertEquals(0, entry.timeToLive());
+            assertEquals(0, entry.expirationTime());
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
         GridCacheTx tx = inTx ? c.txStart() : null;
 
         try {
-            entry.timeToLive(ttl);
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
-            entry.set(1);
-
-            assertEquals(ttl, entry.timeToLive());
-            assertTrue(entry.expirationTime() > 0);
+            // TODO IGNITE-41.
+            //assertEquals(ttl, entry.timeToLive());
+            //assertTrue(entry.expirationTime() > 0);
         }
         finally {
             if (tx != null)
@@ -4337,7 +4332,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = inTx ? c.txStart() : null;
 
         try {
-            c.entry(key).set(2);
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 2);
         }
         finally {
             if (tx != null)
@@ -4362,7 +4357,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = inTx ? c.txStart() : null;
 
         try {
-            c.putx(key, 3);
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 3);
         }
         finally {
             if (tx != null)
@@ -4376,6 +4371,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals(ttl, curEntry.timeToLive());
 
                 assert curEntry.expirationTime() > expireTimes[i];
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
+        U.sleep(100);
+
+        log.info("Put 4");
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            grid(0).jcache(null).put(key, 4);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        log.info("Put 4 done");
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntry<String, Integer> curEntry = cache(i).entry(key);
+
+            if (curEntry.primary() || curEntry.backup()) {
+                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(expireTimes[i], curEntry.expirationTime());
             }
         }
 
@@ -4649,16 +4672,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put(key, 1);
 
-        GridCacheEntry<String, Integer> entry = cache.entry(key);
-
-        assert entry != null;
-
         long ttl = 500;
 
-        entry.timeToLive(ttl);
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-        // Update is required for TTL to have effect.
-        entry.set(1);
+        grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
         Thread.sleep(ttl + 100);
 

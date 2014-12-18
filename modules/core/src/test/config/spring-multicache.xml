@@ -73,8 +73,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -97,8 +95,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -121,8 +117,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -145,8 +139,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -170,8 +162,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -194,8 +184,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -218,8 +206,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
 
                 <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
@@ -242,8 +228,6 @@
                     </property>
 
                     <property name="backups" value="1"/>
-
-                    <property name="dgcFrequency" value="0"/>
                 </bean>
             </list>
         </property>

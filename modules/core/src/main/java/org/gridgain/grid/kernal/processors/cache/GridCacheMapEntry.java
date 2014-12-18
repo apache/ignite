@@ -1188,12 +1188,24 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             // Determine new ttl and expire time.
-            if (ttl < 0)
-                ttl = ttlExtras();
+            long expireTime;
+
+            if (drExpireTime >= 0) {
+                assert ttl >= 0 : ttl;
+
+                expireTime = drExpireTime;
+            }
+            else {
+                if (ttl == -1L) {
+                    ttl = ttlExtras();
+                    expireTime = expireTimeExtras();
+                }
+                else
+                    expireTime = toExpireTime(ttl);
+            }
 
             assert ttl >= 0;
-
-            long expireTime = drExpireTime < 0L ? toExpireTime(ttl) : drExpireTime;
+            assert expireTime >= 0;
 
             // Detach value before index update.
             if (cctx.portableEnabled())
@@ -1568,25 +1580,20 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 long expireTime;
 
                 if (expiryPlc != null) {
-                    if (!hadVal) {
-                        Duration duration = expiryPlc.getExpiryForCreation();
+                    ttl = toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
 
-                        if (duration != null && duration.isZero())
-                            return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(old));
+                    if (ttl == -1L) {
+                        ttl = ttlExtras();
 
-                        ttl = toTtl(duration);
+                        expireTime = expireTimeExtras();
                     }
                     else
-                        ttl = toTtl(expiryPlc.getExpiryForUpdate());
-
-                    ttl = ttl < 0 ? ttlExtras() : ttl;
-
-                    expireTime = toExpireTime(ttl);
+                        expireTime = toExpireTime(ttl);
                 }
                 else {
                     ttl = ttlExtras();
 
-                    expireTime = toExpireTime(ttl);
+                    expireTime = expireTimeExtras();
                 }
 
                 // Update index inside synchronization since it can be updated
@@ -1802,7 +1809,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false, old, null, -1L, -1L, null, null, false);
                     }
                 }
                 else
@@ -1851,7 +1858,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     return new GridCacheUpdateAtomicResult<>(false,
                         retval ? old : null,
                         null,
-                        0L,
+                        -1L,
                         -1L,
                         null,
                         null,
@@ -1901,7 +1908,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         return new GridCacheUpdateAtomicResult<>(false,
                             retval ? old : null,
                             null,
-                            0L,
+                            -1L,
                             -1L,
                             null,
                             null,
@@ -1930,9 +1937,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         else
                             newTtl = -1L;
 
-                        ttl0 = newTtl < 0 ? ttlExtras() : newTtl;
-
-                        newExpireTime = toExpireTime(ttl0);
+                        if (newTtl == -1L) {
+                            ttl0 = ttlExtras();
+                            newExpireTime = expireTimeExtras();
+                        }
+                        else {
+                            ttl0 = newTtl;
+                            newExpireTime = toExpireTime(ttl0);
+                        }
                     }
                 }
 
@@ -1999,7 +2011,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         return new GridCacheUpdateAtomicResult<>(false,
                             cctx.<V>unwrapTemporary(interceptRes.get2()),
                             null,
-                            0L,
+                            -1L,
                             -1L,
                             null,
                             null,

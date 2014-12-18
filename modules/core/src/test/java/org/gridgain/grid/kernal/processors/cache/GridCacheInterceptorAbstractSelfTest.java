@@ -1304,9 +1304,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case TRANSFORM: {
                     cache.transformAll(map.keySet(), new IgniteClosure<Integer, Integer>() {
-                        @Nullable
-                        @Override
-                        public Integer apply(Integer old) {
+                        @Nullable @Override public Integer apply(Integer old) {
                             return null;
                         }
                     });

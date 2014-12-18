@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -64,21 +65,17 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
     public void testReadAhead() throws Exception {
         store.testThread(Thread.currentThread());
 
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000L));
+
         GridCache<Integer, String> cache = grid(0).cache(null);
 
-        GridCacheEntry<Integer, String> entry = cache.entry(1);
-
-        assert entry != null;
-
-        entry.timeToLive(1000);
-
-        entry.set("1");
+        grid(0).jcache(null).withExpiryPolicy(expiry).put(1, "1");
 
         Thread.sleep(600);
 
         store.startAsyncLoadTracking();
 
-        cache.get(1);
+        grid(0).jcache(null).get(1);
 
         assert store.wasAsynchronousLoad() : "No async loads were performed on the store: " + store;
     }
