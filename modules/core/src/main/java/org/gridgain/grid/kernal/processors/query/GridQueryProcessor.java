@@ -18,6 +18,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -421,6 +422,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return new GridEmptyCloseableIterator<>();
 
             return idx.query(space, clause, params, type, filters);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(GridCacheTwoStepQuery qry) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(qry);
         }
         finally {
             busyLock.leaveBusy();

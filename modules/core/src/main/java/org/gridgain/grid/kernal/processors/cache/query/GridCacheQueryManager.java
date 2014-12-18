@@ -51,7 +51,7 @@ import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
-    protected GridQueryProcessor idxProc;
+    protected GridQueryProcessor qryProc;
 
     /** */
     private String space;
@@ -78,7 +78,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        idxProc = cctx.kernalContext().query();
+        qryProc = cctx.kernalContext().query();
         space = cctx.name();
         maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
 
@@ -165,7 +165,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to get size (grid is stopping).");
 
         try {
-            return idxProc.size(space, valType);
+            return qryProc.size(space, valType);
         }
         finally {
             leaveBusy();
@@ -193,7 +193,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxProc.rebuildIndexes(space, typeName);
+            return qryProc.rebuildIndexes(space, typeName);
         }
         finally {
             leaveBusy();
@@ -210,7 +210,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxProc.rebuildAllIndexes();
+            return qryProc.rebuildAllIndexes();
         }
         finally {
             leaveBusy();
@@ -262,7 +262,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onSwap(space, key);
+            qryProc.onSwap(space, key);
         }
         finally {
             leaveBusy();
@@ -282,7 +282,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onUnswap(space, key, val, valBytes);
+            qryProc.onUnswap(space, key, val, valBytes);
         }
         finally {
             leaveBusy();
@@ -324,7 +324,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (val == null)
                 val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
 
-            idxProc.store(space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
+            qryProc.store(space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -349,7 +349,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.remove(space, key);
+            qryProc.remove(space, key);
         }
         finally {
             invalidateResultCache();
@@ -368,7 +368,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onUndeploy(space, ldr);
+            qryProc.onUndeploy(space, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -488,7 +488,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = idxProc.query(space, qry.clause(), F.asList(args),
+                    iter = qryProc.query(space, qry.clause(), F.asList(args),
                         qry.queryClassName(), filter(qry));
 
                     break;
@@ -531,7 +531,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = idxProc.queryText(space, qry.clause(), qry.queryClassName(), filter(qry));
+                    iter = qryProc.queryText(space, qry.clause(), qry.queryClassName(), filter(qry));
 
                     break;
 
@@ -650,7 +650,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 assert qry.type() == SQL_FIELDS;
 
-                GridQueryFieldsResult qryRes = idxProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
+                GridQueryFieldsResult qryRes = qryProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
 
                 res.metaData(qryRes.metaData());
 

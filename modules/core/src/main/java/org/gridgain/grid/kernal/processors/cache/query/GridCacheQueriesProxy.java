@@ -166,6 +166,18 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<GridCacheSqlResult> execute(GridCacheTwoStepQuery qry) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.execute(qry);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebuildIndexes(Class<?> cls) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

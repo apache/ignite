@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
@@ -41,4 +42,10 @@ public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
      * @return Query.
      */
     public <R> GridCacheQuery<R> createSpiQuery();
+
+    /**
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> execute(GridCacheTwoStepQuery qry);
 }

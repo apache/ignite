@@ -158,6 +158,11 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<GridCacheSqlResult> execute(GridCacheTwoStepQuery qry) {
+        return ctx.kernalContext().query().queryTwoStep(qry);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
         return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
     }

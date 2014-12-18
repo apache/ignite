@@ -16,13 +16,14 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.query.h2.opt.*;
+import org.gridgain.grid.kernal.processors.query.h2.twostep.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
@@ -112,9 +113,6 @@ public class GridH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private static final ThreadLocal<GridH2Indexing> localSpi = new ThreadLocal<>();
-
-    /** */
     private volatile String cachedSearchPathCmd;
 
     /** Cache for deserialized offheap rows. */
@@ -146,6 +144,12 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** */
     private final Collection<Connection> conns = Collections.synchronizedCollection(new ArrayList<Connection>());
+
+    /** */
+    private GridMapQueryExecutor mapQryExec;
+
+    /** */
+    private GridReduceQueryExecutor rdcQryExec;
 
     /** */
     private final ThreadLocal<ConnectionWrapper> connCache = new ThreadLocal<ConnectionWrapper>() {
@@ -216,6 +220,15 @@ public class GridH2Indexing implements GridQueryIndexing {
 
     /** */
     private volatile GridKernalContext ctx;
+
+    /**
+     * @param space Space.
+     * @return Connection.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Connection connectionForSpace(@Nullable String space) throws IgniteCheckedException {
+        return connectionForThread(schema(space));
+    }
 
     /**
      * Gets DB connection.
@@ -370,22 +383,15 @@ public class GridH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        localSpi.set(this);
+        removeKey(spaceName, k, tbl);
 
-        try {
-            removeKey(spaceName, k, tbl);
+        if (expirationTime == 0)
+            expirationTime = Long.MAX_VALUE;
 
-            if (expirationTime == 0)
-                expirationTime = Long.MAX_VALUE;
+        tbl.tbl.update(k, v, expirationTime);
 
-            tbl.tbl.update(k, v, expirationTime);
-
-            if (tbl.luceneIdx != null)
-                tbl.luceneIdx.store(k, v, ver, expirationTime);
-        }
-        finally {
-            localSpi.remove();
-        }
+        if (tbl.luceneIdx != null)
+            tbl.luceneIdx.store(k, v, ver, expirationTime);
     }
 
     /** {@inheritDoc} */
@@ -393,22 +399,15 @@ public class GridH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
 
-        localSpi.set(this);
+        for (TableDescriptor tbl : tables(schema(spaceName))) {
+            if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
+                if (tbl.tbl.update(key, null, 0)) {
+                    if (tbl.luceneIdx != null)
+                        tbl.luceneIdx.remove(key);
 
-        try {
-            for (TableDescriptor tbl : tables(schema(spaceName))) {
-                if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
-                    if (tbl.tbl.update(key, null, 0)) {
-                        if (tbl.luceneIdx != null)
-                            tbl.luceneIdx.remove(key);
-
-                        return;
-                    }
+                    return;
                 }
             }
-        }
-        finally {
-            localSpi.remove();
         }
     }
 
@@ -419,46 +418,32 @@ public class GridH2Indexing implements GridQueryIndexing {
         if (schema == null)
             return;
 
-        localSpi.set(this);
-
-        try {
-            for (TableDescriptor tbl : schema.values()) {
-                if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
-                    try {
-                        if (tbl.tbl.onSwap(key))
-                            return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteCheckedException(e);
-                    }
+        for (TableDescriptor tbl : schema.values()) {
+            if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
+                try {
+                    if (tbl.tbl.onSwap(key))
+                        return;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteCheckedException(e);
                 }
             }
-        }
-        finally {
-            localSpi.remove();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
         throws IgniteCheckedException {
-        localSpi.set(this);
-
-        try {
-            for (TableDescriptor tbl : tables(schema(spaceName))) {
-                if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
-                    try {
-                        if (tbl.tbl.onUnswap(key, val))
-                            return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteCheckedException(e);
-                    }
+        for (TableDescriptor tbl : tables(schema(spaceName))) {
+            if (tbl.type().keyClass().equals(key.getClass()) || !isIndexFixedTyping(spaceName)) {
+                try {
+                    if (tbl.tbl.onUnswap(key, val))
+                        return;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteCheckedException(e);
                 }
             }
-        }
-        finally {
-            localSpi.remove();
         }
     }
 
@@ -540,8 +525,6 @@ public class GridH2Indexing implements GridQueryIndexing {
     @Override public <K, V> GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
         throws IgniteCheckedException {
-        localSpi.set(this);
-
         setFilters(filters);
 
         try {
@@ -575,8 +558,6 @@ public class GridH2Indexing implements GridQueryIndexing {
         }
         finally {
             setFilters(null);
-
-            localSpi.remove();
         }
     }
 
@@ -652,7 +633,7 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQueryWithTimer(Connection conn, String sql,
+    public ResultSet executeSqlQueryWithTimer(Connection conn, String sql,
         @Nullable Collection<Object> params) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
@@ -719,7 +700,7 @@ public class GridH2Indexing implements GridQueryIndexing {
      * @param params Parameters collection.
      * @throws IgniteCheckedException If failed.
      */
-    private void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
+    public void bindParameters(PreparedStatement stmt, @Nullable Collection<Object> params) throws IgniteCheckedException {
         if (!F.isEmpty(params)) {
             int idx = 1;
 
@@ -751,8 +732,6 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         setFilters(filters);
 
-        localSpi.set(this);
-
         try {
             ResultSet rs = executeQuery(qry, params, tbl);
 
@@ -760,9 +739,12 @@ public class GridH2Indexing implements GridQueryIndexing {
         }
         finally {
             setFilters(null);
-
-            localSpi.remove();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(GridCacheTwoStepQuery qry) {
+        return rdcQryExec.query(qry);
     }
 
     /**
@@ -772,7 +754,7 @@ public class GridH2Indexing implements GridQueryIndexing {
      *
      * @param filters Filters.
      */
-    private void setFilters(@Nullable GridIndexingQueryFilter filters) {
+    public void setFilters(@Nullable GridIndexingQueryFilter filters) {
         GridH2IndexBase.setFiltersForThread(filters);
     }
 
@@ -1115,6 +1097,12 @@ public class GridH2Indexing implements GridQueryIndexing {
 
             for (GridCacheConfiguration cacheCfg : ctx.config().getCacheConfiguration())
                 registerSpace(cacheCfg.getName());
+
+            mapQryExec = new GridMapQueryExecutor();
+            rdcQryExec = new GridReduceQueryExecutor();
+
+            mapQryExec.start(ctx, this);
+            rdcQryExec.start(ctx, this);
         }
 
         System.setProperty("h2.serializeJavaObject", "false");

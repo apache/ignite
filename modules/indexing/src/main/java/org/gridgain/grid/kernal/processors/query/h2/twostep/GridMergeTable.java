@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
+import org.h2.api.*;
 import org.h2.command.ddl.*;
 import org.h2.engine.*;
 import org.h2.index.*;
@@ -26,7 +27,7 @@ public class GridMergeTable extends TableBase {
     private final ArrayList<Index> idxs = new ArrayList<>(1);
 
     /** */
-    private final GridMergeIndex idx = new GridMergeIndex();
+    private final GridMergeIndex idx = new GridMergeIndexUnsorted();
 
     /**
      * @param data Data.
@@ -141,5 +142,35 @@ public class GridMergeTable extends TableBase {
     /** {@inheritDoc} */
     @Override public void checkRename() {
         throw DbException.getUnsupportedException("rename");
+    }
+
+    /**
+     * Engine.
+     */
+    public static class Engine implements TableEngine {
+        /** */
+        private static ThreadLocal<GridMergeTable> createdTbl = new ThreadLocal<>();
+
+        /**
+         * @return Created table.
+         */
+        public static GridMergeTable getCreated() {
+            GridMergeTable tbl = createdTbl.get();
+
+            assert tbl != null;
+
+            createdTbl.remove();
+
+            return tbl;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Table createTable(CreateTableData data) {
+            GridMergeTable tbl = new GridMergeTable(data);
+
+            createdTbl.set(tbl);
+
+            return tbl;
+        }
     }
 }

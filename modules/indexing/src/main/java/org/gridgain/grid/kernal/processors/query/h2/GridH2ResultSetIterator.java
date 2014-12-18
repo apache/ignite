@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.query.h2;
 
 import org.apache.ignite.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -20,7 +21,7 @@ import java.util.*;
 /**
  * Iterator over result set.
  */
-abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
+public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final long serialVersionUID = 0L;
 

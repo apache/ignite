@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -36,6 +37,15 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void stop() throws IgniteCheckedException;
+
+
+    /**
+     * Runs two step query.
+     *
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(GridCacheTwoStepQuery qry);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).

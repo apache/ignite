@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.h2.engine.*;
 import org.h2.index.*;
 import org.h2.message.*;
@@ -18,30 +18,22 @@ import org.h2.table.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
  * Merge index.
  */
-public class GridMergeIndex extends BaseIndex {
+public abstract class GridMergeIndex extends BaseIndex {
     /** */
-    private static final int MAX_CAPACITY = 100_000;
-
-    /** */
-    private static final Collection<Row> END = new ArrayList<>(0);
-
-    /** */
-    private Collection<Collection<Row>> fetchedRows = new LinkedBlockingQueue<>();
-
-    /** */
-    private BlockingQueue<Collection<Row>> cursorRows = new LinkedBlockingQueue<>();
-
-    /** */
-    private int fetchedCnt;
+    private static final int MAX_FETCH_SIZE = 100000;
 
     /** */
     private final AtomicInteger cnt = new AtomicInteger(0);
+
+    /**
+     * Will be r/w from query execution thread only, does not need to be threadsafe.
+     */
+    private ArrayList<Row> fetched = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
@@ -61,12 +53,36 @@ public class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param rows0 Rows.
+     * @param page Page.
      */
-    public void addRows(Collection<Row> rows0) {
-        assert !rows0.isEmpty();
+    public abstract void addPage(GridResultPage<?> page);
 
+    /** {@inheritDoc} */
+    @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
+        if (fetched == null)
+            throw new IgniteException("Fetched result set was too large.");
 
+        if (fetched.size() == cnt.get())  // We've fetched all the rows.
+            return findAllFetched(fetched, first, last);
+
+        return findInStream(first, last);
+    }
+
+    /**
+     * @param first First row.
+     * @param last Last row.
+     * @return Cursor. Usually it must be {@link FetchingCursor} instance.
+     */
+    protected abstract Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last);
+
+    /**
+     * @param fetched Fetched rows.
+     * @param first First row.
+     * @param last Last row.
+     * @return Cursor.
+     */
+    protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
+        return new IteratorCursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
@@ -87,14 +103,6 @@ public class GridMergeIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public void remove(Session session, Row row) {
         throw DbException.getUnsupportedException("remove row");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
-        if (fetchedRows == null)
-            throw new GridRuntimeException("Rows were dropped out of result set.");
-
-        return new Cursor0();
     }
 
     /** {@inheritDoc} */
@@ -132,12 +140,24 @@ public class GridMergeIndex extends BaseIndex {
         return 0;
     }
 
-    private class Cursor0 implements Cursor {
+    /**
+     * Cursor over iterator.
+     */
+    protected class IteratorCursor implements Cursor {
         /** */
-        private Row cur;
+        private Iterator<Row> iter;
 
         /** */
-        private Iterator<Row> curIter;
+        protected Row cur;
+
+        /**
+         * @param iter Iterator.
+         */
+        public IteratorCursor(Iterator<Row> iter) {
+            assert iter != null;
+
+            this.iter = iter;
+        }
 
         /** {@inheritDoc} */
         @Override public Row get() {
@@ -151,12 +171,61 @@ public class GridMergeIndex extends BaseIndex {
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            return false;
+            cur = iter.hasNext() ? iter.next() : null;
+
+            return cur != null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean previous() {
             throw DbException.getUnsupportedException("previous");
+        }
+    }
+
+    /**
+     * Fetching cursor.
+     */
+    protected abstract class FetchingCursor extends IteratorCursor {
+        /** */
+        private boolean canFetch = true;
+
+        /**
+         */
+        public FetchingCursor() {
+            super(fetched == null ? Collections.<Row>emptyIterator() : fetched.iterator());
+        }
+
+        /**
+         * @return Next row or {@code null} if none available.
+         */
+        @Nullable protected abstract Row fetchNext();
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (super.next())
+                return true;
+
+            if (!canFetch)
+                return false;
+
+            cur = fetchNext();
+
+            if (cur == null) { // No more results to fetch.
+                assert fetched == null || fetched.size() == cnt.get() : fetched.size() + " <> " + cnt.get();
+
+                canFetch = false;
+
+                return false;
+            }
+
+            if (fetched != null) { // Try to reuse fetched result.
+                fetched.add(cur);
+
+                if (fetched.size() == MAX_FETCH_SIZE)
+                    fetched = null; // Throw away fetched result if it is too large.
+            }
+
+            return true;
         }
     }
 }
