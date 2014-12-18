@@ -729,14 +729,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
+        final GridCacheAccessExpiryPolicy expiry =
+            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
+
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
             Map<K, V> locVals = new HashMap<>(keys.size(), 1.0f);
 
             boolean success = true;
-
-            final GridCacheAccessExpiryPolicy expiry =
-                GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
@@ -819,6 +819,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             try {
                                 GridCacheTtlUpdateRequest<K, V> req = expiry.request();
 
+                                assert req != null;
                                 assert !F.isEmpty(req.keys());
 
                                 Collection<ClusterNode> nodes = ctx.affinity().remoteNodes(req.keys(), -1);
@@ -847,7 +848,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskName,
-            deserializePortable);
+            deserializePortable,
+            expiry);
 
         fut.init();
 

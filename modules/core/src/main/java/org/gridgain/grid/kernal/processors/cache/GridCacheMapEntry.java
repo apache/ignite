@@ -3428,6 +3428,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
+        synchronized (this) {
+            try {
+                if (ver.equals(version()))
+                    updateTtl(ttl);
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // No-op.
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized void keyBytes(byte[] keyBytes) throws GridCacheEntryRemovedException {
         checkObsolete();
 

@@ -763,6 +763,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         return ttl;
     }
 
+    /** @inheritDoc */
+    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override public V unswap() throws IgniteCheckedException {
         return null;

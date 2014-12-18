@@ -56,6 +56,13 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @return TTL.
+     */
+    public long ttl() {
+        return ttl;
+    }
+
+    /**
      * @param key Key.
      * @param keyBytes Key bytes.
      * @param ver Version.
@@ -81,6 +88,26 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
      */
     public List<K> keys() {
         return keys;
+    }
+
+    /**
+     * @param idx Entry index.
+     * @return Key.
+     */
+    public K key(int idx) {
+        assert idx >= 0 && idx < keys.size() : idx;
+
+        return keys.get(idx);
+    }
+
+    /**
+     * @param idx Entry index.
+     * @return Version.
+     */
+    public GridCacheVersion version(int idx) {
+        assert idx >= 0 && idx < vers.size() : idx;
+
+        return vers.get(idx);
     }
 
     /** {@inheritDoc} */

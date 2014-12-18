@@ -71,6 +71,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     @GridDirectVersion(2)
     private int taskNameHash;
 
+    /** */
+    private long accessTtl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -98,7 +101,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         long topVer,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long accessTtl
     ) {
         assert futId != null;
         assert miniId != null;
@@ -115,6 +119,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.accessTtl = accessTtl;
     }
 
     /**
@@ -364,6 +369,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
+            case 12:
+                if (!commState.putLong(accessTtl))
+                    return false;
+
+                commState.idx++;
+
         }
 
         return true;
@@ -510,6 +521,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                     return false;
 
                 taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 12:
+                if (buf.remaining() < 8)
+                    return false;
+
+                accessTtl = commState.getLong();
 
                 commState.idx++;
 

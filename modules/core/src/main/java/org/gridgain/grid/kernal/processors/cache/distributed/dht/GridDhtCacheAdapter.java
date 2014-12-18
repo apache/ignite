@@ -106,7 +106,27 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
-        log.info("Ttl update: " + req);
+        int size = req.keys().size();
+
+        for (int i = 0; i < size; i++) {
+            try {
+                GridCacheEntryEx<K, V> entry;
+
+                if (ctx.isSwapOrOffheapEnabled()) {
+                    entry = ctx.cache().entryEx(req.key(i), true);
+
+                    entry.unswap(true, false);
+                }
+                else
+                    entry = ctx.cache().peekEx(req.key(i));
+
+                if (entry != null)
+                    entry.updateTtl(req.version(i), req.ttl());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to unswap entry.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
@@ -150,7 +151,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         assertEquals((Integer)1, cache.get(key));
 
-        checkTtl(key, 62_000L);
+        checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -578,6 +579,15 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private void checkTtl(Object key, long ttl) throws Exception {
+        checkTtl(key, ttl, false);
+    }
+
+    /**
+     * @param key Key.
+     * @param ttl TTL.
+     * @throws Exception If failed.
+     */
+    private void checkTtl(Object key, final long ttl, boolean wait) throws Exception {
         boolean found = false;
 
         for (int i = 0; i < gridCount(); i++) {
@@ -594,6 +604,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
             else {
                 found = true;
+
+                if (wait) {
+                    final GridCacheEntryEx<Object, Object> e0 = e;
+
+                    GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            try {
+                                return e0.ttl() == ttl;
+                            }
+                            catch (Exception e) {
+                                fail("Unexpected error: " + e);
+
+                                return true;
+                            }
+                        }
+                    }, 3000);
+                }
 
                 assertEquals("Unexpected ttl for grid " + i, ttl, e.ttl());
 

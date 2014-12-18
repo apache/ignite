@@ -319,7 +319,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             filter,
             subjId,
             taskName,
-            deserializePortable);
+            deserializePortable,
+            null);
 
         fut.init();
 

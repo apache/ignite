@@ -350,7 +350,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     topVer,
                     filters,
                     subjId,
-                    taskName == null ? 0 : taskName.hashCode());
+                    taskName == null ? 0 : taskName.hashCode(),
+                    -1L);
 
                 add(fut); // Append new future.
 

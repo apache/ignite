@@ -873,6 +873,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
     public long ttl() throws GridCacheEntryRemovedException;
 
     /**
+     * @param ver Version.
+     * @param ttl Time to live.
+     */
+    public void updateTtl(GridCacheVersion ver, long ttl);
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
      */

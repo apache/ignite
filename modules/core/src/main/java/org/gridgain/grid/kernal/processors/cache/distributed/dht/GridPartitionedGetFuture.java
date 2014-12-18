@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -89,6 +88,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
+    /** */
+    private GridCacheAccessExpiryPolicy expiry;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -114,11 +116,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable
+        boolean deserializePortable,
+        @Nullable GridCacheAccessExpiryPolicy expiry
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
-        assert cctx != null;
         assert !F.isEmpty(keys);
 
         this.cctx = cctx;
@@ -130,6 +132,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
+        this.expiry = expiry;
 
         futId = IgniteUuid.randomUuid();
 
@@ -352,7 +355,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     topVer,
                     filters,
                     subjId,
-                    taskName == null ? 0 : taskName.hashCode());
+                    taskName == null ? 0 : taskName.hashCode(),
+                    expiry != null ? expiry.ttl() : -1L);
 
                 add(fut); // Append new future.
 
