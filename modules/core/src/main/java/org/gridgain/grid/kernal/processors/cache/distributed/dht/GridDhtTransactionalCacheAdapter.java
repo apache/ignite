@@ -29,6 +29,7 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -179,6 +180,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             if (tx == null) {
                                 tx = new GridDhtTxRemote<>(
+                                    ctx.shared(),
                                     req.nodeId(),
                                     req.futureId(),
                                     nodeId,
@@ -187,11 +189,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.topologyVersion(),
                                     req.version(),
                                     /*commitVer*/null,
+                                    ctx.system(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.isInvalidate(),
                                     req.timeout(),
-                                    ctx.shared(),
                                     req.txSize(),
                                     req.groupLockKey(),
                                     req.subjectId(),
@@ -423,7 +425,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (res != null) {
             try {
                 // Reply back to sender.
-                ctx.io().send(nodeId, res);
+                ctx.io().send(nodeId, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
             catch (ClusterTopologyException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
@@ -748,6 +750,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (req.inTx()) {
                             if (tx == null) {
                                 tx = new GridDhtTxLocal<>(
+                                    ctx.shared(),
                                     nearNode.id(),
                                     req.version(),
                                     req.futureId(),
@@ -755,7 +758,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.threadId(),
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
-                                    ctx.shared(),
+                                    ctx.system(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.timeout(),
@@ -1059,7 +1062,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             // Don't send reply message to this node or if lock was cancelled.
             if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class))
-                ctx.io().send(nearNode, res);
+                ctx.io().send(nearNode, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send lock reply to originating node (will rollback transaction) [node=" +

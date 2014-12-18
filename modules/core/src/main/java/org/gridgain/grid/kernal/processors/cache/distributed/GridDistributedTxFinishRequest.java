@@ -82,6 +82,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
 
+    /** System flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -96,6 +99,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
+     * @param sys System flag.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
@@ -112,6 +116,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         long threadId,
         boolean commit,
         boolean invalidate,
+        boolean sys,
         boolean syncCommit,
         boolean syncRollback,
         GridCacheVersion baseVer,
@@ -130,6 +135,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.threadId = threadId;
         this.commit = commit;
         this.invalidate = invalidate;
+        this.sys = sys;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
@@ -161,6 +167,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         }
 
         writeEntries = cp;
+    }
+
+    /**
+     * @return System flag.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /**
@@ -350,6 +363,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
         _clone.grpLockKeyBytes = grpLockKeyBytes;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -482,6 +496,11 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
+            case 20:
+                if (!commState.putBoolean(sys))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -642,6 +661,13 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
+            case 20:
+                if (buf.remaining() < 1)
+                    return false;
+
+                sys = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

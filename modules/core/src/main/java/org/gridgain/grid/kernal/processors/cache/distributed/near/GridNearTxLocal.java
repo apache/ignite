@@ -81,6 +81,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param ctx   Cache registry.
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit with one key flag.
+     * @param sys System flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -92,6 +93,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -104,10 +106,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         int taskNameHash
     ) {
         super(
+            ctx,
             ctx.versions().next(),
             implicit,
             implicitSingle,
-            ctx,
+            sys,
             concurrency,
             isolation,
             timeout,

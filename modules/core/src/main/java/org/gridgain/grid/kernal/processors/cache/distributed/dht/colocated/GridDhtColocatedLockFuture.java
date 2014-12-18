@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Colocated cache lock future.
@@ -832,7 +833,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req);
+                    cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                 }
                 catch (ClusterTopologyException ex) {
                     assert fut != null;
@@ -847,7 +848,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req);
+                            cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
                         catch (ClusterTopologyException ex) {
                             assert fut != null;

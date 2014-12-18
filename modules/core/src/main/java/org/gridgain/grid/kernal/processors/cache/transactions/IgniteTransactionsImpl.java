@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -25,7 +26,7 @@ import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 /**
  * Grid transactions implementation.
  */
-public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
+public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> cctx;
 
@@ -44,7 +45,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             cfg.getDefaultTxConcurrency(),
             cfg.getDefaultTxIsolation(),
             cfg.getDefaultTxTimeout(),
-            0);
+            0,
+            false
+        );
     }
 
     /** {@inheritDoc} */
@@ -58,7 +61,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
-            0
+            0,
+            false
         );
     }
 
@@ -74,7 +78,24 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             concurrency,
             isolation,
             timeout,
-            txSize
+            txSize,
+            false
+        );
+    }
+
+    @Override public GridCacheTx txStartSystem(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+        long timeout, int txSize) {
+        A.notNull(concurrency, "concurrency");
+        A.notNull(isolation, "isolation");
+        A.ensure(timeout >= 0, "timeout cannot be negative");
+        A.ensure(txSize >= 0, "transaction size cannot be negative");
+
+        return txStart0(
+            concurrency,
+            isolation,
+            timeout,
+            txSize,
+            true
         );
     }
 
@@ -83,10 +104,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
      * @param isolation Transaction isolation.
      * @param timeout Transaction timeout.
      * @param txSize Expected transaction size.
+     * @param sys System flag.
      * @return Transaction.
      */
     private GridCacheTx txStart0(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
-        long timeout, int txSize) {
+        long timeout, int txSize, boolean sys) {
         GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
@@ -102,6 +124,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
         tx = cctx.tm().newTx(
             false,
             false,
+            sys,
             concurrency,
             isolation,
             timeout,
@@ -128,7 +151,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
             throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
                 cacheName);
 
-        return txStartGroupLock(cache.context(), affinityKey, concurrency, isolation, false, timeout, txSize);
+        return txStartGroupLock(cache.context(), affinityKey, concurrency, isolation, false, timeout, txSize, false);
     }
 
     /** {@inheritDoc} */
@@ -142,7 +165,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
 
         Object grpLockKey = cache.context().affinity().partitionAffinityKey(partId);
 
-        return txStartGroupLock(cache.context(), grpLockKey, concurrency, isolation, true, timeout, txSize);
+        return txStartGroupLock(cache.context(), grpLockKey, concurrency, isolation, true, timeout, txSize, false);
     }
 
     /**
@@ -155,13 +178,14 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
      *      should be a unique partition-specific key.
      * @param timeout Tx timeout.
      * @param txSize Expected transaction size.
+     * @param sys System flag.
      * @return Started transaction.
      * @throws IllegalStateException If other transaction was already started.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
     private GridCacheTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize)
+        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
         throws IllegalStateException, IgniteCheckedException {
         GridCacheTx tx = cctx.tm().userTx();
 
@@ -172,6 +196,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactions {
         GridCacheTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
             false,
             false,
+            sys,
             concurrency,
             isolation,
             timeout,

@@ -27,6 +27,7 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -240,6 +241,7 @@ public class GridCacheTxHandler<K, V> {
         }
         else {
             tx = new GridDhtTxLocal<>(
+                ctx,
                 nearNode.id(),
                 req.version(),
                 req.futureId(),
@@ -247,7 +249,7 @@ public class GridCacheTxHandler<K, V> {
                 req.threadId(),
                 /*implicit*/false,
                 /*implicit-single*/false,
-                ctx,
+                req.system(),
                 req.concurrency(),
                 req.isolation(),
                 req.timeout(),
@@ -468,7 +470,7 @@ public class GridCacheTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res);
+                ctx.io().send(nodeId, res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
             catch (Throwable e) {
                 // Double-check.
@@ -491,6 +493,7 @@ public class GridCacheTxHandler<K, V> {
                     // Create transaction and add entries.
                     tx = ctx.tm().onCreated(
                         new GridDhtTxLocal<>(
+                            ctx,
                             nodeId,
                             req.version(),
                             req.futureId(),
@@ -498,7 +501,7 @@ public class GridCacheTxHandler<K, V> {
                             req.threadId(),
                             true,
                             false, /* we don't know, so assume false. */
-                            ctx,
+                            req.system(),
                             PESSIMISTIC,
                             READ_COMMITTED,
                             /*timeout */0,
@@ -666,7 +669,7 @@ public class GridCacheTxHandler<K, V> {
 
         try {
             // Reply back to sender.
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyException) {
@@ -864,7 +867,7 @@ public class GridCacheTxHandler<K, V> {
             GridCacheMessage<K, V> res = new GridDhtTxFinishResponse<>(req.version(), req.futureId(), req.miniId());
 
             try {
-                ctx.io().send(nodeId, res);
+                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
             catch (Throwable e) {
                 // Double-check.
@@ -895,6 +898,7 @@ public class GridCacheTxHandler<K, V> {
 
             if (tx == null) {
                 tx = new GridDhtTxRemote<>(
+                    ctx,
                     req.nearNodeId(),
                     req.futureId(),
                     nodeId,
@@ -902,11 +906,11 @@ public class GridCacheTxHandler<K, V> {
                     req.topologyVersion(),
                     req.version(),
                     req.commitVersion(),
+                    req.system(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
                     req.timeout(),
-                    ctx,
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
                     req.groupLockKey(),
                     req.nearXidVersion(),
@@ -1012,18 +1016,19 @@ public class GridCacheTxHandler<K, V> {
 
             if (tx == null) {
                 tx = new GridNearTxRemote<>(
+                    ctx,
                     ldr,
                     nodeId,
                     req.nearNodeId(),
                     req.threadId(),
                     req.version(),
                     req.commitVersion(),
+                    req.system(),
                     req.concurrency(),
                     req.isolation(),
                     req.isInvalidate(),
                     req.timeout(),
                     req.nearWrites(),
-                    ctx,
                     req.txSize(),
                     req.groupLockKey(),
                     req.subjectId(),
@@ -1100,6 +1105,7 @@ public class GridCacheTxHandler<K, V> {
 
                         if (tx == null) {
                             tx = new GridDhtTxRemote<>(
+                                ctx,
                                 req.nearNodeId(),
                                 req.futureId(),
                                 nodeId,
@@ -1109,11 +1115,11 @@ public class GridCacheTxHandler<K, V> {
                                 req.topologyVersion(),
                                 req.version(),
                                 /*commitVer*/null,
+                                req.system(),
                                 PESSIMISTIC,
                                 req.isolation(),
                                 req.isInvalidate(),
                                 0,
-                                ctx,
                                 req.txSize(),
                                 req.groupLockKey(),
                                 req.subjectId(),
@@ -1241,6 +1247,7 @@ public class GridCacheTxHandler<K, V> {
 
                             if (tx == null) {
                                 tx = new GridNearTxRemote<>(
+                                    ctx,
                                     nodeId,
                                     req.nearNodeId(),
                                     // We can pass null as nearXidVer as transaction will be committed right away.
@@ -1248,11 +1255,11 @@ public class GridCacheTxHandler<K, V> {
                                     req.threadId(),
                                     req.version(),
                                     null,
+                                    req.system(),
                                     PESSIMISTIC,
                                     req.isolation(),
                                     req.isInvalidate(),
                                     0,
-                                    ctx,
                                     req.txSize(),
                                     req.groupLockKey(),
                                     req.subjectId(),

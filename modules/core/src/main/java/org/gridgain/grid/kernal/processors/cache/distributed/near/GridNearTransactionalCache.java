@@ -247,17 +247,18 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 if (tx == null) {
                                     tx = new GridNearTxRemote<>(
+                                        ctx.shared(),
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
                                         req.threadId(),
                                         req.version(),
                                         null,
+                                        ctx.system(),
                                         PESSIMISTIC,
                                         req.isolation(),
                                         req.isInvalidate(),
                                         req.timeout(),
-                                        ctx.shared(),
                                         req.txSize(),
                                         req.groupLockKey(),
                                         req.subjectId(),

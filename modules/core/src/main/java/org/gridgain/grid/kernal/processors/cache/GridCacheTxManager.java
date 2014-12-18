@@ -361,6 +361,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public GridCacheTxLocalAdapter<K, V> newTx(
         boolean implicit,
         boolean implicitSingle,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -377,6 +378,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             cctx,
             implicit,
             implicitSingle,
+            sys,
             concurrency,
             isolation,
             timeout,

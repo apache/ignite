@@ -54,6 +54,15 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     public boolean storeUsed();
 
     /**
+     * Checks if this is system cache transaction. System transactions are isolated from user transactions
+     * because some of the public API methods may be invoked inside user transactions and internally start
+     * system cache transactions.
+     *
+     * @return {@code True} if transaction is started for system cache.
+     */
+    public boolean system();
+
+    /**
      * @return Last recorded topology version.
      */
     public long topologyVersion();

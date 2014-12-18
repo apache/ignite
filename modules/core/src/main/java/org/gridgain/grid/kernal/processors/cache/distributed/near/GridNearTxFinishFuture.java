@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -28,6 +27,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -338,6 +338,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.threadId(),
             commit,
             tx.isInvalidate(),
+            tx.system(),
             tx.syncCommit(),
             tx.syncRollback(),
             m.explicitLock(),
@@ -373,7 +374,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
 
             try {
-                cctx.io().send(n, req);
+                cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
 
                 // If we don't wait for result, then mark future as done.
                 if (!isSync() && !m.explicitLock())

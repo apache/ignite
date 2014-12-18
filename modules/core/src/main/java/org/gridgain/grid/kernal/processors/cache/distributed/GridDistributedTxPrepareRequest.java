@@ -103,6 +103,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** */
     private byte[] txNodesBytes;
 
+    /** System flag. */
+    private boolean sys;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -135,6 +138,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         timeout = tx.timeout();
         invalidate = tx.isInvalidate();
         txSize = tx.size();
+        sys = tx.system();
 
         this.reads = reads;
         this.writes = writes;
@@ -148,6 +152,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public Map<UUID, Collection<UUID>> transactionNodes() {
         return txNodes;
+    }
+
+    /**
+     * @return System flag.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /**
@@ -415,6 +426,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         _clone.txSize = txSize;
         _clone.txNodes = txNodes;
         _clone.txNodesBytes = txNodesBytes;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -553,6 +565,11 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 commState.idx++;
 
+            case 21:
+                if (!commState.putBoolean(sys))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -725,6 +742,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 commState.idx++;
 
+            case 21:
+                if (buf.remaining() < 1)
+                    return false;
+
+                sys = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

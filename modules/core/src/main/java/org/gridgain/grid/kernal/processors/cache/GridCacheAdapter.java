@@ -3603,6 +3603,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
+                ctx.system(),
                 PESSIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
@@ -3677,6 +3678,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
+                ctx.system(),
                 PESSIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),

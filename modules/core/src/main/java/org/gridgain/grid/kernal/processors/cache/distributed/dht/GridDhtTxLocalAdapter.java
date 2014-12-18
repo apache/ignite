@@ -69,6 +69,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit-with-single-key flag.
      * @param cctx Cache context.
+     * @param sys System flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -77,10 +78,11 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @param partLock If this is a group-lock transaction and the whole partition should be locked.
      */
     protected GridDhtTxLocalAdapter(
+        GridCacheSharedContext<K, V> cctx,
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheSharedContext<K, V> cctx,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -92,8 +94,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, concurrency, isolation, timeout, invalidate, storeEnabled, txSize,
-            grpLockKey, partLock, subjId, taskNameHash);
+        super(cctx, xidVer, implicit, implicitSingle, sys, concurrency, isolation, timeout, invalidate, storeEnabled,
+            txSize, grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
 

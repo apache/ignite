@@ -117,6 +117,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** Internal flag. */
     protected boolean internal;
 
+    /** System transaction flag. */
+    private boolean sys;
+
     /** */
     protected boolean onePhaseCommit;
 
@@ -202,6 +205,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit with one key flag.
      * @param loc Local flag.
+     * @param sys System transaction flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -214,6 +218,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean implicit,
         boolean implicitSingle,
         boolean loc,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -232,6 +237,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.implicit = implicit;
         this.implicitSingle = implicitSingle;
         this.loc = loc;
+        this.sys = sys;
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
@@ -257,6 +263,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @param xidVer Transaction ID.
      * @param startVer Start version mark.
      * @param threadId Thread ID.
+     * @param sys System transaction flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -269,6 +276,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheVersion xidVer,
         GridCacheVersion startVer,
         long threadId,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -282,6 +290,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         this.threadId = threadId;
         this.xidVer = xidVer;
         this.startVer = startVer;
+        this.sys = sys;
         this.concurrency = concurrency;
         this.isolation = isolation;
         this.timeout = timeout;
@@ -391,6 +400,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      */
     public void storeEnabled(boolean storeEnabled) {
         this.storeEnabled = storeEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean system() {
+        return sys;
     }
 
     /** {@inheritDoc} */

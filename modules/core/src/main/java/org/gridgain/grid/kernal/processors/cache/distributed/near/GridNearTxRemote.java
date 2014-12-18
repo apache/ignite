@@ -62,6 +62,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param rmtThreadId Remote thread ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -73,24 +74,25 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         ClassLoader ldr,
         UUID nodeId,
         UUID nearNodeId,
         long rmtThreadId,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
         Collection<GridCacheTxEntry<K, V>> writeEntries,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) throws IgniteCheckedException {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
@@ -119,6 +121,7 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param rmtThreadId Remote thread ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -128,23 +131,24 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
      * @param grpLockKey Collection of group lock keys if this is a group-lock transaction.
      */
     public GridNearTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         UUID nodeId,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         long rmtThreadId,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
