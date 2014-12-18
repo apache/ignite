@@ -91,7 +91,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private boolean deserializePortable;
 
     /** Expiry policy. */
-    private GridCacheAccessExpiryPolicy expiryPlc;
+    private GridCacheExpiryPolicy expiryPlc;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -123,7 +123,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable GridCacheAccessExpiryPolicy expiryPlc
+        @Nullable GridCacheExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -237,6 +237,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(this);
+
+            cache().dht().sendTtlUpdateRequest(expiryPlc);
 
             return true;
         }
@@ -366,7 +368,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.ttl() : -1L);
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
 
                 add(fut); // Append new future.
 

@@ -108,9 +108,19 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(null,
+            keys,
+            false,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable,
+            prj != null ? prj.expiry() : null);
     }
 
     /**

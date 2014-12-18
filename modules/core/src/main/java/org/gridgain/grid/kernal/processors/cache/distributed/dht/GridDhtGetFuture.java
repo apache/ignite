@@ -84,7 +84,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private boolean deserializePortable;
 
     /** Expiry policy. */
-    private GridCacheAccessExpiryPolicy expiryPlc;
+    private GridCacheExpiryPolicy expiryPlc;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -119,7 +119,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        @Nullable GridCacheAccessExpiryPolicy expiryPlc) {
+        @Nullable GridCacheExpiryPolicy expiryPlc) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;

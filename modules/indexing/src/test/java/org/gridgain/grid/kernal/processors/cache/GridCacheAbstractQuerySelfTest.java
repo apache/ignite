@@ -32,6 +32,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -286,17 +287,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testExpiration() throws Exception {
+        ignite.jcache(null).
+            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000))).put("key1", 1);
+
         GridCache<String, Integer> cache = ignite.cache(null);
-
-        GridCacheEntry<String, Integer> entry = cache.entry("key1");
-
-        assert entry != null;
-
-        entry.timeToLive(1000);
-
-        entry.set(1);
-
-        assert entry.isCached();
 
         GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "1=1");
 

@@ -23,7 +23,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
@@ -363,9 +362,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(null,
+            keys,
+            false,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable,
+            prj != null ? prj.expiry() : null);
     }
 
     /** {@inheritDoc} */

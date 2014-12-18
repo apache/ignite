@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  *
  */
-public class GridCacheExpiryPolicy implements ExpiryPolicy, Externalizable {
+public class GridCacheExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable {
     /** */
     private ExpiryPolicy plc;
 
@@ -44,14 +44,14 @@ public class GridCacheExpiryPolicy implements ExpiryPolicy, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheExpiryPolicy() {
+    public GridCacheExternalizableExpiryPolicy() {
         // No-op.
     }
 
     /**
      * @param plc Expiry policy.
      */
-    public GridCacheExpiryPolicy(ExpiryPolicy plc) {
+    public GridCacheExternalizableExpiryPolicy(ExpiryPolicy plc) {
         assert plc != null;
 
         this.plc = plc;
@@ -75,7 +75,7 @@ public class GridCacheExpiryPolicy implements ExpiryPolicy, Externalizable {
     /**
      * @param out Output stream.
      * @param duration Duration.
-     * @throws IOException
+     * @throws IOException If failed.
      */
     private void writeDuration(ObjectOutput out, @Nullable Duration duration) throws IOException {
         if (duration != null) {
@@ -91,7 +91,7 @@ public class GridCacheExpiryPolicy implements ExpiryPolicy, Externalizable {
     /**
      * @param in Input stream.
      * @return Duration.
-     * @throws IOException
+     * @throws IOException If failed.
      */
     private Duration readDuration(ObjectInput in) throws IOException {
         long ttl = in.readLong();
@@ -145,8 +145,9 @@ public class GridCacheExpiryPolicy implements ExpiryPolicy, Externalizable {
         if ((flags & ACCESS_TTL_MASK) != 0)
             forAccess = readDuration(in);
     }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheExpiryPolicy.class, this);
+        return S.toString(GridCacheExternalizableExpiryPolicy.class, this);
     }
 }

@@ -1765,7 +1765,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         final String taskName,
         final boolean deserializePortable,
         final boolean forcePrimary,
-        @Nullable GridCacheAccessExpiryPolicy expiry,
+        @Nullable GridCacheExpiryPolicy expiry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter
         ) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);

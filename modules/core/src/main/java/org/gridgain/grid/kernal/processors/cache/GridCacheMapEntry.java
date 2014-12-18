@@ -700,7 +700,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheAccessExpiryPolicy expirePlc)
+        @Nullable GridCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
@@ -733,7 +733,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheAccessExpiryPolicy expiryPlc)
+        @Nullable GridCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -882,13 +882,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             if (ret != null && expiryPlc != null) {
-                long ttl = expiryPlc.ttl();
+                long ttl = expiryPlc.forAccess();
 
                 assert ttl >= 0 : ttl;
 
                 updateTtl(ttl);
 
-                expiryPlc.ttlUpdated(key(), getOrMarshalKeyBytes(), version());
+                expiryPlc.onAccessUpdated(key(), getOrMarshalKeyBytes(), version());
             }
         }
 
@@ -1464,6 +1464,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         assert cctx.isLocal() && cctx.atomic();
 
         V old;
+
         boolean res = true;
 
         IgniteBiTuple<Boolean, ?> interceptorRes = null;
@@ -1501,8 +1502,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (!F.isEmpty(filter)) {
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
 
-                if (!pass)
+                if (!pass) {
+                    if (expiryPlc != null && hasValueUnlocked()) {
+                        long ttl = toTtl(expiryPlc.getExpiryForAccess());
+
+                        if (ttl != -1L)
+                            updateTtl(ttl);
+                    }
+
                     return new IgniteBiTuple<>(false, retval ? old : null);
+                }
             }
 
             // Apply metrics.
@@ -1658,20 +1667,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @param expiryPlc Expiry policy.
-     * @param isNew {@code True} if entry is new.
-     * @return TTL.
-     */
-    private static long ttlFromPolicy(@Nullable ExpiryPolicy expiryPlc, boolean isNew) {
-        if (expiryPlc == null)
-            return -1L;
-
-        Duration duration = isNew ? expiryPlc.getExpiryForCreation() : expiryPlc.getExpiryForUpdate();
-
-        return toTtl(duration);
-    }
-
-    /**
      * @param duration Duration.
      * @return TTL.
      */
@@ -1703,7 +1698,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
-        @Nullable ExpiryPolicy expiryPlc,
+        @Nullable GridCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
@@ -1750,7 +1745,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     op,
                     writeObj,
                     valBytes,
-                    ttlFromPolicy(expiryPlc, isNew()),
+                    expiryPlc != null ? (isNew() ? expiryPlc.forCreate() : expiryPlc.forUpdate()) : -1L,
                     drTtl,
                     drExpireTime,
                     drVer);
@@ -1844,18 +1839,19 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (!pass) {
                     if (hasValueUnlocked() && expiryPlc != null) {
-                        Duration duration = expiryPlc.getExpiryForAccess();
+                        newTtl = expiryPlc.forAccess();
 
-                        newTtl = toTtl(duration);
-
-                        if (newTtl != -1L)
+                        if (newTtl != -1L) {
                             updateTtl(newTtl);
+
+                            expiryPlc.onAccessUpdated(key, getOrMarshalKeyBytes(), version());
+                        }
                     }
 
                     return new GridCacheUpdateAtomicResult<>(false,
                         retval ? old : null,
                         null,
-                        newTtl,
+                        0L,
                         -1L,
                         null,
                         null,
@@ -1929,25 +1925,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     else {
                         assert drExpireTime == -1L;
 
-                        if (expiryPlc != null) {
-                            if (!hadVal) {
-                                Duration duration = expiryPlc.getExpiryForCreation();
-
-                                if (duration != null && duration.isZero())
-                                    return new GridCacheUpdateAtomicResult<>(false,
-                                        retval ? old : null,
-                                        null,
-                                        0L,
-                                        -1L,
-                                        null,
-                                        null,
-                                        false);
-
-                                newTtl = toTtl(duration);
-                            }
-                            else
-                                newTtl = toTtl(expiryPlc.getExpiryForUpdate());
-                        }
+                        if (expiryPlc != null)
+                            newTtl = hadVal ? expiryPlc.forUpdate() : expiryPlc.forCreate();
                         else
                             newTtl = -1L;
 
@@ -3428,6 +3407,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Override public void updateTtl(GridCacheVersion ver, long ttl) {
         synchronized (this) {
+            updateTtl(ttl);
+
+            /*
+            TODO IGNITE-41.
             try {
                 if (ver.equals(version()))
                     updateTtl(ttl);
@@ -3435,6 +3418,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             catch (GridCacheEntryRemovedException ignored) {
                 // No-op.
             }
+            */
         }
     }
 

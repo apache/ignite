@@ -16,7 +16,6 @@ import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -893,6 +892,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
+        GridCacheExpiryPolicy expiry = null;
+
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -941,17 +942,37 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
+                        expiry = expiryPolicy(req.expiry() != null ? req.expiry() : ctx.expiry());
+
                         if (storeEnabled() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
-                            UpdateBatchResult<K, V> updRes = updateWithBatch(node, hasNear, req, res, locked, ver,
-                                dhtFut, completionCb, replicate, taskName);
+                            UpdateBatchResult<K, V> updRes = updateWithBatch(node,
+                                hasNear,
+                                req,
+                                res,
+                                locked,
+                                ver,
+                                dhtFut,
+                                completionCb,
+                                replicate,
+                                taskName,
+                                expiry);
 
                             deleted = updRes.deleted();
                             dhtFut = updRes.dhtFuture();
                         }
                         else {
-                            UpdateSingleResult<K, V> updRes = updateSingle(node, hasNear, req, res, locked, ver,
-                                dhtFut, completionCb, replicate, taskName);
+                            UpdateSingleResult<K, V> updRes = updateSingle(node,
+                                hasNear,
+                                req,
+                                res,
+                                locked,
+                                ver,
+                                dhtFut,
+                                completionCb,
+                                replicate,
+                                taskName,
+                                expiry);
 
                             retVal = updRes.returnValue();
                             deleted = updRes.deleted();
@@ -1013,6 +1034,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             else
                 completionCb.apply(req, res);
         }
+
+        sendTtlUpdateRequest(expiry);
     }
 
     /**
@@ -1027,6 +1050,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param dhtFut Optional DHT future.
      * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param replicate Whether replication is enabled.
+     * @param taskName Task name.
+     * @param expiry Expiry policy.
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
      */
@@ -1041,7 +1066,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         boolean replicate,
-        String taskName
+        String taskName,
+        @Nullable GridCacheExpiryPolicy expiry
     ) throws GridCacheEntryRemovedException {
         // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue(); // Should not request return values for putAll.
@@ -1078,7 +1104,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             try {
                 if (!checkFilter(entry, req, res)) {
-                    // TODO IGNITE-41 update TTL.
+                    if (expiry != null && entry.hasValue()) {
+                        long ttl = expiry.forAccess();
+
+                        if (ttl != -1L) {
+                            entry.updateTtl(null, ttl);
+
+                            expiry.onAccessUpdated(entry.key(), entry.getOrMarshalKeyBytes(), entry.version());
+                        }
+                    }
 
                     if (log.isDebugEnabled())
                         log.debug("Entry did not pass the filter (will skip write) [entry=" + entry +
@@ -1143,7 +1177,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res,
                                 replicate,
                                 updRes,
-                                taskName);
+                                taskName,
+                                expiry);
 
                             firstEntryIdx = i + 1;
 
@@ -1184,7 +1219,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 res,
                                 replicate,
                                 updRes,
-                                taskName);
+                                taskName,
+                                expiry);
 
                             firstEntryIdx = i + 1;
 
@@ -1293,7 +1329,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 res,
                 replicate,
                 updRes,
-                taskName);
+                taskName,
+                expiry);
         }
         else
             assert filtered.isEmpty();
@@ -1366,6 +1403,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param completionCb Completion callback to invoke when DHT future is completed.
      * @param replicate Whether DR is enabled for that cache.
      * @param taskName Task name.
+     * @param expiry Expiry policy.
      * @return Return value.
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
@@ -1379,7 +1417,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridDhtAtomicUpdateFuture<K, V> dhtFut,
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         boolean replicate,
-        String taskName
+        String taskName,
+        @Nullable GridCacheExpiryPolicy expiry
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn<Object> retVal = null;
         Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
@@ -1393,8 +1432,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean readersOnly = false;
 
         boolean intercept = ctx.config().getInterceptor() != null;
-
-        ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
 
         // Avoid iterator creation.
         for (int i = 0; i < keys.size(); i++) {
@@ -1505,8 +1542,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 expireTime);
                     }
                     else {
-                        // TODO IGNITE-41 ttl could be changed.
-
                         if (log.isDebugEnabled())
                             log.debug("Entry did not pass the filter or conflict resolution (will skip write) " +
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
@@ -1610,7 +1645,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicUpdateResponse<K, V> res,
         boolean replicate,
         UpdateBatchResult<K, V> batchRes,
-        String taskName
+        String taskName,
+        @Nullable GridCacheExpiryPolicy expiry
     ) {
         assert putMap == null ^ rmvKeys == null;
 
@@ -1658,8 +1694,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             boolean intercept = ctx.config().getInterceptor() != null;
 
-            ExpiryPolicy expiry = req.expiry() != null ? req.expiry() : ctx.expiry();
-
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry<K, V> entry = entries.get(i);
@@ -1703,7 +1737,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         true,
                         primary,
                         ctx.config().getAtomicWriteOrderMode() == CLOCK, // Check version in CLOCK mode on primary node.
-                        req.filter(), // TODO IGNITE-41 filter already evaluated?
+                        null,
                         replicate ? primary ? DR_PRIMARY : DR_BACKUP : DR_NONE,
                         -1L,
                         -1L,
@@ -2375,6 +2409,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
     }
 
+    /**
+     * @param plc Expiry policy.
+     * @return Expiry policy wrapper.
+     */
+    static GridCacheExpiryPolicy expiryPolicy(@Nullable ExpiryPolicy plc) {
+        return plc == null ? null : new UpdateExpiryPolicy(plc);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtAtomicCache.class, this, super.toString());
@@ -2650,6 +2692,54 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             pendingResponses.remove(nodeId, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class UpdateExpiryPolicy implements GridCacheExpiryPolicy {
+        /** */
+        private final ExpiryPolicy plc;
+
+        /** */
+        private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
+
+        /**
+         * @param plc Expiry policy.
+         */
+        private UpdateExpiryPolicy(ExpiryPolicy plc) {
+            assert plc != null;
+
+            this.plc = plc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long forCreate() {
+            return GridCacheMapEntry.toTtl(plc.getExpiryForCreation());
+        }
+
+        /** {@inheritDoc} */
+        @Override public long forUpdate() {
+            return GridCacheMapEntry.toTtl(plc.getExpiryForUpdate());
+        }
+
+        /** {@inheritDoc} */
+        @Override public long forAccess() {
+            return GridCacheMapEntry.toTtl(plc.getExpiryForAccess());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAccessUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
+            if (entries == null)
+                entries = new HashMap<>();
+
+            entries.put(key, new IgniteBiTuple<>(keyBytes, ver));
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+            return entries;
         }
     }
 }

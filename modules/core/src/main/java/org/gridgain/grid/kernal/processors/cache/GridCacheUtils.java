@@ -1586,7 +1586,7 @@ public class GridCacheUtils {
      * @return Expire time.
      */
     public static long toExpireTime(long ttl) {
-        assert ttl >= 0L;
+        assert ttl >= 0L : ttl;
 
         if (ttl == 0L)
             return 0L;

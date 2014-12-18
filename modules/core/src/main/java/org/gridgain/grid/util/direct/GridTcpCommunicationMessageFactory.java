@@ -45,7 +45,7 @@ public class GridTcpCommunicationMessageFactory {
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
 
     /** */
-    public static final int MAX_COMMON_TYPE = 81;
+    public static final int MAX_COMMON_TYPE = 100;
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {

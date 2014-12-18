@@ -836,7 +836,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
         out.writeBoolean(grpLock);
         CU.writeVersion(out, drVer);
 
-        out.writeObject(transferExpiryPlc ? new GridCacheExpiryPolicy(expiryPlc) : null);
+        out.writeObject(transferExpiryPlc ? new GridCacheExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */

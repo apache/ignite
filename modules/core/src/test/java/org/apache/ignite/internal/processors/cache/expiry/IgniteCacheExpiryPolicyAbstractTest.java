@@ -142,6 +142,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         accessGetAll();
+
+        for (final Integer key : keys()) {
+            log.info("Test filter access [key=" + key + ']');
+
+            filterAccessRemove(key);
+        }
     }
 
     /**
@@ -155,7 +161,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        assertEquals((Integer)1, cache.get(key));
+        assertEquals((Integer) 1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
 
@@ -164,6 +170,22 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 1000L, true);
 
         waitExpired(key);
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void filterAccessRemove(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertFalse(cache.remove(key, 2));
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -179,10 +201,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.removeAll(vals.keySet());
 
-        for (Map.Entry<Integer, Integer> e : vals.entrySet())
-            cache.put(e.getKey(), e.getValue());
-
-        //cache.putAll(vals);
+        cache.putAll(vals);
 
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
@@ -456,41 +475,52 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         if (cacheMode() != PARTITIONED)
             return;
 
-        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
-
         nearCache = true;
 
-        startGrids();
+        testCreateUpdate();
 
-        Integer key = nearKey(cache(0));
+        nearReaderUpdate();
 
-        IgniteCache<Integer, Integer> jcache0 = jcache(0);
+        nearPutAll();
+    }
 
-        jcache0.put(key, 1);
+    /**
+     * @throws Exception If failed.
+     */
+    private void nearReaderUpdate() throws Exception {
+        log.info("Test near reader update.");
+
+        Integer key = nearKeys(cache(0), 1, 500_000).get(0);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        assertEquals(NEAR_PARTITIONED, cache(0).configuration().getDistributionMode());
+
+        cache0.put(key, 1);
 
         checkTtl(key, 60_000L);
 
-        IgniteCache<Integer, Integer> jcache1 = jcache(1);
+        IgniteCache<Integer, Integer> cache1 = jcache(1);
 
         // Update from another node.
-        jcache1.put(key, 2);
+        cache1.put(key, 2);
 
         checkTtl(key, 61_000L);
 
         // Update from another node with provided TTL.
-        jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 3);
+        cache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 3);
 
         checkTtl(key, 1000L);
 
         waitExpired(key);
 
         // Try create again.
-        jcache0.put(key, 1);
+        cache0.put(key, 1);
 
         checkTtl(key, 60_000L);
 
         // Update from near node with provided TTL.
-        jcache0.withExpiryPolicy(new TestPolicy(null, 1100L, null)).put(key, 2);
+        cache0.withExpiryPolicy(new TestPolicy(null, 1100L, null)).put(key, 2);
 
         checkTtl(key, 1100L);
 
@@ -500,38 +530,31 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void testNearPutAll() throws Exception {
-        if (cacheMode() != PARTITIONED)
-            return;
-
-        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
-
-        nearCache = true;
-
-        startGrids();
-
+    private void nearPutAll() throws Exception {
         Map<Integer, Integer> vals = new HashMap<>();
 
         for (int i = 0; i < 1000; i++)
             vals.put(i, i);
 
-        IgniteCache<Integer, Integer> jcache0 = jcache(0);
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        jcache0.putAll(vals);
+        cache0.removeAll(vals.keySet());
+
+        cache0.putAll(vals);
 
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
 
-        IgniteCache<Integer, Integer> jcache1 = jcache(1);
+        IgniteCache<Integer, Integer> cache1 = jcache(1);
 
         // Update from another node.
-        jcache1.putAll(vals);
+        cache1.putAll(vals);
 
         for (Integer key : vals.keySet())
             checkTtl(key, 61_000L);
 
         // Update from another node with provided TTL.
-        jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).putAll(vals);
+        cache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).putAll(vals);
 
         for (Integer key : vals.keySet())
             checkTtl(key, 1000L);
@@ -539,15 +562,45 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         waitExpired(vals.keySet());
 
         // Try create again.
-        jcache0.putAll(vals);
+        cache0.putAll(vals);
 
         // Update from near node with provided TTL.
-        jcache1.withExpiryPolicy(new TestPolicy(null, 1101L, null)).putAll(vals);
+        cache1.withExpiryPolicy(new TestPolicy(null, 1101L, null)).putAll(vals);
 
         for (Integer key : vals.keySet())
             checkTtl(key, 1101L);
 
         waitExpired(vals.keySet());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearAccess() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        nearCache = true;
+
+        testAccess();
+
+        Integer key = primaryKeys(cache(0), 1, 500_000).get(0);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertEquals(1, jcache(1).get(key));
+
+        checkTtl(key, 62_000L, true);
+
+        assertEquals(1, jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 1000L)).get(key));
+
+        checkTtl(key, 1000L, true);
+
+        waitExpired(key);
     }
 
     /**

@@ -20,9 +20,9 @@ import java.util.*;
 /**
  *
  */
-public class GridCacheAccessExpiryPolicy {
+public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
     /** */
-    private final long ttl;
+    private final long accessTtl;
 
     /** */
     private volatile Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
@@ -44,19 +44,27 @@ public class GridCacheAccessExpiryPolicy {
     }
 
     /**
-     * @param ttl TTL for access.
+     * @param accessTtl TTL for access.
      */
-    public GridCacheAccessExpiryPolicy(long ttl) {
-        assert ttl >= 0 : ttl;
+    public GridCacheAccessExpiryPolicy(long accessTtl) {
+        assert accessTtl >= 0 : accessTtl;
 
-        this.ttl = ttl;
+        this.accessTtl = accessTtl;
     }
 
-    /**
-     * @return TTL.
-     */
-    public long ttl() {
-        return ttl;
+    /** {@inheritDoc} */
+    @Override public long forAccess() {
+        return accessTtl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long forCreate() {
+        return -1L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long forUpdate() {
+        return -1L;
     }
 
     /**
@@ -75,7 +83,7 @@ public class GridCacheAccessExpiryPolicy {
      * @param ver Entry version.
      */
     @SuppressWarnings("unchecked")
-    public void ttlUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
+    @Override public void onAccessUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
         Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
 
         if (entries0 == null) {
@@ -93,7 +101,7 @@ public class GridCacheAccessExpiryPolicy {
     /**
      * @return TTL update request.
      */
-    @Nullable public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+    @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
         return entries;
     }
 

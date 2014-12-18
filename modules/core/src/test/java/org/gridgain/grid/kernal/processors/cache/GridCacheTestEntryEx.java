@@ -403,7 +403,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheAccessExpiryPolicy expiryPlc) {
+        @Nullable GridCacheExpiryPolicy expiryPlc) {
         return val;
     }
 
@@ -427,7 +427,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         @Nullable Object writeObj,
         boolean writeThrough,
         boolean retval,
-        ExpiryPolicy expiryPlc,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
@@ -448,7 +448,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
-        ExpiryPolicy expiryPlc,
+        @Nullable GridCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,

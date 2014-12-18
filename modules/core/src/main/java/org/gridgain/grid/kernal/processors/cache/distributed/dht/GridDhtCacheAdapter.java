@@ -428,7 +428,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], GridCacheAccessExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.GridCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -483,7 +483,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheAccessExpiryPolicy expiry
+        @Nullable GridCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
             null,
@@ -518,7 +518,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         int taskNameHash,
         boolean deserializePortable,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheAccessExpiryPolicy expiry) {
+        @Nullable GridCacheExpiryPolicy expiry) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
             reader,
@@ -599,7 +599,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param expiryPlc Expiry policy.
      */
-    protected void sendTtlUpdateRequest(@Nullable final GridCacheAccessExpiryPolicy expiryPlc) {
+    public void sendTtlUpdateRequest(@Nullable final GridCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
                 @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
@@ -622,7 +622,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
 
                                 if (req == null) {
-                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(expiryPlc.ttl()));
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(expiryPlc.forAccess()));
 
                                     req.cacheId(ctx.cacheId());
                                 }

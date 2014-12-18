@@ -257,7 +257,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (GridCacheReturn<V>)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            null,
+            expiryPerCall(),
             true,
             true,
             ctx.equalsPeekArray(val),
@@ -384,7 +384,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            null,
+            expiryPerCall(),
             true,
             false,
             filter,
@@ -410,7 +410,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         updateAllInternal(DELETE,
             keys,
             null,
-            null,
+            expiryPerCall(),
             false,
             false,
             filter,
@@ -437,7 +437,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            null,
+            expiryPerCall(),
             false,
             false,
             filter,
@@ -465,7 +465,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
-            null,
+            expiryPerCall(),
             false,
             false,
             ctx.equalsPeekArray(val),
@@ -686,10 +686,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         final GridCacheOperation op = transformMap != null ? TRANSFORM : UPDATE;
+
         final Collection<? extends K> keys =
             map != null ? map.keySet() : transformMap != null ? transformMap.keySet() : null;
+
         final Collection<?> vals = map != null ? map.values() : transformMap != null ? transformMap.values() : null;
+
         final boolean storeEnabled = ctx.isStoreEnabled();
+
         final ExpiryPolicy expiry = expiryPerCall();
 
         return asyncOp(new Callable<Object>() {
@@ -723,12 +727,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     ) {
         final boolean storeEnabled = ctx.isStoreEnabled();
 
+        final ExpiryPolicy expiryPlc = expiryPerCall();
+
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(DELETE,
                     keys,
                     null,
-                    null,
+                    expiryPlc,
                     retval,
                     rawRetval,
                     filter,

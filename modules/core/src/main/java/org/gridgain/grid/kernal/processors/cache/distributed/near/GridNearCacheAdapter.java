@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
@@ -164,7 +165,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override public IgniteFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
         GridCacheTxEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
         IgniteBiInClosure<K, V> vis) {
-        return (IgniteFuture)loadAsync(tx, keys, reload, false, filter, subjId, taskName, true);
+        return (IgniteFuture)loadAsync(tx,
+            keys,
+            reload,
+            false,
+            filter,
+            subjId,
+            taskName,
+            true,
+            null);
     }
 
     /** {@inheritDoc} */
@@ -246,6 +255,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param reload Reload flag.
      * @param forcePrimary Force primary flag.
      * @param filter Filter.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
     public IgniteFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx,
@@ -255,7 +268,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable) {
+        boolean deserializePortable,
+        @Nullable ExpiryPolicy expiryPlc) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -264,7 +278,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
 
-        // TODO IGNITE-41.
+        final GridCacheAccessExpiryPolicy expiry =
+            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
@@ -275,7 +290,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             subjId,
             taskName,
             deserializePortable,
-            null);
+            expiry);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();
