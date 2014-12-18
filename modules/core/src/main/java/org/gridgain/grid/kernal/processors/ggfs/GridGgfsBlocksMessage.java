@@ -106,7 +106,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -116,7 +116,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
             case 0:
                 if (blocks != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(blocks.size()))
+                        if (!commState.putInt(null, blocks.size()))
                             return false;
 
                         commState.it = blocks.entrySet().iterator();
@@ -129,13 +129,13 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                         Map.Entry<GridGgfsBlockKey, byte[]> e = (Map.Entry<GridGgfsBlockKey, byte[]>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putMessage(e.getKey()))
+                            if (!commState.putMessage(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putByteArray(e.getValue()))
+                        if (!commState.putByteArray(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -145,20 +145,20 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(fileId))
+                if (!commState.putGridUuid(null, fileId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(id))
+                if (!commState.putLong(null, id))
                     return false;
 
                 commState.idx++;
@@ -182,7 +182,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -191,7 +191,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            Object _val = commState.getMessage();
+                            Object _val = commState.getMessage(null);
 
                             if (_val == MSG_NOT_READ)
                                 return false;
@@ -200,7 +200,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                             commState.keyDone = true;
                         }
 
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -220,7 +220,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid(null);
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -233,7 +233,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 8)
                     return false;
 
-                id = commState.getLong();
+                id = commState.getLong(null);
 
                 commState.idx++;
 

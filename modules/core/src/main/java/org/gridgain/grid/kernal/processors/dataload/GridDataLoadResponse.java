@@ -99,7 +99,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -107,19 +107,19 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(forceLocDep))
+                if (!commState.putBoolean(null, forceLocDep))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(reqId))
+                if (!commState.putLong(null, reqId))
                     return false;
 
                 commState.idx++;
@@ -136,7 +136,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -149,7 +149,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                forceLocDep = commState.getBoolean();
+                forceLocDep = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -157,7 +157,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLong();
+                reqId = commState.getLong(null);
 
                 commState.idx++;
 

@@ -126,7 +126,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -134,19 +134,19 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(jobId))
+                if (!commState.putGridUuid(null, jobId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(sesId))
+                if (!commState.putGridUuid(null, sesId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(sys))
+                if (!commState.putBoolean(null, sys))
                     return false;
 
                 commState.idx++;
@@ -163,7 +163,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid(null);
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -173,7 +173,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid(null);
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -186,7 +186,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                sys = commState.getBoolean();
+                sys = commState.getBoolean(null);
 
                 commState.idx++;
 

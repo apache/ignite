@@ -221,7 +221,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -229,43 +229,43 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(gridExBytes))
+                if (!commState.putByteArray(null, gridExBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(isCancelled))
+                if (!commState.putBoolean(null, isCancelled))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putByteArray(jobAttrsBytes))
+                if (!commState.putByteArray(null, jobAttrsBytes))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putGridUuid(jobId))
+                if (!commState.putGridUuid(null, jobId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putUuid(nodeId))
+                if (!commState.putUuid(null, nodeId))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putByteArray(resBytes))
+                if (!commState.putByteArray(null, resBytes))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putGridUuid(sesId))
+                if (!commState.putGridUuid(null, sesId))
                     return false;
 
                 commState.idx++;
@@ -282,7 +282,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                byte[] gridExBytes0 = commState.getByteArray();
+                byte[] gridExBytes0 = commState.getByteArray(null);
 
                 if (gridExBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -295,12 +295,12 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 if (buf.remaining() < 1)
                     return false;
 
-                isCancelled = commState.getBoolean();
+                isCancelled = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 2:
-                byte[] jobAttrsBytes0 = commState.getByteArray();
+                byte[] jobAttrsBytes0 = commState.getByteArray(null);
 
                 if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -310,7 +310,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 3:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid(null);
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -320,7 +320,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 4:
-                UUID nodeId0 = commState.getUuid();
+                UUID nodeId0 = commState.getUuid(null);
 
                 if (nodeId0 == UUID_NOT_READ)
                     return false;
@@ -330,7 +330,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 5:
-                byte[] resBytes0 = commState.getByteArray();
+                byte[] resBytes0 = commState.getByteArray(null);
 
                 if (resBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -340,7 +340,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 6:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid(null);
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

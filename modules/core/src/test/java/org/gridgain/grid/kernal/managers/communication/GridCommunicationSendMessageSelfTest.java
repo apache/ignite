@@ -149,7 +149,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public boolean writeTo(ByteBuffer buf) {
             commState.setBuffer(buf);
 
-            return commState.putByte(directType());
+            return commState.putByte(null, directType());
         }
 
         /** {@inheritDoc} */

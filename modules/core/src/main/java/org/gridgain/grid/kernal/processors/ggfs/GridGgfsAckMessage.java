@@ -125,7 +125,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -133,19 +133,19 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(fileId))
+                if (!commState.putGridUuid(null, fileId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(id))
+                if (!commState.putLong(null, id))
                     return false;
 
                 commState.idx++;
@@ -165,7 +165,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -175,7 +175,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid(null);
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -188,7 +188,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 8)
                     return false;
 
-                id = commState.getLong();
+                id = commState.getLong(null);
 
                 commState.idx++;
 

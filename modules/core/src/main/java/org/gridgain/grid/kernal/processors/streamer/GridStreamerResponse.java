@@ -90,7 +90,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -98,13 +98,13 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
@@ -121,7 +121,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -131,7 +131,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

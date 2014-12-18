@@ -165,7 +165,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -173,19 +173,19 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (commState.idx) {
             case 5:
-                if (!commState.putByteArray(affAssignmentBytes))
+                if (!commState.putByteArray(null, affAssignmentBytes))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putByteArray(partsBytes))
+                if (!commState.putByteArray(null, partsBytes))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(topVer))
+                if (!commState.putLong(null, topVer))
                     return false;
 
                 commState.idx++;
@@ -205,7 +205,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (commState.idx) {
             case 5:
-                byte[] affAssignmentBytes0 = commState.getByteArray();
+                byte[] affAssignmentBytes0 = commState.getByteArray(null);
 
                 if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -215,7 +215,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
                 commState.idx++;
 
             case 6:
-                byte[] partsBytes0 = commState.getByteArray();
+                byte[] partsBytes0 = commState.getByteArray(null);
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -228,7 +228,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong();
+                topVer = commState.getLong(null);
 
                 commState.idx++;
 

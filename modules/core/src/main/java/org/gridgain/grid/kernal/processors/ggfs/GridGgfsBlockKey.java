@@ -176,7 +176,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -184,25 +184,25 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(affKey))
+                if (!commState.putGridUuid(null, affKey))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong(blockId))
+                if (!commState.putLong(null, blockId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(evictExclude))
+                if (!commState.putBoolean(null, evictExclude))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putGridUuid(fileId))
+                if (!commState.putGridUuid(null, fileId))
                     return false;
 
                 commState.idx++;
@@ -219,7 +219,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid();
+                IgniteUuid affKey0 = commState.getGridUuid(null);
 
                 if (affKey0 == GRID_UUID_NOT_READ)
                     return false;
@@ -232,7 +232,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 8)
                     return false;
 
-                blockId = commState.getLong();
+                blockId = commState.getLong(null);
 
                 commState.idx++;
 
@@ -240,12 +240,12 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 1)
                     return false;
 
-                evictExclude = commState.getBoolean();
+                evictExclude = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 3:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid(null);
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

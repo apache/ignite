@@ -123,7 +123,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -131,19 +131,19 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArrayList(byteSrc))
+                if (!commState.putByteArrayList(null, byteSrc))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putString(errMsg))
+                if (!commState.putString(null, errMsg))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(success))
+                if (!commState.putBoolean(null, success))
                     return false;
 
                 commState.idx++;
@@ -160,7 +160,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridByteArrayList byteSrc0 = commState.getByteArrayList();
+                GridByteArrayList byteSrc0 = commState.getByteArrayList(null);
 
                 if (byteSrc0 == BYTE_ARR_LIST_NOT_READ)
                     return false;
@@ -170,7 +170,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                String errMsg0 = commState.getString();
+                String errMsg0 = commState.getString(null);
 
                 if (errMsg0 == STR_NOT_READ)
                     return false;
@@ -183,7 +183,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                success = commState.getBoolean();
+                success = commState.getBoolean(null);
 
                 commState.idx++;
 

@@ -229,7 +229,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -239,7 +239,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             case 3:
                 if (dataBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(dataBytes.size()))
+                        if (!commState.putInt(null, dataBytes.size()))
                             return false;
 
                         commState.it = dataBytes.iterator();
@@ -249,7 +249,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -257,26 +257,26 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putBoolean(fields))
+                if (!commState.putBoolean(null, fields))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putBoolean(finished))
+                if (!commState.putBoolean(null, finished))
                     return false;
 
                 commState.idx++;
@@ -284,7 +284,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
             case 7:
                 if (metaDataBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(metaDataBytes.size()))
+                        if (!commState.putInt(null, metaDataBytes.size()))
                             return false;
 
                         commState.it = metaDataBytes.iterator();
@@ -294,7 +294,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -302,14 +302,14 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putLong(reqId))
+                if (!commState.putLong(null, reqId))
                     return false;
 
                 commState.idx++;
@@ -333,7 +333,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -341,7 +341,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                         dataBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -358,7 +358,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 4:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -371,7 +371,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 1)
                     return false;
 
-                fields = commState.getBoolean();
+                fields = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -379,7 +379,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 1)
                     return false;
 
-                finished = commState.getBoolean();
+                finished = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -388,7 +388,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -396,7 +396,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                         metaDataBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -416,7 +416,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLong();
+                reqId = commState.getLong(null);
 
                 commState.idx++;
 

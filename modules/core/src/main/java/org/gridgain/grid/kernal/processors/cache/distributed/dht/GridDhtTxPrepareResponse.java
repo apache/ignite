@@ -229,7 +229,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -237,7 +237,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (commState.idx) {
             case 10:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
@@ -245,7 +245,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             case 11:
                 if (invalidParts != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(invalidParts.size()))
+                        if (!commState.putInt(null, invalidParts.size()))
                             return false;
 
                         commState.it = invalidParts.iterator();
@@ -255,7 +255,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putInt((int)commState.cur))
+                        if (!commState.putInt(null, (int)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -263,14 +263,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -278,7 +278,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             case 13:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(nearEvictedBytes.size()))
+                        if (!commState.putInt(null, nearEvictedBytes.size()))
                             return false;
 
                         commState.it = nearEvictedBytes.iterator();
@@ -288,7 +288,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -296,7 +296,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -305,7 +305,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
             case 14:
                 if (preloadEntriesBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(preloadEntriesBytes.size()))
+                        if (!commState.putInt(null, preloadEntriesBytes.size()))
                             return false;
 
                         commState.it = preloadEntriesBytes.iterator();
@@ -315,7 +315,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -323,7 +323,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -344,7 +344,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (commState.idx) {
             case 10:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -358,7 +358,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -369,7 +369,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         if (buf.remaining() < 4)
                             return false;
 
-                        int _val = commState.getInt();
+                        int _val = commState.getInt(null);
 
                         invalidParts.add((Integer)_val);
 
@@ -383,7 +383,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 commState.idx++;
 
             case 12:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -397,7 +397,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -405,7 +405,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         nearEvictedBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -426,7 +426,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -434,7 +434,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                         preloadEntriesBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;

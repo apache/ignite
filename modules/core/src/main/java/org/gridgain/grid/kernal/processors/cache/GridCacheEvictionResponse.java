@@ -151,7 +151,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -159,13 +159,13 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putBoolean(err))
+                if (!commState.putBoolean(null, err))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLong(futId))
+                if (!commState.putLong(null, futId))
                     return false;
 
                 commState.idx++;
@@ -173,7 +173,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
             case 5:
                 if (rejectedKeyBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(rejectedKeyBytes.size()))
+                        if (!commState.putInt(null, rejectedKeyBytes.size()))
                             return false;
 
                         commState.it = rejectedKeyBytes.iterator();
@@ -183,7 +183,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -191,7 +191,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -215,7 +215,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 if (buf.remaining() < 1)
                     return false;
 
-                err = commState.getBoolean();
+                err = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -223,7 +223,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                 if (buf.remaining() < 8)
                     return false;
 
-                futId = commState.getLong();
+                futId = commState.getLong(null);
 
                 commState.idx++;
 
@@ -232,7 +232,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -240,7 +240,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                         rejectedKeyBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;

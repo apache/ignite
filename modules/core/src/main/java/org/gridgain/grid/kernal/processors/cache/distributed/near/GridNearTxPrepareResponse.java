@@ -247,7 +247,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -255,13 +255,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (commState.idx) {
             case 10:
-                if (!commState.putCacheVersion(dhtVer))
+                if (!commState.putCacheVersion(null, dhtVer))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
@@ -269,7 +269,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             case 12:
                 if (invalidParts != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(invalidParts.size()))
+                        if (!commState.putInt(null, invalidParts.size()))
                             return false;
 
                         commState.it = invalidParts.iterator();
@@ -279,7 +279,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putInt((int)commState.cur))
+                        if (!commState.putInt(null, (int)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -287,14 +287,14 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -302,7 +302,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             case 14:
                 if (ownedValsBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(ownedValsBytes.size()))
+                        if (!commState.putInt(null, ownedValsBytes.size()))
                             return false;
 
                         commState.it = ownedValsBytes.iterator();
@@ -312,7 +312,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -320,7 +320,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -329,7 +329,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             case 15:
                 if (pending != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(pending.size()))
+                        if (!commState.putInt(null, pending.size()))
                             return false;
 
                         commState.it = pending.iterator();
@@ -339,7 +339,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -347,7 +347,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -368,7 +368,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (commState.idx) {
             case 10:
-                GridCacheVersion dhtVer0 = commState.getCacheVersion();
+                GridCacheVersion dhtVer0 = commState.getCacheVersion(null);
 
                 if (dhtVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -378,7 +378,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 11:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -392,7 +392,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -403,7 +403,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         if (buf.remaining() < 4)
                             return false;
 
-                        int _val = commState.getInt();
+                        int _val = commState.getInt(null);
 
                         invalidParts.add((Integer)_val);
 
@@ -417,7 +417,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 13:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -431,7 +431,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -439,7 +439,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         ownedValsBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -460,7 +460,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -468,7 +468,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         pending = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;

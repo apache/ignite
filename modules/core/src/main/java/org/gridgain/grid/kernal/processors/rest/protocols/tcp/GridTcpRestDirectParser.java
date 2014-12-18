@@ -38,20 +38,16 @@ public class GridTcpRestDirectParser implements GridNioParser {
     /** Protocol handler. */
     private final GridTcpRestProtocol proto;
 
-    /** Message reader. */
-    private final GridNioMessageReader msgReader;
-
     /**
      * @param proto Protocol handler.
-     * @param msgReader Message reader.
      */
-    public GridTcpRestDirectParser(GridTcpRestProtocol proto, GridNioMessageReader msgReader) {
+    public GridTcpRestDirectParser(GridTcpRestProtocol proto) {
         this.proto = proto;
-        this.msgReader = msgReader;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+    @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
+        throws IOException, IgniteCheckedException {
         ParserState state = ses.removeMeta(PARSER_STATE.ordinal());
 
         if (state != null) {
@@ -100,7 +96,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
         boolean finished = false;
 
         if (buf.hasRemaining())
-            finished = msgReader.read(null, msg, buf);
+            finished = msg.readFrom(buf);
 
         if (finished) {
             if (msg instanceof GridClientMessageWrapper) {

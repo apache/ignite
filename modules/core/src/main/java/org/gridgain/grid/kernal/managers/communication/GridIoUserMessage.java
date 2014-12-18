@@ -226,7 +226,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -234,25 +234,25 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(bodyBytes))
+                if (!commState.putByteArray(null, bodyBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!commState.putGridUuid(null, clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putString(depClsName))
+                if (!commState.putString(null, depClsName))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putEnum(depMode))
+                if (!commState.putEnum(null, depMode))
                     return false;
 
                 commState.idx++;
@@ -260,7 +260,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
             case 4:
                 if (ldrParties != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(ldrParties.size()))
+                        if (!commState.putInt(null, ldrParties.size()))
                             return false;
 
                         commState.it = ldrParties.entrySet().iterator();
@@ -273,13 +273,13 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                         Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
+                            if (!commState.putUuid(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putGridUuid(e.getValue()))
+                        if (!commState.putGridUuid(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -289,20 +289,20 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putByteArray(topicBytes))
+                if (!commState.putByteArray(null, topicBytes))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putString(userVer))
+                if (!commState.putString(null, userVer))
                     return false;
 
                 commState.idx++;
@@ -319,7 +319,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] bodyBytes0 = commState.getByteArray();
+                byte[] bodyBytes0 = commState.getByteArray(null);
 
                 if (bodyBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -329,7 +329,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -339,7 +339,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 2:
-                String depClsName0 = commState.getString();
+                String depClsName0 = commState.getString(null);
 
                 if (depClsName0 == STR_NOT_READ)
                     return false;
@@ -352,7 +352,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte();
+                byte depMode0 = commState.getByte(null);
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
@@ -363,7 +363,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -372,7 +372,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
+                            UUID _val = commState.getUuid(null);
 
                             if (_val == UUID_NOT_READ)
                                 return false;
@@ -381,7 +381,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                             commState.keyDone = true;
                         }
 
-                        IgniteUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid(null);
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;
@@ -401,7 +401,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 5:
-                byte[] topicBytes0 = commState.getByteArray();
+                byte[] topicBytes0 = commState.getByteArray(null);
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -411,7 +411,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 6:
-                String userVer0 = commState.getString();
+                String userVer0 = commState.getString(null);
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

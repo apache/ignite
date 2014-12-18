@@ -125,7 +125,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -133,32 +133,32 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putIntClient(msgSize))
+                if (!commState.putInt(null, msgSize))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLongClient(reqId))
+                if (!commState.putLong(null, reqId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putUuidClient(clientId))
+                if (!commState.putUuid(null, clientId))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putUuidClient(destId))
+                if (!commState.putUuid(null, destId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteBufferClient(msg))
-                    return false;
+//                if (!commState.putByteBuffer(null, msg))
+//                    return false;
 
                 commState.idx++;
 
@@ -176,7 +176,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 4)
                     return false;
 
-                msgSize = commState.getIntClient();
+                msgSize = commState.getInt(null);
 
                 if (msgSize == 0) // Ping message.
                     return true;
@@ -187,12 +187,12 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLongClient();
+                reqId = commState.getLong(null);
 
                 commState.idx++;
 
             case 2:
-                UUID clientId0 = commState.getUuidClient();
+                UUID clientId0 = commState.getUuid(null);
 
                 if (clientId0 == UUID_NOT_READ)
                     return false;
@@ -202,7 +202,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 commState.idx++;
 
             case 3:
-                UUID destId0 = commState.getUuidClient();
+                UUID destId0 = commState.getUuid(null);
 
                 if (destId0 == UUID_NOT_READ)
                     return false;
@@ -212,14 +212,14 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
                 commState.idx++;
 
             case 4:
-                byte[] msg0 = commState.getByteArrayClient(msgSize - 40);
-
-                if (msg0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                msg = ByteBuffer.wrap(msg0);
-
-                commState.idx++;
+//                byte[] msg0 = commState.getByteArray(null, msgSize - 40);
+//
+//                if (msg0 == BYTE_ARR_NOT_READ)
+//                    return false;
+//
+//                msg = ByteBuffer.wrap(msg0);
+//
+//                commState.idx++;
         }
 
         return true;

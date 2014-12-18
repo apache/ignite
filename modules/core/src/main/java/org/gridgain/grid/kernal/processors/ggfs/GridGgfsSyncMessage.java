@@ -92,7 +92,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -100,13 +100,13 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putLong(order))
+                if (!commState.putLong(null, order))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(res))
+                if (!commState.putBoolean(null, res))
                     return false;
 
                 commState.idx++;
@@ -129,7 +129,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 8)
                     return false;
 
-                order = commState.getLong();
+                order = commState.getLong(null);
 
                 commState.idx++;
 
@@ -137,7 +137,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 1)
                     return false;
 
-                res = commState.getBoolean();
+                res = commState.getBoolean(null);
 
                 commState.idx++;
 

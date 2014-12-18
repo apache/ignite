@@ -49,7 +49,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;

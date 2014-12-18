@@ -10,9 +10,9 @@
 package org.gridgain.grid.util.ipc;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -45,25 +45,19 @@ public class GridIpcToNioAdapter<T> {
     /** */
     private final GridNioMetricsListener metricsLsnr;
 
-    /** */
-    private final GridNioMessageWriter msgWriter;
-
     /**
      * @param metricsLsnr Metrics listener.
      * @param log Log.
      * @param endp Endpoint.
-     * @param msgWriter Message writer.
      * @param lsnr Listener.
      * @param filters Filters.
      */
     public GridIpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, GridIpcEndpoint endp,
-        GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         assert metricsLsnr != null;
-        assert msgWriter != null;
 
         this.metricsLsnr = metricsLsnr;
         this.endp = endp;
-        this.msgWriter = msgWriter;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
         ses = new GridNioSessionImpl(chain, null, null, true);
@@ -145,10 +139,7 @@ public class GridIpcToNioAdapter<T> {
         assert writeBuf.hasArray();
 
         try {
-            // This method is called only on handshake,
-            // so we don't need to provide node ID for
-            // rolling updates support.
-            int cnt = msgWriter.writeFully(null, msg, endp.outputStream(), writeBuf);
+            int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }

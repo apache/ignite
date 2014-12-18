@@ -449,7 +449,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -457,61 +457,61 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!commState.putGridUuid(null, clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putString(cpSpi))
+                if (!commState.putString(null, cpSpi))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(createTime))
+                if (!commState.putLong(null, createTime))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putEnum(depMode))
+                if (!commState.putEnum(null, depMode))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putBoolean(dynamicSiblings))
+                if (!commState.putBoolean(null, dynamicSiblings))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putBoolean(forceLocDep))
+                if (!commState.putBoolean(null, forceLocDep))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putBoolean(internal))
+                if (!commState.putBoolean(null, internal))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putByteArray(jobAttrsBytes))
+                if (!commState.putByteArray(null, jobAttrsBytes))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putByteArray(jobBytes))
+                if (!commState.putByteArray(null, jobBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(jobId))
+                if (!commState.putGridUuid(null, jobId))
                     return false;
 
                 commState.idx++;
@@ -519,7 +519,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
             case 10:
                 if (ldrParticipants != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(ldrParticipants.size()))
+                        if (!commState.putInt(null, ldrParticipants.size()))
                             return false;
 
                         commState.it = ldrParticipants.entrySet().iterator();
@@ -532,13 +532,13 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                         Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
+                            if (!commState.putUuid(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putGridUuid(e.getValue()))
+                        if (!commState.putGridUuid(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -548,56 +548,56 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putByteArray(sesAttrsBytes))
+                if (!commState.putByteArray(null, sesAttrsBytes))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putBoolean(sesFullSup))
+                if (!commState.putBoolean(null, sesFullSup))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putGridUuid(sesId))
+                if (!commState.putGridUuid(null, sesId))
                     return false;
 
                 commState.idx++;
 
             case 14:
-                if (!commState.putByteArray(siblingsBytes))
+                if (!commState.putByteArray(null, siblingsBytes))
                     return false;
 
                 commState.idx++;
 
             case 15:
-                if (!commState.putLong(startTaskTime))
+                if (!commState.putLong(null, startTaskTime))
                     return false;
 
                 commState.idx++;
 
             case 16:
-                if (!commState.putString(taskClsName))
+                if (!commState.putString(null, taskClsName))
                     return false;
 
                 commState.idx++;
 
             case 17:
-                if (!commState.putString(taskName))
+                if (!commState.putString(null, taskName))
                     return false;
 
                 commState.idx++;
 
             case 18:
-                if (!commState.putLong(timeout))
+                if (!commState.putLong(null, timeout))
                     return false;
 
                 commState.idx++;
@@ -605,7 +605,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
             case 19:
                 if (top != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(top.size()))
+                        if (!commState.putInt(null, top.size()))
                             return false;
 
                         commState.it = top.iterator();
@@ -615,7 +615,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putUuid((UUID)commState.cur))
+                        if (!commState.putUuid(null, (UUID)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -623,14 +623,14 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 20:
-                if (!commState.putString(userVer))
+                if (!commState.putString(null, userVer))
                     return false;
 
                 commState.idx++;
@@ -647,7 +647,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -657,7 +657,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 1:
-                String cpSpi0 = commState.getString();
+                String cpSpi0 = commState.getString(null);
 
                 if (cpSpi0 == STR_NOT_READ)
                     return false;
@@ -670,7 +670,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 8)
                     return false;
 
-                createTime = commState.getLong();
+                createTime = commState.getLong(null);
 
                 commState.idx++;
 
@@ -678,7 +678,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte();
+                byte depMode0 = commState.getByte(null);
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
@@ -688,7 +688,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 1)
                     return false;
 
-                dynamicSiblings = commState.getBoolean();
+                dynamicSiblings = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -696,7 +696,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 1)
                     return false;
 
-                forceLocDep = commState.getBoolean();
+                forceLocDep = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -704,12 +704,12 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 1)
                     return false;
 
-                internal = commState.getBoolean();
+                internal = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 7:
-                byte[] jobAttrsBytes0 = commState.getByteArray();
+                byte[] jobAttrsBytes0 = commState.getByteArray(null);
 
                 if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -719,7 +719,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 8:
-                byte[] jobBytes0 = commState.getByteArray();
+                byte[] jobBytes0 = commState.getByteArray(null);
 
                 if (jobBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -729,7 +729,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 9:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid(null);
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -743,7 +743,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -752,7 +752,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
+                            UUID _val = commState.getUuid(null);
 
                             if (_val == UUID_NOT_READ)
                                 return false;
@@ -761,7 +761,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                             commState.keyDone = true;
                         }
 
-                        IgniteUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid(null);
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;
@@ -781,7 +781,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 11:
-                byte[] sesAttrsBytes0 = commState.getByteArray();
+                byte[] sesAttrsBytes0 = commState.getByteArray(null);
 
                 if (sesAttrsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -794,12 +794,12 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 1)
                     return false;
 
-                sesFullSup = commState.getBoolean();
+                sesFullSup = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 13:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid(null);
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -809,7 +809,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 14:
-                byte[] siblingsBytes0 = commState.getByteArray();
+                byte[] siblingsBytes0 = commState.getByteArray(null);
 
                 if (siblingsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -822,12 +822,12 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 8)
                     return false;
 
-                startTaskTime = commState.getLong();
+                startTaskTime = commState.getLong(null);
 
                 commState.idx++;
 
             case 16:
-                String taskClsName0 = commState.getString();
+                String taskClsName0 = commState.getString(null);
 
                 if (taskClsName0 == STR_NOT_READ)
                     return false;
@@ -837,7 +837,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 17:
-                String taskName0 = commState.getString();
+                String taskName0 = commState.getString(null);
 
                 if (taskName0 == STR_NOT_READ)
                     return false;
@@ -850,7 +850,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 if (buf.remaining() < 8)
                     return false;
 
-                timeout = commState.getLong();
+                timeout = commState.getLong(null);
 
                 commState.idx++;
 
@@ -859,7 +859,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -867,7 +867,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                         top = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        UUID _val = commState.getUuid();
+                        UUID _val = commState.getUuid(null);
 
                         if (_val == UUID_NOT_READ)
                             return false;
@@ -884,7 +884,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 20:
-                String userVer0 = commState.getString();
+                String userVer0 = commState.getString(null);
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

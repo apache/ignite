@@ -38,14 +38,10 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     private final double bufSizeRatio;
 
     /** */
-    private final GridNioMessageWriter msgWriter;
-
-    /** */
     private final ByteBuffer writeBuf;
 
     /**
      * @param metricsLsnr Metrics listener.
-     * @param msgWriter Message writer.
      * @param addr Address.
      * @param locHost Local address.
      * @param connTimeout Connect timeout.
@@ -59,7 +55,6 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
      */
     public GridTcpCommunicationClient(
         GridNioMetricsListener metricsLsnr,
-        GridNioMessageWriter msgWriter,
         InetSocketAddress addr,
         InetAddress locHost,
         long connTimeout,
@@ -73,7 +68,6 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         super(metricsLsnr);
 
         assert metricsLsnr != null;
-        assert msgWriter != null;
         assert addr != null;
         assert locHost != null;
         assert connTimeout >= 0;
@@ -84,7 +78,6 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         A.ensure(bufSizeRatio > 0 && bufSizeRatio < 1,
             "Value of bufSizeRatio property must be between 0 and 1 (exclusive).");
 
-        this.msgWriter = msgWriter;
         this.minBufferedMsgCnt = minBufferedMsgCnt;
         this.bufSizeRatio = bufSizeRatio;
 
@@ -190,7 +183,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert writeBuf.hasArray();
 
         try {
-            int cnt = msgWriter.writeFully(nodeId, msg, out, writeBuf);
+            int cnt = U.writeMessageFully(msg, out, writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }

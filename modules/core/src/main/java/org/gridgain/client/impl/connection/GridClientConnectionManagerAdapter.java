@@ -11,12 +11,11 @@ package org.gridgain.client.impl.connection;
 
 import org.apache.ignite.*;
 import org.apache.ignite.logger.java.*;
+import org.apache.ignite.plugin.security.*;
 import org.gridgain.client.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.util.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
@@ -88,44 +87,6 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
     /** Marshaller ID. */
     private final Byte marshId;
 
-    /** Message writer. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            return msg.writeTo(buf);
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            return cnt;
-        }
-    };
-
     /**
      * @param clientId Client ID.
      * @param sslCtx SSL context to enable secured connection or {@code null} to use unsecured one.
@@ -173,23 +134,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 GridNioFilter[] filters;
 
-                GridNioMessageReader msgReader = new GridNioMessageReader() {
-                    @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg,
-                        ByteBuffer buf) {
-                        assert msg != null;
-                        assert buf != null;
-
-                        msg.messageReader(this, nodeId);
-
-                        return msg.readFrom(buf);
-                    }
-
-                    @Nullable @Override public GridTcpMessageFactory messageFactory() {
-                        return null;
-                    }
-                };
-
-                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
+                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(), gridLog, true);
 
                 if (sslCtx != null) {
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
@@ -217,7 +162,6 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
                     .gridName("gridClient")
-                    .messageWriter(msgWriter)
                     .daemon(cfg.isDaemon())
                     .build();
 
@@ -702,18 +646,9 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         /** Message metadata key. */
         private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-        /** Message reader. */
-        private final GridNioMessageReader msgReader;
-
-        /**
-         * @param msgReader Message reader.
-         */
-        NioParser(GridNioMessageReader msgReader) {
-            this.msgReader = msgReader;
-        }
-
         /** {@inheritDoc} */
-        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
+            throws IOException, IgniteCheckedException {
             GridClientFutureAdapter<?> handshakeFut = ses.meta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
 
             if (handshakeFut != null) {
@@ -736,7 +671,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
             boolean finished = false;
 
             if (buf.hasRemaining())
-                finished = msgReader.read(null, msg, buf);
+                finished = msg.readFrom(buf);
 
             if (finished)
                 return msg;

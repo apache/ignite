@@ -87,7 +87,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -97,7 +97,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
             case 0:
                 if (deltas != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(deltas.size()))
+                        if (!commState.putInt(null, deltas.size()))
                             return false;
 
                         commState.it = deltas.entrySet().iterator();
@@ -110,13 +110,13 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
                         Map.Entry<UUID, Long> e = (Map.Entry<UUID, Long>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
+                            if (!commState.putUuid(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putLong(e.getValue()))
+                        if (!commState.putLong(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -126,14 +126,14 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putClockDeltaVersion(snapVer))
+                if (!commState.putClockDeltaVersion(null, snapVer))
                     return false;
 
                 commState.idx++;
@@ -154,7 +154,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -163,7 +163,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
+                            UUID _val = commState.getUuid(null);
 
                             if (_val == UUID_NOT_READ)
                                 return false;
@@ -175,7 +175,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
                         if (buf.remaining() < 8)
                             return false;
 
-                        long _val = commState.getLong();
+                        long _val = commState.getLong(null);
 
                         deltas.put((UUID)commState.cur, _val);
 
@@ -192,7 +192,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
                 commState.idx++;
 
             case 1:
-                GridClockDeltaVersion snapVer0 = commState.getClockDeltaVersion();
+                GridClockDeltaVersion snapVer0 = commState.getClockDeltaVersion(null);
 
                 if (snapVer0 == CLOCK_DELTA_VER_NOT_READ)
                     return false;

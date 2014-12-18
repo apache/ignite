@@ -137,7 +137,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -145,19 +145,19 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putByteArray(committedTxInfoBytes))
+                if (!commState.putByteArray(null, committedTxInfoBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -177,7 +177,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (commState.idx) {
             case 8:
-                byte[] committedTxInfoBytes0 = commState.getByteArray();
+                byte[] committedTxInfoBytes0 = commState.getByteArray(null);
 
                 if (committedTxInfoBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -187,7 +187,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -197,7 +197,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 10:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

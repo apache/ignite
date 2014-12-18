@@ -61,7 +61,7 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;

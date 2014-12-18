@@ -27,6 +27,7 @@ import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.spi.discovery.*;
+import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.io.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -9026,5 +9027,38 @@ public abstract class GridUtils {
         }
 
         return list;
+    }
+
+    /**
+     * Fully writes communication message to provided stream.
+     *
+     * @param msg Message.
+     * @param out Stream to write to.
+     * @param buf Byte buffer that will be passed to {@link GridTcpCommunicationMessageAdapter#writeTo(ByteBuffer)}
+     *            method.
+     * @return Number of written bytes.
+     * @throws IOException In case of error.
+     */
+    public static int writeMessageFully(GridTcpCommunicationMessageAdapter msg, OutputStream out, ByteBuffer buf)
+        throws IOException {
+        assert msg != null;
+        assert out != null;
+        assert buf != null;
+        assert buf.hasArray();
+
+        boolean finished = false;
+        int cnt = 0;
+
+        while (!finished) {
+            finished = msg.writeTo(buf);
+
+            out.write(buf.array(), 0, buf.position());
+
+            cnt += buf.position();
+
+            buf.clear();
+        }
+
+        return cnt;
     }
 }

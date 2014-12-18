@@ -91,7 +91,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -101,7 +101,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
             case 3:
                 if (futVers != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(futVers.size()))
+                        if (!commState.putInt(null, futVers.size()))
                             return false;
 
                         commState.it = futVers.iterator();
@@ -111,7 +111,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -119,7 +119,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -144,7 +144,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -152,7 +152,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
                         futVers = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;

@@ -281,7 +281,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -289,31 +289,31 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(affKey))
+                if (!commState.putGridUuid(null, affKey))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(done))
+                if (!commState.putBoolean(null, done))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(endOff))
+                if (!commState.putLong(null, endOff))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putLong(startOff))
+                if (!commState.putLong(null, startOff))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putInt(status))
+                if (!commState.putInt(null, status))
                     return false;
 
                 commState.idx++;
@@ -330,7 +330,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid();
+                IgniteUuid affKey0 = commState.getGridUuid(null);
 
                 if (affKey0 == GRID_UUID_NOT_READ)
                     return false;
@@ -343,7 +343,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 1)
                     return false;
 
-                done = commState.getBoolean();
+                done = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -351,7 +351,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 8)
                     return false;
 
-                endOff = commState.getLong();
+                endOff = commState.getLong(null);
 
                 commState.idx++;
 
@@ -359,7 +359,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 8)
                     return false;
 
-                startOff = commState.getLong();
+                startOff = commState.getLong(null);
 
                 commState.idx++;
 
@@ -367,7 +367,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 4)
                     return false;
 
-                status = commState.getInt();
+                status = commState.getInt(null);
 
                 commState.idx++;
 

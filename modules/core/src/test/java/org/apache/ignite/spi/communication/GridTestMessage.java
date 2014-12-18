@@ -111,7 +111,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -119,25 +119,25 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putUuid(srcNodeId))
+                if (!commState.putUuid(null, srcNodeId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong(msgId))
+                if (!commState.putLong(null, msgId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(resId))
+                if (!commState.putLong(null, resId))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putByteArray(payload))
+                if (!commState.putByteArray(null, payload))
                     return false;
 
                 commState.idx++;
@@ -153,7 +153,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                srcNodeId = commState.getUuid();
+                srcNodeId = commState.getUuid(null);
 
                 if (srcNodeId == UUID_NOT_READ)
                     return false;
@@ -164,7 +164,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                msgId = commState.getLong();
+                msgId = commState.getLong(null);
 
                 commState.idx++;
 
@@ -172,12 +172,12 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                resId = commState.getLong();
+                resId = commState.getLong(null);
 
                 commState.idx++;
 
             case 3:
-                payload = commState.getByteArray();
+                payload = commState.getByteArray(null);
 
                 if (payload == BYTE_ARR_NOT_READ)
                     return false;

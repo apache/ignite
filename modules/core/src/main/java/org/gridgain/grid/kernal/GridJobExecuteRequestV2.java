@@ -129,7 +129,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -137,7 +137,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
 
         switch (commState.idx) {
             case 21:
-                if (!commState.putUuid(subjId))
+                if (!commState.putUuid(null, subjId))
                     return false;
 
                 commState.idx++;
@@ -156,7 +156,7 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
 
         switch (commState.idx) {
             case 21:
-                UUID subjId0 = commState.getUuid();
+                UUID subjId0 = commState.getUuid(null);
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;

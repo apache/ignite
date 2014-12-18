@@ -161,7 +161,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -169,19 +169,19 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(entriesBytes))
+                if (!commState.putByteArray(null, entriesBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLong(futId))
+                if (!commState.putLong(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putLong(topVer))
+                if (!commState.putLong(null, topVer))
                     return false;
 
                 commState.idx++;
@@ -201,7 +201,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                byte[] entriesBytes0 = commState.getByteArray();
+                byte[] entriesBytes0 = commState.getByteArray(null);
 
                 if (entriesBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -214,7 +214,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 if (buf.remaining() < 8)
                     return false;
 
-                futId = commState.getLong();
+                futId = commState.getLong(null);
 
                 commState.idx++;
 
@@ -222,7 +222,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong();
+                topVer = commState.getLong(null);
 
                 commState.idx++;
 

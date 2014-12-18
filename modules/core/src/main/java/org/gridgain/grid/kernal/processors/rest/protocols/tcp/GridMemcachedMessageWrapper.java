@@ -58,7 +58,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -66,7 +66,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArrayClient(bytes))
+                if (!commState.putByteArray(null, bytes))
                     return false;
 
                 commState.idx++;

@@ -135,7 +135,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -143,19 +143,19 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
         switch (commState.idx) {
             case 5:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(nearThreadId))
+                if (!commState.putLong(null, nearThreadId))
                     return false;
 
                 commState.idx++;
@@ -175,7 +175,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
         switch (commState.idx) {
             case 5:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -185,7 +185,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 commState.idx++;
 
             case 6:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -198,7 +198,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
                 if (buf.remaining() < 8)
                     return false;
 
-                nearThreadId = commState.getLong();
+                nearThreadId = commState.getLong(null);
 
                 commState.idx++;
 

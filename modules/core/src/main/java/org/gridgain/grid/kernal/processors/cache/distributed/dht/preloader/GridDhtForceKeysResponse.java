@@ -189,7 +189,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -197,19 +197,19 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(infosBytes))
+                if (!commState.putByteArray(null, infosBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -217,7 +217,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
             case 6:
                 if (missedKeyBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(missedKeyBytes.size()))
+                        if (!commState.putInt(null, missedKeyBytes.size()))
                             return false;
 
                         commState.it = missedKeyBytes.iterator();
@@ -227,7 +227,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -235,7 +235,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -256,7 +256,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -266,7 +266,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 commState.idx++;
 
             case 4:
-                byte[] infosBytes0 = commState.getByteArray();
+                byte[] infosBytes0 = commState.getByteArray(null);
 
                 if (infosBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -276,7 +276,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 commState.idx++;
 
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -290,7 +290,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -298,7 +298,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                         missedKeyBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;

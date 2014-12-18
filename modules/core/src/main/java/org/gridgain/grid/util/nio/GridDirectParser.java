@@ -16,7 +16,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Parser for direct messages.
@@ -25,9 +24,6 @@ public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Message reader. */
-    private final GridNioMessageReader msgReader;
-
     /** */
     private IgniteSpiAdapter spi;
 
@@ -35,11 +31,9 @@ public class GridDirectParser implements GridNioParser {
     private GridTcpMessageFactory msgFactory;
 
     /**
-     * @param msgReader Message reader.
      * @param spi Spi.
      */
-    public GridDirectParser(GridNioMessageReader msgReader, IgniteSpiAdapter spi) {
-        this.msgReader = msgReader;
+    public GridDirectParser(IgniteSpiAdapter spi) {
         this.spi = spi;
     }
 
@@ -49,7 +43,6 @@ public class GridDirectParser implements GridNioParser {
             msgFactory = spi.getSpiContext().messageFactory();
 
         GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
-        UUID nodeId = ses.meta(GridNioServer.DIFF_VER_NODE_ID_META_KEY);
 
         if (msg == null && buf.hasRemaining())
             msg = msgFactory.create(buf.get());
@@ -57,7 +50,7 @@ public class GridDirectParser implements GridNioParser {
         boolean finished = false;
 
         if (buf.hasRemaining())
-            finished = msgReader.read(nodeId, msg, buf);
+            finished = msg.readFrom(buf);
 
         if (finished)
             return msg;

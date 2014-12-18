@@ -114,7 +114,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -122,7 +122,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         switch (commState.idx) {
             case 5:
-                if (!commState.putByteArray(partsBytes))
+                if (!commState.putByteArray(null, partsBytes))
                     return false;
 
                 commState.idx++;
@@ -142,7 +142,7 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         switch (commState.idx) {
             case 5:
-                byte[] partsBytes0 = commState.getByteArray();
+                byte[] partsBytes0 = commState.getByteArray(null);
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
                     return false;

@@ -206,7 +206,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -214,37 +214,37 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putString(cacheName))
+                if (!commState.putString(null, cacheName))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!commState.putGridUuid(null, clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putByteArray(colBytes))
+                if (!commState.putByteArray(null, colBytes))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putEnum(depMode))
+                if (!commState.putEnum(null, depMode))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putBoolean(forceLocDep))
+                if (!commState.putBoolean(null, forceLocDep))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putBoolean(ignoreDepOwnership))
+                if (!commState.putBoolean(null, ignoreDepOwnership))
                     return false;
 
                 commState.idx++;
@@ -252,7 +252,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
             case 6:
                 if (ldrParticipants != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(ldrParticipants.size()))
+                        if (!commState.putInt(null, ldrParticipants.size()))
                             return false;
 
                         commState.it = ldrParticipants.entrySet().iterator();
@@ -265,13 +265,13 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                         Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
+                            if (!commState.putUuid(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putGridUuid(e.getValue()))
+                        if (!commState.putGridUuid(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -281,38 +281,38 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(reqId))
+                if (!commState.putLong(null, reqId))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putByteArray(resTopicBytes))
+                if (!commState.putByteArray(null, resTopicBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putString(sampleClsName))
+                if (!commState.putString(null, sampleClsName))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putByteArray(updaterBytes))
+                if (!commState.putByteArray(null, updaterBytes))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putString(userVer))
+                if (!commState.putString(null, userVer))
                     return false;
 
                 commState.idx++;
@@ -328,7 +328,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                String cacheName0 = commState.getString();
+                String cacheName0 = commState.getString(null);
 
                 if (cacheName0 == STR_NOT_READ)
                     return false;
@@ -338,7 +338,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -348,7 +348,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 2:
-                byte[] colBytes0 = commState.getByteArray();
+                byte[] colBytes0 = commState.getByteArray(null);
 
                 if (colBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -361,7 +361,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte();
+                byte depMode0 = commState.getByte(null);
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
@@ -371,7 +371,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 1)
                     return false;
 
-                forceLocDep = commState.getBoolean();
+                forceLocDep = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -379,7 +379,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 1)
                     return false;
 
-                ignoreDepOwnership = commState.getBoolean();
+                ignoreDepOwnership = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -388,7 +388,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -397,7 +397,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
+                            UUID _val = commState.getUuid(null);
 
                             if (_val == UUID_NOT_READ)
                                 return false;
@@ -406,7 +406,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                             commState.keyDone = true;
                         }
 
-                        IgniteUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid(null);
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;
@@ -429,12 +429,12 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLong();
+                reqId = commState.getLong(null);
 
                 commState.idx++;
 
             case 8:
-                byte[] resTopicBytes0 = commState.getByteArray();
+                byte[] resTopicBytes0 = commState.getByteArray(null);
 
                 if (resTopicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -444,7 +444,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 9:
-                String sampleClsName0 = commState.getString();
+                String sampleClsName0 = commState.getString(null);
 
                 if (sampleClsName0 == STR_NOT_READ)
                     return false;
@@ -454,7 +454,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 10:
-                byte[] updaterBytes0 = commState.getByteArray();
+                byte[] updaterBytes0 = commState.getByteArray(null);
 
                 if (updaterBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -464,7 +464,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 11:
-                String userVer0 = commState.getString();
+                String userVer0 = commState.getString(null);
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

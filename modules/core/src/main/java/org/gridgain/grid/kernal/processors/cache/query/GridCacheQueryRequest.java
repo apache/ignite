@@ -486,7 +486,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -494,115 +494,115 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putBoolean(all))
+                if (!commState.putBoolean(null, all))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(argsBytes))
+                if (!commState.putByteArray(null, argsBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putString(cacheName))
+                if (!commState.putString(null, cacheName))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putBoolean(cancel))
+                if (!commState.putBoolean(null, cancel))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putString(clause))
+                if (!commState.putString(null, clause))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putString(clsName))
+                if (!commState.putString(null, clsName))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putBoolean(fields))
+                if (!commState.putBoolean(null, fields))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putLong(id))
+                if (!commState.putLong(null, id))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putBoolean(incBackups))
+                if (!commState.putBoolean(null, incBackups))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putBoolean(incMeta))
+                if (!commState.putBoolean(null, incMeta))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putByteArray(keyValFilterBytes))
+                if (!commState.putByteArray(null, keyValFilterBytes))
                     return false;
 
                 commState.idx++;
 
             case 14:
-                if (!commState.putInt(pageSize))
+                if (!commState.putInt(null, pageSize))
                     return false;
 
                 commState.idx++;
 
             case 15:
-                if (!commState.putByteArray(prjFilterBytes))
+                if (!commState.putByteArray(null, prjFilterBytes))
                     return false;
 
                 commState.idx++;
 
             case 16:
-                if (!commState.putByteArray(rdcBytes))
+                if (!commState.putByteArray(null, rdcBytes))
                     return false;
 
                 commState.idx++;
 
             case 17:
-                if (!commState.putByteArray(transBytes))
+                if (!commState.putByteArray(null, transBytes))
                     return false;
 
                 commState.idx++;
 
             case 18:
-                if (!commState.putEnum(type))
+                if (!commState.putEnum(null, type))
                     return false;
 
                 commState.idx++;
 
             case 19:
-                if (!commState.putBoolean(keepPortable))
+                if (!commState.putBoolean(null, keepPortable))
                     return false;
 
                 commState.idx++;
 
             case 20:
-                if (!commState.putUuid(subjId))
+                if (!commState.putUuid(null, subjId))
                     return false;
 
                 commState.idx++;
 
             case 21:
-                if (!commState.putInt(taskHash))
+                if (!commState.putInt(null, taskHash))
                     return false;
 
                 commState.idx++;
@@ -625,12 +625,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                all = commState.getBoolean();
+                all = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 4:
-                byte[] argsBytes0 = commState.getByteArray();
+                byte[] argsBytes0 = commState.getByteArray(null);
 
                 if (argsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -640,7 +640,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 5:
-                String cacheName0 = commState.getString();
+                String cacheName0 = commState.getString(null);
 
                 if (cacheName0 == STR_NOT_READ)
                     return false;
@@ -653,12 +653,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                cancel = commState.getBoolean();
+                cancel = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 7:
-                String clause0 = commState.getString();
+                String clause0 = commState.getString(null);
 
                 if (clause0 == STR_NOT_READ)
                     return false;
@@ -668,7 +668,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 8:
-                String clsName0 = commState.getString();
+                String clsName0 = commState.getString(null);
 
                 if (clsName0 == STR_NOT_READ)
                     return false;
@@ -681,7 +681,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                fields = commState.getBoolean();
+                fields = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -689,7 +689,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 8)
                     return false;
 
-                id = commState.getLong();
+                id = commState.getLong(null);
 
                 commState.idx++;
 
@@ -697,7 +697,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                incBackups = commState.getBoolean();
+                incBackups = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -705,12 +705,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                incMeta = commState.getBoolean();
+                incMeta = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 13:
-                byte[] keyValFilterBytes0 = commState.getByteArray();
+                byte[] keyValFilterBytes0 = commState.getByteArray(null);
 
                 if (keyValFilterBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -723,12 +723,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 4)
                     return false;
 
-                pageSize = commState.getInt();
+                pageSize = commState.getInt(null);
 
                 commState.idx++;
 
             case 15:
-                byte[] prjFilterBytes0 = commState.getByteArray();
+                byte[] prjFilterBytes0 = commState.getByteArray(null);
 
                 if (prjFilterBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -738,7 +738,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 16:
-                byte[] rdcBytes0 = commState.getByteArray();
+                byte[] rdcBytes0 = commState.getByteArray(null);
 
                 if (rdcBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -748,7 +748,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 commState.idx++;
 
             case 17:
-                byte[] transBytes0 = commState.getByteArray();
+                byte[] transBytes0 = commState.getByteArray(null);
 
                 if (transBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -761,7 +761,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                byte type0 = commState.getByte();
+                byte type0 = commState.getByte(null);
 
                 type = GridCacheQueryType.fromOrdinal(type0);
 
@@ -771,12 +771,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 1)
                     return false;
 
-                keepPortable = commState.getBoolean();
+                keepPortable = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 20:
-                UUID subjId0 = commState.getUuid();
+                UUID subjId0 = commState.getUuid(null);
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -789,7 +789,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
                 if (buf.remaining() < 4)
                     return false;
 
-                taskHash = commState.getInt();
+                taskHash = commState.getInt(null);
 
                 commState.idx++;
 

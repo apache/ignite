@@ -106,7 +106,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -114,19 +114,19 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putBoolean(success))
+                if (!commState.putBoolean(null, success))
                     return false;
 
                 commState.idx++;
@@ -146,7 +146,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (commState.idx) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -156,7 +156,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 commState.idx++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -169,7 +169,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (buf.remaining() < 1)
                     return false;
 
-                success = commState.getBoolean();
+                success = commState.getBoolean(null);
 
                 commState.idx++;
 

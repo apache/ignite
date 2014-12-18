@@ -29,7 +29,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -37,7 +37,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putIntClient(size))
+                if (!commState.putInt(null, size))
                     return false;
 
                 commState.idx++;

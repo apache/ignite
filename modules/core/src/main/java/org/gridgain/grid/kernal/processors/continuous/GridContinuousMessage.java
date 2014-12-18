@@ -129,7 +129,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -137,19 +137,19 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(dataBytes))
+                if (!commState.putByteArray(null, dataBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putUuid(routineId))
+                if (!commState.putUuid(null, routineId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putEnum(type))
+                if (!commState.putEnum(null, type))
                     return false;
 
                 commState.idx++;
@@ -166,7 +166,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] dataBytes0 = commState.getByteArray();
+                byte[] dataBytes0 = commState.getByteArray(null);
 
                 if (dataBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -176,7 +176,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                UUID routineId0 = commState.getUuid();
+                UUID routineId0 = commState.getUuid(null);
 
                 if (routineId0 == UUID_NOT_READ)
                     return false;
@@ -189,7 +189,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                byte type0 = commState.getByte();
+                byte type0 = commState.getByte(null);
 
                 type = GridContinuousMessageType.fromOrdinal(type0);
 

@@ -10,12 +10,11 @@
 package org.gridgain.grid.util.nio;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.ipc.shmem.*;
-import org.jetbrains.annotations.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -31,30 +30,22 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     /** */
     private final ByteBuffer writeBuf;
 
-    /** */
-    private final GridNioMessageWriter msgWriter;
-
     /**
      * @param metricsLsnr Metrics listener.
      * @param port Shared memory IPC server port.
      * @param connTimeout Connection timeout.
      * @param log Logger.
-     * @param msgWriter Message writer.
      * @throws IgniteCheckedException If failed.
      */
-    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout, IgniteLogger log,
-        GridNioMessageWriter msgWriter)
-        throws IgniteCheckedException {
+    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout,
+        IgniteLogger log) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
-        assert msgWriter != null;
         assert port > 0 && port < 0xffff;
         assert connTimeout >= 0;
 
         shmem = new GridIpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
-
-        this.msgWriter = msgWriter;
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
@@ -111,7 +102,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
-            int cnt = msgWriter.writeFully(nodeId, msg, shmem.outputStream(), writeBuf);
+            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }

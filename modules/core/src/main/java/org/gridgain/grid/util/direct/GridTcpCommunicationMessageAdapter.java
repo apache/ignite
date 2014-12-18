@@ -14,8 +14,6 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.nio.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -118,26 +116,6 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
 
     /** */
     protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();
-
-    /**
-     * @param msgWriter Message writer.
-     * @param nodeId Node ID (provided only if versions are different).
-     */
-    public void messageWriter(GridNioMessageWriter msgWriter, @Nullable UUID nodeId) {
-        assert msgWriter != null;
-
-        commState.messageWriter(msgWriter, nodeId);
-    }
-
-    /**
-     * @param msgReader Message reader.
-     * @param nodeId Node ID (provided only if versions are different).
-     */
-    public void messageReader(GridNioMessageReader msgReader, @Nullable UUID nodeId) {
-        assert msgReader != null;
-
-        commState.messageReader(msgReader, nodeId);
-    }
 
     /**
      * @param buf Byte buffer.

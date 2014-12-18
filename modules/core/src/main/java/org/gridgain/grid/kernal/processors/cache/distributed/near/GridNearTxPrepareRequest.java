@@ -235,7 +235,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -243,13 +243,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         switch (commState.idx) {
             case 21:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 22:
-                if (!commState.putBoolean(last))
+                if (!commState.putBoolean(null, last))
                     return false;
 
                 commState.idx++;
@@ -257,7 +257,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             case 23:
                 if (lastBackups != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(lastBackups.size()))
+                        if (!commState.putInt(null, lastBackups.size()))
                             return false;
 
                         commState.it = lastBackups.iterator();
@@ -267,7 +267,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putUuid((UUID)commState.cur))
+                        if (!commState.putUuid(null, (UUID)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -275,38 +275,38 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 24:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
 
             case 25:
-                if (!commState.putBoolean(near))
+                if (!commState.putBoolean(null, near))
                     return false;
 
                 commState.idx++;
 
             case 26:
-                if (!commState.putLong(topVer))
+                if (!commState.putLong(null, topVer))
                     return false;
 
                 commState.idx++;
 
             case 27:
-                if (!commState.putUuid(subjId))
+                if (!commState.putUuid(null, subjId))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putInt(taskNameHash))
+                if (!commState.putInt(null, taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -326,7 +326,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         switch (commState.idx) {
             case 21:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -339,7 +339,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 1)
                     return false;
 
-                last = commState.getBoolean();
+                last = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -348,7 +348,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -356,7 +356,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                         lastBackups = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        UUID _val = commState.getUuid();
+                        UUID _val = commState.getUuid(null);
 
                         if (_val == UUID_NOT_READ)
                             return false;
@@ -373,7 +373,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 24:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -386,7 +386,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 1)
                     return false;
 
-                near = commState.getBoolean();
+                near = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -394,12 +394,12 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong();
+                topVer = commState.getLong(null);
 
                 commState.idx++;
 
             case 27:
-                UUID subjId0 = commState.getUuid();
+                UUID subjId0 = commState.getUuid(null);
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -412,7 +412,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt();
+                taskNameHash = commState.getInt(null);
 
                 commState.idx++;
 

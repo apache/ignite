@@ -202,7 +202,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -212,7 +212,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             case 11:
                 if (dhtVers != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(dhtVers.length))
+                        if (!commState.putInt(null, dhtVers.length))
                             return false;
 
                         commState.it = arrayIterator(dhtVers);
@@ -222,7 +222,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -230,14 +230,14 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putBooleanArray(filterRes))
+                if (!commState.putBooleanArray(null, filterRes))
                     return false;
 
                 commState.idx++;
@@ -245,7 +245,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             case 13:
                 if (mappedVers != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(mappedVers.length))
+                        if (!commState.putInt(null, mappedVers.length))
                             return false;
 
                         commState.it = arrayIterator(mappedVers);
@@ -255,7 +255,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -263,14 +263,14 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 14:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -278,7 +278,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
             case 15:
                 if (pending != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(pending.size()))
+                        if (!commState.putInt(null, pending.size()))
                             return false;
 
                         commState.it = pending.iterator();
@@ -288,7 +288,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -296,7 +296,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -321,7 +321,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -329,7 +329,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         dhtVers = new GridCacheVersion[commState.readSize];
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;
@@ -346,7 +346,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 12:
-                boolean[] filterRes0 = commState.getBooleanArray();
+                boolean[] filterRes0 = commState.getBooleanArray(null);
 
                 if (filterRes0 == BOOLEAN_ARR_NOT_READ)
                     return false;
@@ -360,7 +360,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -368,7 +368,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         mappedVers = new GridCacheVersion[commState.readSize];
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;
@@ -385,7 +385,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 14:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -399,7 +399,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -407,7 +407,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                         pending = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;

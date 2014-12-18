@@ -74,7 +74,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -82,7 +82,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(fileId))
+                if (!commState.putGridUuid(null, fileId))
                     return false;
 
                 commState.idx++;
@@ -102,7 +102,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid(null);
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

@@ -203,7 +203,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -211,19 +211,19 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(failedKeysBytes))
+                if (!commState.putByteArray(null, failedKeysBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putCacheVersion(futVer))
+                if (!commState.putCacheVersion(null, futVer))
                     return false;
 
                 commState.idx++;
@@ -231,7 +231,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
             case 6:
                 if (nearEvictedBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(nearEvictedBytes.size()))
+                        if (!commState.putInt(null, nearEvictedBytes.size()))
                             return false;
 
                         commState.it = nearEvictedBytes.iterator();
@@ -241,7 +241,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -249,7 +249,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -270,7 +270,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (commState.idx) {
             case 3:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -280,7 +280,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 4:
-                byte[] failedKeysBytes0 = commState.getByteArray();
+                byte[] failedKeysBytes0 = commState.getByteArray(null);
 
                 if (failedKeysBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -290,7 +290,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 5:
-                GridCacheVersion futVer0 = commState.getCacheVersion();
+                GridCacheVersion futVer0 = commState.getCacheVersion(null);
 
                 if (futVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -304,7 +304,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -312,7 +312,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                         nearEvictedBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;

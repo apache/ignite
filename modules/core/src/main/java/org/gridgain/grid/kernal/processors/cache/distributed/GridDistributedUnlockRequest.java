@@ -136,7 +136,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -146,7 +146,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
             case 8:
                 if (keyBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(keyBytes.size()))
+                        if (!commState.putInt(null, keyBytes.size()))
                             return false;
 
                         commState.it = keyBytes.iterator();
@@ -156,7 +156,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -164,7 +164,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -189,7 +189,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -197,7 +197,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
                         keyBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;

@@ -69,7 +69,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -77,7 +77,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(cancelledFutId))
+                if (!commState.putGridUuid(null, cancelledFutId))
                     return false;
 
                 commState.idx++;
@@ -94,7 +94,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid cancelledFutId0 = commState.getGridUuid();
+                IgniteUuid cancelledFutId0 = commState.getGridUuid(null);
 
                 if (cancelledFutId0 == GRID_UUID_NOT_READ)
                     return false;

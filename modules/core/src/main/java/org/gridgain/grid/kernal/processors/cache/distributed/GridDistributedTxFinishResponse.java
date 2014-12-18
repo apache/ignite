@@ -94,7 +94,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -102,13 +102,13 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putCacheVersion(txId))
+                if (!commState.putCacheVersion(null, txId))
                     return false;
 
                 commState.idx++;
@@ -128,7 +128,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (commState.idx) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -138,7 +138,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
                 commState.idx++;
 
             case 4:
-                GridCacheVersion txId0 = commState.getCacheVersion();
+                GridCacheVersion txId0 = commState.getCacheVersion(null);
 
                 if (txId0 == CACHE_VER_NOT_READ)
                     return false;

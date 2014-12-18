@@ -369,10 +369,14 @@ public class GridLongList implements Externalizable {
     }
 
     /**
-     * @return Internal array.
+     * @return Array copy.
      */
-    public long[] internalArray() {
-        return arr;
+    public long[] array() {
+        long[] res = new long[idx];
+
+        System.arraycopy(arr, 0, res, 0, idx);
+
+        return res;
     }
 
     /** {@inheritDoc} */

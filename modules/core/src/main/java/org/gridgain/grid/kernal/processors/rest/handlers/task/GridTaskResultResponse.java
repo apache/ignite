@@ -135,7 +135,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -143,25 +143,25 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putString(err))
+                if (!commState.putString(null, err))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(finished))
+                if (!commState.putBoolean(null, finished))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(found))
+                if (!commState.putBoolean(null, found))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putByteArray(resBytes))
+                if (!commState.putByteArray(null, resBytes))
                     return false;
 
                 commState.idx++;
@@ -178,7 +178,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                String err0 = commState.getString();
+                String err0 = commState.getString(null);
 
                 if (err0 == STR_NOT_READ)
                     return false;
@@ -191,7 +191,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                finished = commState.getBoolean();
+                finished = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -199,12 +199,12 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                found = commState.getBoolean();
+                found = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 3:
-                byte[] resBytes0 = commState.getByteArray();
+                byte[] resBytes0 = commState.getByteArray(null);
 
                 if (resBytes0 == BYTE_ARR_NOT_READ)
                     return false;

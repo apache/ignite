@@ -88,7 +88,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -96,7 +96,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (commState.idx) {
             case 5:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
@@ -116,7 +116,7 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (commState.idx) {
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

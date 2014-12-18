@@ -300,7 +300,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -308,13 +308,13 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putBoolean(ack))
+                if (!commState.putBoolean(null, ack))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(infoBytes))
+                if (!commState.putByteArray(null, infoBytes))
                     return false;
 
                 commState.idx++;
@@ -322,7 +322,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
             case 5:
                 if (last != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(last.size()))
+                        if (!commState.putInt(null, last.size()))
                             return false;
 
                         commState.it = last.iterator();
@@ -332,7 +332,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putInt((int)commState.cur))
+                        if (!commState.putInt(null, (int)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -340,7 +340,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -349,7 +349,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
             case 6:
                 if (missed != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(missed.size()))
+                        if (!commState.putInt(null, missed.size()))
                             return false;
 
                         commState.it = missed.iterator();
@@ -359,7 +359,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putInt((int)commState.cur))
+                        if (!commState.putInt(null, (int)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -367,20 +367,20 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(updateSeq))
+                if (!commState.putLong(null, updateSeq))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putInt(workerId))
+                if (!commState.putInt(null, workerId))
                     return false;
 
                 commState.idx++;
@@ -403,12 +403,12 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                ack = commState.getBoolean();
+                ack = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 4:
-                byte[] infoBytes0 = commState.getByteArray();
+                byte[] infoBytes0 = commState.getByteArray(null);
 
                 if (infoBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -422,7 +422,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -433,7 +433,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                         if (buf.remaining() < 4)
                             return false;
 
-                        int _val = commState.getInt();
+                        int _val = commState.getInt(null);
 
                         last.add((Integer)_val);
 
@@ -451,7 +451,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -462,7 +462,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                         if (buf.remaining() < 4)
                             return false;
 
-                        int _val = commState.getInt();
+                        int _val = commState.getInt(null);
 
                         missed.add((Integer)_val);
 
@@ -479,7 +479,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 8)
                     return false;
 
-                updateSeq = commState.getLong();
+                updateSeq = commState.getLong(null);
 
                 commState.idx++;
 
@@ -487,7 +487,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 4)
                     return false;
 
-                workerId = commState.getInt();
+                workerId = commState.getInt(null);
 
                 commState.idx++;
 

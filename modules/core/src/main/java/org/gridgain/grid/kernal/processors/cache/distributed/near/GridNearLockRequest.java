@@ -327,7 +327,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -337,7 +337,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             case 24:
                 if (dhtVers != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(dhtVers.length))
+                        if (!commState.putInt(null, dhtVers.length))
                             return false;
 
                         commState.it = arrayIterator(dhtVers);
@@ -347,7 +347,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -355,7 +355,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -364,7 +364,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
             case 25:
                 if (filterBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(filterBytes.length))
+                        if (!commState.putInt(null, filterBytes.length))
                             return false;
 
                         commState.it = arrayIterator(filterBytes);
@@ -374,7 +374,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putByteArray((byte[])commState.cur))
+                        if (!commState.putByteArray(null, (byte[])commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -382,56 +382,56 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 26:
-                if (!commState.putBoolean(implicitSingleTx))
+                if (!commState.putBoolean(null, implicitSingleTx))
                     return false;
 
                 commState.idx++;
 
             case 27:
-                if (!commState.putBoolean(implicitTx))
+                if (!commState.putBoolean(null, implicitTx))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putGridUuid(miniId))
+                if (!commState.putGridUuid(null, miniId))
                     return false;
 
                 commState.idx++;
 
             case 29:
-                if (!commState.putBoolean(onePhaseCommit))
+                if (!commState.putBoolean(null, onePhaseCommit))
                     return false;
 
                 commState.idx++;
 
             case 30:
-                if (!commState.putLong(topVer))
+                if (!commState.putLong(null, topVer))
                     return false;
 
                 commState.idx++;
 
             case 31:
-                if (!commState.putUuid(subjId))
+                if (!commState.putUuid(null, subjId))
                     return false;
 
                 commState.idx++;
 
             case 32:
-                if (!commState.putInt(taskNameHash))
+                if (!commState.putInt(null, taskNameHash))
                     return false;
 
                 commState.idx++;
 
             case 33:
-                if (!commState.putBoolean(hasTransforms))
+                if (!commState.putBoolean(null, hasTransforms))
                     return false;
 
                 commState.idx++;
@@ -455,7 +455,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -463,7 +463,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                         dhtVers = new GridCacheVersion[commState.readSize];
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
+                        GridCacheVersion _val = commState.getCacheVersion(null);
 
                         if (_val == CACHE_VER_NOT_READ)
                             return false;
@@ -484,7 +484,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -492,7 +492,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                         filterBytes = new byte[commState.readSize][];
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
+                        byte[] _val = commState.getByteArray(null);
 
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
@@ -512,7 +512,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                implicitSingleTx = commState.getBoolean();
+                implicitSingleTx = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -520,12 +520,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                implicitTx = commState.getBoolean();
+                implicitTx = commState.getBoolean(null);
 
                 commState.idx++;
 
             case 28:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                IgniteUuid miniId0 = commState.getGridUuid(null);
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -538,7 +538,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                onePhaseCommit = commState.getBoolean();
+                onePhaseCommit = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -546,12 +546,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong();
+                topVer = commState.getLong(null);
 
                 commState.idx++;
 
             case 31:
-                UUID subjId0 = commState.getUuid();
+                UUID subjId0 = commState.getUuid(null);
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -564,7 +564,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt();
+                taskNameHash = commState.getInt(null);
 
                 commState.idx++;
 
@@ -572,7 +572,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                hasTransforms = commState.getBoolean();
+                hasTransforms = commState.getBoolean(null);
 
                 commState.idx++;
 

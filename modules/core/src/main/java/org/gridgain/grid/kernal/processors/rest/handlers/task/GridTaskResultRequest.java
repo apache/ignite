@@ -115,7 +115,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -123,13 +123,13 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(taskId))
+                if (!commState.putGridUuid(null, taskId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putByteArray(topicBytes))
+                if (!commState.putByteArray(null, topicBytes))
                     return false;
 
                 commState.idx++;
@@ -146,7 +146,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid taskId0 = commState.getGridUuid();
+                IgniteUuid taskId0 = commState.getGridUuid(null);
 
                 if (taskId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -156,7 +156,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                byte[] topicBytes0 = commState.getByteArray();
+                byte[] topicBytes0 = commState.getByteArray(null);
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
                     return false;

@@ -54,7 +54,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -62,7 +62,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArrayClient(bytes))
+                if (!commState.putByteArray(null, bytes))
                     return false;
 
                 commState.idx++;
@@ -78,12 +78,12 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                byte[] bytes0 = commState.getByteArrayClient(GridClientHandshakeRequest.PACKET_SIZE);
-
-                if (bytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                bytes = bytes0;
+//                byte[] bytes0 = commState.getByteArray(null, GridClientHandshakeRequest.PACKET_SIZE);
+//
+//                if (bytes0 == BYTE_ARR_NOT_READ)
+//                    return false;
+//
+//                bytes = bytes0;
 
                 commState.idx++;
 

@@ -92,7 +92,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -100,7 +100,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(siblingsBytes))
+                if (!commState.putByteArray(null, siblingsBytes))
                     return false;
 
                 commState.idx++;
@@ -117,7 +117,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                byte[] siblingsBytes0 = commState.getByteArray();
+                byte[] siblingsBytes0 = commState.getByteArray(null);
 
                 if (siblingsBytes0 == BYTE_ARR_NOT_READ)
                     return false;

@@ -287,7 +287,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -295,13 +295,13 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putByteArray(errBytes))
+                if (!commState.putByteArray(null, errBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putGridUuid(null, futId))
                     return false;
 
                 commState.idx++;
@@ -309,7 +309,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
             case 10:
                 if (valBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(valBytes.size()))
+                        if (!commState.putInt(null, valBytes.size()))
                             return false;
 
                         commState.it = valBytes.iterator();
@@ -319,7 +319,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                        if (!commState.putValueBytes(null, (GridCacheValueBytes)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -327,7 +327,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -348,7 +348,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
         switch (commState.idx) {
             case 8:
-                byte[] errBytes0 = commState.getByteArray();
+                byte[] errBytes0 = commState.getByteArray(null);
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -358,7 +358,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid();
+                IgniteUuid futId0 = commState.getGridUuid(null);
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -372,7 +372,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -380,7 +380,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                         valBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheValueBytes _val = commState.getValueBytes();
+                        GridCacheValueBytes _val = commState.getValueBytes(null);
 
                         if (_val == VAL_BYTES_NOT_READ)
                             return false;

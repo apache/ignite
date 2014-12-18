@@ -214,7 +214,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -222,43 +222,43 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putMessage(msg))
+                if (!commState.putMessage(null, msg))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong(msgId))
+                if (!commState.putLong(null, msgId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putEnum(plc))
+                if (!commState.putEnum(null, plc))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putBoolean(skipOnTimeout))
+                if (!commState.putBoolean(null, skipOnTimeout))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLong(timeout))
+                if (!commState.putLong(null, timeout))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putByteArray(topicBytes))
+                if (!commState.putByteArray(null, topicBytes))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putInt(topicOrd))
+                if (!commState.putInt(null, topicOrd))
                     return false;
 
                 commState.idx++;
@@ -275,7 +275,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                Object msg0 = commState.getMessage();
+                Object msg0 = commState.getMessage(null);
 
                 if (msg0 == MSG_NOT_READ)
                     return false;
@@ -288,7 +288,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                msgId = commState.getLong();
+                msgId = commState.getLong(null);
 
                 commState.idx++;
 
@@ -296,7 +296,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                byte plc0 = commState.getByte();
+                byte plc0 = commState.getByte(null);
 
                 plc = GridIoPolicy.fromOrdinal(plc0);
 
@@ -306,7 +306,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                skipOnTimeout = commState.getBoolean();
+                skipOnTimeout = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -314,12 +314,12 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                timeout = commState.getLong();
+                timeout = commState.getLong(null);
 
                 commState.idx++;
 
             case 5:
-                byte[] topicBytes0 = commState.getByteArray();
+                byte[] topicBytes0 = commState.getByteArray(null);
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -332,7 +332,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 4)
                     return false;
 
-                topicOrd = commState.getInt();
+                topicOrd = commState.getInt(null);
 
                 commState.idx++;
 

@@ -115,7 +115,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -123,19 +123,19 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(attrsBytes))
+                if (!commState.putByteArray(null, attrsBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(jobId))
+                if (!commState.putGridUuid(null, jobId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putGridUuid(sesId))
+                if (!commState.putGridUuid(null, sesId))
                     return false;
 
                 commState.idx++;
@@ -152,7 +152,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                byte[] attrsBytes0 = commState.getByteArray();
+                byte[] attrsBytes0 = commState.getByteArray(null);
 
                 if (attrsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -162,7 +162,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 1:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                IgniteUuid jobId0 = commState.getGridUuid(null);
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -172,7 +172,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 2:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                IgniteUuid sesId0 = commState.getGridUuid(null);
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

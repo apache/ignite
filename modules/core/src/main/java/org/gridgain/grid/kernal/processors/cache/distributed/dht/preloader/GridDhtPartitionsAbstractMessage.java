@@ -84,7 +84,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -92,13 +92,13 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putDhtPartitionExchangeId(exchId))
+                if (!commState.putDhtPartitionExchangeId(null, exchId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putCacheVersion(lastVer))
+                if (!commState.putCacheVersion(null, lastVer))
                     return false;
 
                 commState.idx++;
@@ -118,7 +118,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (commState.idx) {
             case 3:
-                GridDhtPartitionExchangeId exchId0 = commState.getDhtPartitionExchangeId();
+                GridDhtPartitionExchangeId exchId0 = commState.getDhtPartitionExchangeId(null);
 
                 if (exchId0 == DHT_PART_EXCHANGE_ID_NOT_READ)
                     return false;
@@ -128,7 +128,7 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
                 commState.idx++;
 
             case 4:
-                GridCacheVersion lastVer0 = commState.getCacheVersion();
+                GridCacheVersion lastVer0 = commState.getCacheVersion(null);
 
                 if (lastVer0 == CACHE_VER_NOT_READ)
                     return false;

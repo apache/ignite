@@ -99,7 +99,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -107,7 +107,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(fileId))
+                if (!commState.putGridUuid(null, fileId))
                     return false;
 
                 commState.idx++;
@@ -115,7 +115,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
             case 1:
                 if (fragmentRanges != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(fragmentRanges.size()))
+                        if (!commState.putInt(null, fragmentRanges.size()))
                             return false;
 
                         commState.it = fragmentRanges.iterator();
@@ -125,7 +125,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putMessage((GridGgfsFileAffinityRange)commState.cur))
+                        if (!commState.putMessage(null, (GridGgfsFileAffinityRange)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -133,7 +133,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
@@ -154,7 +154,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                IgniteUuid fileId0 = commState.getGridUuid(null);
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -168,7 +168,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -176,7 +176,7 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
                         fragmentRanges = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        Object _val = commState.getMessage();
+                        Object _val = commState.getMessage(null);
 
                         if (_val == MSG_NOT_READ)
                             return false;

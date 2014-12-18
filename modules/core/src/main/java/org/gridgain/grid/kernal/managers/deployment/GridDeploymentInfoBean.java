@@ -156,7 +156,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+            if (!commState.putByte(null, directType()))
                 return false;
 
             commState.typeWritten = true;
@@ -164,19 +164,19 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!commState.putGridUuid(null, clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putEnum(depMode))
+                if (!commState.putEnum(null, depMode))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(locDepOwner))
+                if (!commState.putBoolean(null, locDepOwner))
                     return false;
 
                 commState.idx++;
@@ -184,7 +184,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
             case 3:
                 if (participants != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(participants.size()))
+                        if (!commState.putInt(null, participants.size()))
                             return false;
 
                         commState.it = participants.entrySet().iterator();
@@ -197,13 +197,13 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                         Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
 
                         if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
+                            if (!commState.putUuid(null, e.getKey()))
                                 return false;
 
                             commState.keyDone = true;
                         }
 
-                        if (!commState.putGridUuid(e.getValue()))
+                        if (!commState.putGridUuid(null, e.getValue()))
                             return false;
 
                         commState.keyDone = false;
@@ -213,14 +213,14 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(-1))
+                    if (!commState.putInt(null, -1))
                         return false;
                 }
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putString(userVer))
+                if (!commState.putString(null, userVer))
                     return false;
 
                 commState.idx++;
@@ -237,7 +237,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -250,7 +250,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte();
+                byte depMode0 = commState.getByte(null);
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
@@ -260,7 +260,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                 if (buf.remaining() < 1)
                     return false;
 
-                locDepOwner = commState.getBoolean();
+                locDepOwner = commState.getBoolean(null);
 
                 commState.idx++;
 
@@ -269,7 +269,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt();
+                    commState.readSize = commState.getInt(null);
                 }
 
                 if (commState.readSize >= 0) {
@@ -278,7 +278,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
+                            UUID _val = commState.getUuid(null);
 
                             if (_val == UUID_NOT_READ)
                                 return false;
@@ -287,7 +287,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                             commState.keyDone = true;
                         }
 
-                        IgniteUuid _val = commState.getGridUuid();
+                        IgniteUuid _val = commState.getGridUuid(null);
 
                         if (_val == GRID_UUID_NOT_READ)
                             return false;
@@ -307,7 +307,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 4:
-                String userVer0 = commState.getString();
+                String userVer0 = commState.getString(null);
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

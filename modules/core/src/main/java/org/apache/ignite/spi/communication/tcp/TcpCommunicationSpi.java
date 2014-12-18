@@ -15,13 +15,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.future.*;
@@ -323,13 +322,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
 
                     ClusterNode locNode = getSpiContext().localNode();
-
-                    IgniteProductVersion locVer = locNode.version();
-
-                    IgniteProductVersion rmtVer = rmtNode.version();
-
-                    if (!locVer.equals(rmtVer))
-                        ses.addMeta(GridNioServer.DIFF_VER_NODE_ID_META_KEY, sndId);
 
                     if (ses.remoteAddress() == null)
                         return;
@@ -787,87 +779,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
             onNodeLeft(((IgniteDiscoveryEvent)evt).eventNode().id());
-        }
-    };
-
-    /** Message reader. */
-    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
-        /** */
-        private GridTcpMessageFactory msgFactory;
-
-        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageReader(this, nodeId);
-
-            boolean finished = msg.readFrom(buf);
-
-            if (finished && nodeId != null)
-                finished = getSpiContext().readDelta(nodeId, msg.getClass(), buf);
-
-            return finished;
-        }
-
-        @Nullable @Override public GridTcpMessageFactory messageFactory() {
-            if (msgFactory == null)
-                msgFactory = getSpiContext().messageFactory();
-
-            return msgFactory;
-        }
-    };
-
-    /** Message writer. */
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = msg.writeTo(buf);
-
-            if (finished && nodeId != null)
-                finished = getSpiContext().writeDelta(nodeId, msg, buf);
-
-            return finished;
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            if (nodeId != null) {
-                while (!finished) {
-                    finished = getSpiContext().writeDelta(nodeId, msg.getClass(), buf);
-
-                    out.write(buf.array(), 0, buf.position());
-
-                    cnt += buf.position();
-
-                    buf.clear();
-                }
-            }
-
-            return cnt;
         }
     };
 
@@ -1564,9 +1475,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .sendQueueLimit(msgQueueLimit)
                         .directMode(true)
                         .metricsListener(metricsLsnr)
-                        .messageWriter(msgWriter)
                         .writeTimeout(sockWriteTimeout)
-                        .filters(new GridNioCodecFilter(new GridDirectParser(msgReader, this), log, true),
+                        .filters(new GridNioCodecFilter(new GridDirectParser(this), log, true),
                             new GridConnectionBytesVerifyFilter(log))
                         .build();
 
@@ -1925,7 +1835,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client;
 
             try {
-                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log, msgWriter);
+                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log);
             }
             catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
@@ -2066,19 +1976,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             recoveryDesc.release();
                     }
 
-                    UUID diffVerNodeId = null;
-
-                    IgniteProductVersion locVer = getSpiContext().localNode().version();
-                    IgniteProductVersion rmtVer = node.version();
-
-                    if (!locVer.equals(rmtVer))
-                        diffVerNodeId = node.id();
-
                     try {
                         Map<Integer, Object> meta = new HashMap<>();
 
                         meta.put(NODE_ID_META, node.id());
-                        meta.put(GridNioServer.DIFF_VER_NODE_ID_META_KEY, diffVerNodeId);
 
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2502,9 +2403,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     metricsLsnr,
                     log,
                     endpoint,
-                    msgWriter,
                     srvLsnr,
-                    new GridNioCodecFilter(new GridDirectParser(msgReader, TcpCommunicationSpi.this), log, true),
+                    new GridNioCodecFilter(new GridDirectParser(TcpCommunicationSpi.this), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 
