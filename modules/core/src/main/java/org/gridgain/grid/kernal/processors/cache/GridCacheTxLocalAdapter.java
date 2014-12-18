@@ -706,7 +706,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             txEntry.filters(),
                                             cached.detached() ? DR_NONE : drType,
                                             txEntry.drExpireTime(),
-                                            near() ? null : explicitVer,
+                                            cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName());
 
@@ -742,7 +742,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             topVer,
                                             txEntry.filters(),
                                             cached.detached()  ? DR_NONE : drType,
-                                            near() ? null : explicitVer,
+                                            cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName());
 
@@ -769,8 +769,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             nearCached.innerReload(CU.<K, V>empty());
                                     }
                                     else if (op == READ) {
-                                        assert near();
-
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }

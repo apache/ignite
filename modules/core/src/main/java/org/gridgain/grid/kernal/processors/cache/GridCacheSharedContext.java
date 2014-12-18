@@ -174,6 +174,16 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Data center ID.
+     */
+    public byte dataCenterId() {
+        // Data center ID is same for all caches, so grab the first one.
+        GridCacheContext<K, V> cacheCtx = F.first(cacheContexts());
+
+        return cacheCtx.dataCenterId();
+    }
+
+    /**
      * @return Compound preloaders start future.
      */
     public IgniteFuture<Object> preloadersStartFuture() {
