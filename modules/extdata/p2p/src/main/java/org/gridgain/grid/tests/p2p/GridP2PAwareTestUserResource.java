@@ -33,26 +33,6 @@ public class GridP2PAwareTestUserResource {
     private IgniteLogger log;
 
     /**
-     * Invoked on resource deploy. Increments deploy counter
-     * in node-local store.
-     */
-    @SuppressWarnings("ConstantConditions")
-    @IgniteUserResourceOnDeployed
-    public void onDeployed() {
-        concurrentIncrement(DEPLOY_CNT_KEY);
-    }
-
-    /**
-     * Invoked on resource undeploy. Increments undeploy counter
-     * in node-local store.
-     */
-    @SuppressWarnings("ConstantConditions")
-    @IgniteUserResourceOnUndeployed
-    public void onUndeployed() {
-        concurrentIncrement(UNDEPLOY_CNT_KEY);
-    }
-
-    /**
      * Concurrently increments numeric cache value.
      *
      * @param key Key for the value to be incremented.

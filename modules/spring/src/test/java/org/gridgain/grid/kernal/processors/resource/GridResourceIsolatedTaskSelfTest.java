@@ -275,44 +275,15 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static class SharedResourceTask1 extends ComputeTaskSplitAdapter<Object, Object> {
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
-        /** User resource.  */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        private transient GridAbstractUserResource rsrc3;
-
-        /** User resource. */
-        @IgniteUserResource(resourceName = "rsrc4")
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
-            log.info("Injected shared resource1 into task: " + rsrc1);
-            log.info("Injected shared resource2 into task: " + rsrc2);
-            log.info("Injected shared resource3 into task: " + rsrc3);
-            log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-
-            task1Rsrc1 = rsrc1;
-            task1Rsrc2 = rsrc2;
-            task1Rsrc3 = rsrc3;
-            task1Rsrc4 = rsrc4;
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
@@ -324,10 +295,6 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
             // Nothing to reduce.
@@ -339,51 +306,11 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
          * access when loading class with different class loader.
          */
         public final class GridSharedJob1 extends ComputeJobAdapter {
-            /** User resource. */
-            @IgniteUserResource(resourceClass = UserResource1.class)
-            private transient GridAbstractUserResource rsrc5;
-
-            /** Global resource. */
-            @IgniteUserResource
-            private transient UserResource2 rsrc6;
-
-            /** User resource. */
-            @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-            private transient GridAbstractUserResource rsrc7;
-
-            /** Global resource. */
-            @IgniteUserResource(resourceName = "rsrc4")
-            private transient UserResource2 rsrc8;
-
             /** {@inheritDoc} */
             @SuppressWarnings({"ObjectEquality"})
             @Override public Serializable execute() {
-                assert rsrc1 != null;
-                assert rsrc2 != null;
-                assert rsrc3 != null;
-                assert rsrc4 != null;
                 assert log != null;
 
-                assert rsrc5 != null;
-                assert rsrc6 != null;
-                assert rsrc7 != null;
-                assert rsrc8 != null;
-
-                // Make sure that neither task nor global scope got
-                // created more than once.
-                assert rsrc1 == rsrc5;
-                assert rsrc2 == rsrc6;
-                assert rsrc3 == rsrc7;
-                assert rsrc4 == rsrc8;
-
-                log.info("Injected shared resource1 into job: " + rsrc1);
-                log.info("Injected shared resource2 into job: " + rsrc2);
-                log.info("Injected shared resource3 into job: " + rsrc3);
-                log.info("Injected shared resource4 into job: " + rsrc4);
-                log.info("Injected shared resource5 into job: " + rsrc5);
-                log.info("Injected shared resource6 into job: " + rsrc6);
-                log.info("Injected shared resource7 into job: " + rsrc7);
-                log.info("Injected shared resource8 into job: " + rsrc8);
                 log.info("Injected log resource into job: " + log);
 
                 return null;
@@ -393,94 +320,25 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static class SharedResourceTask2 extends ComputeTaskSplitAdapter<Object, Object> {
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        private transient GridAbstractUserResource rsrc3;
-
-        /** User resource. */
-        @IgniteUserResource(resourceName = "rsrc4")
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
-            log.info("Injected shared resource1 into task: " + rsrc1);
-            log.info("Injected shared resource2 into task: " + rsrc2);
-            log.info("Injected shared resource3 into task: " + rsrc3);
-            log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-
-            task2Rsrc1 = rsrc1;
-            task2Rsrc2 = rsrc2;
-            task2Rsrc3 = rsrc3;
-            task2Rsrc4 = rsrc4;
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class)
-                    private transient GridAbstractUserResource rsrc5;
-
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource2 rsrc6;
-
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-                    private transient GridAbstractUserResource rsrc7;
-
-                    /** User resource */
-                    @IgniteUserResource(resourceName = "rsrc4")
-                    private transient UserResource2 rsrc8;
-
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
                     @Override public Serializable execute() {
-                        assert rsrc1 != null;
-                        assert rsrc2 != null;
-                        assert rsrc3 != null;
-                        assert rsrc4 != null;
                         assert log != null;
 
-                        assert rsrc5 != null;
-                        assert rsrc6 != null;
-                        assert rsrc7 != null;
-                        assert rsrc8 != null;
-
-                        // Make sure that neither task nor global scope got
-                        // created more than once.
-                        assert rsrc1 == rsrc5;
-                        assert rsrc2 == rsrc6;
-                        assert rsrc3 == rsrc7;
-                        assert rsrc4 == rsrc8;
-
-                        log.info("Injected shared resource1 into job: " + rsrc1);
-                        log.info("Injected shared resource2 into job: " + rsrc2);
-                        log.info("Injected shared resource3 into job: " + rsrc3);
-                        log.info("Injected shared resource4 into job: " + rsrc4);
-                        log.info("Injected shared resource5 into job: " + rsrc5);
-                        log.info("Injected shared resource6 into job: " + rsrc6);
-                        log.info("Injected shared resource7 into job: " + rsrc7);
-                        log.info("Injected shared resource8 into job: " + rsrc8);
                         log.info("Injected log resource into job: " + log);
 
                         return null;
@@ -493,10 +351,6 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
             // Nothing to reduce.
@@ -507,94 +361,25 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
     /** */
     @ComputeTaskName("name")
     public static class SharedResourceTask3 extends ComputeTaskSplitAdapter<Object, Object> {
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        private transient GridAbstractUserResource rsrc3;
-
-        /** User resource. */
-        @IgniteUserResource(resourceName = "rsrc4")
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
-            log.info("Injected shared resource1 into task: " + rsrc1);
-            log.info("Injected shared resource2 into task: " + rsrc2);
-            log.info("Injected shared resource3 into task: " + rsrc3);
-            log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-
-            task2Rsrc1 = rsrc1;
-            task2Rsrc2 = rsrc2;
-            task2Rsrc3 = rsrc3;
-            task2Rsrc4 = rsrc4;
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class)
-                    private transient GridAbstractUserResource rsrc5;
-
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource2 rsrc6;
-
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-                    private transient GridAbstractUserResource rsrc7;
-
-                    /** User resource */
-                    @IgniteUserResource(resourceName = "rsrc4")
-                    private transient UserResource2 rsrc8;
-
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
                     @Override public Serializable execute() {
-                        assert rsrc1 != null;
-                        assert rsrc2 != null;
-                        assert rsrc3 != null;
-                        assert rsrc4 != null;
                         assert log != null;
 
-                        assert rsrc5 != null;
-                        assert rsrc6 != null;
-                        assert rsrc7 != null;
-                        assert rsrc8 != null;
-
-                        // Make sure that neither task nor global scope got
-                        // created more than once.
-                        assert rsrc1 == rsrc5;
-                        assert rsrc2 == rsrc6;
-                        assert rsrc3 == rsrc7;
-                        assert rsrc4 == rsrc8;
-
-                        log.info("Injected shared resource1 into job: " + rsrc1);
-                        log.info("Injected shared resource2 into job: " + rsrc2);
-                        log.info("Injected shared resource3 into job: " + rsrc3);
-                        log.info("Injected shared resource4 into job: " + rsrc4);
-                        log.info("Injected shared resource5 into job: " + rsrc5);
-                        log.info("Injected shared resource6 into job: " + rsrc6);
-                        log.info("Injected shared resource7 into job: " + rsrc7);
-                        log.info("Injected shared resource8 into job: " + rsrc8);
                         log.info("Injected log resource into job: " + log);
 
                         return null;
@@ -607,10 +392,6 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
             // Nothing to reduce.
@@ -621,94 +402,25 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
     /** */
     @ComputeTaskName("name")
     public static class SharedResourceTask4 extends ComputeTaskSplitAdapter<Object, Object> {
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
-        /** User resource.  */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        private transient GridAbstractUserResource rsrc3;
-
-        /** User resource. */
-        @IgniteUserResource(resourceName = "rsrc4")
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
-            log.info("Injected shared resource1 into task: " + rsrc1);
-            log.info("Injected shared resource2 into task: " + rsrc2);
-            log.info("Injected shared resource3 into task: " + rsrc3);
-            log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
-
-            task2Rsrc1 = rsrc1;
-            task2Rsrc2 = rsrc2;
-            task2Rsrc3 = rsrc3;
-            task2Rsrc4 = rsrc4;
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class)
-                    private transient GridAbstractUserResource rsrc5;
-
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource2 rsrc6;
-
-                    /** User resource. */
-                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-                    private transient GridAbstractUserResource rsrc7;
-
-                    /** User resource */
-                    @IgniteUserResource(resourceName = "rsrc4")
-                    private transient UserResource2 rsrc8;
-
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
                     @Override public Serializable execute() {
-                        assert rsrc1 != null;
-                        assert rsrc2 != null;
-                        assert rsrc3 != null;
-                        assert rsrc4 != null;
                         assert log != null;
 
-                        assert rsrc5 != null;
-                        assert rsrc6 != null;
-                        assert rsrc7 != null;
-                        assert rsrc8 != null;
-
-                        // Make sure that neither task nor global scope got
-                        // created more than once.
-                        assert rsrc1 == rsrc5;
-                        assert rsrc2 == rsrc6;
-                        assert rsrc3 == rsrc7;
-                        assert rsrc4 == rsrc8;
-
-                        log.info("Injected shared resource1 into job: " + rsrc1);
-                        log.info("Injected shared resource2 into job: " + rsrc2);
-                        log.info("Injected shared resource3 into job: " + rsrc3);
-                        log.info("Injected shared resource4 into job: " + rsrc4);
-                        log.info("Injected shared resource5 into job: " + rsrc5);
-                        log.info("Injected shared resource6 into job: " + rsrc6);
-                        log.info("Injected shared resource7 into job: " + rsrc7);
-                        log.info("Injected shared resource8 into job: " + rsrc8);
                         log.info("Injected log resource into job: " + log);
 
                         return null;
@@ -721,10 +433,6 @@ public class GridResourceIsolatedTaskSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
 
             // Nothing to reduce.

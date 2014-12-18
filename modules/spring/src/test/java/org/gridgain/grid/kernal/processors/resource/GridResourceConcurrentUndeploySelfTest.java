@@ -395,22 +395,11 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
     /** */
     public static class UserResourceTask1 extends ComputeTaskAdapter<Boolean, Object> {
-        /** */
-        @IgniteUserResource
-        private transient UserResource rsrcTask;
-
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Boolean arg) throws IgniteCheckedException {
-            assert rsrcTask != null;
-
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(nodeToExec)) {
                     return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                        /** */
-                        @SuppressWarnings("unused")
-                        @IgniteUserResource
-                        private transient UserResource2 rsrc2;
-
                         /** {@inheritDoc} */
                         @SuppressWarnings({"ObjectEquality"})
                         @Override public Serializable execute() {
@@ -450,8 +439,6 @@ public class GridResourceConcurrentUndeploySelfTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrcTask != null;
-
             return null;
         }
     }

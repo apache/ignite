@@ -246,32 +246,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
         /** */
         @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private UserSpringBean springBean;
-
-        /**
-         * Method must be called.
-         * Parent GridAbstractUserResource#deploy() with the same annotation
-         * must be called too.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResourceOnDeployed
-        private void resourceDeploy() {
-            addUsage(deployClss);
-
-            assert springBean != null;
-        }
-
-        /**
-         * Method must be called.
-         * Parent GridAbstractUserResource#undeploy() with the same annotation
-         * must be called too.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResourceOnUndeployed
-        private void resourceUndeploy() {
-            addUsage(undeployClss);
-
-            assert springBean != null;
-        }
     }
 
     /** */
@@ -361,11 +335,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
      * Task that will always fail due to non-transient resource injection.
      */
     public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
-        /** */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private Object rsrc;
-
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
@@ -385,22 +354,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
-        /** */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient Object rsrc1;
-
-        /** */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
-        /** */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        private transient Object rsrc3;
-
-        /** */
-        @IgniteUserResource(resourceName = "rsrc4")
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
@@ -435,10 +388,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
             assert springCtx != null;
@@ -451,10 +400,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
             assert gridSize == 2;
 
-            log.info("Injected shared resource1 into task: " + rsrc1);
-            log.info("Injected shared resource2 into task: " + rsrc2);
-            log.info("Injected shared resource3 into task: " + rsrc3);
-            log.info("Injected shared resource4 into task: " + rsrc4);
             log.info("Injected log resource into task: " + log);
             log.info("Injected grid resource into task: " + ignite);
             log.info("Injected spring context resource into task: " + springCtx);
@@ -468,30 +413,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @IgniteUserResource(resourceClass = UserResource3.class)
-                    private transient GridAbstractUserResource rsrc5;
-
-                    /** */
-                    @IgniteUserResource
-                    private transient UserResource4 rsrc6;
-
-                    /** */
-                    @IgniteUserResource
-                    private transient UserResource5 rsrc7;
-
-                    /** */
-                    @IgniteUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
-                    private transient GridAbstractUserResource rsrc8;
-
-                    /** */
-                    @IgniteUserResource(resourceName = "rsrc9")
-                    private transient UserResource4 rsrc9;
-
-                    /** */
-                    @IgniteUserResource(resourceName = "rsrc10")
-                    private transient UserResource5 rsrc10;
-
-                    /** */
                     @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
                     private transient UserSpringBean springBean2;
 
@@ -501,10 +422,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
-                        assert rsrc1 != null;
-                        assert rsrc2 != null;
-                        assert rsrc3 != null;
-                        assert rsrc4 != null;
                         assert log != null;
                         assert ignite != null;
                         assert springCtx != null;
@@ -514,23 +431,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
                         assert jobCtx != null;
                         assert outerJobCtx == null;
 
-                        assert rsrc5 != null;
-                        assert rsrc6 != null;
-                        assert rsrc7 != null;
-                        assert rsrc8 != null;
-                        assert rsrc9 != null;
-                        assert rsrc10 != null;
-
-                        log.info("Injected shared resource1 into job: " + rsrc1);
-                        log.info("Injected shared resource2 into job: " + rsrc2);
-                        log.info("Injected shared resource3 into job: " + rsrc3);
-                        log.info("Injected shared resource4 into job: " + rsrc4);
-                        log.info("Injected shared resource5 into job: " + rsrc5);
-                        log.info("Injected shared resource6 into job: " + rsrc6);
-                        log.info("Injected shared resource7 into job: " + rsrc7);
-                        log.info("Injected shared resource8 into job: " + rsrc8);
-                        log.info("Injected shared resource9 into job: " + rsrc9);
-                        log.info("Injected shared resource10 into job: " + rsrc10);
                         log.info("Injected log resource into job: " + log);
                         log.info("Injected grid resource into job: " + ignite);
                         log.info("Injected spring context resource into job: " + springCtx);
@@ -549,10 +449,6 @@ public class GridResourceFieldInjectionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-            assert rsrc3 != null;
-            assert rsrc4 != null;
             assert log != null;
             assert ignite != null;
             assert springCtx != null;

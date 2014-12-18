@@ -94,10 +94,6 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         private IgniteLogger log;
 
         /** */
-        @IgniteUserResource
-        private transient UserResource rsrc;
-
-        /** */
         @IgniteSpringResource(resourceName = SPRING_BEAN_RSRC_NAME)
         private transient UserSpringBean springBean;
 
@@ -112,14 +108,12 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             assert log != null;
-            assert rsrc != null;
             assert springBean != null;
 
             // Job context is job resource, not task resource.
             assert jobCtx == null;
 
             log.info("Injected logger into task: " + log);
-            log.info("Injected shared resource into task: " + rsrc);
             log.info("Injected session into task: " + ses);
             log.info("Injected spring bean into task: " + springBean);
 
@@ -127,10 +121,6 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    /** */
-                    @IgniteUserResource
-                    private transient UserResource rsrc;
-
                     /** */
                     @IgniteLoggerResource
                     private IgniteLogger log;
@@ -151,23 +141,19 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
                     @SuppressWarnings({"ObjectEquality"})
                     @Override public Serializable execute() {
                         assert log != null;
-                        assert rsrc != null;
                         assert jobSpringBean != null;
 
                         assert ResourceOverrideTask.this.log != null;
-                        assert ResourceOverrideTask.this.rsrc != null;
                         //Job context is never setup on the task.
                         assert ResourceOverrideTask.this.jobCtx == null;
 
                         assert springBean != null;
 
-                        assert rsrc == ResourceOverrideTask.this.rsrc;
                         assert ses == ResourceOverrideTask.this.ses;
                         assert jobCtx != null;
                         assert jobSpringBean == springBean;
 
                         log.info("Injected logger into job: " + log);
-                        log.info("Injected shared resource into job: " + rsrc);
                         log.info("Injected session into job: " + ses);
                         log.info("Injected spring bean into job: " + jobSpringBean);
 
@@ -182,7 +168,6 @@ public class GridResourceFieldOverrideInjectionSelfTest extends GridCommonAbstra
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert log != null;
-            assert rsrc != null;
 
             // Job context is job resource, not task resource.
             assert jobCtx == null;

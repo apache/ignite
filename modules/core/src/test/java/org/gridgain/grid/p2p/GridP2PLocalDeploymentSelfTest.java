@@ -34,12 +34,6 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     private IgniteDeploymentMode depMode;
 
     /** */
-    private static UserResource jobRsrc;
-
-    /** */
-    private static UserResource taskRsrc;
-
-    /** */
     private static ClassLoader jobLdr;
 
     /** */
@@ -68,18 +62,10 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             ignite1.compute().execute(TestTask.class, ignite2.cluster().localNode().id());
 
-            assert jobRsrc != taskRsrc;
-
-            UserResource saveTaskRsrc = taskRsrc;
-            UserResource saveJobRsrc = jobRsrc;
-
             ClassLoader saveTaskLdr = taskLdr;
             ClassLoader saveJobLdr = jobLdr;
 
             ignite2.compute().execute(TestTask.class, ignite1.cluster().localNode().id());
-
-            assert saveJobRsrc == taskRsrc;
-            assert saveTaskRsrc == jobRsrc;
 
             assert saveTaskLdr == jobLdr;
             assert saveJobLdr == taskLdr;
@@ -215,16 +201,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * Task that will always fail due to non-transient resource injection.
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource rsrc;
-
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
             throws IgniteCheckedException {
-
-            taskRsrc = rsrc;
-
             taskLdr = getClass().getClassLoader();
 
             for (ClusterNode node : subgrid) {
@@ -239,7 +218,6 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
             assert results.size() == 1;
 
-            assert taskRsrc == rsrc;
             assert taskLdr == getClass().getClassLoader();
 
             return null;
@@ -249,10 +227,6 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
          * Simple job class.
          */
         public static class TestJob extends ComputeJobAdapter {
-            /** User resource. */
-            @IgniteUserResource
-            private transient UserResource rsrc;
-
             /** Ignite instance. */
             @IgniteInstanceResource
             private Ignite ignite;
@@ -265,8 +239,6 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             /** {@inheritDoc} */
             @Override public Serializable execute() throws IgniteCheckedException {
                 assert ignite.configuration().getNodeId().equals(argument(0));
-
-                jobRsrc = rsrc;
 
                 jobLdr = getClass().getClassLoader();
 

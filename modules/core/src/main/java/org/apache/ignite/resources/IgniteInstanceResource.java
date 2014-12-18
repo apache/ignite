@@ -22,7 +22,6 @@ import java.lang.annotation.*;
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
  * <li>All closures and predicates that can run on grid.</li>
- * <li>{@link IgniteUserResource @IgniteUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:

@@ -116,42 +116,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
         protected transient ComputeTaskContinuousMapper mapper;
 
         /**
-         * @param rsrc1 User defined resource.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        @SuppressWarnings("unused")
-        public void setResource1(GridAbstractUserResource rsrc1) {
-            this.rsrc1 = rsrc1;
-        }
-
-        /**
-         * @param rsrc2 User defined resource.
-         */
-        @IgniteUserResource
-        @SuppressWarnings("unused")
-        protected void setResource2(UserResource2 rsrc2) {
-            this.rsrc2 = rsrc2;
-        }
-
-        /**
-         * @param rsrc3 User defined resource.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        @SuppressWarnings("unused")
-        public void setResource3(GridAbstractUserResource rsrc3) {
-            this.rsrc3 = rsrc3;
-        }
-
-        /**
-         * @param rsrc4 User defined resource.
-         */
-        @IgniteUserResource(resourceName = "rsrc4")
-        @SuppressWarnings("unused")
-        public void setResource4(UserResource2 rsrc4) {
-            this.rsrc4 = rsrc4;
-        }
-
-        /**
          * @param log GridLogger.
          */
         @SuppressWarnings({"UnusedDeclaration", "unused"})
@@ -204,38 +168,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
      *
      */
     private static class MethodResourceOverrideTask extends AbstractResourceTask {
-        /**
-         * @param rsrc1 User resource.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        @Override public void setResource1(GridAbstractUserResource rsrc1) {
-            this.rsrc1 = rsrc1;
-        }
-
-        /**
-         * @param rsrc2 UserResource2
-         */
-        @IgniteUserResource
-        @Override public void setResource2(UserResource2 rsrc2) {
-            this.rsrc2 = rsrc2;
-        }
-
-        /**
-         * @param rsrc3 The grid resource.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        @Override public void setResource3(GridAbstractUserResource rsrc3) {
-            this.rsrc3 = rsrc3;
-        }
-
-        /**
-         * @param rsrc4 The grid resource.
-         */
-        @IgniteUserResource(resourceName = "rsrc4")
-        @Override public void setResource4(UserResource2 rsrc4) {
-            this.rsrc4 = rsrc4;
-        }
-
         /**
          * @param log GridLogger. The grid logger resource.
          */
@@ -311,34 +243,6 @@ public class GridResourceMethodOverrideInjectionSelfTest extends GridCommonAbstr
 
                     /** */
                     private ComputeJobContext jobCtx;
-
-                    /**
-                     * @param rsrc5 User resource.
-                     */
-                    @SuppressWarnings("unused")
-                    @IgniteUserResource(resourceClass = UserResource1.class)
-                    public void setResource5(GridAbstractUserResource rsrc5) { this.rsrc5 = rsrc5; }
-
-                    /**
-                     * @param rsrc6 User resource.
-                     */
-                    @SuppressWarnings("unused")
-                    @IgniteUserResource
-                    public void setResource6(UserResource2 rsrc6) { this.rsrc6 = rsrc6; }
-
-                    /**
-                     * @param rsrc7 User resource.
-                     */
-                    @SuppressWarnings("unused")
-                    @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-                    public void setResource7(GridAbstractUserResource rsrc7) { this.rsrc7 = rsrc7; }
-
-                    /**
-                     * @param rsrc8 User resource.
-                     */
-                    @SuppressWarnings("unused")
-                    @IgniteUserResource(resourceName = "rsrc4")
-                    public void setResource8(UserResource2 rsrc8) { this.rsrc8 = rsrc8; }
 
                     /**
                      * @param jobCtx Job context.

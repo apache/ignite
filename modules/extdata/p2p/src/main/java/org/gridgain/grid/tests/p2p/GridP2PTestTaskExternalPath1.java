@@ -82,10 +82,6 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
-        /** User resource. */
-        @IgniteUserResource
-        private transient GridTestUserResource rsrc;
-
         /** Task session. */
         @IgniteTaskSessionResource
         private ComputeTaskSession ses;
@@ -136,7 +132,6 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
             }
 
             return new int[] {
-                System.identityHashCode(rsrc),
                 System.identityHashCode(ses.getClassLoader())
             };
         }

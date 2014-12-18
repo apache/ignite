@@ -245,25 +245,13 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     @ComputeTaskName("TestTask")
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Void> {
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource1 rsrc1;
-
         /** {@inheritDoc} */
         @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource1 rsrc2;
-
                     @Override public Serializable execute() {
-                        assert rsrc2 != null;
-
                         return null;
                     }
                 });
@@ -282,78 +270,6 @@ public class GridResourceIocSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class UserResource1 extends GridAbstractUserResource {
         // No-op.
-    }
-
-    /**
-     * Task that will always fail due to non-transient resource injection.
-     */
-    @SuppressWarnings({"PublicInnerClass"})
-    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
-        /** */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient Object rsrc1;
-
-        /** {@inheritDoc} */
-        @Nullable
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrc1 != null;
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrc1 != null;
-
-            // Nothing to reduce.
-            return null;
-        }
-
-        /**
-         * @return Resource of anonymous class.
-         */
-        public UserResource2 createAnonymousResource() {
-            return new UserResource2() {
-                // No-op.
-            };
-        }
-
-        /** */
-        private static class UserResource2 extends GridAbstractUserResource {
-            // No-op.
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIoc() throws Exception {
-        GridResourceIoc ioc = new GridResourceIoc();
-
-        UserResourceTask task = new UserResourceTask();
-
-        GridDeployment dep = new GridTestDeployment(IgniteDeploymentMode.PRIVATE, task.getClass().getClassLoader(),
-            IgniteUuid.randomUuid(), "", task.getClass().getName(), false);
-
-        dep.addDeployedClass(task.getClass());
-
-        UserResourceTask.UserResource2 rsrc;
-
-        // Nullable caching key.
-        ioc.inject(rsrc = task.createAnonymousResource(), IgniteUserResource.class,
-            new GridResourceBasicInjector<>(null), dep, task.getClass());
-
-        info("Injected resources.");
-
-        ioc.onUndeployed(UserResourceTask.class.getClassLoader());
-
-        info("Cleanup resources.");
-
-        for (Class<?> cls = UserResourceTask.class; !cls.equals(Object.class); cls = cls.getSuperclass())
-            assert !ioc.isCached(cls) : "Class must be removed from cache: " + cls.getName();
-
-        for (Class<?> cls = rsrc.getClass(); !cls.equals(Object.class); cls = cls.getSuperclass())
-            assert !ioc.isCached(cls) : "Class must be removed from cache: " + cls.getName();
     }
 
     /**

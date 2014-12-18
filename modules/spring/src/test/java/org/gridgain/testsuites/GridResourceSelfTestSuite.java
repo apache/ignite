@@ -32,7 +32,6 @@ public class GridResourceSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridResourceIsolatedTaskSelfTest.class));
         suite.addTest(new TestSuite(GridResourceIsolatedClassLoaderSelfTest.class));
         suite.addTest(new TestSuite(GridResourceSharedUndeploySelfTest.class));
-        suite.addTest(new TestSuite(GridResourceUserExternalTest.class));
         suite.addTest(new TestSuite(GridResourceEventFilterSelfTest.class));
         suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
         suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));

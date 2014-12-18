@@ -115,10 +115,6 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
             ldr = getClass().getClassLoader();
 
             return Collections.singletonList(new ComputeJobAdapter() {
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource rsrcJob;
-
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
                     public Serializable execute() throws IgniteCheckedException {

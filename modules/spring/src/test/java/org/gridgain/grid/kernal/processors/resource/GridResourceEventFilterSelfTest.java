@@ -106,11 +106,6 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static final class CustomEventFilter1 implements IgnitePredicate<IgniteEvent> {
-        /** User resource. */
-        @SuppressWarnings("unused")
-        @IgniteUserResource
-        private transient UserResource1 rsrc;
-
         /** {@inheritDoc} */
         @Override public boolean apply(IgniteEvent evt) {
             return true;
@@ -122,11 +117,6 @@ public class GridResourceEventFilterSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static final class CustomEventFilter2 implements IgnitePredicate<IgniteEvent> {
-        /** User resource. */
-        @SuppressWarnings("unused")
-        @IgniteUserResource
-        private transient UserResource1 rsrc;
-
         /** Logger. */
         @IgniteLoggerResource
         private IgniteLogger log;

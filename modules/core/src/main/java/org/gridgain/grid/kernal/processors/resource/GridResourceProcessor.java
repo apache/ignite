@@ -11,10 +11,8 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
@@ -24,11 +22,9 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import javax.management.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Processor for all Grid and task/job resources.
@@ -42,8 +38,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteSpringApplicationContextResource.class,
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
-        IgniteServiceResource.class,
-        IgniteUserResource.class);
+        IgniteServiceResource.class);
 
     /** */
     private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = Arrays.asList(
@@ -54,32 +49,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteSpringApplicationContextResource.class,
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
-        IgniteServiceResource.class,
-        IgniteUserResource.class);
+        IgniteServiceResource.class);
 
     /** Grid instance injector. */
     private GridResourceBasicInjector<GridEx> gridInjector;
-
-    /** GridGain home folder injector. */
-    private GridResourceBasicInjector<String> ggHomeInjector;
-
-    /** Grid name injector. */
-    private GridResourceBasicInjector<String> ggNameInjector;
-
-    /** Local host binding injector. */
-    private GridResourceBasicInjector<String> locHostInjector;
-
-    /** MBean server injector. */
-    private GridResourceBasicInjector<MBeanServer> mbeanSrvInjector;
-
-    /** Grid thread executor injector. */
-    private GridResourceBasicInjector<Executor> execInjector;
-
-    /** Grid marshaller injector. */
-    private GridResourceBasicInjector<IgniteMarshaller> marshInjector;
-
-    /** Local node ID injector. */
-    private GridResourceBasicInjector<UUID> nodeIdInjector;
 
     /** Spring application context injector. */
     private GridResourceInjector springCtxInjector;
@@ -90,14 +63,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** Services injector. */
     private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
 
-    /** Address resolver injector. */
-    private GridResourceBasicInjector<IgniteAddressResolver> addrsRslvrInjector;
-
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
-
-    /** Task resources injector. */
-    private GridResourceCustomInjector customInjector;
 
     /** Cleaning injector. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
@@ -117,34 +84,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         super(ctx);
 
         gridInjector = new GridResourceBasicInjector<>(ctx.grid());
-        ggHomeInjector = new GridResourceBasicInjector<>(ctx.config().getGridGainHome());
-        ggNameInjector = new GridResourceBasicInjector<>(ctx.config().getGridName());
-        locHostInjector = new GridResourceBasicInjector<>(ctx.config().getLocalHost());
-        mbeanSrvInjector = new GridResourceBasicInjector<>(ctx.config().getMBeanServer());
-        marshInjector = new GridResourceBasicInjector<>(ctx.config().getMarshaller());
-        execInjector = new GridResourceBasicInjector<Executor>(ctx.config().getExecutorService());
-        nodeIdInjector = new GridResourceBasicInjector<>(ctx.config().getNodeId());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
         srvcInjector = new GridResourceServiceInjector(ctx.grid());
-        addrsRslvrInjector = new GridResourceBasicInjector<>(ctx.config().getAddressResolver());
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        customInjector = new GridResourceCustomInjector(log, ioc);
-
-        customInjector.setExecutorInjector(execInjector);
-        customInjector.setGridgainHomeInjector(ggHomeInjector);
-        customInjector.setGridNameInjector(ggNameInjector);
-        customInjector.setGridInjector(gridInjector);
-        customInjector.setMbeanServerInjector(mbeanSrvInjector);
-        customInjector.setNodeIdInjector(nodeIdInjector);
-        customInjector.setMarshallerInjector(marshInjector);
-        customInjector.setSpringContextInjector(springCtxInjector);
-        customInjector.setSpringBeanInjector(springBeanInjector);
-        customInjector.setLogInjector(logInjector);
-        customInjector.setSrvcInjector(srvcInjector);
-
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
     }
@@ -175,8 +120,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param dep Deployment to release resources for.
      */
     public void onUndeployed(GridDeployment dep) {
-        customInjector.undeploy(dep);
-
         ioc.onUndeployed(dep.classLoader());
     }
 
@@ -227,9 +170,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(target, IgniteSpringResource.class, springBeanInjector, dep, depCls);
         ioc.inject(target, IgniteLoggerResource.class, logInjector, dep, depCls);
         ioc.inject(target, IgniteServiceResource.class, srvcInjector, dep, depCls);
-
-        // Inject users resource.
-        ioc.inject(target, IgniteUserResource.class, customInjector, dep, depCls);
     }
 
     /**
@@ -352,11 +292,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                     ioc.inject(job, IgniteLoggerResource.class, logInjector, dep, taskCls);
                 else if (annCls == IgniteServiceResource.class)
                     ioc.inject(job, IgniteServiceResource.class, srvcInjector, dep, taskCls);
-                else {
-                    assert annCls == IgniteUserResource.class;
-
-                    ioc.inject(job, IgniteUserResource.class, customInjector, dep, taskCls);
-                }
             }
         }
     }
@@ -416,11 +351,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 ioc.inject(obj, IgniteLoggerResource.class, logInjector, dep, taskCls);
             else if (annCls == IgniteServiceResource.class)
                 ioc.inject(obj, IgniteServiceResource.class, srvcInjector, dep, taskCls);
-            else {
-                assert annCls == IgniteUserResource.class;
-
-                ioc.inject(obj, IgniteUserResource.class, customInjector, dep, taskCls);
-            }
         }
     }
 
@@ -640,15 +570,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     GridResourceIoc getResourceIoc() {
         return ioc;
-    }
-
-    /**
-     * Returns GridResourceCustomInjector object. For tests only!!!
-     *
-     * @return GridResourceCustomInjector object.
-     */
-    GridResourceCustomInjector getResourceCustomInjector() {
-        return customInjector;
     }
 
     /**

@@ -20,10 +20,6 @@ import org.gridgain.grid.*;
  */
 @SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEvent> {
-    /** */
-    @IgniteUserResource
-    private transient GridTestUserResource rsrc;
-
     /** Instance of grid. Used for save class loader and injected resource. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -32,7 +28,6 @@ public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEv
     @Override public boolean apply(IgniteEvent evt) {
         try {
             int[] res = new int[] {
-                System.identityHashCode(rsrc),
                 System.identityHashCode(getClass().getClassLoader())
             };
 

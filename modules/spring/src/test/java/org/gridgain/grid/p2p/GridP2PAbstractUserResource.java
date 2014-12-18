@@ -109,32 +109,6 @@ abstract class GridP2PAbstractUserResource {
 
     /** */
     @SuppressWarnings("unused")
-    @IgniteUserResourceOnDeployed
-    private void deploy() {
-        addUsage(deployClss);
-
-        assert log != null;
-        assert ignite != null;
-        assert springCtx != null;
-
-        log.info("Deploying resource: " + this);
-    }
-
-    /** */
-    @SuppressWarnings("unused")
-    @IgniteUserResourceOnUndeployed
-    private void undeploy() {
-        addUsage(undeployClss);
-
-        assert log != null;
-        assert ignite != null;
-        assert springCtx != null;
-
-        log.info("Undeploying resource: " + this);
-    }
-
-    /** */
-    @SuppressWarnings("unused")
     private void neverCalled() {
         assert false;
     }

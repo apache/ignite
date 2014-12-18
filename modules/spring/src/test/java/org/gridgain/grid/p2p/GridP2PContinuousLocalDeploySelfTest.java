@@ -177,26 +177,12 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /** User resource.  */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridP2PAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
         /** Grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
-            log.info("Injected resource1: " + rsrc1);
-            log.info("Injected resource1: " + rsrc2);
-
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-
             return Collections.<ComputeJob, ClusterNode>singletonMap(
                 new GridSharedJob1(), ignite.cluster().node(node2Id));
         }
@@ -212,18 +198,6 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      * Job class for the 1st task.
      */
     public static final class GridSharedJob1 extends ComputeJobAdapter {
-        /**
-         * User resource.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridP2PAbstractUserResource rsrc3;
-
-        /**
-         * Global resource.
-         */
-        @IgniteUserResource
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
@@ -231,8 +205,6 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})
         @Override public Serializable execute() {
-            log.info("Injected shared resource1 into job: " + rsrc3);
-            log.info("Injected shared resource2 into job: " + rsrc4);
             log.info("Injected log resource into job: " + log);
 
             clsLdr1 = getClass().getClassLoader();
@@ -249,26 +221,12 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /** User resource.  */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridP2PAbstractUserResource rsrc1;
-
-        /** User resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc2;
-
         /** Grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
-            log.info("Injected resource1: " + rsrc1);
-            log.info("Injected resource1: " + rsrc2);
-
-            assert rsrc1 != null;
-            assert rsrc2 != null;
-
             return Collections.<ComputeJob, ClusterNode>singletonMap(
                 new GridSharedJob2(), ignite.cluster().node(node2Id));
         }
@@ -284,14 +242,6 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
      * Job class for the 2st task.
      */
     public static final class GridSharedJob2 extends ComputeJobAdapter {
-        /** User resource. */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private transient GridP2PAbstractUserResource rsrc3;
-
-        /** Global resource. */
-        @IgniteUserResource
-        private transient UserResource2 rsrc4;
-
         /** */
         @IgniteLoggerResource
         private IgniteLogger log;
@@ -299,8 +249,6 @@ public class GridP2PContinuousLocalDeploySelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @SuppressWarnings({"ObjectEquality"})
         @Override public Serializable execute() {
-            log.info("Injected shared resource1 into job: " + rsrc3);
-            log.info("Injected shared resource2 into job: " + rsrc4);
             log.info("Injected log resource into job: " + log);
 
             clsLdr2 = getClass().getClassLoader();

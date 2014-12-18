@@ -121,32 +121,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
         public void setSpringBean(UserSpringBean springBean) {
             this.springBean = springBean;
         }
-
-        /**
-         * Method must be called.
-         * Parent GridAbstractUserResource#deploy() with the same annotation
-         * must be called too.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResourceOnDeployed
-        private void resourceDeploy() {
-            addUsage(deployClss);
-
-            assert springBean != null;
-        }
-
-        /**
-         * Method must be called.
-         * Parent GridAbstractUserResource#undeploy() with the same annotation
-         * must be called too.
-         */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResourceOnUndeployed
-        private void resourceUndeploy() {
-            addUsage(undeployClss);
-
-            assert springBean != null;
-        }
     }
 
     /** */
@@ -158,11 +132,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
      * Task that will always fail due to non-transient resource injection.
      */
     public static class NonTransientUserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
-        /** */
-        @SuppressWarnings({"UnusedDeclaration", "unused"})
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        private GridAbstractUserResource rsrc;
-
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
             // Never reached.
@@ -223,38 +192,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
 
         /** */
         private transient ComputeTaskContinuousMapper mapper;
-
-        /**
-         * @param rsrc1 Resource 1.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class)
-        public void setResource1(GridAbstractUserResource rsrc1) {
-            this.rsrc1 = rsrc1;
-        }
-
-        /**
-         * @param rsrc2 Resource 2.
-         */
-        @IgniteUserResource
-        public void setResource2(UserResource2 rsrc2) {
-            this.rsrc2 = rsrc2;
-        }
-
-        /**
-         * @param rsrc3 Resource 3.
-         */
-        @IgniteUserResource(resourceClass = UserResource1.class, resourceName = "rsrc3")
-        public void setResource3(GridAbstractUserResource rsrc3) {
-            this.rsrc3 = rsrc3;
-        }
-
-        /**
-         * @param rsrc4 Resource 4.
-         */
-        @IgniteUserResource(resourceName = "rsrc4")
-        public void setResource4(UserResource2 rsrc4) {
-            this.rsrc4 = rsrc4;
-        }
 
         /**
          * @param log Logger.
@@ -377,54 +314,6 @@ public class GridResourceMethodInjectionSelfTest extends GridCommonAbstractTest 
 
                     /** */
                     private UserSpringBean springBean2;
-
-                    /**
-                     * @param rsrc5 Resource 5.
-                     */
-                    @IgniteUserResource(resourceClass = UserResource3.class)
-                    public void setResource5(GridAbstractUserResource rsrc5) {
-                        this.rsrc5 = rsrc5;
-                    }
-
-                    /**
-                     * @param rsrc6 Resource 6.
-                     */
-                    @IgniteUserResource
-                    public void setResource6(UserResource4 rsrc6) {
-                        this.rsrc6 = rsrc6;
-                    }
-
-                    /**
-                     * @param rsrc7 Resource 7.
-                     */
-                    @IgniteUserResource
-                    public void setResource7(UserResource5 rsrc7) {
-                        this.rsrc7 = rsrc7;
-                    }
-
-                    /**
-                     * @param rsrc8 Resource 8.
-                     */
-                    @IgniteUserResource(resourceClass = UserResource3.class, resourceName = "rsrc8")
-                    public void setResource8(GridAbstractUserResource rsrc8) {
-                        this.rsrc8 = rsrc8;
-                    }
-
-                    /**
-                     * @param rsrc9 Resource 9.
-                     */
-                    @IgniteUserResource(resourceName = "rsrc9")
-                    public void setResource9(UserResource4 rsrc9) {
-                        this.rsrc9 = rsrc9;
-                    }
-
-                    /**
-                     * @param rsrc10 Resource 10.
-                     */
-                    @IgniteUserResource(resourceName = "rsrc10")
-                    public void setResource10(UserResource5 rsrc10) {
-                        this.rsrc10 = rsrc10;
-                    }
 
                     /** */
                     @IgniteJobContextResource

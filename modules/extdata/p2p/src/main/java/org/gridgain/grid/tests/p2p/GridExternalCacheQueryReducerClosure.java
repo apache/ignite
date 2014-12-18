@@ -19,10 +19,6 @@ import java.util.*;
  * {@link GridP2PAwareTestUserResource}.
  */
 public class GridExternalCacheQueryReducerClosure implements IgniteReducer<Map.Entry<Integer, Integer>, Integer> {
-    /** */
-    @IgniteUserResource
-    private transient GridP2PAwareTestUserResource rsrc;
-
     /** {@inheritDoc} */
     @Override public boolean collect(Map.Entry<Integer, Integer> e) {
         return true;
