@@ -132,22 +132,17 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
-    /** Grid instance. */
-    protected Ignite ignite;
-
     /** Logger. */
     @IgniteLoggerResource
     protected IgniteLogger log;
 
     /**
-     * Sets {@link Ignite ignite}.
+     * Inject resources
      *
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
-        this.ignite = ignite;
-
+    protected void injectResources(Ignite ignite) {
         // Inject resource.
         if (ignite != null)
             setLocalAddress(ignite.configuration().getLocalHost());

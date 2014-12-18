@@ -413,7 +413,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         locNode.clientRouterNodeId(rmtNodeId);
 
                         TcpDiscoveryAbstractMessage msg = recon ?
-                            new TcpDiscoveryClientReconnectMessage(ignite.configuration().getNodeId(), rmtNodeId, lastMsgId) :
+                            new TcpDiscoveryClientReconnectMessage(ignite.configuration().getNodeId(), rmtNodeId,
+                                lastMsgId) :
                             new TcpDiscoveryJoinRequestMessage(locNode, null);
 
                         msg.client(true);
@@ -647,7 +648,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 while (!isInterrupted()) {
                     U.sleep(hbFreq);
 
-                    TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(ignite.configuration().getNodeId());
+                    TcpDiscoveryHeartbeatMessage msg =
+                        new TcpDiscoveryHeartbeatMessage(ignite.configuration().getNodeId());
 
                     msg.client(true);
 
@@ -743,8 +745,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
-                            U.error(log, "Failed to read message [sock=" + sock0 + ", locNodeId=" + ignite.configuration().getNodeId() +
-                                ", rmtNodeId=" + nodeId + ']', e);
+                            U.error(log, "Failed to read message [sock=" + sock0 + ", " +
+                                "locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']', e);
 
                         IOException ioEx = X.cause(e, IOException.class);
 
@@ -758,15 +760,15 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 "(make sure same versions of all classes are available on all nodes) " +
                                 "[rmtNodeId=" + nodeId + ", err=" + clsNotFoundEx.getMessage() + ']');
                         else
-                            LT.error(log, e, "Failed to read message [sock=" + sock0 + ", locNodeId=" + ignite.configuration().getNodeId() +
-                                ", rmtNodeId=" + nodeId + ']');
+                            LT.error(log, e, "Failed to read message [sock=" + sock0 + ", locNodeId=" +
+                                ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']');
                     }
                 }
             }
             catch (IOException e) {
                 if (log.isDebugEnabled())
-                    U.error(log, "Connection failed [sock=" + sock0 + ", locNodeId=" + ignite.configuration().getNodeId() +
-                        ", rmtNodeId=" + nodeId + ']', e);
+                    U.error(log, "Connection failed [sock=" + sock0 + ", locNodeId=" +
+                        ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']', e);
             }
             finally {
                 U.closeQuiet(sock0);

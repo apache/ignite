@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -634,6 +633,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Local port which node uses to accept shared memory connections. */
     private int shmemPort = DFLT_SHMEM_PORT;
 
+    /** Grid name. */
+    private String gridName;
+
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
 
@@ -872,17 +874,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
-     * Sets {@link Ignite ignite}.
+     * Injects resources.
      *
      * @param ignite Ignite.
      */
-    @IgniteSpiConfiguration(optional = true)
     @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
-        // Inject resources.
-        if (ignite != null && ignite.configuration() != null) {
+    protected void injectResources(Ignite ignite) {
+        if (ignite != null) {
             setAddressResolver(ignite.configuration().getAddressResolver());
             setLocalAddress(ignite.configuration().getLocalHost());
+            gridName = ignite.name();
         }
     }
 
@@ -1556,7 +1557,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .listener(srvLsnr)
                         .logger(log)
                         .selectorCount(selectorsCnt)
-                        .gridName(ignite.name())
+                        .gridName(gridName)
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -1614,7 +1615,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
                 GridIpcSharedMemoryServerEndpoint srv =
-                    new GridIpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), ignite.name());
+                    new GridIpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
 
                 srv.setPort(port);
 
@@ -2450,7 +2451,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
-            super(ignite.name(), "shmem-communication-acceptor", log);
+            super(gridName, "shmem-communication-acceptor", log);
 
             this.srv = srv;
         }
@@ -2494,7 +2495,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(GridIpcEndpoint endpoint) {
-            super(ignite.name(), "shmem-worker", log);
+            super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;
         }
@@ -2549,7 +2550,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         IdleClientWorker() {
-            super(ignite.name(), "nio-idle-client-collector", log);
+            super(gridName, "nio-idle-client-collector", log);
         }
 
         /** {@inheritDoc} */
@@ -2662,7 +2663,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         ClientFlushWorker() {
-            super(ignite.name(), "nio-client-flusher", log);
+            super(gridName, "nio-client-flusher", log);
         }
 
         /** {@inheritDoc} */
@@ -2728,7 +2729,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         SocketTimeoutWorker() {
-            super(ignite.name(), "tcp-comm-sock-timeout-worker", log);
+            super(gridName, "tcp-comm-sock-timeout-worker", log);
         }
 
         /**
@@ -2811,7 +2812,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          *
          */
         private RecoveryWorker() {
-            super(ignite.name(), "tcp-comm-recovery-worker", log);
+            super(gridName, "tcp-comm-recovery-worker", log);
         }
 
         /** {@inheritDoc} */

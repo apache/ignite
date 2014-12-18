@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
@@ -277,8 +276,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
-    @Override public void setIgnite(Ignite ignite) {
-        super.setIgnite(ignite);
+    @Override public void injectResources(Ignite ignite) {
+        super.injectResources(ignite);
 
         // Inject resource.
         if (ignite != null)

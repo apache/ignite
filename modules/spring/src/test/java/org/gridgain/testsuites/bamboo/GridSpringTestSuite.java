@@ -33,7 +33,6 @@ public class GridSpringTestSuite extends TestSuite {
 
         // Tests moved to this suite since they require Spring functionality.
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
-        suite.addTest(new TestSuite(GridP2PContinuousLocalDeploySelfTest.class));
 
         suite.addTest(new TestSuite(GridSpringCacheManagerSelfTest.class));
 

@@ -141,7 +141,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -149,10 +149,9 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid(1);
 
-            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
-            assert res1[0] != res2[0];
-            assert res1[1] != res2[1];
+            assert !res1.equals(res2);
 
             // Allow P2P timeout to expire.
             assert undeployed.await(30000, MILLISECONDS);
@@ -190,18 +189,17 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             ignite1 = startGrid(1);
 
-            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert !undeployed.await(3000, MILLISECONDS);
 
-            assert res1[0] == res2[0];
-            assert res1[1] == res2[1];
+            assert res1.equals(res2);
         }
         finally {
             stopGrid(1);
@@ -247,7 +245,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_LEFT);
 
-            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -257,10 +255,9 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid(1);
 
-            int[] res2 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
-            assert res1[0] != res2[0];
-            assert res1[1] != res2[1];
+            assert !res1.equals(res2);
         }
         finally {
             stopGrid(1);

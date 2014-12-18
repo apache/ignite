@@ -290,8 +290,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                     ioc.inject(job, IgniteSpringResource.class, springBeanInjector, dep, taskCls);
                 else if (annCls == IgniteLoggerResource.class)
                     ioc.inject(job, IgniteLoggerResource.class, logInjector, dep, taskCls);
-                else if (annCls == IgniteServiceResource.class)
+                else {
+                    assert annCls == IgniteServiceResource.class;
+
                     ioc.inject(job, IgniteServiceResource.class, srvcInjector, dep, taskCls);
+                }
             }
         }
     }
@@ -349,8 +352,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, dep, taskCls);
             else if (annCls == IgniteLoggerResource.class)
                 ioc.inject(obj, IgniteLoggerResource.class, logInjector, dep, taskCls);
-            else if (annCls == IgniteServiceResource.class)
+            else {
+                assert annCls == IgniteServiceResource.class;
+
                 ioc.inject(obj, IgniteServiceResource.class, srvcInjector, dep, taskCls);
+            }
         }
     }
 

@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -114,8 +113,9 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Grid marshaller. */
-    private IgniteMarshaller marsh;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** List of checkpoint directories where all files are stored. */
     private Queue<String> dirPaths = new LinkedList<>();
@@ -174,12 +174,6 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         this.dirPaths.clear();
         this.dirPaths.addAll(dirPaths);
-    }
-
-    @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
-        if (ignite != null)
-            marsh = ignite.configuration().getMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -289,6 +283,8 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (folder != null) {
             Map<File, SharedFsTimeData> files = new HashMap<>();
 
+            IgniteMarshaller marsh = ignite.configuration().getMarshaller();
+
             // Track expiration for only those files that are made by this node
             // to avoid file access conflicts.
             for (File file : getFiles()) {
@@ -360,7 +356,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         if (file.exists())
             try {
-                SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
+                SharedFsCheckpointData data = SharedFsUtils.read(file, ignite.configuration().getMarshaller(), log);
 
                 return data != null ?
                     data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -408,7 +404,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
             try {
                 SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
-                    marsh, log);
+                    ignite.configuration().getMarshaller(), log);
             }
             catch (IOException e) {
                 // Select next shared directory if exists, otherwise throw exception

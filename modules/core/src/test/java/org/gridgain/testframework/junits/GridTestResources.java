@@ -159,6 +159,8 @@ public class GridTestResources {
         assert getLogger() != null;
 
         rsrcProc.injectBasicResource(target, IgniteLoggerResource.class, getLogger().getLogger(target.getClass()));
+        rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
+            new GridTestIgnite(null, locHost, nodeId, marshaller, jmx, home));
     }
 
     /**

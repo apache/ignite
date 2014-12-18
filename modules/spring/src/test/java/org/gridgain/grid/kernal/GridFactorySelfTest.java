@@ -14,7 +14,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
@@ -36,7 +35,6 @@ import org.springframework.context.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
-import javax.management.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;

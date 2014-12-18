@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -22,7 +21,7 @@ import java.util.*;
 /**
  * Test P2P task.
  */
-public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int[]> {
+public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer> {
     /** */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -73,7 +72,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
     /**
      * {@inheritDoc}
      */
-    @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
         return results.get(0).getData();
     }
 
@@ -115,7 +114,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
         }
 
         /** {@inheritDoc} */
-        @Override public int[] execute() throws IgniteCheckedException {
+        @Override public Integer execute() throws IgniteCheckedException {
             assert g.configuration().getNodeId().equals(argument(0));
 
             log.info("Running job on node: " + g.cluster().localNode().id());
@@ -131,9 +130,7 @@ public class GridP2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, int
                 }
             }
 
-            return new int[] {
-                System.identityHashCode(ses.getClassLoader())
-            };
+            return System.identityHashCode(ses.getClassLoader());
         }
     }
 }

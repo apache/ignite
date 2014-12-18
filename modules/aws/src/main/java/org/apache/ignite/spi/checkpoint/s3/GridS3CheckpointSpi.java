@@ -14,7 +14,6 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
@@ -99,8 +98,9 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Marshaller. */
-    private IgniteMarshaller marsh;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Task that takes care about outdated files. */
     private GridS3TimeoutWorker timeoutWrk;
@@ -229,12 +229,6 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     @IgniteSpiConfiguration(optional = false)
     public void setAwsCredentials(AWSCredentials cred) {
         this.cred = cred;
-    }
-
-    @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
-        if (ignite != null)
-            marsh = ignite.configuration().getMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -456,7 +450,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
             InputStream in = obj.getObjectContent();
 
             try {
-                return marsh.unmarshal(in, U.gridClassLoader());
+                return ignite.configuration().getMarshaller().unmarshal(in, U.gridClassLoader());
             }
             finally {
                 U.closeQuiet(in);
@@ -484,7 +478,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         if (log.isDebugEnabled())
             log.debug("Writing data to S3 [bucket=" + bucketName + ", key=" + data.getKey() + ']');
 
-        byte[] buf = marsh.marshal(data);
+        byte[] buf = ignite.configuration().getMarshaller().marshal(data);
 
         ObjectMetadata meta = new ObjectMetadata();
 

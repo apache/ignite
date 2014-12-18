@@ -101,14 +101,13 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             taskCls = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[]) ignite2.compute().execute(taskCls, ignite1.cluster().localNode().id());
+            Integer res1 = ignite2.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             taskCls = ldr3.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res2 = (int[]) ignite3.compute().execute(taskCls, ignite1.cluster().localNode().id());
+            Integer res2 = ignite3.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
-            assert res1[0] != res2[0]; // Resources are not same.
-            assert res1[1] != res2[1]; // Class loaders are not same.
+            assert !res1.equals(res2); // Resources are not same.
         }
         finally {
             stopGrid(1);
@@ -138,15 +137,14 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Class task1 = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
             Class task2 = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
-            int[] res2 = (int[]) ignite2.compute().execute(task2, ignite1.cluster().localNode().id());
+            Integer res2 = ignite2.compute().execute(task2, ignite1.cluster().localNode().id());
 
-            assert res1[1] != res2[1]; // Class loaders are not same.
-            assert res1[0] != res2[0]; // Resources are not same.
+            assert !res1.equals(res2); // Class loaders are not same.
 
-            assert res1[1] != System.identityHashCode(ldr1);
-            assert res2[1] != System.identityHashCode(ldr2);
+            assert !res1.equals(System.identityHashCode(ldr1));
+            assert !res2.equals(System.identityHashCode(ldr2));
         }
         finally {
             stopGrid(1);
