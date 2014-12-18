@@ -9,11 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import java.util.*;
 
 /**
  *
@@ -23,7 +25,7 @@ public class GridCacheAccessExpiryPolicy {
     private final long ttl;
 
     /** */
-    private GridCacheTtlUpdateRequest req;
+    private volatile Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
 
     /**
      * @param expiryPlc Expiry policy.
@@ -58,24 +60,41 @@ public class GridCacheAccessExpiryPolicy {
     }
 
     /**
+     *
+     */
+    public void reset() {
+        Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
+
+        if (entries0 != null)
+            entries0.clear();
+    }
+
+    /**
      * @param key Entry key.
      * @param keyBytes Entry key bytes.
      * @param ver Entry version.
      */
     @SuppressWarnings("unchecked")
     public void ttlUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
-        if (req == null)
-            req = new GridCacheTtlUpdateRequest(ttl);
+        Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
 
-        req.addEntry(key, keyBytes, ver);
+        if (entries0 == null) {
+            synchronized (this) {
+                entries0 = entries;
+
+                if (entries0 == null)
+                    entries0 = entries = new ConcurrentHashMap8<>();
+            }
+        }
+
+        entries0.put(key, new IgniteBiTuple<>(keyBytes, ver));
     }
 
     /**
      * @return TTL update request.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> GridCacheTtlUpdateRequest<K, V> request() {
-        return (GridCacheTtlUpdateRequest<K, V>)req;
+    @Nullable public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+        return entries;
     }
 
     /** {@inheritDoc} */

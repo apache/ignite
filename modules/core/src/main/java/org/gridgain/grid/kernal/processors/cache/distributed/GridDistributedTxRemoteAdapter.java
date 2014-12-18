@@ -293,43 +293,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     }
 
     /**
-     * @param key Key to add to read set.
-     * @param keyBytes Key bytes.
-     * @param drVer Data center replication version.
-     */
-    public void addRead(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, byte[] keyBytes, @Nullable GridCacheVersion drVer) {
-        checkInternal(key);
-
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, READ, null, 0L, -1L,
-            cacheCtx.cache().entryEx(key.key()), drVer);
-
-        txEntry.keyBytes(keyBytes);
-
-        readMap.put(key, txEntry);
-    }
-
-    /**
-     * @param key Key to add to write set.
-     * @param keyBytes Key bytes.
-     * @param op Cache operation.
-     * @param val Write value.
-     * @param valBytes Write value bytes.
-     * @param drVer Data center replication version.
-     */
-    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, byte[] keyBytes, GridCacheOperation op, V val, byte[] valBytes,
-        @Nullable GridCacheVersion drVer) {
-        checkInternal(key);
-
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L,
-            cacheCtx.cache().entryEx(key.key()), drVer);
-
-        txEntry.keyBytes(keyBytes);
-        txEntry.valueBytes(valBytes);
-
-        writeMap.put(key, txEntry);
-    }
-
-    /**
      * @param e Transaction entry to set.
      * @return {@code True} if value was set.
      */
@@ -446,8 +409,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
     @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
         if (state() == COMMITTING) {
-            log.info("commitIfLocked");
-
             for (GridCacheTxEntry<K, V> txEntry : writeMap.values()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 

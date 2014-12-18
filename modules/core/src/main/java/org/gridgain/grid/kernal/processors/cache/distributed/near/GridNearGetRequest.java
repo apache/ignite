@@ -90,6 +90,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param reload Reload flag.
      * @param topVer Topology version.
      * @param filter Filter.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public GridNearGetRequest(
         int cacheId,
@@ -183,6 +186,13 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      */
     public IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
+    }
+
+    /**
+     * @return New TTL to set after entry is accessed, -1 to leave unchanged.
+     */
+    public long accessTtl() {
+        return accessTtl;
     }
 
     /**

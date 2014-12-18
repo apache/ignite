@@ -18,6 +18,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -89,6 +90,13 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
+
+        if (atomicityMode() == ATOMIC && cacheMode() != LOCAL) {
+            assert atomicWriteOrderMode() != null;
+
+            cfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
+        }
+
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
         cfg.setPortableEnabled(portableEnabled());
@@ -108,6 +116,13 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache atomicity mode.
      */
     protected abstract GridCacheAtomicityMode atomicityMode();
+
+    /**
+     * @return Atomic cache write order mode.
+     */
+    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return null;
+    }
 
     /**
      * @return Partitioned mode.

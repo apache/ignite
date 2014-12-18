@@ -275,10 +275,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     false,
                     forcePrimary,
                     filter,
-                    expiryPlc,
                     subjId0,
                     taskName,
-                    deserializePortable);
+                    deserializePortable,
+                    expiryPlc);
             }
         });
     }
@@ -705,20 +705,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param reload Reload flag.
      * @param forcePrimary Force primary flag.
      * @param filter Filter.
-     * @param expiryPlc Expiry policy.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      * @return Get future.
      */
     private IgniteFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable ExpiryPolicy expiryPlc,
         UUID subjId,
         String taskName,
-        boolean deserializePortable) {
+        boolean deserializePortable,
+        @Nullable ExpiryPolicy expiryPlc) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
@@ -813,31 +813,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             if (success) {
-                if (expiry != null && expiry.request() != null) {
-                    ctx.closures().runLocalSafe(new Runnable() {
-                        @Override public void run() {
-                            try {
-                                GridCacheTtlUpdateRequest<K, V> req = expiry.request();
-
-                                assert req != null;
-                                assert !F.isEmpty(req.keys());
-
-                                Collection<ClusterNode> nodes = ctx.affinity().remoteNodes(req.keys(), -1);
-
-                                req.cacheId(ctx.cacheId());
-
-                                ctx.io().safeSend(nodes, req, null);
-                            }
-                            catch (IgniteCheckedException e) {
-                                log.error("Failed to send TTL update request.", e);
-                            }
-                        }
-                    });
-                }
+                sendTtlUpdateRequest(expiry);
 
                 return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
             }
         }
+
+        if (expiry != null)
+            expiry.reset();
 
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,

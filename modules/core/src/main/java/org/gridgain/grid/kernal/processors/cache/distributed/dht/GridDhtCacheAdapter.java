@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -100,33 +101,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 processTtlUpdateRequest(req);
             }
         });
-    }
-
-    /**
-     * @param req Request.
-     */
-    private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
-        int size = req.keys().size();
-
-        for (int i = 0; i < size; i++) {
-            try {
-                GridCacheEntryEx<K, V> entry;
-
-                if (ctx.isSwapOrOffheapEnabled()) {
-                    entry = ctx.cache().entryEx(req.key(i), true);
-
-                    entry.unswap(true, false);
-                }
-                else
-                    entry = ctx.cache().peekEx(req.key(i));
-
-                if (entry != null)
-                    entry.updateTtl(req.version(i), req.ttl());
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to unswap entry.", e);
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -454,7 +428,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, org.apache.ignite.lang.IgnitePredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], GridCacheAccessExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -473,8 +447,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable,
-            forcePrimary, filter);
+        return getAllAsync(keys,
+            null,
+            /*don't check local tx. */false,
+            subjId,
+            taskName,
+            deserializePortable,
+            forcePrimary,
+            null,
+            filter);
     }
 
     /** {@inheritDoc} */
@@ -490,12 +471,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param keys Keys to get
-     * @param filter {@inheritDoc}
-     * @return {@inheritDoc}
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param filter Optional filter.
+     * @param expiry Expiry policy.
+     * @return Get future.
      */
-    IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
-        String taskName, boolean deserializePortable, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
+    IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable GridCacheAccessExpiryPolicy expiry
+        ) {
+        return getAllAsync(keys,
+            null,
+            /*don't check local tx. */false,
+            subjId,
+            taskName,
+            deserializePortable,
+            false,
+            expiry,
             filter);
     }
 
@@ -505,7 +502,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Keys to get.
      * @param reload Reload flag.
      * @param topVer Topology version.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Optional filter.
+     * @param expiry Expiry policy.
      * @return DHT future.
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader,
@@ -516,7 +517,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable GridCacheAccessExpiryPolicy expiry) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
             reader,
@@ -527,7 +529,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             filter,
             subjId,
             taskNameHash,
-            deserializePortable);
+            deserializePortable,
+            expiry);
 
         fut.init();
 
@@ -541,6 +544,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest<K, V> req) {
         assert isAffinityNode(cacheCfg);
 
+        long ttl = req.accessTtl();
+
+        final GridCacheAccessExpiryPolicy expiryPlc = ttl == -1L ? null : new GridCacheAccessExpiryPolicy(ttl);
+
         IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId,
                 req.messageId(),
@@ -550,7 +557,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 false,
-                req.filter());
+                req.filter(),
+                expiryPlc);
 
         fut.listenAsync(new CI1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
@@ -582,8 +590,86 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
                         ",req=" + req + ", res=" + res + ']', e);
                 }
+
+                sendTtlUpdateRequest(expiryPlc);
             }
         });
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    protected void sendTtlUpdateRequest(@Nullable final GridCacheAccessExpiryPolicy expiryPlc) {
+        if (expiryPlc != null && expiryPlc.entries() != null) {
+            ctx.closures().runLocalSafe(new Runnable() {
+                @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+                @Override public void run() {
+                    Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries = expiryPlc.entries();
+
+                    assert entries != null && !entries.isEmpty();
+
+                    Map<ClusterNode, GridCacheTtlUpdateRequest<K, V>> reqMap = new HashMap<>();
+
+                    long topVer = ctx.discovery().topologyVersion();
+
+                    for (Map.Entry<Object, IgniteBiTuple<byte[], GridCacheVersion>> e : entries.entrySet()) {
+                        List<ClusterNode> nodes = ctx.affinity().nodes((K)e.getKey(), topVer);
+
+                        for (int i = 0; i < nodes.size(); i++) {
+                            ClusterNode node = nodes.get(i);
+
+                            if (!node.isLocal()) {
+                                GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
+
+                                if (req == null) {
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(expiryPlc.ttl()));
+
+                                    req.cacheId(ctx.cacheId());
+                                }
+
+                                req.addEntry((K)e.getKey(), e.getValue().get1(), e.getValue().get2());
+                            }
+                        }
+                    }
+
+                    for (Map.Entry<ClusterNode, GridCacheTtlUpdateRequest<K, V>> req : reqMap.entrySet()) {
+                        try {
+                            ctx.io().send(req.getKey(), req.getValue());
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Failed to send TTL update request.", e);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * @param req Request.
+     */
+    private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
+        int size = req.keys().size();
+
+        for (int i = 0; i < size; i++) {
+            try {
+                GridCacheEntryEx<K, V> entry;
+
+                if (ctx.isSwapOrOffheapEnabled()) {
+                    entry = ctx.cache().entryEx(req.key(i), true);
+
+                    entry.unswap(true, false);
+                }
+                else
+                    entry = ctx.cache().peekEx(req.key(i));
+
+                if (entry != null)
+                    entry.updateTtl(req.version(i), req.ttl());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to unswap entry.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

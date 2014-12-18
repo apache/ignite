@@ -83,6 +83,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
+    /** Expiry policy. */
+    private GridCacheAccessExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -99,6 +102,10 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param tx Transaction.
      * @param topVer Topology version.
      * @param filters Filters.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      */
     public GridDhtGetFuture(
         GridCacheContext<K, V> cctx,
@@ -111,7 +118,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean deserializePortable) {
+        boolean deserializePortable,
+        @Nullable GridCacheAccessExpiryPolicy expiryPlc) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -128,6 +136,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskNameHash = taskNameHash;
+        this.expiryPlc = expiryPlc;
 
         futId = IgniteUuid.randomUuid();
 
@@ -325,11 +334,30 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         IgniteFuture<Map<K, V>> fut;
 
         if (txFut == null || txFut.isDone()) {
-            if (reload && cctx.isStoreEnabled() && cctx.store().configured())
-                fut = cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
-            else
-                fut = tx == null ? cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
-                    tx.getAllAsync(cctx, keys.keySet(), null, deserializePortable, filters);
+            if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+                fut = cache().reloadAllAsync(keys.keySet(),
+                    true,
+                    subjId,
+                    taskName,
+                    filters);
+            }
+            else {
+                if (tx == null) {
+                    fut = cache().getDhtAllAsync(keys.keySet(),
+                        subjId,
+                        taskName,
+                        deserializePortable,
+                        filters,
+                        expiryPlc);
+                }
+                else {
+                    fut = tx.getAllAsync(cctx,
+                        keys.keySet(),
+                        null,
+                        deserializePortable,
+                        filters);
+                }
+            }
         }
         else {
             // If we are here, then there were active transactions for some entries
@@ -342,12 +370,30 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e != null)
                             throw new GridClosureException(e);
 
-                        if (reload)
-                            return cache().reloadAllAsync(keys.keySet(), true, subjId, taskName, filters);
-                        else
-                            return tx == null ?
-                                cache().getDhtAllAsync(keys.keySet(), subjId, taskName, deserializePortable, filters) :
-                                tx.getAllAsync(cctx, keys.keySet(), null, deserializePortable, filters);
+                        if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+                            return cache().reloadAllAsync(keys.keySet(),
+                                true,
+                                subjId,
+                                taskName,
+                                filters);
+                        }
+                        else {
+                            if (tx == null) {
+                                return cache().getDhtAllAsync(keys.keySet(),
+                                    subjId,
+                                    taskName,
+                                    deserializePortable,
+                                    filters,
+                                    expiryPlc);
+                            }
+                            else {
+                                return tx.getAllAsync(cctx,
+                                    keys.keySet(),
+                                    null,
+                                    deserializePortable,
+                                    filters);
+                            }
+                        }
                     }
                 },
                 cctx.kernalContext());

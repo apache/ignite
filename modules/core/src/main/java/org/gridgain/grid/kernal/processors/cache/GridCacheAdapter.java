@@ -1737,16 +1737,37 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter
     ) {
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return getAllAsync(keys, entry, !skipTx, subjId, taskName, deserializePortable, forcePrimary, filter);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+
+        if (expiryPlc == null)
+            expiryPlc = ctx.expiry();
+
+        return getAllAsync(keys,
+            entry,
+            !skipTx,
+            subjId,
+            taskName,
+            deserializePortable,
+            forcePrimary,
+            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc),
+            filter);
     }
 
     /** {@inheritDoc} */
     public IgniteFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached, boolean checkTx, @Nullable final UUID subjId, final String taskName,
-        final boolean deserializePortable, final boolean forcePrimary,
-        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable GridCacheEntryEx<K, V> cached,
+        boolean checkTx,
+        @Nullable final UUID subjId,
+        final String taskName,
+        final boolean deserializePortable,
+        final boolean forcePrimary,
+        @Nullable GridCacheAccessExpiryPolicy expiry,
+        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter
+        ) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         ctx.denyOnFlag(LOCAL);
@@ -1813,7 +1834,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                                 null,
                                 taskName,
                                 filter,
-                                null);
+                                expiry);
 
                             GridCacheVersion ver = entry.version();
 

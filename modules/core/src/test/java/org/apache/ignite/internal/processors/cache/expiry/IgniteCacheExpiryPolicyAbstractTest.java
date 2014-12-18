@@ -61,6 +61,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     public void testEternal() throws Exception {
         factory = EternalExpiryPolicy.factoryOf();
 
+        ExpiryPolicy plc = factory.create();
+
+        assertTrue(plc.getExpiryForCreation().isEternal());
+        assertNull(plc.getExpiryForUpdate());
+        assertNull(plc.getExpiryForAccess());
+
         startGrids();
 
         for (final Integer key : keys()) {
@@ -74,7 +80,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNullFactory() throws Exception {
-        factory = null;
+        factory = null; // Should work as eternal.
 
         startGrids();
 
@@ -106,21 +112,19 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         assertTrue(cache.remove(key)); // Remove.
 
-        /*
         cache.withExpiryPolicy(new TestPolicy(60_000L, null, null)).put(key, 1); // Create with custom.
 
         checkTtl(key, 60_000L);
 
-        cache.put(key, 2); // Update.
+        cache.put(key, 2); // Update with eternal, should not change ttl.
 
-        checkTtl(key, 0);
+        checkTtl(key, 60_000L);
 
-        cache.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 1);
+        cache.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 1); // Update with custom.
 
         checkTtl(key, 1000L);
 
         waitExpired(key);
-        */
     }
 
     /**
@@ -136,6 +140,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             access(key);
         }
+
+        accessGetAll();
     }
 
     /**
@@ -152,6 +158,50 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals((Integer)1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
+
+        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, 1000L)).get(key));
+
+        checkTtl(key, 1000L, true);
+
+        waitExpired(key);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void accessGetAll() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            vals.put(i, i);
+
+        cache.removeAll(vals.keySet());
+
+        for (Map.Entry<Integer, Integer> e : vals.entrySet())
+            cache.put(e.getKey(), e.getValue());
+
+        //cache.putAll(vals);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 60_000L);
+
+        Map<Integer, Integer> vals0 = cache.getAll(vals.keySet());
+
+        assertEquals(vals, vals0);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 62_000L, true);
+
+        vals0 = cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, 1000L)).getAll(vals.keySet());
+
+        assertEquals(vals, vals0);
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 1000L, true);
+
+        waitExpired(vals.keySet());
     }
 
     /**
@@ -176,9 +226,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         createUpdatePutAll(null);
 
-        GridCacheTxConcurrency[] txModes = {PESSIMISTIC};
-
         if (atomicityMode() == TRANSACTIONAL) {
+            GridCacheTxConcurrency[] txModes;
+
+            if (cacheMode() == LOCAL)
+                txModes= new GridCacheTxConcurrency[]{PESSIMISTIC};
+            else
+                txModes= new GridCacheTxConcurrency[]{PESSIMISTIC, OPTIMISTIC};
+
             for (GridCacheTxConcurrency tx : txModes) {
                 for (final Integer key : keys()) {
                     log.info("Test createUpdate [key=" + key + ", tx=" + tx + ']');
@@ -220,7 +275,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             tx.commit();
 
         for (Integer key : vals.keySet())
-            checkTtl(key, 60_000);
+            checkTtl(key, 60_000L);
 
         tx = startTx(txConcurrency);
 
@@ -231,7 +286,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             tx.commit();
 
         for (Integer key : vals.keySet())
-            checkTtl(key, 61_000);
+            checkTtl(key, 61_000L);
 
         tx = startTx(txConcurrency);
 
@@ -295,7 +350,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (int idx = 0; idx < gridCount(); idx++) {
             assertEquals(1, cache(idx).get(key)); // Try get.
 
-            checkTtl(key, 10_000);
+            checkTtl(key, 10_000L);
         }
 
         tx = startTx(txConcurrency);
@@ -351,12 +406,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (tx != null)
                 tx.commit();
 
-            checkTtl(key, 60_000);
+            checkTtl(key, 60_000L);
 
             for (int idx = 0; idx < gridCount(); idx++) {
                 assertEquals(1, cache(idx).get(key)); // Try get.
 
-                checkTtl(key, 60_000);
+                checkTtl(key, 60_000L);
             }
 
             tx = startTx(txConcurrency);
@@ -366,12 +421,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (tx != null)
                 tx.commit();
 
-            checkTtl(key, 61_000);
+            checkTtl(key, 61_000L);
 
             for (int idx = 0; idx < gridCount(); idx++) {
                 assertEquals(2, cache(idx).get(key)); // Try get.
 
-                checkTtl(key, 61_000);
+                checkTtl(key, 61_000L);
             }
 
             tx = startTx(txConcurrency);
@@ -413,7 +468,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         jcache0.put(key, 1);
 
-        checkTtl(key, 60_000);
+        checkTtl(key, 60_000L);
 
         IgniteCache<Integer, Integer> jcache1 = jcache(1);
 
@@ -425,19 +480,19 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         // Update from another node with provided TTL.
         jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 3);
 
-        checkTtl(key, 1000);
+        checkTtl(key, 1000L);
 
         waitExpired(key);
 
         // Try create again.
         jcache0.put(key, 1);
 
-        checkTtl(key, 60_000);
+        checkTtl(key, 60_000L);
 
         // Update from near node with provided TTL.
         jcache0.withExpiryPolicy(new TestPolicy(null, 1100L, null)).put(key, 2);
 
-        checkTtl(key, 1100);
+        checkTtl(key, 1100L);
 
         waitExpired(key);
     }
@@ -465,7 +520,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         jcache0.putAll(vals);
 
         for (Integer key : vals.keySet())
-            checkTtl(key, 60_000);
+            checkTtl(key, 60_000L);
 
         IgniteCache<Integer, Integer> jcache1 = jcache(1);
 
@@ -473,13 +528,13 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         jcache1.putAll(vals);
 
         for (Integer key : vals.keySet())
-            checkTtl(key, 61_000);
+            checkTtl(key, 61_000L);
 
         // Update from another node with provided TTL.
         jcache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).putAll(vals);
 
         for (Integer key : vals.keySet())
-            checkTtl(key, 1000);
+            checkTtl(key, 1000L);
 
         waitExpired(vals.keySet());
 
@@ -585,6 +640,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @param key Key.
      * @param ttl TTL.
+     * @param wait If {@code true} waits for ttl update.
      * @throws Exception If failed.
      */
     private void checkTtl(Object key, final long ttl, boolean wait) throws Exception {
@@ -622,7 +678,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }, 3000);
                 }
 
-                assertEquals("Unexpected ttl for grid " + i, ttl, e.ttl());
+                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);

@@ -24,6 +24,7 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedExpiryPolicyTest.class);
 
         suite.addTestSuite(IgniteCacheTxLocalExpiryPolicyTest.class);

@@ -75,6 +75,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -199,6 +201,11 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         }
 
         return cp;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean transferExpiryPolicy() {
+        return true;
     }
 
     /** {@inheritDoc} */

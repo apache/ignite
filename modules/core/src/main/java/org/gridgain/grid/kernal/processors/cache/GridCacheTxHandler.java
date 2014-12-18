@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -759,10 +760,10 @@ public class GridCacheTxHandler<K, V> {
         if (nearTx != null && nearTx.local())
             nearTx = null;
 
-        finish(nodeId, dhtTx, req, req.writes());
+        finish(nodeId, dhtTx, req, req.writes(), req.ttls());
 
         if (nearTx != null)
-            finish(nodeId, nearTx, req, req.nearWrites());
+            finish(nodeId, nearTx, req, req.nearWrites(), req.nearTtls());
 
         sendReply(nodeId, req);
     }
@@ -772,12 +773,14 @@ public class GridCacheTxHandler<K, V> {
      * @param tx Transaction.
      * @param req Request.
      * @param writes Writes.
+     * @param ttls TTLs for optimistic transaction.
      */
     protected void finish(
         UUID nodeId,
         GridCacheTxRemoteEx<K, V> tx,
         GridDhtTxFinishRequest<K, V> req,
-        Collection<GridCacheTxEntry<K, V>> writes) {
+        Collection<GridCacheTxEntry<K, V>> writes,
+        @Nullable GridLongList ttls) {
         // We don't allow explicit locks for transactions and
         // therefore immediately return if transaction is null.
         // However, we may decide to relax this restriction in
@@ -799,6 +802,8 @@ public class GridCacheTxHandler<K, V> {
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                 ", tx=" + tx + ']');
 
+        assert ttls == null || tx.concurrency() == OPTIMISTIC;
+
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 if (tx.commitVersion(req.commitVersion())) {
@@ -818,6 +823,12 @@ public class GridCacheTxHandler<K, V> {
                                 U.warn(log, "Received entry to commit that was not present in transaction [entry=" +
                                     entry + ", tx=" + tx + ']');
                         }
+                    }
+                    else if (tx.concurrency() == OPTIMISTIC && ttls != null) {
+                        int idx = 0;
+
+                        for (GridCacheTxEntry<K, V> e : tx.writeEntries())
+                            e.ttl(ttls.get(idx));
                     }
 
                     // Complete remote candidates.

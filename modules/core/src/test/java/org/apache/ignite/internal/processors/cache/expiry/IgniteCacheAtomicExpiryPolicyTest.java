@@ -11,6 +11,7 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.gridgain.grid.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -32,6 +33,11 @@ public class IgniteCacheAtomicExpiryPolicyTest extends IgniteCacheExpiryPolicyAb
     /** {@inheritDoc} */
     @Override protected GridCacheAtomicityMode atomicityMode() {
         return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CLOCK;
     }
 
     /** {@inheritDoc} */

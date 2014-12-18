@@ -88,8 +88,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
-    /** */
-    private GridCacheAccessExpiryPolicy expiry;
+    /** Expiry policy. */
+    private GridCacheAccessExpiryPolicy expiryPlc;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -104,8 +104,12 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param topVer Topology version.
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
-     *          if called on backup node.
+     *        if called on backup node.
      * @param filters Filters.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -117,7 +121,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable GridCacheAccessExpiryPolicy expiry
+        @Nullable GridCacheAccessExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -132,7 +136,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
-        this.expiry = expiry;
+        this.expiryPlc = expiryPlc;
 
         futId = IgniteUuid.randomUuid();
 
@@ -233,6 +237,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             if (trackable)
                 cctx.mvcc().removeFuture(this);
 
+            cache().sendTtlUpdateRequest(expiryPlc);
+
             return true;
         }
 
@@ -304,7 +310,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        filters);
+                        filters,
+                        expiryPlc);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -356,7 +363,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
-                    expiry != null ? expiry.ttl() : -1L);
+                    expiryPlc != null ? expiryPlc.ttl() : -1L);
 
                 add(fut); // Append new future.
 
@@ -417,7 +424,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 null,
                                 taskName,
                                 filters,
-                                null);
+                                expiryPlc);
 
                             colocated.context().evicts().touch(entry, topVer);
 

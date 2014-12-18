@@ -119,12 +119,22 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param filter Filter.
      * @return Future.
      */
-    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
+    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
+        @Nullable Collection<? extends K> keys,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean deserializePortable) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx.shared()), tx.resolveTaskName(), deserializePortable);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
+            keys,
+            false,
+            false,
+            tx,
+            filter,
+            CU.subjectId(tx, ctx.shared()),
+            tx.resolveTaskName(),
+            deserializePortable,
+            null);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();

@@ -573,15 +573,25 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean deserializePortable) throws IgniteCheckedException {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        UUID subjId = ctx.subjectIdPerCall(null);
-
         if (F.isEmpty(keys))
             return Collections.emptyMap();
+
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        UUID subjId = ctx.subjectIdPerCall(null, prj);
+
+        ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+
+        if (expiryPlc == null)
+            expiryPlc = ctx.expiry();
 
         Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        final GridCacheAccessExpiryPolicy expiry =
+            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         boolean success = true;
 
@@ -608,7 +618,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             null,
                             taskName,
                             filter,
-                            null);
+                            expiry);
 
                         if (v != null)
                             vals.put(key, v);
@@ -653,7 +663,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, null, false, subjId, taskName, deserializePortable, false, filter).get();
+        return getAllAsync(keys, null, false, subjId, taskName, deserializePortable, false, expiry, filter).get();
     }
 
     /**

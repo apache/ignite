@@ -586,8 +586,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             addGroupTxMapping(writeSet());
 
         if (!empty) {
-            log.info("User commit");
-
             // We are holding transaction-level locks for entries here, so we can get next write version.
             writeVersion(cctx.versions().next(topologyVersion()));
 
@@ -665,10 +663,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             txEntry.ttl(GridCacheMapEntry.toTtl(duration));
                                         }
                                     }
-
-                                    // Preserve TTL if needed.
-                                    if (txEntry.ttl() < 0)
-                                        txEntry.ttl(cached.ttl());
 
                                     // Deal with DR conflicts.
                                     GridCacheVersion explicitVer = txEntry.drVersion() != null ?
@@ -2735,8 +2729,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             // Keep old ttl value.
             old.cached(entry, old.keyBytes());
             old.filters(filter);
-
-            long ttl = -1L;
 
             // Update ttl if specified.
             if (drTtl >= 0L) {

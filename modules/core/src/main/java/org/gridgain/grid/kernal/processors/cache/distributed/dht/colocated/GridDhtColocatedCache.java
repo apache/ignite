@@ -24,6 +24,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
@@ -169,9 +170,19 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         long topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(keys, false, forcePrimary, topVer, subjId, taskName, deserializePortable, filter);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(keys,
+            false,
+            forcePrimary,
+            topVer,
+            subjId,
+            taskName,
+            deserializePortable,
+            filter,
+            prj != null ? prj.expiry() : null);
     }
 
     /** {@inheritDoc} */
@@ -212,6 +223,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param filter Filter.
+     * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
     public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
@@ -221,12 +233,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable ExpiryPolicy expiryPlc) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        final GridCacheAccessExpiryPolicy expiry =
+            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
@@ -258,7 +274,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 null,
                                 taskName,
                                 filter,
-                                null);
+                                expiry);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -306,9 +322,15 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     break;
             }
 
-            if (success)
+            if (success) {
+                sendTtlUpdateRequest(expiry);
+
                 return ctx.wrapCloneMap(new GridFinishedFuture<>(ctx.kernalContext(), locVals));
+            }
         }
+
+        if (expiry != null)
+            expiry.reset();
 
         // Either reload or not all values are available locally.
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
@@ -320,7 +342,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializePortable,
-            null);
+            expiry);
 
         fut.init();
 
@@ -332,9 +354,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      *
      * {@inheritDoc}
      */
-    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        @Nullable GridCacheTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        @Nullable GridCacheTxIsolation isolation,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
         GridNearTxLocal<K, V> txx = (GridNearTxLocal<K, V>)tx;

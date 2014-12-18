@@ -320,6 +320,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
+            if (!tx.pessimistic()) {
+                int idx = 0;
+
+                for (GridCacheTxEntry<K, V> e : dhtMapping.writes())
+                    req.ttl(idx++, e.ttl());
+
+                if (nearMapping != null) {
+                    idx = 0;
+
+                    for (GridCacheTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
+            }
+
             if (tx.onePhaseCommit())
                 req.writeVersion(tx.writeVersion());
 
@@ -376,6 +390,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.groupLockKey(),
                     tx.subjectId(),
                     tx.taskNameHash());
+
+                if (!tx.pessimistic()) {
+                    int idx = 0;
+
+                    for (GridCacheTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
 
                 if (tx.onePhaseCommit())
                     req.writeVersion(tx.writeVersion());

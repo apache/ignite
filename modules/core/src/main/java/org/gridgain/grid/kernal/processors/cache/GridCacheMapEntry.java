@@ -1127,8 +1127,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable UUID subjId,
         String taskName
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-       // log.info("Inner set " + key + " " + val + " " + ttl);
-
         V old;
 
         boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);

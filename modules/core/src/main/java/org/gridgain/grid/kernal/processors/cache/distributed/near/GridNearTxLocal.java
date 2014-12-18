@@ -286,7 +286,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         }
         else if (cacheCtx.isColocated()) {
             return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
-                CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
+                CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null, null)
                 .chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                     @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                         try {

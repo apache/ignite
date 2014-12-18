@@ -248,9 +248,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param filter Filter.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx, @Nullable Collection<? extends K> keys,
-        boolean reload, boolean forcePrimary, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable UUID subjId, String taskName, boolean deserializePortable) {
+    public IgniteFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx,
+        @Nullable Collection<? extends K> keys,
+        boolean reload,
+        boolean forcePrimary,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -258,6 +263,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             validateCacheKeys(keys);
 
         GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
+
+        // TODO IGNITE-41.
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
@@ -267,7 +274,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             filter,
             subjId,
             taskName,
-            deserializePortable);
+            deserializePortable,
+            null);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();
