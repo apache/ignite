@@ -85,9 +85,6 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
     public static final BitSet BIT_SET_NOT_READ = new BitSet();
 
     /** */
-    public static final Enum<?> ENUM_NOT_READ = DummyEnum.DUMMY;
-
-    /** */
     public static final GridTcpCommunicationMessageAdapter MSG_NOT_READ = new GridTcpCommunicationMessageAdapter() {
         @SuppressWarnings("CloneDoesntCallSuperClone")
         @Override public GridTcpCommunicationMessageAdapter clone() {
@@ -175,13 +172,5 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
                 throw new UnsupportedOperationException();
             }
         };
-    }
-
-    /**
-     * Dummy enum.
-     */
-    private enum DummyEnum {
-        /** */
-        DUMMY
     }
 }

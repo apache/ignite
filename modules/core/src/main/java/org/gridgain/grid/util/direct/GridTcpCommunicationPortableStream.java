@@ -21,7 +21,7 @@ import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*
 /**
  * Portable stream based on {@link ByteBuffer}.
  */
-public class GridPortableByteBufferStream implements GridPortableOutputStream, GridPortableInputStream {
+public class GridTcpCommunicationPortableStream implements GridPortableOutputStream, GridPortableInputStream {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -270,17 +270,16 @@ public class GridPortableByteBufferStream implements GridPortableOutputStream, G
      */
     public GridTcpCommunicationMessageAdapter readMessage() {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining())
-                return MSG_NOT_READ;
+            assert buf.hasRemaining();
 
             byte type = readByte();
 
-            msg = GridTcpCommunicationMessageFactory.create(type);
+            msg = type == Byte.MIN_VALUE ? null : GridTcpCommunicationMessageFactory.create(type);
 
             msgTypeDone = true;
         }
 
-        if (msg.readFrom(buf)) {
+        if (msg == null || msg.readFrom(buf)) {
             GridTcpCommunicationMessageAdapter msg0 = msg;
 
             msgTypeDone = false;
@@ -673,9 +672,10 @@ public class GridPortableByteBufferStream implements GridPortableOutputStream, G
         assert creator != null;
 
         if (tmpArr == null) {
-            assert len >= 0;
-
             switch (len) {
+                case -1:
+                    return null;
+
                 case 0:
                     return creator.create(0);
 

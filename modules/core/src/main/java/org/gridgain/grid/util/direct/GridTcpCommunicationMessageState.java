@@ -35,16 +35,16 @@ public class GridTcpCommunicationMessageState {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private static final int FIELD_HDR_LEN = 9;
+    private static final int FIELD_HDR_LEN = 0;
 
     /** */
-    private final GridPortableByteBufferStream stream = new GridPortableByteBufferStream();
+    private final GridTcpCommunicationPortableStream stream = new GridTcpCommunicationPortableStream();
 
     /** */
-    private final PortableWriter writer = null;//new org.gridgain.grid.util.portable.GridPortableWriterImpl();
+    private final PortableWriter writer = new GridTcpCommunicationPortableWriter(stream);
 
     /** */
-    private final PortableReader reader = null;//new org.gridgain.grid.util.portable.GridPortableReaderImpl();
+    private final PortableReader reader = new GridTcpCommunicationPortableReader(stream);
 
     /** */
     private boolean hdrDone;
@@ -1012,7 +1012,7 @@ public class GridTcpCommunicationMessageState {
      */
     public final boolean putMessage(String name, @Nullable GridTcpCommunicationMessageAdapter msg) {
         if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN)
+            if (stream.remaining() < FIELD_HDR_LEN + 1)
                 return false;
 
             writer.writeObject(name, msg);
