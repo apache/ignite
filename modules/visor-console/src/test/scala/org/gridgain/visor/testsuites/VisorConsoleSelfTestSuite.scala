@@ -11,10 +11,15 @@
 
 package org.gridgain.visor.testsuites
 
+import org.apache.ignite.IgniteSystemProperties
+import org.apache.ignite.IgniteSystemProperties._
+import org.junit.runner.RunWith
+import org.scalatest.Suites
+import org.scalatest.junit.JUnitRunner
+
 import java.net.{InetAddress, UnknownHostException}
 
-import org.apache.ignite.IgniteSystemProperties
-import IgniteSystemProperties._
+import org.gridgain.visor.VisorTextTableSpec
 import org.gridgain.visor.commands.VisorArgListSpec
 import org.gridgain.visor.commands.ack.VisorAckCommandSpec
 import org.gridgain.visor.commands.alert.VisorAlertCommandSpec
@@ -35,10 +40,6 @@ import org.gridgain.visor.commands.ping.VisorPingCommandSpec
 import org.gridgain.visor.commands.start.VisorStartCommandSpec
 import org.gridgain.visor.commands.tasks.VisorTasksCommandSpec
 import org.gridgain.visor.commands.top.VisorTopologyCommandSpec
-import org.gridgain.visor.VisorTextTableSpec
-import org.junit.runner.RunWith
-import org.scalatest.Suites
-import org.scalatest.junit.JUnitRunner
 
 /**
  *

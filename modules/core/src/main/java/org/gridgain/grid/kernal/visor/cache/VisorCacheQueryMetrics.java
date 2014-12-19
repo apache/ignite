@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -21,62 +22,61 @@ public class VisorCacheQueryMetrics implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Minimum execution time of query. */
-    private final long minTime;
+    private long minTime;
 
     /** Maximum execution time of query. */
-    private final long maxTime;
+    private long maxTime;
 
     /** Average execution time of query. */
-    private final double avgTime;
+    private double avgTime;
 
     /** Number of executions. */
-    private final int execs;
+    private int execs;
 
     /** Total number of times a query execution failed. */
-    private final int fails;
+    private int fails;
 
     /**
-     * Create data transfer object with given parameters.
-     *
-     * @param minTime Minimum execution time of query.
-     * @param maxTime Maximum execution time of query.
-     * @param avgTime Average execution time of query.
-     * @param execs Number of executions.
-     * @param fails Total number of times a query execution failed.
+     * @param m Cache query metrics.
+     * @return Data transfer object for given cache metrics.
      */
-    public VisorCacheQueryMetrics(long minTime, long maxTime, double avgTime, int execs, int fails) {
-        this.minTime = minTime;
-        this.maxTime = maxTime;
-        this.avgTime = avgTime;
-        this.execs = execs;
-        this.fails = fails;
+    public static VisorCacheQueryMetrics from(GridCacheQueryMetrics m) {
+        VisorCacheQueryMetrics qm = new VisorCacheQueryMetrics();
+
+        qm.minTime = m.minimumTime();
+        qm.maxTime = m.maximumTime();
+        qm.avgTime = m.averageTime();
+        qm.execs = m.executions();
+        qm.fails = m.fails();
+
+        return qm;
     }
 
     /**
      * @return Minimum execution time of query.
      */
-    public long minTime() {
+    public long minimumTime() {
         return minTime;
     }
 
     /**
      * @return Maximum execution time of query.
      */
-    public long maxTime() {
+    public long maximumTime() {
         return maxTime;
     }
 
     /**
      * @return Average execution time of query.
      */
-    public double avgTime() {
+    public double averageTime() {
         return avgTime;
     }
 
     /**
      * @return Number of executions.
      */
-    public int execs() {
+    public int executions() {
         return execs;
     }
 

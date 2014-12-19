@@ -10,11 +10,9 @@
 package org.gridgain.grid.kernal.visor.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
 import org.gridgain.grid.util.typedef.*;
@@ -28,7 +26,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, String>,
-    Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics2>> {
+    Iterable<VisorCacheAggregatedMetrics>, Map<String, VisorCacheMetrics>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,80 +38,34 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     /** {@inheritDoc} */
     @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results)
         throws IgniteCheckedException {
-        Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = new HashMap<>();
+        Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
-            if (res.getException() == null && res.getData() instanceof Collection<?>) {
-                Collection<VisorCacheMetrics2> cms = res.getData();
-                for (VisorCacheMetrics2 cm : cms) {
+            if (res.getException() == null && res.getData() instanceof Map<?, ?>) {
+                Map<String, VisorCacheMetrics> cms = res.getData();
 
-                    VisorCacheAggregatedMetrics am = grpAggrMetrics.get(cm.cacheName());
+                for (Map.Entry<String, VisorCacheMetrics> entry : cms.entrySet()) {
+                    VisorCacheAggregatedMetrics am = grpAggrMetrics.get(entry.getKey());
 
                     if (am == null) {
-                        am = new VisorCacheAggregatedMetrics(cm.cacheName());
+                        am = new VisorCacheAggregatedMetrics(entry.getKey());
 
-                        grpAggrMetrics.put(cm.cacheName(), am);
+                        grpAggrMetrics.put(entry.getKey(), am);
                     }
 
-                    am.nodes().add(cm.nodeId());
-                    am.minSize(cm.size());
-                    am.maxSize(cm.size());
-                    am.lastRead(cm.lastRead());
-                    am.lastWrite(cm.lastWrite());
-                    am.minHits(cm.hits());
-                    am.maxHits(cm.hits());
-                    am.minMisses(cm.misses());
-                    am.maxMisses(cm.misses());
-                    am.minReads(cm.reads());
-                    am.maxReads(cm.reads());
-                    am.minWrites(cm.writes());
-                    am.maxWrites(cm.writes());
-                    am.metrics().add(cm);
-
-                    // Partial aggregation of averages.
-                    am.avgReads(am.avgReads() + cm.reads());
-                    am.avgWrites(am.avgWrites() + cm.writes());
-                    am.avgMisses(am.avgMisses() + cm.misses());
-                    am.avgHits(am.avgHits() + cm.hits());
-                    am.avgSize(am.avgSize() + cm.size());
-
-                    // Aggregate query metrics data
-                    VisorCacheQueryMetrics qm = cm.queryMetrics();
-                    VisorCacheQueryAggregatedMetrics aqm = am.queryMetrics();
-
-                    aqm.minTime(qm.minTime());
-                    aqm.maxTime(qm.maxTime());
-                    aqm.totalTime((long)(aqm.totalTime() + (qm.avgTime() * qm.execs())));
-                    aqm.execs(aqm.execs() + qm.execs());
-                    aqm.fails(aqm.fails() + qm.fails());
+                    am.metrics().put(res.getNode().id(), entry.getValue());
                 }
             }
         }
 
-        Collection<VisorCacheAggregatedMetrics> aggrMetrics = grpAggrMetrics.values();
-
-        // Final aggregation of averages.
-        for (VisorCacheAggregatedMetrics metric : aggrMetrics) {
-            int sz = metric.nodes().size();
-
-            metric.avgSize(metric.avgSize() / sz);
-            metric.avgHits(metric.avgHits() / sz);
-            metric.avgMisses(metric.avgMisses() / sz);
-            metric.avgReads(metric.avgReads() / sz);
-            metric.avgWrites(metric.avgWrites() / sz);
-
-            VisorCacheQueryAggregatedMetrics aqm = metric.queryMetrics();
-
-            aqm.avgTime(aqm.execs() > 0 ? (double)aqm.totalTime() / aqm.execs() : 0.0);
-        }
-
-        return aggrMetrics;
+        return grpAggrMetrics.values();
     }
 
     /**
      * Job that collect cache metrics from node.
      */
-    private static class VisorCacheMetricsJob extends VisorJob<IgniteBiTuple<Boolean, String>, Collection<VisorCacheMetrics2>> {
+    private static class VisorCacheMetricsJob
+        extends VisorJob<IgniteBiTuple<Boolean, String>, Map<String, VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -128,35 +80,15 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorCacheMetrics2> run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
+        @Override protected Map<String, VisorCacheMetrics>
+            run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
             Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {
-                Collection<VisorCacheMetrics2> res = new ArrayList<>(caches.size());
+                Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
 
-                for (GridCache<?, ?> c : caches) {
-                    ClusterNodeMetrics m = g.localNode().metrics();
-                    GridCacheMetrics cm = c.metrics();
-                    GridCacheQueryMetrics qm = c.queries().metrics();
-
-                    res.add(new VisorCacheMetrics2(
-                        c.name(),
-                        g.localNode().id(),
-                        m.getTotalCpus(),
-                        (double)m.getHeapMemoryUsed() / m.getHeapMemoryMaximum() * 100.0,
-                        m.getCurrentCpuLoad() * 100.0,
-                        m.getUpTime(),
-                        c.size(),
-                        cm.readTime(),
-                        cm.writeTime(),
-                        cm.hits(),
-                        cm.misses(),
-                        cm.reads(),
-                        cm.writes(),
-                        new VisorCacheQueryMetrics(qm.minimumTime(), qm.maximumTime(), qm.averageTime(),
-                            qm.executions(), qm.fails())
-                    ));
-                }
+                for (GridCache<?, ?> c : caches)
+                    res.put(c.name(), VisorCacheMetrics.from(c));
 
                 return res;
             }

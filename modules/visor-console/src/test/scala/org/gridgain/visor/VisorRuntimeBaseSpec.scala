@@ -12,7 +12,6 @@ package org.gridgain.visor
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.{_}
 import org.scalatest._
 
 /**

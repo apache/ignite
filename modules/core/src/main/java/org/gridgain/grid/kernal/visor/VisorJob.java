@@ -23,13 +23,13 @@ import static org.gridgain.grid.kernal.visor.util.VisorTaskUtils.*;
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
-    protected GridEx g;
+    protected transient GridEx g;
 
     /** Job start time. */
-    protected long start;
+    protected transient long start;
 
     /** Debug flag. */
-    protected boolean debug;
+    protected transient boolean debug;
 
     /**
      * Create job with specified argument.

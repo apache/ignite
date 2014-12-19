@@ -11,9 +11,10 @@
 
 package org.gridgain.visor.commands.kill
 
+import org.scalatest._
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.kill.VisorKillCommand._
-import org.scalatest._
 
 /**
  * Unit test for 'kill' command.
