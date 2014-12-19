@@ -512,6 +512,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
 
                                             if (drRes.isMerge())
                                                 explicitVer = writeVersion();
+                                            else if (op == NOOP)
+                                                txEntry.ttl(-1L);
                                         }
                                         else
                                             // Nullify explicit version so that innerSet/innerRemove will work as usual.

@@ -656,6 +656,20 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     GridCacheVersion explicitVer = txEntry.drVersion() != null ?
                                         txEntry.drVersion() : writeVersion();
 
+                                    if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
+                                        ExpiryPolicy expiry = txEntry.expiry();
+
+                                        if (expiry == null)
+                                            expiry = cacheCtx.expiry();
+
+                                        if (expiry != null) {
+                                            Duration duration = cached.hasValue() ?
+                                                expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                                            txEntry.ttl(GridCacheMapEntry.toTtl(duration));
+                                        }
+                                    }
+
                                     GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
                                         txEntry,
                                         explicitVer,
@@ -672,25 +686,12 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                                         if (drRes.isMerge())
                                             explicitVer = writeVersion();
+                                        else if (op == NOOP)
+                                            txEntry.ttl(-1L);
                                     }
-                                    else {
+                                    else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
-
-                                        if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
-                                            ExpiryPolicy expiry = txEntry.expiry();
-
-                                            if (expiry == null)
-                                                expiry = cacheCtx.expiry();
-
-                                            if (expiry != null) {
-                                                Duration duration = cached.hasValue() ?
-                                                    expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
-
-                                                txEntry.ttl(GridCacheMapEntry.toTtl(duration));
-                                            }
-                                        }
-                                    }
 
                                     if (sndTransformedVals || (drRes != null)) {
                                         assert sndTransformedVals && cacheCtx.isReplicated() || (drRes != null);

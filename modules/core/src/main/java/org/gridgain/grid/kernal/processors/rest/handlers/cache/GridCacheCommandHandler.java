@@ -929,7 +929,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            if (ttl != null) {
+            if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
@@ -966,7 +966,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            if (ttl != null) {
+            if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
@@ -1003,7 +1003,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            if (ttl != null) {
+            if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));

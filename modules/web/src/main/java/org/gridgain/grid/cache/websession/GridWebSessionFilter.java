@@ -11,17 +11,19 @@ package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import javax.cache.expiry.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
@@ -363,6 +365,7 @@ public class GridWebSessionFilter implements Filter {
      * @param httpReq HTTP request.
      * @return Cached session.
      */
+    @SuppressWarnings("unchecked")
     private GridWebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
@@ -376,13 +379,18 @@ public class GridWebSessionFilter implements Filter {
         try {
             while (true) {
                 try {
-                    GridCacheEntry<String, GridWebSession> entry = cache.entry(sesId);
+                    GridCacheProjection<String, GridWebSession> cache0;
 
-                    assert entry != null;
+                    if (cached.getMaxInactiveInterval() > 0) {
+                        ExpiryPolicy plc =
+                            new TouchedExpiryPolicy(new Duration(MILLISECONDS, cached.getMaxInactiveInterval() * 1000));
 
-                    entry.timeToLive(cached.getMaxInactiveInterval() * 1000);
+                        cache0 = ((GridCacheProjectionEx<String, GridWebSession>)cache).withExpiryPolicy(plc);
+                    }
+                    else
+                        cache0 = cache;
 
-                    GridWebSession old = entry.setIfAbsent(cached);
+                    GridWebSession old = cache0.putIfAbsent(sesId, cached);
 
                     if (old != null) {
                         cached = old;

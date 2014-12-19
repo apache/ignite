@@ -10,14 +10,17 @@
 package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
+
+import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Session listener for web sessions caching.
@@ -70,6 +73,7 @@ class GridWebSessionListener {
      * @param updates Updates list.
      * @param maxInactiveInterval Max session inactive interval.
      */
+    @SuppressWarnings("unchecked")
     public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
         assert sesId != null;
         assert updates != null;
@@ -80,16 +84,18 @@ class GridWebSessionListener {
         try {
             for (int i = 0; i < retries; i++) {
                 try {
-                    GridCacheEntry<String, GridWebSession> entry = cache.entry(sesId);
+                    GridCacheProjection<String, GridWebSession> cache0;
 
-                    assert entry != null;
+                    if (maxInactiveInterval > 0) {
+                        ExpiryPolicy plc =
+                            new TouchedExpiryPolicy(new Duration(MILLISECONDS, maxInactiveInterval * 1000));
 
-                    if (maxInactiveInterval < 0)
-                        maxInactiveInterval = 0;
+                        cache0 = ((GridCacheProjectionEx<String, GridWebSession>)cache).withExpiryPolicy(plc);
+                    }
+                    else
+                        cache0 = cache;
 
-                    entry.timeToLive(maxInactiveInterval * 1000);
-
-                    entry.transform(new AttributesUpdated(updates));
+                    cache0.transform(sesId, new AttributesUpdated(updates));
 
                     break;
                 }
