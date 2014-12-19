@@ -45,6 +45,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /** */
     private Integer lastKey = 0;
 
+    /** */
+    private static final long TTL_FOR_EXPIRE = 500L;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
@@ -120,9 +123,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        cache.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 1); // Update with custom.
+        cache.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE, null)).put(key, 1); // Update with custom.
 
-        checkTtl(key, 1000L);
+        checkTtl(key, TTL_FOR_EXPIRE);
 
         waitExpired(key);
     }
@@ -171,9 +174,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, 1000L)).get(key));
+        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
 
-        checkTtl(key, 1000L, true);
+        checkTtl(key, TTL_FOR_EXPIRE, true);
 
         waitExpired(key);
     }
@@ -415,12 +418,12 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         tx = startTx(txConcurrency);
 
         // Update with provided TTL.
-        cache.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 2);
+        cache.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE, null)).put(key, 2);
 
         if (tx != null)
             tx.commit();
 
-        checkTtl(key, 1000L);
+        checkTtl(key, TTL_FOR_EXPIRE);
 
         waitExpired(key);
 
@@ -538,9 +541,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 61_000L);
 
         // Update from another node with provided TTL.
-        cache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).put(key, 3);
+        cache1.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE, null)).put(key, 3);
 
-        checkTtl(key, 1000L);
+        checkTtl(key, TTL_FOR_EXPIRE);
 
         waitExpired(key);
 
@@ -550,9 +553,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 60_000L);
 
         // Update from near node with provided TTL.
-        cache0.withExpiryPolicy(new TestPolicy(null, 1100L, null)).put(key, 2);
+        cache0.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE + 1, null)).put(key, 2);
 
-        checkTtl(key, 1100L);
+        checkTtl(key, TTL_FOR_EXPIRE + 1);
 
         waitExpired(key);
     }
@@ -626,11 +629,26 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        assertEquals(1, jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, 1000L)).get(key));
+        assertEquals(1, jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
 
-        checkTtl(key, 1000L, true);
+        checkTtl(key, TTL_FOR_EXPIRE, true);
 
         waitExpired(key);
+
+        // Test reader update on get.
+
+        key = nearKeys(cache(0), 1, 600_000).get(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        IgniteCache<Object, Object> cache =
+            cache(0).affinity().isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
+
+        assertEquals(1, cache.get(key));
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**

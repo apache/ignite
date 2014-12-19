@@ -23,29 +23,37 @@ import java.util.*;
  *
  */
 public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
-    /** */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> keysBytes;
-
-    /** Entry keys. */
+    /** Entries keys. */
     @GridToStringInclude
     @GridDirectTransient
     private List<K> keys;
 
-    /** Entry versions. */
+    /** Keys bytes. */
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> keysBytes;
+
+    /** Entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> vers;
 
-    /** */
+    /** Near entries keys. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private List<K> nearKeys;
+
+    /** Near entries bytes. */
     @GridDirectCollection(byte[].class)
     private List<byte[]> nearKeysBytes;
 
-    /** Versions for near entries. */
+    /** Near entries versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> nearVers;
 
     /** New TTL. */
     private long ttl;
+
+    /** Topology version. */
+    private long topVer;
 
     /**
      * Required empty constructor.
@@ -55,12 +63,21 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @param topVer Topology version.
      * @param ttl TTL.
      */
-    public GridCacheTtlUpdateRequest(long ttl) {
+    public GridCacheTtlUpdateRequest(long topVer, long ttl) {
         assert ttl >= 0 : ttl;
 
+        this.topVer = topVer;
         this.ttl = ttl;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -87,6 +104,22 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
+     * @param keyBytes Key bytes.
+     * @param ver Version.
+     */
+    public void addNearEntry(byte[] keyBytes, GridCacheVersion ver) {
+        if (nearKeysBytes == null) {
+            nearKeysBytes = new ArrayList<>();
+
+            nearVers = new ArrayList<>();
+        }
+
+        nearKeysBytes.add(keyBytes);
+
+        nearVers.add(ver);
+    }
+
+    /**
      * @return Keys.
      */
     public List<K> keys() {
@@ -94,13 +127,10 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
-     * @param idx Entry index.
-     * @return Key.
+     * @return Versions.
      */
-    public K key(int idx) {
-        assert idx >= 0 && idx < keys.size() : idx;
-
-        return keys.get(idx);
+    public List<GridCacheVersion > versions() {
+        return vers;
     }
 
     /**
@@ -113,6 +143,20 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
         return vers.get(idx);
     }
 
+    /**
+     * @return Keys for near cache.
+     */
+    public List<K> nearKeys() {
+        return nearKeys;
+    }
+
+    /**
+     * @return Versions for near cache entries.
+     */
+    public List<GridCacheVersion > nearVersions() {
+        return nearVers;
+    }
+
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr)
         throws IgniteCheckedException {
@@ -120,6 +164,9 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         if (keys == null && keysBytes != null)
             keys = unmarshalCollection(keysBytes, ctx, ldr);
+
+        if (nearKeys == null && nearKeysBytes != null)
+            nearKeys = unmarshalCollection(nearKeysBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -180,12 +227,72 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 commState.idx++;
 
             case 4:
+                if (nearKeysBytes != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearKeysBytes.size()))
+                            return false;
+
+                        commState.it = nearKeysBytes.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putByteArray((byte[])commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 5:
+                if (nearVers != null) {
+                    if (commState.it == null) {
+                        if (!commState.putInt(nearVers.size()))
+                            return false;
+
+                        commState.it = nearVers.iterator();
+                    }
+
+                    while (commState.it.hasNext() || commState.cur != NULL) {
+                        if (commState.cur == NULL)
+                            commState.cur = commState.it.next();
+
+                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
+                            return false;
+
+                        commState.cur = NULL;
+                    }
+
+                    commState.it = null;
+                } else {
+                    if (!commState.putInt(-1))
+                        return false;
+                }
+
+                commState.idx++;
+
+            case 6:
+                if (!commState.putLong(topVer))
+                    return false;
+
+                commState.idx++;
+
+            case 7:
                 if (!commState.putLong(ttl))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 8:
                 if (vers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(vers.size()))
@@ -255,6 +362,72 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 commState.idx++;
 
             case 4:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearKeysBytes == null)
+                        nearKeysBytes = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        byte[] _val = commState.getByteArray();
+
+                        if (_val == BYTE_ARR_NOT_READ)
+                            return false;
+
+                        nearKeysBytes.add((byte[])_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 5:
+                if (commState.readSize == -1) {
+                    if (buf.remaining() < 4)
+                        return false;
+
+                    commState.readSize = commState.getInt();
+                }
+
+                if (commState.readSize >= 0) {
+                    if (nearVers == null)
+                        nearVers = new ArrayList<>(commState.readSize);
+
+                    for (int i = commState.readItems; i < commState.readSize; i++) {
+                        GridCacheVersion _val = commState.getCacheVersion();
+
+                        if (_val == CACHE_VER_NOT_READ)
+                            return false;
+
+                        nearVers.add((GridCacheVersion)_val);
+
+                        commState.readItems++;
+                    }
+                }
+
+                commState.readSize = -1;
+                commState.readItems = 0;
+
+                commState.idx++;
+
+            case 6:
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 7:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -262,7 +435,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
                 commState.idx++;
 
-            case 5:
+            case 8:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -302,10 +475,14 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
         GridCacheTtlUpdateRequest _clone = (GridCacheTtlUpdateRequest)_msg;
 
-        _clone.keysBytes = keysBytes;
         _clone.keys = keys;
+        _clone.keysBytes = keysBytes;
         _clone.vers = vers;
+        _clone.nearKeys = nearKeys;
+        _clone.nearKeysBytes = nearKeysBytes;
+        _clone.nearVers = nearVers;
         _clone.ttl = ttl;
+        _clone.topVer = topVer;
     }
 
     /** {@inheritDoc} */

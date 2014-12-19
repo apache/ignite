@@ -2744,12 +2744,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (entries == null)
                 entries = new HashMap<>();
 
-            IgniteBiTuple t = new IgniteBiTuple<>(keyBytes, ver);
+            IgniteBiTuple<byte[], GridCacheVersion> t = new IgniteBiTuple<>(keyBytes, ver);
 
             entries.put(key, t);
 
-            if (!F.isEmpty(rdrs)) {
-                if (rdrs == null)
+            if (rdrs != null && !rdrs.isEmpty()) {
+                if (rdrsMap == null)
                     rdrsMap = new HashMap<>();
 
                 for (UUID nodeId : rdrs) {

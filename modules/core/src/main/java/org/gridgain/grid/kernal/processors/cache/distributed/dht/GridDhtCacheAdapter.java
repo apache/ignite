@@ -622,12 +622,37 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
 
                                 if (req == null) {
-                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(expiryPlc.forAccess()));
+                                    reqMap.put(node,
+                                        req = new GridCacheTtlUpdateRequest<>(topVer, expiryPlc.forAccess()));
 
                                     req.cacheId(ctx.cacheId());
                                 }
 
                                 req.addEntry(e.getValue().get1(), e.getValue().get2());
+                            }
+                        }
+                    }
+
+                    Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrs = expiryPlc.readers();
+
+                    if (rdrs != null) {
+                        assert  !rdrs.isEmpty();
+
+                        for (Map.Entry<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> e : rdrs.entrySet()) {
+                            ClusterNode node = ctx.node(e.getKey());
+
+                            if (node != null) {
+                                GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
+
+                                if (req == null) {
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(topVer,
+                                        expiryPlc.forAccess()));
+
+                                    req.cacheId(ctx.cacheId());
+                                }
+
+                                for (IgniteBiTuple<byte[], GridCacheVersion> t : e.getValue())
+                                    req.addNearEntry(t.get1(), t.get2());
                             }
                         }
                     }
@@ -649,22 +674,55 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param req Request.
      */
     private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
-        int size = req.keys().size();
+        if (req.keys() != null)
+            updateTtl(this, req.keys(), req.versions(), req.ttl());
+
+        if (req.nearKeys() != null) {
+            GridNearCacheAdapter<K, V> near = near();
+
+            assert near != null;
+
+            updateTtl(near, req.nearKeys(), req.nearVersions(), req.ttl());
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Entries keys.
+     * @param vers Entries versions.
+     * @param ttl TTL.
+     */
+    private void updateTtl(GridCacheAdapter<K, V> cache,
+        List<K> keys,
+        List<GridCacheVersion> vers,
+        long ttl) {
+        assert !F.isEmpty(keys);
+        assert keys.size() == vers.size();
+
+        int size = keys.size();
+
+        boolean swap = cache.context().isSwapOrOffheapEnabled();
 
         for (int i = 0; i < size; i++) {
             try {
-                GridCacheEntryEx<K, V> entry;
+                GridCacheEntryEx<K, V> entry = null;
 
-                if (ctx.isSwapOrOffheapEnabled()) {
-                    entry = ctx.cache().entryEx(req.key(i), true);
+                try {
+                    if (swap) {
+                        entry = cache.entryEx(keys.get(i));
 
-                    entry.unswap(true, false);
+                        entry.unswap(true, false);
+                    }
+                    else
+                        entry = cache.peekEx(keys.get(i));
+
+                    if (entry != null)
+                        entry.updateTtl(vers.get(i), ttl);
                 }
-                else
-                    entry = ctx.cache().peekEx(req.key(i));
-
-                if (entry != null)
-                    entry.updateTtl(req.version(i), req.ttl());
+                finally {
+                    if (entry != null)
+                        cache.context().evicts().touch(entry, -1L);
+                }
             }
             catch (IgniteCheckedException e) {
                 log.error("Failed to unswap entry.", e);

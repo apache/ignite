@@ -25,7 +25,10 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
     private final long accessTtl;
 
     /** */
-    private volatile Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
+    private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
+
+    /** */
+    private Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrsMap;
 
     /**
      * @param expiryPlc Expiry policy.
@@ -70,11 +73,12 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
     /**
      *
      */
-    public void reset() {
-        Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
+    public synchronized void reset() {
+        if (entries != null)
+            entries.clear();
 
-        if (entries0 != null)
-            entries0.clear();
+        if (rdrsMap != null)
+            rdrsMap.clear();
     }
 
     /**
@@ -83,34 +87,42 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
      * @param ver Entry version.
      */
     @SuppressWarnings("unchecked")
-    @Override public void onAccessUpdated(Object key,
+    @Override public synchronized void onAccessUpdated(Object key,
         byte[] keyBytes,
         GridCacheVersion ver,
         @Nullable Collection<UUID> rdrs) {
-        Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
+        if (entries == null)
+            entries = new HashMap<>();
 
-        if (entries0 == null) {
-            synchronized (this) {
-                entries0 = entries;
+        IgniteBiTuple<byte[], GridCacheVersion> t = new IgniteBiTuple<>(keyBytes, ver);
 
-                if (entries0 == null)
-                    entries0 = entries = new ConcurrentHashMap8<>();
+        entries.put(key, t);
+
+        if (rdrs != null && !rdrs.isEmpty()) {
+            if (rdrsMap == null)
+                rdrsMap = new HashMap<>();
+
+            for (UUID nodeId : rdrs) {
+                Collection<IgniteBiTuple<byte[], GridCacheVersion>> col = rdrsMap.get(nodeId);
+
+                if (col == null)
+                    rdrsMap.put(nodeId, col = new ArrayList<>());
+
+                col.add(t);
             }
         }
-
-        entries0.put(key, new IgniteBiTuple<>(keyBytes, ver));
     }
 
     /**
      * @return TTL update request.
      */
-    @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
+    @Nullable @Override public synchronized Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
         return entries;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
-        return null;
+    @Nullable @Override public synchronized Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
+        return rdrsMap;
     }
 
     /** {@inheritDoc} */
