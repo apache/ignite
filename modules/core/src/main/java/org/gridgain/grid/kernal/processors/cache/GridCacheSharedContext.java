@@ -385,13 +385,24 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @param tx Transaction to check.
      * @param activeCacheIds Active cache IDs.
      * @param cacheCtx Cache context.
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
-    public boolean txCompatible(Set<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
-        // TODO GG-9141 implement.
-        return false;
+    public boolean txCompatible(GridCacheTxEx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
+        if (cacheCtx.system() ^ tx.system())
+            return false;
+
+        for (Integer cacheId : activeCacheIds) {
+            GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
+
+            // Check that caches have the same store.
+            if (activeCacheCtx.store().store() != cacheCtx.store().store())
+                return false;
+        }
+
+        return true;
     }
 
     /**

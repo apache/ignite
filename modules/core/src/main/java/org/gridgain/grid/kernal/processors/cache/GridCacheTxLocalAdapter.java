@@ -2612,12 +2612,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
         int cacheId = cacheCtx.cacheId();
 
-        // If this is a first cache to work on, capture cache settings.
-        if (activeCacheIds.isEmpty())
-            activeCacheIds.add(cacheId);
-        // Else check if we can enlist new cache to transaction.
-        else if (!activeCacheIds.contains(cacheId)) {
-            if (!cctx.txCompatible(activeCacheIds, cacheCtx)) {
+        // Check if we can enlist new cache to transaction.
+        if (!activeCacheIds.contains(cacheId)) {
+            if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
                 StringBuilder cacheNames = new StringBuilder();
 
                 for (Integer activeCacheId : activeCacheIds) {
@@ -2630,7 +2627,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
                     "(cache configurations are not compatible) [activeCaches=[" + cacheNames +
-                    "], cacheName=" + cacheCtx.name() + ']');
+                    "], cacheName=" + cacheCtx.name() + ", txSystem=" + system() +
+                    ", cacheSystem=" + cacheCtx.system() + ']');
             }
             else
                 activeCacheIds.add(cacheId);

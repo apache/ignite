@@ -604,7 +604,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean finish(boolean commit) throws IgniteCheckedException {
-        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate() //|| !isNearEnabled(cctx) TODO GG-9141
+        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';
