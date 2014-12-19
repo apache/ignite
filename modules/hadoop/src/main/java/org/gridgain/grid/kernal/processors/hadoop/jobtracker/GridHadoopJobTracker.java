@@ -12,11 +12,11 @@ package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
@@ -28,10 +28,12 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
 import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
@@ -45,6 +47,9 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
     /** */
     private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> jobMetaPrj;
+
+    /** Projection with expiry policy for finished job updates. */
+    private volatile GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> finishedJobMetaPrj;
 
     /** Map-reduce execution planner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -114,8 +119,31 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     }
 
                     jobMetaPrj = prj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
+
+                    TouchedExpiryPolicy finishedJobPlc = new TouchedExpiryPolicy(
+                        new Duration(MILLISECONDS, ctx.configuration().getFinishedJobInfoTtl()));
+
+                    finishedJobMetaPrj = ((GridCacheProjectionEx<GridHadoopJobId, GridHadoopJobMetadata>)prj).
+                        withExpiryPolicy(finishedJobPlc);
                 }
             }
+        }
+
+        return prj;
+    }
+
+    /**
+     * @return Projection with expiry policy for finished job updates.
+     */
+    private GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> finishedJobMetaCache() {
+        GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> prj = finishedJobMetaPrj;
+
+        if (prj == null) {
+            jobMetaCache();
+
+            prj = finishedJobMetaPrj;
+
+            assert prj != null;
         }
 
         return prj;
@@ -430,11 +458,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
                 case COMMIT:
                 case ABORT: {
-                    GridCacheEntry<GridHadoopJobId, GridHadoopJobMetadata> entry = jobMetaCache().entry(info.jobId());
+                    GridCacheProjection<GridHadoopJobId, GridHadoopJobMetadata> cache = finishedJobMetaCache();
 
-                    entry.timeToLive(ctx.configuration().getFinishedJobInfoTtl());
-
-                    entry.transformAsync(new UpdatePhaseClosure(incrCntrs, PHASE_COMPLETE)).listenAsync(failsLog);
+                    cache.transformAsync(info.jobId(), new UpdatePhaseClosure(incrCntrs, PHASE_COMPLETE)).
+                        listenAsync(failsLog);
 
                     break;
                 }

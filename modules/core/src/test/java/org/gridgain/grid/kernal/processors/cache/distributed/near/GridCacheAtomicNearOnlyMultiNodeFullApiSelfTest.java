@@ -12,7 +12,9 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -150,16 +152,10 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         assertEquals((Integer)1, cache.get(key));
 
-        GridCacheEntry<String, Integer> entry = cache.entry(key);
-
-        assert entry != null;
-
         long ttl = 500;
 
-        entry.timeToLive(ttl);
-
-        // Update is required for TTL to have effect.
-        entry.set(1);
+        grid(0).jcache(null).
+            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);
 

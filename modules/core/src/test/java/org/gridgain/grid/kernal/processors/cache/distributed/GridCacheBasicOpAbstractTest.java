@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -21,6 +20,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -313,26 +313,17 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      * @throws Exception In case of error.
      */
     public void testPutWithExpiration() throws Exception {
-        GridCache<String, String> cache1 = ignite1.cache(null);
-        GridCache<String, String> cache2 = ignite2.cache(null);
-        GridCache<String, String> cache3 = ignite3.cache(null);
+        IgniteCache<String, String> cache1 = ignite1.jcache(null);
+        IgniteCache<String, String> cache2 = ignite2.jcache(null);
+        IgniteCache<String, String> cache3 = ignite3.jcache(null);
 
-        GridCacheTx tx = cache1.txStart();
+        GridCacheTx tx = ignite1.transactions().txStart();
 
         cache1.put("key", "val");
 
-        GridCacheEntry<String, String> entry = cache1.entry("key");
-
-        assert entry != null;
-
         long ttl = 500;
 
-        entry.timeToLive(ttl);
-
-        // Must update value for TTL to have effect.
-        entry.set("val");
-
-        assert entry.timeToLive() == ttl;
+        cache1.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl))).put("key", "val");
 
         assert cache1.get("key") != null;
 

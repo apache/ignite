@@ -1886,7 +1886,16 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            GridCacheProjectionEx<K, V> prj0 = prj != null ? prj.withExpiryPolicy(plc) : delegate.withExpiryPolicy(plc);
+
+            return new GridCacheProxyImpl<>(ctx, prj0, (GridCacheProjectionImpl<K, V>)prj0);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

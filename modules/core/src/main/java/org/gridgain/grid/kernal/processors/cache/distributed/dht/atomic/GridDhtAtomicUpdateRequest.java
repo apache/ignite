@@ -203,6 +203,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param keyBytes Key bytes, if key was already serialized.
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
+     * @param transformC Transform closure.
      * @param drTtl DR TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
@@ -267,6 +268,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param keyBytes Key bytes, if key was already serialized.
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
+     * @param transformC Transform closure.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
      */
     public void addNearWriteValue(K key,
         @Nullable byte[] keyBytes,

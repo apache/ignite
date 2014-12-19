@@ -652,20 +652,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
 
-                                    if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
-                                        ExpiryPolicy expiry = txEntry.expiry();
-
-                                        if (expiry == null)
-                                            expiry = cacheCtx.expiry();
-
-                                        if (expiry != null) {
-                                            Duration duration = cached.hasValue() ?
-                                                expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
-
-                                            txEntry.ttl(GridCacheMapEntry.toTtl(duration));
-                                        }
-                                    }
-
                                     // Deal with DR conflicts.
                                     GridCacheVersion explicitVer = txEntry.drVersion() != null ?
                                         txEntry.drVersion() : writeVersion();
@@ -687,9 +673,24 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         if (drRes.isMerge())
                                             explicitVer = writeVersion();
                                     }
-                                    else
+                                    else {
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
+
+                                        if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
+                                            ExpiryPolicy expiry = txEntry.expiry();
+
+                                            if (expiry == null)
+                                                expiry = cacheCtx.expiry();
+
+                                            if (expiry != null) {
+                                                Duration duration = cached.hasValue() ?
+                                                    expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                                                txEntry.ttl(GridCacheMapEntry.toTtl(duration));
+                                            }
+                                        }
+                                    }
 
                                     if (sndTransformedVals || (drRes != null)) {
                                         assert sndTransformedVals && cacheCtx.isReplicated() || (drRes != null);

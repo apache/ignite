@@ -1764,7 +1764,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (drRes.isUseOld()) {
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, 0L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false, old, null, -1L, -1L, null, null, false);
                     }
 
                     newTtl = drRes.newTtl();
@@ -1930,13 +1930,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 if (drRes == null) {
                     // Calculate TTL and expire time for local update.
                     if (drTtl >= 0L) {
-                        assert drExpireTime >= 0L;
+                        assert drExpireTime >= 0L : drExpireTime;
 
                         ttl0 = drTtl;
                         newExpireTime = drExpireTime;
                     }
                     else {
-                        assert drExpireTime == -1L;
+                        assert drExpireTime == -1L : drExpireTime;
 
                         if (expiryPlc != null)
                             newTtl = hadVal ? expiryPlc.forUpdate() : expiryPlc.forCreate();
@@ -1953,6 +1953,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         }
                     }
                 }
+                else if (newTtl == -1L)
+                    ttl0 = ttlExtras();
 
                 // Try write-through.
                 if (writeThrough)
@@ -2496,6 +2498,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheVersion ver) {
         assert ver != null;
         assert Thread.holdsLock(this);
+        assert ttl >= 0 : ttl;
 
         long oldExpireTime = expireTimeExtras();
 

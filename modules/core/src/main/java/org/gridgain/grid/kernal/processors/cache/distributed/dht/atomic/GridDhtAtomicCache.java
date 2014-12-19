@@ -1498,8 +1498,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     req.subjectId(),
                     taskName);
 
-                assert updRes.newTtl() == -1L || (expiry != null || updRes.drExpireTime() >= 0);
-
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
                     dhtFut = createDhtFuture(ver, req, res, completionCb, true);
 
@@ -1630,6 +1628,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Response.
      * @param replicate Whether replication is enabled.
      * @param batchRes Batch update result.
+     * @param expiry Expiry policy.
      * @return Deleted entries.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -2361,6 +2360,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param res Dht atomic update response.
      */
+    @SuppressWarnings("unchecked")
     private void processDhtAtomicUpdateResponse(UUID nodeId, GridDhtAtomicUpdateResponse<K, V> res) {
         if (log.isDebugEnabled())
             log.debug("Processing dht atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
@@ -2417,7 +2417,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param plc Expiry policy.
      * @return Expiry policy wrapper.
      */
-    static GridCacheExpiryPolicy expiryPolicy(@Nullable ExpiryPolicy plc) {
+    private static GridCacheExpiryPolicy expiryPolicy(@Nullable ExpiryPolicy plc) {
         return plc == null ? null : new UpdateExpiryPolicy(plc);
     }
 

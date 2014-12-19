@@ -49,6 +49,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     private GridCacheProjectionImpl<K, V> prj;
 
     /**
+     * @param ctx Context.
      * @param delegate Delegate.
      * @param prj Projection.
      */
