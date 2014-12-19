@@ -436,6 +436,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
                 <inherited>false</inherited>
                 <configuration>
                     <skip>true</skip>
@@ -1205,10 +1206,10 @@
                                             </fileset>
                                         </replace>
 
-                                        <zip destfile="target/gridgain-${gridgain.edition}-os-${ignite.version}.zip"
+                                        <zip destfile="target/ignite-${gridgain.edition}-${ignite.version}.zip"
                                              encoding="UTF-8">
                                             <zipfileset dir="target/release-package"
-                                                        prefix="gridgain-${gridgain.edition}-os-${ignite.version}"
+                                                        prefix="ignite-${gridgain.edition}-${ignite.version}"
                                                         filemode="755">
                                                 <include name="**/*.sh"/>
                                                 <include name="**/configure"/>
@@ -1217,7 +1218,7 @@
                                                 <include name="**/missing"/>
                                             </zipfileset>
                                             <zipfileset dir="target/release-package"
-                                                        prefix="gridgain-${gridgain.edition}-os-${ignite.version}">
+                                                        prefix="ignite-${gridgain.edition}-${ignite.version}">
                                                 <exclude name="**/*.sh"/>
                                                 <exclude name="**/configure"/>
                                                 <exclude name="**/install-sh"/>

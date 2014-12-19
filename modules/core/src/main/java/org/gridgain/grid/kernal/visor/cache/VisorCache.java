@@ -215,9 +215,7 @@ public class VisorCache implements Serializable {
         cache.partitions(ca.affinity().partitions());
         cache.primaryPartitions(pps);
         cache.backupPartitions(bps);
-        cache.metrics(VisorCacheMetrics.from(ca.metrics()));
-//        cache.drSendMetrics(VisorDrSenderCacheMetrics.from(ca));
-//        cache.drReceiveMetrics(VisorDrReceiverCacheMetrics.from(ca));
+        cache.metrics(VisorCacheMetrics.from(ca));
         cache.partitionMap(partsMap);
 
         return cache;

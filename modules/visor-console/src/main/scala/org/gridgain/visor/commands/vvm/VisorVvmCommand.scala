@@ -187,6 +187,9 @@ class VisorVvmCommand {
 
             val neighbors = grid.forHost(grid.localNode).nodes()
 
+            if (U.isWindows)
+                vvmCmd = "cmd /c \"%s\"".format(vvmCmd)
+
             for (node <- nodes if !neighbors.contains(node)) {
                 val port = node.attribute[java.lang.Integer](ATTR_JMX_PORT)
 
@@ -205,8 +208,7 @@ class VisorVvmCommand {
                         case Some(addr) =>
                             // Sequential calls to VisualVM will not start separate processes
                             // but will add new JMX connection to it.
-//                            Runtime.getRuntime.exec(vvmCommandArray(vvmCmd + " --openjmx " + addr + ":" + port)) TODO GG-9577
-                            Runtime.getRuntime.exec(vvmCmd + " --openjmx " + addr + ":" + port)
+                            TU.openInConsole(vvmCmd + " --openjmx " + addr + ":" + port)
 
                             started = true
                         case None =>
@@ -216,8 +218,7 @@ class VisorVvmCommand {
             }
 
             if (!started)
-//                Runtime.getRuntime.exec(vvmCommandArray(vvmCmd)) TODO GG-9577
-                Runtime.getRuntime.exec(vvmCmd)
+                TU.openInConsole(vvmCmd)
         }
     }
 
