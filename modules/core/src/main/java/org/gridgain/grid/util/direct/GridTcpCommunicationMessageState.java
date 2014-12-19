@@ -78,16 +78,36 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @param type Message type.
-     * @return Whether message type was written.
+     * @param val Byte value.
+     * @return Whether value was written.
      */
-    public final boolean writeType(byte type) {
-        if (stream.remaining() == 0)
+    public final boolean writeByte(byte val) {
+        if (stream.remaining() < 1)
             return false;
 
-        stream.writeByte(type);
+        stream.writeByte(val);
 
         return true;
+    }
+
+    /**
+     * @param val Int value.
+     * @return Whether value was written.
+     */
+    public final boolean writeInt(int val) {
+        if (stream.remaining() < 4)
+            return false;
+
+        stream.writeInt(val);
+
+        return true;
+    }
+
+    /**
+     * @return Int value.
+     */
+    public final int readInt() {
+        return stream.readInt();
     }
 
     /**

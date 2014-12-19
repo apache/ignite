@@ -69,7 +69,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.writeType(directType()))
+            if (!commState.writeByte(directType()))
                 return false;
 
             commState.typeWritten = true;
