@@ -64,16 +64,17 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                                 .getTransactionsConfiguration();
 
                             tx = cctx.tm().newTx(
-                                false,
-                                false,
+                                /*implicit*/false,
+                                /*implicit single*/false,
+                                /*system*/false,
                                 tCfg.getDefaultTxConcurrency(),
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
-                                false,
-                                true,
-                                0,
-                                /** group lock keys */null,
-                                /** partition lock */false
+                                /*invalidate*/false,
+                                /*store enabled*/true,
+                                /*tx size*/0,
+                                /*group lock keys*/null,
+                                /*partition lock*/false
                             );
                         }
 

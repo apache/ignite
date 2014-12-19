@@ -352,37 +352,37 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         }
 
         switch (commState.idx) {
-            case 21:
+            case 22:
                 if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (!commState.putBitSet(invalidateNearEntries))
                     return false;
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (!commState.putBoolean(last))
                     return false;
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (!commState.putUuid(nearNodeId))
                     return false;
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (nearWritesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(nearWritesBytes.size()))
@@ -409,37 +409,37 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 if (!commState.putCacheVersion(nearXidVer))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 if (!commState.putByteArray(ownedBytes))
                     return false;
 
                 commState.idx++;
 
-            case 29:
+            case 30:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 30:
+            case 31:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 if (!commState.putBitSet(preloadKeys))
                     return false;
 
@@ -459,7 +459,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             return false;
 
         switch (commState.idx) {
-            case 21:
+            case 22:
                 IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -469,7 +469,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 BitSet invalidateNearEntries0 = commState.getBitSet();
 
                 if (invalidateNearEntries0 == BIT_SET_NOT_READ)
@@ -479,7 +479,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -487,7 +487,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -497,7 +497,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 UUID nearNodeId0 = commState.getUuid();
 
                 if (nearNodeId0 == UUID_NOT_READ)
@@ -507,7 +507,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -536,7 +536,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 GridCacheVersion nearXidVer0 = commState.getCacheVersion();
 
                 if (nearXidVer0 == CACHE_VER_NOT_READ)
@@ -546,7 +546,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 byte[] ownedBytes0 = commState.getByteArray();
 
                 if (ownedBytes0 == BYTE_ARR_NOT_READ)
@@ -556,7 +556,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 29:
+            case 30:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -564,7 +564,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 30:
+            case 31:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -574,7 +574,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -582,7 +582,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 BitSet preloadKeys0 = commState.getBitSet();
 
                 if (preloadKeys0 == BIT_SET_NOT_READ)

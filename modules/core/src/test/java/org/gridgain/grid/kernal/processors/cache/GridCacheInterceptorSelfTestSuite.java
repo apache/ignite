@@ -39,9 +39,9 @@ public class GridCacheInterceptorSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheInterceptorSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorNearEnabledSelfTest.class);
-//        suite.addTestSuite(GridCacheInterceptorWithStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheInterceptorReplicatedSelfTest.class);
-//        suite.addTestSuite(GridCacheInterceptorReplicatedWithStoreSelfTest.class);
+//        suite.addTestSuite(GridCacheInterceptorWithStoreSelfTest.class); TODO GG-9141
+        suite.addTestSuite(GridCacheInterceptorReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheInterceptorReplicatedWithStoreSelfTest.class);
 
         return suite;
     }

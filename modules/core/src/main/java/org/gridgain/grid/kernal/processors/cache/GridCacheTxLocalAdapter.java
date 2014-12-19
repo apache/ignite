@@ -95,6 +95,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param implicit {@code True} if transaction was implicitly started by the system,
      *      {@code false} if it was started explicitly by user.
      * @param implicitSingle {@code True} if transaction is implicit with only one key.
+     * @param sys System flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -107,6 +108,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -118,7 +120,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, /*local*/true, concurrency, isolation, timeout, invalidate,
+        super(cctx, xidVer, implicit, implicitSingle, /*local*/true, sys, concurrency, isolation, timeout, invalidate,
             storeEnabled, txSize, grpLockKey, subjId, taskNameHash);
 
         assert !partLock || grpLockKey != null;
@@ -715,7 +717,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             txEntry.filters(),
                                             cached.detached() ? DR_NONE : drType,
                                             txEntry.drExpireTime(),
-                                            near() ? null : explicitVer,
+                                            cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName());
 
@@ -751,7 +753,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             topVer,
                                             txEntry.filters(),
                                             cached.detached()  ? DR_NONE : drType,
-                                            near() ? null : explicitVer,
+                                            cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName());
 
@@ -778,8 +780,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             nearCached.innerReload(CU.<K, V>empty());
                                     }
                                     else if (op == READ) {
-                                        assert near();
-
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }
@@ -2628,10 +2628,29 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      *      cache (e.g. they have different stores).
      */
     private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
-        // If this is a first cache to work on, capture cache settings.
-        if (activeCacheIds.isEmpty() ||
-            !activeCacheIds.contains(cacheCtx.cacheId()) && cctx.txCompatible(activeCacheIds, cacheCtx))
-            activeCacheIds.add(cacheCtx.cacheId());
+        int cacheId = cacheCtx.cacheId();
+
+        // Check if we can enlist new cache to transaction.
+        if (!activeCacheIds.contains(cacheId)) {
+            if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
+                StringBuilder cacheNames = new StringBuilder();
+
+                for (Integer activeCacheId : activeCacheIds) {
+                    cacheNames.append(cctx.cacheContext(activeCacheId).name());
+
+                    cacheNames.append(", ");
+                }
+
+                cacheNames.setLength(cacheNames.length() - 2);
+
+                throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
+                    "(cache configurations are not compatible) [activeCaches=[" + cacheNames +
+                    "], cacheName=" + cacheCtx.name() + ", txSystem=" + system() +
+                    ", cacheSystem=" + cacheCtx.system() + ']');
+            }
+            else
+                activeCacheIds.add(cacheId);
+        }
     }
 
     /**

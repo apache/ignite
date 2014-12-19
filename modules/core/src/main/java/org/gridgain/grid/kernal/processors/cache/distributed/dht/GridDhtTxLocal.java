@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -87,6 +88,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxLocal(
+        GridCacheSharedContext<K, V> cctx,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         IgniteUuid nearFutId,
@@ -94,7 +96,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheSharedContext<K, V> cctx,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         long timeout,
@@ -108,10 +110,11 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         int taskNameHash
     ) {
         super(
+            cctx,
             cctx.versions().onReceivedAndNext(nearNodeId, nearXidVer),
             implicit,
             implicitSingle,
-            cctx,
+            sys,
             concurrency,
             isolation,
             timeout,
@@ -601,7 +604,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean finish(boolean commit) throws IgniteCheckedException {
-        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate() //|| !isNearEnabled(cctx) TODO GG-9141
+        assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';
@@ -625,7 +628,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 nearFinMiniId, err);
 
             try {
-                cctx.io().send(nearNodeId, res);
+                cctx.io().send(nearNodeId, res, system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
             catch (ClusterTopologyException ignored) {
                 if (log.isDebugEnabled())

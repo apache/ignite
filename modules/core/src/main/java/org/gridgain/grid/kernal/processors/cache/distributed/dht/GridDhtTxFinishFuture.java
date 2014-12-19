@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  *
@@ -304,6 +305,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.isolation(),
                 commit,
                 tx.isInvalidate(),
+                tx.system(),
                 tx.isSystemInvalidate(),
                 tx.syncCommit(),
                 tx.syncRollback(),
@@ -338,7 +340,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 req.writeVersion(tx.writeVersion());
 
             try {
-                cctx.io().send(n, req);
+                cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
 
                 if (sync)
                     res = true;
@@ -375,6 +377,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.isolation(),
                     commit,
                     tx.isInvalidate(),
+                    tx.system(),
                     tx.isSystemInvalidate(),
                     tx.syncCommit(),
                     tx.syncRollback(),
@@ -402,7 +405,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     req.writeVersion(tx.writeVersion());
 
                 try {
-                    cctx.io().send(nearMapping.node(), req);
+                    cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
 
                     if (sync)
                         res = true;

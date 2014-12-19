@@ -74,6 +74,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
      * @param rmtThreadId Remote thread ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -87,6 +88,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
         long rmtThreadId,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
+        boolean sys,
         GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation,
         boolean invalidate,
@@ -102,6 +104,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
             xidVer,
             ctx.versions().last(),
             Thread.currentThread().getId(),
+            sys,
             concurrency,
             isolation,
             timeout,

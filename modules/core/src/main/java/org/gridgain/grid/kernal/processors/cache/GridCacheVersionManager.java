@@ -79,7 +79,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
     @Override public void start0() throws IgniteCheckedException {
         txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
 
-        dataCenterId = 0; //cctx.dataCenterId(); TODO GG-9141 Grab data center ID from DR manager.
+        dataCenterId = cctx.dataCenterId();
 
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 

@@ -612,8 +612,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         catch (IgniteCheckedException e) {
             scheduleRecheck();
 
-            U.error(log, "Failed to send full partition map to nodes (will retry after timeout) [nodes=" +
-                F.nodeId8s(rmtNodes) + ", exchangeId=" + exchId + ']', e);
+            if (!X.hasCause(e, InterruptedException.class))
+                U.error(log, "Failed to send full partition map to nodes (will retry after timeout) [nodes=" +
+                    F.nodeId8s(rmtNodes) + ", exchangeId=" + exchId + ']', e);
 
             return false;
         }

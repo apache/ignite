@@ -14,7 +14,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -50,9 +49,6 @@ public class GridCacheUtils {
 
     /** Security system cache name. */
     public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
-
-    /** Flag to turn off DHT cache for debugging purposes. */
-    public static final boolean DHT_ENABLED = true;
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
@@ -1519,6 +1515,15 @@ public class GridCacheUtils {
      */
     public static boolean isSystemCache(String cacheName) {
         return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+    }
+
+    /**
+     * @return Cache ID for utility cache.
+     */
+    public static int utilityCacheId() {
+        int hc = UTILITY_CACHE_NAME.hashCode();
+
+        return hc == 0 ? 1 : hc;
     }
 
     /**

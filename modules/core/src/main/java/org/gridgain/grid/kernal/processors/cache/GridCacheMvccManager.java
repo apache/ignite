@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -408,9 +407,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         // Close window in case of node is gone before the future got added to
         // the map of futures.
-        for (ClusterNode n : fut.nodes())
+        for (ClusterNode n : fut.nodes()) {
             if (cctx.discovery().node(n.id()) == null)
                 fut.onNodeLeft(n.id());
+        }
 
         // Just in case if future was complete before it was added.
         if (fut.isDone())
