@@ -589,7 +589,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param sockAddr Optional address multicast socket should be bound to.
          */
         private AddressReceiver(InetAddress mcastAddr, InetAddress sockAddr) {
-            super(ignite.name(), "tcp-disco-multicast-addr-rcvr", log);
+            super(ignite == null ? null : ignite.name(), "tcp-disco-multicast-addr-rcvr", log);
             this.mcastAddr = mcastAddr;
             this.sockAddr = sockAddr;
         }
@@ -633,7 +633,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          */
         private AddressSender(InetAddress mcastGrp, @Nullable InetAddress sockItf, Collection<InetSocketAddress> addrs)
             throws IOException {
-            super(ignite.name(), "tcp-disco-multicast-addr-sender", log);
+            super(ignite == null ? null : ignite.name(), "tcp-disco-multicast-addr-sender", log);
             this.mcastGrp = mcastGrp;
             this.addrs = addrs;
             this.sockItf = sockItf;
