@@ -78,39 +78,6 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @param val Byte value.
-     * @return Whether value was written.
-     */
-    public final boolean writeByte(byte val) {
-        if (stream.remaining() < 1)
-            return false;
-
-        stream.writeByte(val);
-
-        return true;
-    }
-
-    /**
-     * @param val Int value.
-     * @return Whether value was written.
-     */
-    public final boolean writeInt(int val) {
-        if (stream.remaining() < 4)
-            return false;
-
-        stream.writeInt(val);
-
-        return true;
-    }
-
-    /**
-     * @return Int value.
-     */
-    public final int readInt() {
-        return stream.readInt();
-    }
-
-    /**
      * @param name Field name.
      * @param b Byte value.
      * @return Whether value was written.
