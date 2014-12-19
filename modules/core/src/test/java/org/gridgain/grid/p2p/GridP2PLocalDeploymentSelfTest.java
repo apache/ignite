@@ -101,11 +101,11 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             taskCls = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            Integer res1 = ignite2.compute().execute(taskCls, ignite1.cluster().localNode().id());
+            Integer res1 = (Integer)ignite2.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             taskCls = ldr3.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            Integer res2 = ignite3.compute().execute(taskCls, ignite1.cluster().localNode().id());
+            Integer res2 = (Integer)ignite3.compute().execute(taskCls, ignite1.cluster().localNode().id());
 
             assert !res1.equals(res2); // Resources are not same.
         }
@@ -137,9 +137,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Class task1 = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
             Class task2 = ldr2.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
-            Integer res2 = ignite2.compute().execute(task2, ignite1.cluster().localNode().id());
+            Integer res2 = (Integer)ignite2.compute().execute(task2, ignite1.cluster().localNode().id());
 
             assert !res1.equals(res2); // Class loaders are not same.
 

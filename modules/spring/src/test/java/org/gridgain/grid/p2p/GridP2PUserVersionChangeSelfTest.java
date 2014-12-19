@@ -141,7 +141,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -149,7 +149,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid(1);
 
-            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert !res1.equals(res2);
 
@@ -189,13 +189,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_TASK_UNDEPLOYED);
 
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             ignite1 = startGrid(1);
 
-            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert !undeployed.await(3000, MILLISECONDS);
 
@@ -245,7 +245,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_LEFT);
 
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
@@ -255,7 +255,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid(1);
 
-            Integer res2 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             assert !res1.equals(res2);
         }

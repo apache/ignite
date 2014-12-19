@@ -68,14 +68,14 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
 
             Class task1 = urlClsLdr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             Thread.sleep(1000);
 
             // Task will be deployed after stop node1
-            Integer res2 = ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
 
             if (isExpectUndeploy)
                 assert !res1.equals(res2);

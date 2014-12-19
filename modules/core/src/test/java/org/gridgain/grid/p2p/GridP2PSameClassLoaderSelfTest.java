@@ -79,13 +79,13 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);
 
             // Execute task1 and task2 from node1 on node2 and make sure that they reuse same class loader on node2.
-            Integer res1 = ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
-            Integer res2 = ignite1.compute().execute(task2, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite1.compute().execute(task2, ignite2.cluster().localNode().id());
 
             assert res1.equals(res2); // Class loaders are same
 
-            Integer res3 = ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
-            Integer res4 = ignite3.compute().execute(task2, ignite2.cluster().localNode().id());
+            Integer res3 = (Integer)ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res4 = (Integer)ignite3.compute().execute(task2, ignite2.cluster().localNode().id());
 
             assert res3.equals(res4);
         }
