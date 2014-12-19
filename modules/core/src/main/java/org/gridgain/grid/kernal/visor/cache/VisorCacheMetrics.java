@@ -21,6 +21,9 @@ public class VisorCacheMetrics implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Gets the number of all entries cached on this node. */
+    private int size;
+
     /** Create time of the owning entity (either cache or entry). */
     private long createTm;
 
@@ -72,6 +75,9 @@ public class VisorCacheMetrics implements Serializable {
     /** Rollbacks per second. */
     private int rollbacksPerSec;
 
+    /** Gets query metrics for cache. */
+    private VisorCacheQueryMetrics qryMetrics;
+
     /** Calculate rate of metric per second. */
     private static int perSecond(int metric, long time, long createTime) {
         long seconds = (time - createTime) / 1000;
@@ -80,38 +86,41 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param m Cache metrics.
+     * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(GridCacheMetrics m) {
+    public static VisorCacheMetrics from(GridCache c) {
+        VisorCacheMetrics cm = new VisorCacheMetrics();
+
         // TODO gg-9141
+        GridCacheMetrics m = c.metrics();
 
-        assert m != null;
+        cm.size = c.size();
 
-        VisorCacheMetrics metrics = new VisorCacheMetrics();
+        cm.createTm = m.createTime();
+        cm.writeTm = m.writeTime();
+        cm.readTm = m.readTime();
+//        cm.commitTm = m.commitTime();
+//        cm.rollbackTm = m.rollbackTime();
 
-        metrics.createTime(m.createTime());
-        metrics.writeTime(m.writeTime());
-        metrics.readTime(m.readTime());
-//        metrics.commitTime(m.commitTime());
-//        metrics.rollbackTime(m.rollbackTime());
+        cm.reads = m.reads();
+        cm.writes = m.writes();
+        cm.hits = m.hits();
+        cm.misses = m.misses();
 
-        metrics.reads(m.reads());
-        metrics.writes(m.writes());
-        metrics.hits(m.hits());
-        metrics.misses(m.misses());
+//        cm.txCommits = m.txCommits();
+//        cm.txRollbacks = m.txRollbacks();
 
-//        metrics.txCommits(m.txCommits());
-//        metrics.txRollbacks(m.txRollbacks());
+        cm.readsPerSec = perSecond(m.reads(), m.readTime(), m.createTime());
+        cm.writesPerSec = perSecond(m.writes(), m.writeTime(), m.createTime());
+        cm.hitsPerSec = perSecond (m.hits(), m.readTime(), m.createTime());
+        cm.missesPerSec = perSecond(m.misses(), m.readTime(), m.createTime());
+//        cm.commitsPerSec = perSecond(m.txCommits(), m.commitTime(), m.createTime());
+//        cm.rollbacksPerSec = perSecond(m.txRollbacks(), m.rollbackTime(), m.createTime());
 
-        metrics.readsPerSecond(perSecond(m.reads(), m.readTime(), m.createTime()));
-        metrics.writesPerSecond(perSecond(m.writes(), m.writeTime(), m.createTime()));
-        metrics.hitsPerSecond(perSecond(m.hits(), m.readTime(), m.createTime()));
-        metrics.missesPerSecond(perSecond(m.misses(), m.readTime(), m.createTime()));
-//        metrics.commitsPerSecond(perSecond(m.txCommits(), m.commitTime(), m.createTime()));
-//        metrics.rollbacksPerSecond(perSecond(m.txRollbacks(), m.rollbackTime(), m.createTime()));
+        cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
 
-        return metrics;
+        return cm;
     }
 
     /**
@@ -122,24 +131,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param createTm New create time of the owning entity (either cache or entry).
-     */
-    public void createTime(long createTm) {
-        this.createTm = createTm;
-    }
-
-    /**
      * @return Last write time of the owning entity (either cache or entry).
      */
     public long writeTime() {
         return writeTm;
-    }
-
-    /**
-     * @param writeTm New last write time of the owning entity (either cache or entry).
-     */
-    public void writeTime(long writeTm) {
-        this.writeTm = writeTm;
     }
 
     /**
@@ -150,24 +145,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param readTm New last read time of the owning entity (either cache or entry).
-     */
-    public void readTime(long readTm) {
-        this.readTm = readTm;
-    }
-
-    /**
      * @return Last time transaction was committed.
      */
     public long commitTime() {
         return commitTm;
-    }
-
-    /**
-     * @param commitTm New last time transaction was committed.
-     */
-    public void commitTime(long commitTm) {
-        this.commitTm = commitTm;
     }
 
     /**
@@ -178,24 +159,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param rollbackTm New last time transaction was rollback.
-     */
-    public void rollbackTime(long rollbackTm) {
-        this.rollbackTm = rollbackTm;
-    }
-
-    /**
      * @return Total number of reads of the owning entity (either cache or entry).
      */
     public int reads() {
         return reads;
-    }
-
-    /**
-     * @param reads New total number of reads of the owning entity (either cache or entry).
-     */
-    public void reads(int reads) {
-        this.reads = reads;
     }
 
     /**
@@ -206,24 +173,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param writes New total number of writes of the owning entity (either cache or entry).
-     */
-    public void writes(int writes) {
-        this.writes = writes;
-    }
-
-    /**
      * @return Total number of hits for the owning entity (either cache or entry).
      */
     public int hits() {
         return hits;
-    }
-
-    /**
-     * @param hits New total number of hits for the owning entity (either cache or entry).
-     */
-    public void hits(int hits) {
-        this.hits = hits;
     }
 
     /**
@@ -234,24 +187,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param misses New total number of misses for the owning entity (either cache or entry).
-     */
-    public void misses(int misses) {
-        this.misses = misses;
-    }
-
-    /**
      * @return Total number of transaction commits.
      */
     public int txCommits() {
         return txCommits;
-    }
-
-    /**
-     * @param txCommits New total number of transaction commits.
-     */
-    public void txCommits(int txCommits) {
-        this.txCommits = txCommits;
     }
 
     /**
@@ -262,24 +201,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param txRollbacks New total number of transaction rollbacks.
-     */
-    public void txRollbacks(int txRollbacks) {
-        this.txRollbacks = txRollbacks;
-    }
-
-    /**
      * @return Reads per second.
      */
     public int readsPerSecond() {
         return readsPerSec;
-    }
-
-    /**
-     * @param readsPerSec New reads per second.
-     */
-    public void readsPerSecond(int readsPerSec) {
-        this.readsPerSec = readsPerSec;
     }
 
     /**
@@ -290,24 +215,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param writesPerSec New writes per second.
-     */
-    public void writesPerSecond(int writesPerSec) {
-        this.writesPerSec = writesPerSec;
-    }
-
-    /**
      * @return Hits per second.
      */
     public int hitsPerSecond() {
         return hitsPerSec;
-    }
-
-    /**
-     * @param hitsPerSec New hits per second.
-     */
-    public void hitsPerSecond(int hitsPerSec) {
-        this.hitsPerSec = hitsPerSec;
     }
 
     /**
@@ -318,24 +229,10 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param missesPerSec New misses per second.
-     */
-    public void missesPerSecond(int missesPerSec) {
-        this.missesPerSec = missesPerSec;
-    }
-
-    /**
      * @return Commits per second.
      */
     public int commitsPerSecond() {
         return commitsPerSec;
-    }
-
-    /**
-     * @param commitsPerSec New commits per second.
-     */
-    public void commitsPerSecond(int commitsPerSec) {
-        this.commitsPerSec = commitsPerSec;
     }
 
     /**
@@ -346,10 +243,17 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @param rollbacksPerSec New rollbacks per second.
+     * @return Gets the number of all entries cached on this node.
      */
-    public void rollbacksPerSecond(int rollbacksPerSec) {
-        this.rollbacksPerSec = rollbacksPerSec;
+    public int size() {
+        return size;
+    }
+
+    /**
+     * @return Gets query metrics for cache.
+     */
+    public VisorCacheQueryMetrics queryMetrics() {
+        return qryMetrics;
     }
 
     /** {@inheritDoc} */
