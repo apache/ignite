@@ -548,9 +548,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-        for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts.values()) {
-            if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
-                fut.cleanUp();
+        ExchangeFutureSet exchFuts0 = exchFuts;
+
+        if (exchFuts0 != null) {
+            for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts0.values()) {
+                if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
+                    fut.cleanUp();
+            }
         }
     }
 

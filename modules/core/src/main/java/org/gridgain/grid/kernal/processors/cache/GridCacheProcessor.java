@@ -15,6 +15,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -1292,15 +1293,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
-
-        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
-            it.hasPrevious();) {
-            GridCacheSharedManager<?, ?> mgr = it.previous();
-
-            mgr.onKernalStop(cancel);
-        }
-
         for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();
 
@@ -1330,6 +1322,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             cache.onKernalStop();
+        }
+
+        List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
+            it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.onKernalStop(cancel);
         }
     }
 
@@ -1662,7 +1663,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Transactions interface implementation.
      */
-    public IgniteTransactions transactions() {
+    public IgniteTransactionsEx transactions() {
         return transactions;
     }
 
@@ -1767,7 +1768,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param ccfg Cache configuration.
      * @param objs Extra components.
-     * @return Components provided in cache configuration which can implement {@link org.apache.ignite.lifecycle.LifecycleAware} interface.
+     * @return Components provided in cache configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);

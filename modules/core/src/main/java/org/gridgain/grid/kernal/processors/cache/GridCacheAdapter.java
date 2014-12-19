@@ -3136,7 +3136,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
-        return ctx.kernalContext().cache().transactions().txStart(concurrency, isolation, timeout, txSize);
+        IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
+
+        return ctx.system() ?
+            txs.txStartSystem(concurrency, isolation, timeout, txSize) :
+            txs.txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
