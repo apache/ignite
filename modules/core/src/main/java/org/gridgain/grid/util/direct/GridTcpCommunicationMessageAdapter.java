@@ -56,6 +56,9 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
     public static final UUID UUID_NOT_READ = new UUID(0, 0);
 
     /** */
+    public static final ByteBuffer BYTE_BUF_NOT_READ = ByteBuffer.allocate(0);
+
+    /** */
     public static final IgniteUuid GRID_UUID_NOT_READ = new IgniteUuid(new UUID(0, 0), 0);
 
     /** */

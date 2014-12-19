@@ -623,6 +623,44 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
+     * @param buf Buffer.
+     * @return Whether value was fully written.
+     */
+    public final boolean putByteBuffer(String name, @Nullable ByteBuffer buf) {
+        byte[] arr = null;
+
+        if (buf != null) {
+            ByteBuffer buf0 = buf.duplicate();
+
+            buf0.flip();
+
+            arr = new byte[buf0.remaining()];
+
+            buf0.get(arr);
+        }
+
+        return putByteArray(name, arr);
+    }
+
+    /**
+     * @param name Field name.
+     * @return {@link ByteBuffer} or special
+     *      {@link GridTcpCommunicationMessageAdapter#BYTE_BUF_NOT_READ}
+     *      value if it was not fully read.
+     */
+    public final ByteBuffer getByteBuffer(String name) {
+        byte[] arr = getByteArray(name);
+
+        if (arr == BYTE_ARR_NOT_READ)
+            return BYTE_BUF_NOT_READ;
+        else if (arr == null)
+            return null;
+        else
+            return ByteBuffer.wrap(arr);
+    }
+
+    /**
+     * @param name Field name.
      * @param uuid {@link UUID}.
      * @return Whether value was fully written.
      */
