@@ -59,8 +59,8 @@ public class GridReduceQueryExecutor {
 
         // TODO handle node failure.
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+        ctx.io().addUserMessageListener(GridTopic.TOPIC_QUERY, new IgniteBiPredicate<UUID, Object>() {
+            @Override public boolean apply(UUID nodeId, Object msg) {
                 assert msg != null;
 
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -69,6 +69,8 @@ public class GridReduceQueryExecutor {
                     onNextPage(node, (GridNextPageResponse)msg);
                 else if (msg instanceof GridQueryFailResponse)
                     onFail(node, (GridQueryFailResponse)msg);
+
+                return true;
             }
         });
     }
@@ -86,7 +88,13 @@ public class GridReduceQueryExecutor {
 
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
-        idx.addPage(new GridResultPage<Object>(node.id(), msg.query(), msg.rows()) {
+        if (msg.allRows() != -1) { // Only the first page contains row count.
+            idx.addCount(msg.allRows());
+
+            r.latch.countDown();
+        }
+
+        idx.addPage(new GridResultPage<UUID>(node.id(), msg) {
             @Override public void fetchNextPage() {
                 try {
                     ctx.io().sendUserMessage(F.asList(node), new GridNextPageRequest(qryReqId, qry, pageSize));
@@ -96,12 +104,6 @@ public class GridReduceQueryExecutor {
                 }
             }
         });
-
-        if (msg.allRows() != -1) { // Only the first page contains row count.
-            idx.addCount(msg.allRows());
-
-            r.latch.countDown();
-        }
     }
 
     public IgniteFuture<GridCacheSqlResult> query(GridCacheTwoStepQuery qry) {
@@ -118,17 +120,23 @@ public class GridReduceQueryExecutor {
             throw new IgniteException(e);
         }
 
-        for (GridCacheSqlQuery mapQry : qry.mapQueries())
-            r.tbls.add(createTable(r.conn, mapQry));
-
         Collection<ClusterNode> nodes = ctx.grid().cluster().nodes(); // TODO filter nodes somehow?
+
+        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            GridMergeTable tbl = createTable(r.conn, mapQry);
+
+            tbl.getScanIndex(null).setNumberOfSources(nodes.size());
+
+            r.tbls.add(tbl);
+        }
 
         r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
 
         this.runs.put(qryReqId, r);
 
         try {
-            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, qry.mapQueries())); // TODO conf page size
+            ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, qry.mapQueries()), // TODO conf page size
+                GridTopic.TOPIC_QUERY, false, 0);
 
             r.latch.await();
 

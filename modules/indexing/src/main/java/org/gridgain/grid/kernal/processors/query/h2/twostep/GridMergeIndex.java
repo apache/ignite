@@ -10,11 +10,14 @@
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
+import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.*;
 import org.h2.engine.*;
 import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.table.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -25,15 +28,31 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
+    protected final GridResultPage<?> END = new GridResultPage<Object>(null, null);
+
+    /** */
     private static final int MAX_FETCH_SIZE = 100000;
 
     /** */
     private final AtomicInteger cnt = new AtomicInteger(0);
 
+    /** Result sources. */
+    private final AtomicInteger srcs = new AtomicInteger(0);
+
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
     private ArrayList<Row> fetched = new ArrayList<>();
+
+    /**
+     * @param tbl Table.
+     * @param name Index name.
+     * @param type Type.
+     * @param cols Columns.
+     */
+    public GridMergeIndex(GridMergeTable tbl, String name, IndexType type, IndexColumn[] cols) {
+        initBaseIndex(tbl, 0, name, cols, type);
+    }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
@@ -46,6 +65,13 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
+     * @param srcs Number of sources.
+     */
+    public void setNumberOfSources(int srcs) {
+        this.srcs.set(srcs);
+    }
+
+    /**
      * @param cnt Count.
      */
     public void addCount(int cnt) {
@@ -55,7 +81,26 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param page Page.
      */
-    public abstract void addPage(GridResultPage<?> page);
+    public final void addPage(GridResultPage<?> page) {
+        if (!page.response().rows().isEmpty())
+            addPage0(page);
+        else
+            assert page.response().isLast();
+
+        if (page.response().isLast()) {
+            int srcs0 = srcs.decrementAndGet();
+
+            assert srcs0 >= 0;
+
+            if (srcs0 == 0)
+                addPage0(END); // We've fetched all.
+        }
+    }
+
+    /**
+     * @param page Page.
+     */
+    protected abstract void addPage0(GridResultPage<?> page);
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
@@ -145,7 +190,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      */
     protected class IteratorCursor implements Cursor {
         /** */
-        private Iterator<Row> iter;
+        protected Iterator<Row> iter;
 
         /** */
         protected Row cur;
@@ -185,47 +230,66 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * Fetching cursor.
      */
-    protected abstract class FetchingCursor extends IteratorCursor {
+    protected class FetchingCursor extends IteratorCursor {
         /** */
-        private boolean canFetch = true;
+        private Iterator<Row> stream;
 
         /**
          */
-        public FetchingCursor() {
-            super(fetched == null ? Collections.<Row>emptyIterator() : fetched.iterator());
+        public FetchingCursor(Iterator<Row> stream) {
+            super(new FetchedIterator());
+
+            assert stream != null;
+
+            this.stream = stream;
         }
-
-        /**
-         * @return Next row or {@code null} if none available.
-         */
-        @Nullable protected abstract Row fetchNext();
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (super.next())
+            if (super.next()) {
+                assert cur != null;
+
+                if (iter == stream && fetched != null) { // Cache fetched rows for reuse.
+                    if (fetched.size() == MAX_FETCH_SIZE)
+                        fetched = null; // Throw away fetched result if it is too large.
+                    else
+                        fetched.add(cur);
+                }
+
+                X.println("__ row: " + Arrays.toString(cur.getValueList()));
+
                 return true;
-
-            if (!canFetch)
-                return false;
-
-            cur = fetchNext();
-
-            if (cur == null) { // No more results to fetch.
-                assert fetched == null || fetched.size() == cnt.get() : fetched.size() + " <> " + cnt.get();
-
-                canFetch = false;
-
-                return false;
             }
 
-            if (fetched != null) { // Try to reuse fetched result.
-                fetched.add(cur);
+            if (iter == stream) // We've fetched the stream.
+                return false;
 
-                if (fetched.size() == MAX_FETCH_SIZE)
-                    fetched = null; // Throw away fetched result if it is too large.
-            }
+            iter = stream; // Switch from cached to stream.
 
-            return true;
+            return next();
+        }
+    }
+
+    /**
+     * List iterator without {@link ConcurrentModificationException}.
+     */
+    private class FetchedIterator implements Iterator<Row> {
+        /** */
+        private int idx;
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return fetched != null && idx < fetched.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row next() {
+            return fetched.get(idx++);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 }

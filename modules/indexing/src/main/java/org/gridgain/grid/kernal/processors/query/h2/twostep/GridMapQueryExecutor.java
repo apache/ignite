@@ -211,19 +211,26 @@ public class GridMapQueryExecutor {
 
         assert res != null;
 
+        boolean last = false;
+
         synchronized (res) {
             page = qr.pages[qry]++;
 
             for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next())
+                if (!res.next()) {
+                    last = true;
+
                     break;
+                }
 
                 rows.add(res.currentRow());
             }
         }
 
         try {
-            ctx.io().sendUserMessage(F.asList(node), new GridNextPageResponse(qr.qryReqId, qry, page, allRows, rows));
+            ctx.io().sendUserMessage(F.asList(node),
+                new GridNextPageResponse(qr.qryReqId, qry, page, allRows, last, rows),
+                GridTopic.TOPIC_QUERY, false, 0);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to send message.", e);

@@ -27,13 +27,15 @@ public class GridMergeTable extends TableBase {
     private final ArrayList<Index> idxs = new ArrayList<>(1);
 
     /** */
-    private final GridMergeIndex idx = new GridMergeIndexUnsorted();
+    private final GridMergeIndex idx;
 
     /**
      * @param data Data.
      */
     public GridMergeTable(CreateTableData data) {
         super(data);
+
+        idx = new GridMergeIndexUnsorted(this, "merge_scan");
 
         idxs.add(idx);
     }

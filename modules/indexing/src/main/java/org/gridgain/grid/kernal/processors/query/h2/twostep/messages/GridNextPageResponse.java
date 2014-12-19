@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.twostep.messages;
 
+import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.store.*;
 import org.h2.value.*;
 
@@ -34,20 +35,32 @@ public class GridNextPageResponse implements Externalizable {
     /** */
     private Collection<Value[]> rows;
 
+    /** */
+    private boolean last;
+
+    /**
+     * For {@link Externalizable}.
+     */
+    public GridNextPageResponse() {
+        // No-op.
+    }
+
     /**
      * @param qryReqId Query request ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
+     * @param last Last row.
      * @param rows Rows.
      */
-    public GridNextPageResponse(long qryReqId, int qry, int page, int allRows, Collection<Value[]> rows) {
+    public GridNextPageResponse(long qryReqId, int qry, int page, int allRows, boolean last, Collection<Value[]> rows) {
         assert rows != null;
 
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
+        this.last = last;
         this.rows = rows;
     }
 
@@ -80,6 +93,13 @@ public class GridNextPageResponse implements Externalizable {
     }
 
     /**
+     * @return {@code true} If this is the last page.
+     */
+    public boolean isLast() {
+        return last;
+    }
+
+    /**
      * @return Rows.
      */
     public Collection<Value[]> rows() {
@@ -91,6 +111,7 @@ public class GridNextPageResponse implements Externalizable {
         out.writeLong(qryReqId);
         out.writeInt(qry);
         out.writeInt(page);
+        out.writeBoolean(last);
         out.writeInt(allRows);
 
         out.writeInt(rows.size());
@@ -122,6 +143,7 @@ public class GridNextPageResponse implements Externalizable {
         qryReqId = in.readLong();
         qry = in.readInt();
         page = in.readInt();
+        last = in.readBoolean();
         allRows = in.readInt();
 
         int rowCnt = in.readInt();
@@ -145,5 +167,10 @@ public class GridNextPageResponse implements Externalizable {
                 rows.add(row);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNextPageResponse.class, this);
     }
 }

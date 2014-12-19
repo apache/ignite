@@ -18,6 +18,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -88,11 +90,37 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         return cc;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoStep() throws Exception {
+        fillCaches();
+
+        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select * from _cnts_");
+
+        q.addMapQuery("_cnts_", "select count(*) cnt from \"partitioned\".FactPurchase");
+
+        GridCacheQueriesEx<Integer, FactPurchase> qx =
+            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
+
+        for (List<?> row : qx.execute(q).get())
+            X.println("__ "  + row);
+
+
+
+//        Object cnt = .next().get(0);
+//
+//        assertEquals(10L, cnt);
+    }
+
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
+        fillCaches();
+
         GridCacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
             new IgnitePredicate<GridCacheEntry<Integer, FactPurchase>>() {
-                @Override public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
+                @Override
+                public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
                 }
             });
@@ -105,7 +133,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void fillCaches() throws IgniteCheckedException {
+    private void fillCaches() throws IgniteCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
         int idGen = 0;
 
         GridCache<Integer, Object> dimCache = ignite.cache("replicated");

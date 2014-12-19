@@ -9,68 +9,51 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
-import org.h2.result.*;
-import org.h2.value.*;
-
-import java.util.*;
+import org.gridgain.grid.kernal.processors.query.h2.twostep.messages.*;
+import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Page result.
  */
-public abstract class GridResultPage<S> {
+public class GridResultPage<Z> {
     /** */
-    private final S src;
+    private final Z src;
 
     /** */
-    private final Collection<Value[]> rows;
-
-    /** */
-    private final int page;
+    private final GridNextPageResponse res;
 
     /**
      * @param src Source.
-     * @param page Page.
-     * @param rows Page rows.
+     * @param res Response.
      */
-    protected GridResultPage(S src, int page, Collection<Value[]> rows) {
-        assert src != null;
-        assert rows != null;
-
+    protected GridResultPage(Z src, GridNextPageResponse res) {
         this.src = src;
-        this.page = page;
-        this.rows = rows;
+        this.res = res;
     }
 
     /**
      * @return Result source.
      */
-    public S source() {
+    public Z source() {
         return src;
     }
 
     /**
-     * @return Page.
+     * @return Response.
      */
-    public int page() {
-        return page;
-    }
-
-    /**
-     * @return {@code true} If result is empty.
-     */
-    public boolean isEmpty() {
-        return rows.isEmpty();
-    }
-
-    /**
-     * @return Page rows.
-     */
-    public Collection<Value[]> rows() {
-        return rows;
+    public GridNextPageResponse response() {
+        return res;
     }
 
     /**
      * Request next page.
      */
-    public abstract void fetchNextPage();
+    public void fetchNextPage() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridResultPage.class, this);
+    }
 }
