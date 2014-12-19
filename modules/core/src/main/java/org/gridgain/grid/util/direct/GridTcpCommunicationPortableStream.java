@@ -249,11 +249,7 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
      * @return Whether last object was fully written.
      */
     public boolean lastWritten() {
-        boolean lastWritten0 = lastWritten;
-
-        lastWritten = false;
-
-        return lastWritten0;
+        return lastWritten;
     }
 
     /**

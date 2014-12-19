@@ -74,7 +74,7 @@ public class GridTcpCommunicationMessageState {
      * @param buf Buffer.
      */
     public final void setBuffer(ByteBuffer buf) {
-        assert buf != null;
+        stream.setBuffer(buf);
     }
 
     /**
