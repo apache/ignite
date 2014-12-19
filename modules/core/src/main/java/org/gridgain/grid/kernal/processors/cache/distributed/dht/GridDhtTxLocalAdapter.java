@@ -197,7 +197,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                     e.cached(cached, cached.keyBytes());
                 }
 
-                if (e.cached().detached())
+                if (e.cached().detached() || e.cached().isLocal())
                     continue;
 
                 while (true) {
