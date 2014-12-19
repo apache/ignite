@@ -256,8 +256,6 @@ public abstract class GridMergeIndex extends BaseIndex {
                         fetched.add(cur);
                 }
 
-                X.println("__ row: " + Arrays.toString(cur.getValueList()));
-
                 return true;
             }
 
