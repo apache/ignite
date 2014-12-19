@@ -83,7 +83,10 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
      * @param ver Entry version.
      */
     @SuppressWarnings("unchecked")
-    @Override public void onAccessUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
+    @Override public void onAccessUpdated(Object key,
+        byte[] keyBytes,
+        GridCacheVersion ver,
+        @Nullable Collection<UUID> rdrs) {
         Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries0 = entries;
 
         if (entries0 == null) {
@@ -103,6 +106,11 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
      */
     @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
         return entries;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
+        return null;
     }
 
     /** {@inheritDoc} */

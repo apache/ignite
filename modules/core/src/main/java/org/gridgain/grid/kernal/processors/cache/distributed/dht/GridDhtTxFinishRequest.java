@@ -495,13 +495,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 if (!commState.putLongList(ttls))
                     return false;
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 if (!commState.putLongList(nearTtls))
                     return false;
 
@@ -661,7 +661,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 GridLongList ttls0 = commState.getLongList();
 
                 if (ttls0 == LONG_LIST_NOT_READ)
@@ -671,7 +671,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 GridLongList nearTtls0 = commState.getLongList();
 
                 if (nearTtls0 == LONG_LIST_NOT_READ)

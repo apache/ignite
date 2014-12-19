@@ -667,7 +667,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null); // TODO IGNITE-41.
+        UUID subjId = ctx.subjectIdPerCall(null, prj);
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -1110,7 +1110,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (ttl != -1L) {
                             entry.updateTtl(null, ttl);
 
-                            expiry.onAccessUpdated(entry.key(), entry.getOrMarshalKeyBytes(), entry.version());
+                            expiry.onAccessUpdated(entry.key(),
+                                entry.getOrMarshalKeyBytes(),
+                                entry.version(),
+                                entry.readers());
                         }
                     }
 
@@ -2376,6 +2379,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param res Deferred atomic update response.
      */
+    @SuppressWarnings("unchecked")
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse<K, V> res) {
         if (log.isDebugEnabled())
             log.debug("Processing deferred dht atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
@@ -2705,6 +2709,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** */
         private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
 
+        /** */
+        private Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrsMap;
+
         /**
          * @param plc Expiry policy.
          */
@@ -2730,16 +2737,45 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAccessUpdated(Object key, byte[] keyBytes, GridCacheVersion ver) {
+        @Override public void onAccessUpdated(Object key,
+            byte[] keyBytes,
+            GridCacheVersion ver,
+            @Nullable Collection<UUID> rdrs) {
             if (entries == null)
                 entries = new HashMap<>();
 
-            entries.put(key, new IgniteBiTuple<>(keyBytes, ver));
+            IgniteBiTuple t = new IgniteBiTuple<>(keyBytes, ver);
+
+            entries.put(key, t);
+
+            if (!F.isEmpty(rdrs)) {
+                if (rdrs == null)
+                    rdrsMap = new HashMap<>();
+
+                for (UUID nodeId : rdrs) {
+                    Collection<IgniteBiTuple<byte[], GridCacheVersion>> col = rdrsMap.get(nodeId);
+
+                    if (col == null)
+                        rdrsMap.put(nodeId, col = new ArrayList<>());
+
+                    col.add(t);
+                }
+            }
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries() {
             return entries;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers() {
+            return rdrsMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(UpdateExpiryPolicy.class, this);
         }
     }
 }

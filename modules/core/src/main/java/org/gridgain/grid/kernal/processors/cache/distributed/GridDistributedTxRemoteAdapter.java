@@ -584,6 +584,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
+                                        if (txEntry.ttl() != -1L)
+                                            cached.updateTtl(null, txEntry.ttl());
+
                                         if (nearCached != null) {
                                             V val0 = null;
                                             byte[] valBytes0 = null;

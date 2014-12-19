@@ -36,6 +36,14 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> vers;
 
+    /** */
+    @GridDirectCollection(byte[].class)
+    private List<byte[]> nearKeysBytes;
+
+    /** Versions for near entries. */
+    @GridDirectCollection(GridCacheVersion.class)
+    private List<GridCacheVersion> nearVers;
+
     /** New TTL. */
     private long ttl;
 
@@ -63,20 +71,15 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /**
-     * @param key Key.
      * @param keyBytes Key bytes.
      * @param ver Version.
      */
-    public void addEntry(K key, byte[] keyBytes, GridCacheVersion ver) {
-        if (keys == null) {
-            keys = new ArrayList<>();
-
+    public void addEntry(byte[] keyBytes, GridCacheVersion ver) {
+        if (keysBytes == null) {
             keysBytes = new ArrayList<>();
 
             vers = new ArrayList<>();
         }
-
-        keys.add(key);
 
         keysBytes.add(keyBytes);
 

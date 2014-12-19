@@ -144,9 +144,15 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         accessGetAll();
 
         for (final Integer key : keys()) {
-            log.info("Test filter access [key=" + key + ']');
+            log.info("Test filterAccessRemove access [key=" + key + ']');
 
             filterAccessRemove(key);
+        }
+
+        for (final Integer key : keys()) {
+            log.info("Test filterAccessReplace access [key=" + key + ']');
+
+            filterAccessReplace(key);
         }
     }
 
@@ -183,9 +189,33 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        assertFalse(cache.remove(key, 2));
+        assertFalse(cache.remove(key, 2)); // Remove fails, access expiry policy should be used.
 
         checkTtl(key, 62_000L, true);
+
+        assertFalse(cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).remove(key, 2));
+
+        checkTtl(key, 1000L, true);
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void filterAccessReplace(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertFalse(cache.replace(key, 2, 3)); // Put fails, access expiry policy should be used.
+
+        checkTtl(key, 62_000L, true);
+
+        assertFalse(cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).remove(key, 2));
+
+        checkTtl(key, 1000L, true);
     }
 
     /**

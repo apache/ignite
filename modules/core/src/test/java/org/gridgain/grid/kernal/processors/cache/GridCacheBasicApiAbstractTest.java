@@ -23,6 +23,7 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -491,27 +492,22 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testPutWithExpiration() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         CacheEventListener lsnr = new CacheEventListener(new CountDownLatch(1));
 
         ignite.events().localListen(lsnr, EVTS_CACHE);
 
+        ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L));
+
         try {
             int key = (int)System.currentTimeMillis();
 
-            GridCacheEntry<Integer, String> entry = cache.entry(key);
-
-            entry.timeToLive(200);
-
-            entry.set("val");
+            cache.withExpiryPolicy(expiry).put(key, "val");
 
             assert cache.get(key) != null;
 
-            entry.timeToLive(200);
-
-            // Must update for TTL to have effect.
-            entry.set("val");
+            cache.withExpiryPolicy(expiry).put(key, "val");
 
             Thread.sleep(500);
 

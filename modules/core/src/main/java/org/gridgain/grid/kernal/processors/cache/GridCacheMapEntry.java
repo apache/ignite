@@ -888,7 +888,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 updateTtl(ttl);
 
-                expiryPlc.onAccessUpdated(key(), getOrMarshalKeyBytes(), version());
+                expiryPlc.onAccessUpdated(key(),
+                    getOrMarshalKeyBytes(),
+                    version(),
+                    hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
             }
         }
 
@@ -1851,7 +1854,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         if (newTtl != -1L) {
                             updateTtl(newTtl);
 
-                            expiryPlc.onAccessUpdated(key, getOrMarshalKeyBytes(), version());
+                            expiryPlc.onAccessUpdated(key,
+                                getOrMarshalKeyBytes(),
+                                version(),
+                                hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
                         }
                     }
 

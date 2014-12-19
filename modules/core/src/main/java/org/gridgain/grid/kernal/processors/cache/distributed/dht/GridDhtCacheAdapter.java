@@ -627,7 +627,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     req.cacheId(ctx.cacheId());
                                 }
 
-                                req.addEntry((K)e.getKey(), e.getValue().get1(), e.getValue().get2());
+                                req.addEntry(e.getValue().get1(), e.getValue().get2());
                             }
                         }
                     }

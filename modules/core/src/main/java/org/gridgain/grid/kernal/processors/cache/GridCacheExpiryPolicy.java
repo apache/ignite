@@ -37,11 +37,20 @@ public interface GridCacheExpiryPolicy {
      * @param key Entry key.
      * @param keyBytes Entry key bytes.
      * @param ver Entry version.
+     * @param rdrs Entry readers.
      */
-    public void onAccessUpdated(Object key, byte[] keyBytes, GridCacheVersion ver);
+    public void onAccessUpdated(Object key,
+        byte[] keyBytes,
+        GridCacheVersion ver,
+        @Nullable Collection<UUID> rdrs);
 
     /**
-     * @return TTL update request.
+     * @return Entries with TTL updated on access.
      */
     @Nullable public Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries();
+
+    /**
+     * @return Readers for updated entries.
+     */
+    @Nullable Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> readers();
 }
