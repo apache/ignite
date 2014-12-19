@@ -35,7 +35,6 @@ public class GridUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
         suite.addTestSuite(GridUtilsSelfTest.class);
         suite.addTestSuite(GridSpinReadWriteLockSelfTest.class);
-        suite.addTestSuite(GridQueueSelfTest.class);
         suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
         suite.addTestSuite(GridToStringBuilderSelfTest.class);
         suite.addTestSuite(GridByteArrayListSelfTest.class);

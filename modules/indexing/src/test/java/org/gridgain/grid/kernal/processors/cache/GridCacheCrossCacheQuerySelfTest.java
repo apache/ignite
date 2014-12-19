@@ -103,14 +103,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Fills the caches with data and executes the query.
-     *
-     * @param prj Cache projection.
-     * @throws Exception If failed.
-     * @return Result.
+     * @throws IgniteCheckedException If failed.
      */
-    private List<Map.Entry<Integer, FactPurchase>> body(GridCacheProjection<Integer, FactPurchase> prj)
-        throws Exception {
+    private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
         GridCache<Integer, Object> dimCache = ignite.cache("replicated");
@@ -155,9 +150,19 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             factCache.put(id, new FactPurchase(id, prod.getId(), store.getId()));
         }
+    }
 
-        GridCacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ? factCache : prj).queries().createSqlQuery(
-            FactPurchase.class,
+    /**
+     * Fills the caches with data and executes the query.
+     *
+     * @param prj Cache projection.
+     * @throws Exception If failed.
+     * @return Result.
+     */
+    private List<Map.Entry<Integer, FactPurchase>> body(GridCacheProjection<Integer, FactPurchase> prj)
+        throws Exception {
+        GridCacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
+            ignite.<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
         List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());
