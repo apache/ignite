@@ -324,6 +324,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             Collections.singletonList(tx.groupLockEntry()) : writes;
 
         for (GridCacheTxEntry<K, V> txEntry : checkEntries) {
+            if (txEntry.cached().isLocal())
+                continue;
+
             while (true) {
                 GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
 
@@ -757,6 +760,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         GridCacheTxEntry<K, V> entry,
         Map<UUID, GridDistributedTxMapping<K, V>> futDhtMap,
         Map<UUID, GridDistributedTxMapping<K, V>> futNearMap) {
+        if (entry.cached().isLocal())
+            return false;
+
         GridDhtCacheEntry<K, V> cached = (GridDhtCacheEntry<K, V>)entry.cached();
 
         boolean ret;

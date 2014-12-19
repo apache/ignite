@@ -536,12 +536,12 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         for (GridCacheTxEntry<K, V> txEntry : entries) {
             while (true) {
-                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
-
-                GridCacheContext<K, V> cacheCtx = entry.context();
+                GridCacheContext<K, V> cacheCtx = txEntry.cached().context();
 
                 if (!cacheCtx.isNear())
                     break;
+
+                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
 
                 try {
                     // Handle explicit locks.

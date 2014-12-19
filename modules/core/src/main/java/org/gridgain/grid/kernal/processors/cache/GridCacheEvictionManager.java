@@ -243,8 +243,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            backupWorker.addEvent(new IgniteDiscoveryEvent(cctx.localNode(), "Dummy event.",
-                EVT_NODE_JOINED, cctx.localNode()));
+            ClusterNode locNode = cctx.localNode();
+
+            IgniteDiscoveryEvent evt = new IgniteDiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
+
+            evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
+
+            backupWorker.addEvent(evt);
 
             backupWorkerThread = new IgniteThread(backupWorker);
             backupWorkerThread.start();
@@ -1371,44 +1376,53 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, GridInterruptedException {
-            assert !cctx.isNear() && evictSync;
+            try {
+                assert !cctx.isNear() && evictSync;
 
-            ClusterNode loc = cctx.localNode();
+                ClusterNode loc = cctx.localNode();
 
-            // Initialize.
-            primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
-                cctx.affinity().affinityTopologyVersion()));
+                // Initialize.
+                primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
+                    cctx.affinity().affinityTopologyVersion()));
 
-            while (!isCancelled()) {
-                IgniteDiscoveryEvent evt = evts.take();
+                while (!isCancelled()) {
+                    IgniteDiscoveryEvent evt = evts.take();
 
-                if (log.isDebugEnabled())
-                    log.debug("Processing event: " + evt);
+                    if (log.isDebugEnabled())
+                        log.debug("Processing event: " + evt);
 
-                // Remove partitions that are no longer primary.
-                for (Iterator<Integer> it = primaryParts.iterator(); it.hasNext();) {
+                    // Remove partitions that are no longer primary.
+                    for (Iterator<Integer> it = primaryParts.iterator(); it.hasNext();) {
+                        if (!evts.isEmpty())
+                            break;
+
+                        if (!cctx.affinity().primary(loc, it.next(), evt.topologyVersion()))
+                            it.remove();
+                    }
+
+                    // Move on to next event.
                     if (!evts.isEmpty())
-                        break;
+                        continue;
 
-                    if (!cctx.affinity().primary(loc, it.next(), evt.topologyVersion()))
-                        it.remove();
-                }
+                    for (GridDhtLocalPartition<K, V> part : cctx.topology().localPartitions()) {
+                        if (!evts.isEmpty())
+                            break;
 
-                // Move on to next event.
-                if (!evts.isEmpty())
-                    continue;
+                        if (part.primary(evt.topologyVersion()) && primaryParts.add(part.id())) {
+                            if (log.isDebugEnabled())
+                                log.debug("Touching partition entries: " + part);
 
-                for (GridDhtLocalPartition<K, V> part : cctx.topology().localPartitions()) {
-                    if (!evts.isEmpty())
-                        break;
-
-                    if (part.primary(evt.topologyVersion()) && primaryParts.add(part.id())) {
-                        if (log.isDebugEnabled())
-                            log.debug("Touching partition entries: " + part);
-
-                        touchOnTopologyChange(part.entries());
+                            touchOnTopologyChange(part.entries());
+                        }
                     }
                 }
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+            catch (IgniteException e) {
+                if (!e.hasCause(InterruptedException.class))
+                    throw e;
             }
         }
     }

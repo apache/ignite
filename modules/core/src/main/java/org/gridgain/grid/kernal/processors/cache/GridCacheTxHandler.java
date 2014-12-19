@@ -401,9 +401,12 @@ public class GridCacheTxHandler<K, V> {
      */
     @Nullable public IgniteFuture<GridCacheTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
         GridNearTxFinishRequest<K, V> req) {
-        assert locTx == null || locTx.nearLocallyMapped() || locTx.colocatedLocallyMapped();
         assert nodeId != null;
         assert req != null;
+
+        // Transaction on local cache only.
+        if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
+            return new GridFinishedFutureEx<GridCacheTx>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");

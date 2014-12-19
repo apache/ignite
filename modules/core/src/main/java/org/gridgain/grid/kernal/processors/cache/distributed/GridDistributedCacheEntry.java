@@ -445,48 +445,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
     /**
      *
-     * @param cand Candidate to acquire lock for.
-     * @return Owner.
-     * @throws GridCacheEntryRemovedException If entry is removed.
-     */
-    @Nullable public GridCacheMvccCandidate<K> readyLock(
-        GridCacheMvccCandidate<K> cand) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
-
-        V val;
-
-        synchronized (this) {
-            checkObsolete();
-
-            GridCacheMvcc<K> mvcc = mvccExtras();
-
-            if (mvcc != null) {
-                prev = mvcc.anyOwner();
-
-                boolean emptyBefore = mvcc.isEmpty();
-
-                owner = mvcc.readyLocal(cand);
-
-                boolean emptyAfter = mvcc.isEmpty();
-
-                checkCallbacks(emptyBefore, emptyAfter);
-
-                if (emptyAfter)
-                    mvccExtras(null);
-            }
-
-            val = this.val;
-        }
-
-        // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
-
-        return owner;
-    }
-
-    /**
-     *
      * @param ver Version of candidate to acquire lock for.
      * @return Owner.
      * @throws GridCacheEntryRemovedException If entry is removed.

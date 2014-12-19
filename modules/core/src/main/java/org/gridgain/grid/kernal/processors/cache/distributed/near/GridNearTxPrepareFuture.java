@@ -682,8 +682,10 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
-        else
+        else if (!cacheCtx.isLocal())
             entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
+        else
+            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
             cur = new GridDistributedTxMapping<>(primary);

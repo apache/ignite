@@ -521,17 +521,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         return cand;
     }
 
-    /** {@inheritDoc} */
-    @Override public synchronized GridCacheMvccCandidate<K> readyLock(GridCacheMvccCandidate<K> cand)
-        throws GridCacheEntryRemovedException {
-        // Essentially no-op as locks are acquired on primary nodes.
-        checkObsolete();
-
-        GridCacheMvcc<K> mvcc = mvccExtras();
-
-        return mvcc == null ? null : mvcc.anyOwner();
-    }
-
     /**
      * Unlocks local lock.
      *
