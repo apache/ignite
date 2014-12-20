@@ -22,6 +22,7 @@ import java.lang.annotation.*;
  * @see IgniteAsyncSupport
  */
 @Documented
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface IgniteAsyncSupported {
 
