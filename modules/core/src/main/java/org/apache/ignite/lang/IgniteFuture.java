@@ -106,7 +106,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @param syncNotify Flag to turn on or off synchronous listener notification.
      */
@@ -120,7 +120,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @return Synchronous listener notification flag.
      */
@@ -135,7 +135,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @param concurNotify Flag to turn on or off concurrent listener notification.
      */
@@ -150,7 +150,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @return Concurrent listener notification flag
      */
