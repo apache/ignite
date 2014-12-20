@@ -16,8 +16,8 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Simple cache test.
@@ -107,8 +107,8 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If test failed.
      */
-    private void checkTransactionTimeout(GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    private void checkTransactionTimeout(IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
 
         int idx = RAND.nextInt(GRID_COUNT);
 

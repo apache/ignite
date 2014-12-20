@@ -30,7 +30,7 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Abstract test for originating node failure.

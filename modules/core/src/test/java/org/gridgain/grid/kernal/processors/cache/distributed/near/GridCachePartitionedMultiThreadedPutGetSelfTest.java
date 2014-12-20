@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multithreaded partition cache put get test.
@@ -160,7 +160,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
-    private void doTest(final GridCacheTxConcurrency concurrency, final GridCacheTxIsolation isolation)
+    private void doTest(final IgniteTxConcurrency concurrency, final IgniteTxIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 

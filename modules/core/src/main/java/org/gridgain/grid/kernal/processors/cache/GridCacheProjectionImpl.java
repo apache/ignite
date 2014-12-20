@@ -1205,25 +1205,25 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         return cache.txStart(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         return cache.txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return cache.txStartAffinity(affinityKey, concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return cache.txStartPartition(partId, concurrency, isolation, timeout, txSize);
     }
 

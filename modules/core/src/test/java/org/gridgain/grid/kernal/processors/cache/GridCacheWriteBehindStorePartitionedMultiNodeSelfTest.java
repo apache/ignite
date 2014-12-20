@@ -23,8 +23,8 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests write-behind store with near and dht commit option.

@@ -17,7 +17,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import javax.transaction.xa.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Cache XA resource implementation.
@@ -227,7 +227,7 @@ public final class GridCacheXAResource implements XAResource {
      * @return {@code true} if jta was already committed or rolled back.
      */
     public boolean isFinished() {
-        GridCacheTxState state = cacheTx.state();
+        IgniteTxState state = cacheTx.state();
 
         return state == COMMITTED || state == ROLLED_BACK;
     }

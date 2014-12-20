@@ -21,8 +21,8 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Checks basic node start/stop operations.

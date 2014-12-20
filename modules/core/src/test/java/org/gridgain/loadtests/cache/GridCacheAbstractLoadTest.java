@@ -51,10 +51,10 @@ abstract class GridCacheAbstractLoadTest {
     protected final int operationsPerTx;
 
     /** Transaction isolation level. */
-    protected final GridCacheTxIsolation isolation;
+    protected final IgniteTxIsolation isolation;
 
     /** Transaction concurrency control. */
-    protected final GridCacheTxConcurrency concurrency;
+    protected final IgniteTxConcurrency concurrency;
 
     /** Threads count. */
     protected final int threads;
@@ -103,8 +103,8 @@ abstract class GridCacheAbstractLoadTest {
 
         tx = Boolean.valueOf(props.getProperty("transactions"));
         operationsPerTx = Integer.valueOf(props.getProperty("operations.per.tx"));
-        isolation = GridCacheTxIsolation.valueOf(props.getProperty("isolation"));
-        concurrency = GridCacheTxConcurrency.valueOf(props.getProperty("concurrency"));
+        isolation = IgniteTxIsolation.valueOf(props.getProperty("isolation"));
+        concurrency = IgniteTxConcurrency.valueOf(props.getProperty("concurrency"));
         threads = Integer.valueOf(props.getProperty("threads"));
         writeRatio = Double.valueOf(props.getProperty("write.ratio"));
         testDuration = Long.valueOf(props.getProperty("duration"));

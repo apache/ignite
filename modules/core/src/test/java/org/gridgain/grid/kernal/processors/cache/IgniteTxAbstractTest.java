@@ -26,8 +26,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests for local transactions.
@@ -156,7 +156,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkCommit(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    protected void checkCommit(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);
@@ -281,7 +281,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If check failed.
      */
-    protected void checkRollback(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    protected void checkRollback(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         checkRollback(new ConcurrentHashMap<Integer, String>(), concurrency, isolation);
     }
@@ -292,8 +292,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If check failed.
      */
-    protected void checkRollback(ConcurrentMap<Integer, String> map, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    protected void checkRollback(ConcurrentMap<Integer, String> map, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);

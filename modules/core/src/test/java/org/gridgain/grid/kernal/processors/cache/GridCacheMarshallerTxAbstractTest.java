@@ -19,8 +19,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test transaction with wrong marshalling.

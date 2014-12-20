@@ -24,8 +24,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**

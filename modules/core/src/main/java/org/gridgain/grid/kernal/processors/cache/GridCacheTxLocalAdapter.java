@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
@@ -109,8 +109,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -336,7 +336,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
 
-            GridCacheTxState state = state();
+            IgniteTxState state = state();
 
             setRollbackOnly();
 
@@ -561,7 +561,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
     @Override public void userCommit() throws IgniteCheckedException {
-        GridCacheTxState state = state();
+        IgniteTxState state = state();
 
         if (state != COMMITTING) {
             if (timedOut())
@@ -933,7 +933,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public void userRollback() throws IgniteCheckedException {
-        GridCacheTxState state = state();
+        IgniteTxState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
@@ -2645,7 +2645,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (timedOut())
                 throw new GridCacheTxTimeoutException("Cache transaction timed out: " + this);
 
-            GridCacheTxState state = state();
+            IgniteTxState state = state();
 
             if (state == ROLLING_BACK || state == ROLLED_BACK)
                 throw new GridCacheTxRollbackException("Cache transaction is marked as rollback-only " +
@@ -2689,9 +2689,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         checkInternal(key);
 
-        GridCacheTxState state = state();
+        IgniteTxState state = state();
 
-        assert state == GridCacheTxState.ACTIVE || timedOut() :
+        assert state == IgniteTxState.ACTIVE || timedOut() :
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 

@@ -16,7 +16,7 @@ import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -46,7 +46,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheTxConcurrency txConcurrency() {
+    @Override protected IgniteTxConcurrency txConcurrency() {
         return OPTIMISTIC;
     }
 

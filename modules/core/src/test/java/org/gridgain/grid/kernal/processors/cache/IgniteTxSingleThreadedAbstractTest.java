@@ -11,8 +11,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests for local transactions.

@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Grid transactions implementation.
@@ -52,7 +52,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -68,7 +68,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -84,7 +84,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         );
     }
 
-    @Override public IgniteTx txStartSystem(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -108,7 +108,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sys System flag.
      * @return Transaction.
      */
-    private IgniteTx txStart0(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    private IgniteTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
         TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
@@ -144,8 +144,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(String cacheName, Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
@@ -156,8 +156,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(String cacheName, int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
@@ -185,8 +185,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private IgniteTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
+    private IgniteTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
         throws IllegalStateException, IgniteCheckedException {
         IgniteTx tx = cctx.tm().userTx();
 

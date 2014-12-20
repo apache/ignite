@@ -56,7 +56,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         GridCacheTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
@@ -87,7 +87,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      */
     protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter);
+        @Nullable IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key to remove.

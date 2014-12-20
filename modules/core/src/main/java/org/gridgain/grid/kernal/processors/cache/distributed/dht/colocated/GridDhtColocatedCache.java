@@ -317,7 +317,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      */
     @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
         GridNearTxLocal<K, V> txx = (GridNearTxLocal<K, V>)tx;

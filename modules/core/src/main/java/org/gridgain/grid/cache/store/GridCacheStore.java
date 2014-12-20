@@ -205,7 +205,7 @@ public interface GridCacheStore<K, V> {
      * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.
      * @throws IgniteCheckedException If commit or rollback failed. Note that commit failure in some cases
-     *      may bring cache transaction into {@link GridCacheTxState#UNKNOWN} which will
+     *      may bring cache transaction into {@link IgniteTxState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
     public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException;

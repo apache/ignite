@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -438,7 +438,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkSinglePut(boolean explicitTx, GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void checkSinglePut(boolean explicitTx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         startGrid();
 
@@ -472,7 +472,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkReentry(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkReentry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         startGrid();
 
         try {
@@ -515,8 +515,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkDistributedPut(boolean explicitTx, boolean separate, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    private void checkDistributedPut(boolean explicitTx, boolean separate, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
         storeEnabled = false;
 
         startGridsMultiThreaded(3);
@@ -605,8 +605,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkNonLocalPuts(boolean explicitTx, boolean separate, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    private void checkNonLocalPuts(boolean explicitTx, boolean separate, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
         storeEnabled = false;
 
         startGridsMultiThreaded(3);
@@ -778,7 +778,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-    private void checkRollback(boolean separate, GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void checkRollback(boolean separate, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         storeEnabled = false;
 

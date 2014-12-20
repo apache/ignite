@@ -228,7 +228,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 

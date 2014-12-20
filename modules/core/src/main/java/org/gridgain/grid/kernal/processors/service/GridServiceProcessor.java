@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import static java.util.Map.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**

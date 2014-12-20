@@ -18,8 +18,8 @@ import org.hibernate.cache.spi.access.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Implementation of {@link AccessType#READ_WRITE} cache access strategy.

@@ -397,7 +397,7 @@ public interface GridCacheTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      * @param state Transaction state.
      * @return {@code True} if transition was valid, {@code false} otherwise.
      */
-    public boolean state(GridCacheTxState state);
+    public boolean state(IgniteTxState state);
 
     /**
      * @param invalidate Invalidate flag.

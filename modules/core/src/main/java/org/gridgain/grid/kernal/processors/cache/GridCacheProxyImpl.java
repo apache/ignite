@@ -1103,7 +1103,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1116,7 +1116,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1129,8 +1129,8 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1142,8 +1142,8 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

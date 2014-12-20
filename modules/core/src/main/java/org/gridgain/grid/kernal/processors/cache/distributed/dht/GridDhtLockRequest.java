@@ -109,7 +109,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         long topVer,
         boolean isInTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int dhtCnt,

@@ -31,8 +31,8 @@ import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**

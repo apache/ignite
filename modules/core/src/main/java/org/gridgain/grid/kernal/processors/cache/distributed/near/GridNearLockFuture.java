@@ -249,7 +249,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 

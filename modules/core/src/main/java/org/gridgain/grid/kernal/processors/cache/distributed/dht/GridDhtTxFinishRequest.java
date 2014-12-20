@@ -35,7 +35,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     private UUID nearNodeId;
 
     /** Transaction isolation. */
-    private GridCacheTxIsolation isolation;
+    private IgniteTxIsolation isolation;
 
     /** Near writes. */
     @GridToStringInclude
@@ -113,7 +113,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         long threadId,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -188,7 +188,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /**
      * @return Transaction isolation.
      */
-    public GridCacheTxIsolation isolation() {
+    public IgniteTxIsolation isolation() {
         return isolation;
     }
 
@@ -452,7 +452,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 byte isolation0 = commState.getByte();
 
-                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
+                isolation = IgniteTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

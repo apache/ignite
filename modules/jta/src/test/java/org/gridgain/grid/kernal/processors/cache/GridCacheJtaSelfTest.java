@@ -19,7 +19,7 @@ import org.objectweb.jotm.*;
 import javax.transaction.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Abstract class for cache tests.

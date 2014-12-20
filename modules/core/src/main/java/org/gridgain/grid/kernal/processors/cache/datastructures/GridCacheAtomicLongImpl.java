@@ -22,8 +22,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache atomic long implementation.

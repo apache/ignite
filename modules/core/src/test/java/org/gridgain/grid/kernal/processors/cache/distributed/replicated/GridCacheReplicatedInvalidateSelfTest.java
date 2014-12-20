@@ -28,8 +28,8 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -140,8 +140,8 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
      * @param isolation Isolation.
      * @throws Throwable If check failed.
      */
-    private void checkCommit(GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Throwable {
+    private void checkCommit(IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         GridCache<Integer, String> cache = cache(idx);

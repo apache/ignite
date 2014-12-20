@@ -596,7 +596,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable GridCacheTxIsolation isolation,
+        @Nullable IgniteTxIsolation isolation,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.lockAllAsync(keys, timeout, filter);
     }

@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**

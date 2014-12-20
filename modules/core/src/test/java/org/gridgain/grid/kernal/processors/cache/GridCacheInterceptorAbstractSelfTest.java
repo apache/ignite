@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Tests {@link GridCacheInterceptor}.
@@ -815,8 +815,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return;
 
         if (atomicityMode() == TRANSACTIONAL) {
-            for (GridCacheTxConcurrency txConcurrency : GridCacheTxConcurrency.values()) {
-                for (GridCacheTxIsolation txIsolation : GridCacheTxIsolation.values()) {
+            for (IgniteTxConcurrency txConcurrency : IgniteTxConcurrency.values()) {
+                for (IgniteTxIsolation txIsolation : IgniteTxIsolation.values()) {
                     for (Operation op : Operation.values()) {
                         // TODO: GG-8118 enable when fixed.
                         if (op == Operation.UPDATE_FILTER && txConcurrency == OPTIMISTIC)
@@ -839,8 +839,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param op Operation type.
      * @throws Exception If failed.
      */
-    private void testNearNodeKey(@Nullable GridCacheTxConcurrency txConcurrency,
-        @Nullable GridCacheTxIsolation txIsolation, @Nullable Operation op) throws Exception {
+    private void testNearNodeKey(@Nullable IgniteTxConcurrency txConcurrency,
+        @Nullable IgniteTxIsolation txIsolation, @Nullable Operation op) throws Exception {
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {

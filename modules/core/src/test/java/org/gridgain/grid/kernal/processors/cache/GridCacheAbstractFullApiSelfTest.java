@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
@@ -769,7 +769,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkTransform(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkTransform(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
         cache.put("key2", 1);
@@ -852,7 +852,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void checkTransformAll(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void checkTransformAll(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
@@ -979,7 +979,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkTransformSequential0(boolean startVal, GridCacheTxConcurrency concurrency)
+    private void checkTransformSequential0(boolean startVal, IgniteTxConcurrency concurrency)
         throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
@@ -1029,7 +1029,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkTransformAfterRemove(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkTransformAfterRemove(IgniteTxConcurrency concurrency) throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
         cache.put("key", 4);
@@ -1095,8 +1095,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkTransformReturnValue(boolean put, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    private void checkTransformReturnValue(boolean put, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
         if (!put)
@@ -1409,7 +1409,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkFilters1(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkFilters1(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         cache().putx("key1", 0);
 
         IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
@@ -1448,7 +1448,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkFilters2(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkFilters2(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         cache().putx("key1", 100);
 
         IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
@@ -1486,7 +1486,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Tx isolation.
      * @throws Exception If failed.
      */
-    private void checkFilters3(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkFilters3(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         cache().putx("key1", 100);
 
         IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
@@ -3893,7 +3893,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param concurrency Concurrency.
      * @throws Exception If failed.
      */
-    private void checkPeekTxRemove(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkPeekTxRemove(IgniteTxConcurrency concurrency) throws Exception {
         if (txEnabled()) {
             GridCache<String, Integer> cache = primaryCache("key");
 
@@ -4735,7 +4735,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkRemovexInTx(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkRemovexInTx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         if (txEnabled()) {
             final int cnt = 10;
 

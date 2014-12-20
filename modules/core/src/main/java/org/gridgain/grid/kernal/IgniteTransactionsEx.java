@@ -29,6 +29,6 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStartSystem(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout,
+    public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
         int txSize);
 }

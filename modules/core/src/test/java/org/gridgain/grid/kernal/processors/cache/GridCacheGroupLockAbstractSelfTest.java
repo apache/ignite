@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test for group locking.
@@ -130,7 +130,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockPutOneKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockPutOneKey(IgniteTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -197,7 +197,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockRemoveOneKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockRemoveOneKey(IgniteTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -277,7 +277,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockGetOneKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockGetOneKey(IgniteTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -340,7 +340,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** @throws IgniteCheckedException */
-    private void checkGroupLockWithExternalLock(final GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockWithExternalLock(final IgniteTxConcurrency concurrency) throws Exception {
         assert sanityCheckEnabled();
 
         final UUID affinityKey = primaryKeyForCache(grid(0));
@@ -425,7 +425,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkSanityCheckDisabled(final GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
         final UUID affinityKey = primaryKeyForCache(grid(0));
@@ -486,7 +486,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupPartitionLock(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupPartitionLock(IgniteTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -610,7 +610,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGetPut(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkGetPut(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -669,7 +669,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGetPutEmptyCache(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkGetPutEmptyCache(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -750,7 +750,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGetRemove(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkGetRemove(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -830,7 +830,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGetAfterPut(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGetAfterPut(IgniteTxConcurrency concurrency) throws Exception {
         CollectingEventListener locks = new CollectingEventListener();
         CollectingEventListener unlocks = new CollectingEventListener();
 
@@ -911,7 +911,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGetRepeatableRead(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGetRepeatableRead(IgniteTxConcurrency concurrency) throws Exception {
         UUID key = primaryKeyForCache(grid(0));
 
         cache(0).put(key, "val");
@@ -939,7 +939,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockPutWrongKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockPutWrongKey(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
@@ -974,7 +974,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockRemoveWrongKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockRemoveWrongKey(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
@@ -1029,7 +1029,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkGroupLockReadAffinityKey(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void checkGroupLockReadAffinityKey(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
@@ -1080,7 +1080,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    private void checkGroupLockWriteThrough(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkGroupLockWriteThrough(IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);

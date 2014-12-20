@@ -30,9 +30,9 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -98,11 +98,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Isolation. */
     @GridToStringInclude
-    protected GridCacheTxIsolation isolation = READ_COMMITTED;
+    protected IgniteTxIsolation isolation = READ_COMMITTED;
 
     /** Concurrency. */
     @GridToStringInclude
-    protected GridCacheTxConcurrency concurrency = PESSIMISTIC;
+    protected IgniteTxConcurrency concurrency = PESSIMISTIC;
 
     /** Transaction timeout. */
     @GridToStringInclude
@@ -152,11 +152,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /**
      * Transaction state. Note that state is not protected, as we want to
-     * always use {@link #state()} and {@link #state(GridCacheTxState)}
+     * always use {@link #state()} and {@link #state(IgniteTxState)}
      * methods.
      */
     @GridToStringInclude
-    private volatile GridCacheTxState state = ACTIVE;
+    private volatile IgniteTxState state = ACTIVE;
 
     /** Timed out flag. */
     private volatile boolean timedOut;
@@ -219,8 +219,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         boolean implicitSingle,
         boolean loc,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -277,8 +277,8 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         GridCacheVersion startVer,
         long threadId,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
@@ -702,12 +702,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxIsolation isolation() {
+    @Override public IgniteTxIsolation isolation() {
         return isolation;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxConcurrency concurrency() {
+    @Override public IgniteTxConcurrency concurrency() {
         return concurrency;
     }
 
@@ -767,7 +767,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxState state() {
+    @Override public IgniteTxState state() {
         return state;
     }
 
@@ -817,7 +817,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      *
      */
     @Override public void close() throws IgniteCheckedException {
-        GridCacheTxState state = state();
+        IgniteTxState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
             rollback();
@@ -918,7 +918,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean state(GridCacheTxState state) {
+    @Override public boolean state(IgniteTxState state) {
         return state(state, false);
     }
 
@@ -953,10 +953,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private boolean state(GridCacheTxState state, boolean timedOut) {
+    private boolean state(IgniteTxState state, boolean timedOut) {
         boolean valid = false;
 
-        GridCacheTxState prev;
+        IgniteTxState prev;
 
         boolean notify = false;
 
@@ -1306,10 +1306,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         nodeId = U.readUuid(in);
 
-        isolation = GridCacheTxIsolation.fromOrdinal(in.read());
-        concurrency = GridCacheTxConcurrency.fromOrdinal(in.read());
+        isolation = IgniteTxIsolation.fromOrdinal(in.read());
+        concurrency = IgniteTxConcurrency.fromOrdinal(in.read());
 
-        state = GridCacheTxState.fromOrdinal(in.read());
+        state = IgniteTxState.fromOrdinal(in.read());
     }
 
     /**
@@ -1371,10 +1371,10 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         private final long startTime;
 
         /** Transaction isolation. */
-        private final GridCacheTxIsolation isolation;
+        private final IgniteTxIsolation isolation;
 
         /** Concurrency. */
-        private final GridCacheTxConcurrency concurrency;
+        private final IgniteTxConcurrency concurrency;
 
         /** Invalidate flag. */
         private final boolean invalidate;
@@ -1383,7 +1383,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         private final long timeout;
 
         /** State. */
-        private final GridCacheTxState state;
+        private final IgniteTxState state;
 
         /** Rollback only flag. */
         private final boolean rollbackOnly;
@@ -1404,9 +1404,9 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
          * @param state Transaction state.
          * @param rollbackOnly Rollback-only flag.
          */
-        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, GridCacheTxIsolation isolation,
-            GridCacheTxConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
-            GridCacheTxState state, boolean rollbackOnly) {
+        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, IgniteTxIsolation isolation,
+            IgniteTxConcurrency concurrency, boolean invalidate, boolean implicit, long timeout,
+            IgniteTxState state, boolean rollbackOnly) {
             this.xid = xid;
             this.nodeId = nodeId;
             this.threadId = threadId;
@@ -1441,12 +1441,12 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheTxIsolation isolation() {
+        @Override public IgniteTxIsolation isolation() {
             return isolation;
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheTxConcurrency concurrency() {
+        @Override public IgniteTxConcurrency concurrency() {
             return concurrency;
         }
 
@@ -1466,7 +1466,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheTxState state() {
+        @Override public IgniteTxState state() {
             return state;
         }
 

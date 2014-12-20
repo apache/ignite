@@ -25,8 +25,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  *
@@ -223,7 +223,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, Integer> c = grid(0).cache(null);
 
         IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
@@ -248,7 +248,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTxByteArray(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTxByteArray(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, byte[]> c = grid(0).cache(null);
 
         IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
@@ -358,7 +358,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutAllGetAllRemoveAllTx(GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutAllGetAllRemoveAllTx(IgniteTxConcurrency txConcurrency) throws Exception {
         Map<Integer, Integer> map = new HashMap<>();
 
         for (int i = 0; i < 100; i++)
@@ -453,7 +453,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveObjectTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveObjectTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, TestValue> c = grid(0).cache(null);
 
         TestValue val = new TestValue(new byte[10]);

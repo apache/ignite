@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -94,8 +94,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -590,7 +590,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         if (commit) {
             if (!state(COMMITTING)) {
-                GridCacheTxState state = state();
+                IgniteTxState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
                     throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +

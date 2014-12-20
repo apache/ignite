@@ -16,8 +16,8 @@ import org.gridgain.grid.cache.*;
 import java.io.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Demonstrates how to use cache transactions.

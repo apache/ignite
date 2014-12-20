@@ -34,5 +34,5 @@ public interface GridCacheTxSynchronization {
      *      transition this callback is associated with.
      * @param tx Transaction whose state has changed.
      */
-    public void onStateChanged(@Nullable GridCacheTxState prevState, GridCacheTxState newState, IgniteTx tx);
+    public void onStateChanged(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTx tx);
 }

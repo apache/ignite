@@ -302,7 +302,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 

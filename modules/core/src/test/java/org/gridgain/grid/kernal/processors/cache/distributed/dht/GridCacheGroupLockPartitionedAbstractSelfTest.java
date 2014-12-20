@@ -20,8 +20,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Group lock abstract test for partitioned cache.
@@ -63,7 +63,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    private void checkUpdateEntry(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkUpdateEntry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCache<GridCacheAffinityKey<Integer>, Integer> cache = cache(0);

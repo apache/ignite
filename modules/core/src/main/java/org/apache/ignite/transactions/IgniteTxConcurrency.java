@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction concurrency control. See {@link IgniteTx} for more information
  * on transaction concurrency controls.
  */
-public enum GridCacheTxConcurrency {
+public enum IgniteTxConcurrency {
     /** Optimistic concurrency control. */
     OPTIMISTIC,
 
@@ -23,7 +23,7 @@ public enum GridCacheTxConcurrency {
     PESSIMISTIC;
 
     /** Enum values. */
-    private static final GridCacheTxConcurrency[] VALS = values();
+    private static final IgniteTxConcurrency[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -31,7 +31,7 @@ public enum GridCacheTxConcurrency {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheTxConcurrency fromOrdinal(int ord) {
+    @Nullable public static IgniteTxConcurrency fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

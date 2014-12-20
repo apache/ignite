@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
  * Defines different cache transaction isolation levels. See {@link IgniteTx}
  * documentation for more information about cache transaction isolation levels.
  */
-public enum GridCacheTxIsolation {
+public enum IgniteTxIsolation {
     /** Read committed isolation level. */
     READ_COMMITTED,
 
@@ -26,7 +26,7 @@ public enum GridCacheTxIsolation {
     SERIALIZABLE;
 
     /** Enum values. */
-    private static final GridCacheTxIsolation[] VALS = values();
+    private static final IgniteTxIsolation[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -35,7 +35,7 @@ public enum GridCacheTxIsolation {
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
     @Nullable
-    public static GridCacheTxIsolation fromOrdinal(int ord) {
+    public static IgniteTxIsolation fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

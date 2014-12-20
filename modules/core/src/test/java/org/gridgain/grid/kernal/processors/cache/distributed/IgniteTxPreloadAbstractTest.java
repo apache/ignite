@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Tests transaction during cache preloading.
@@ -129,7 +129,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @param txConcurrency Transaction concurrency;
      * @throws Exception If failed.
      */
-    private void testLocalTxPreloading(GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testLocalTxPreloading(IgniteTxConcurrency txConcurrency) throws Exception {
         Map<String, Integer> map = new HashMap<>();
 
         for (int i = 0; i < 10000; i++)
@@ -150,7 +150,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
             GridCache<String, Integer> cache = cache(i);
 
-            try (IgniteTx tx = cache.txStart(txConcurrency, GridCacheTxIsolation.READ_COMMITTED)) {
+            try (IgniteTx tx = cache.txStart(txConcurrency, IgniteTxIsolation.READ_COMMITTED)) {
                 cache.transform(TX_KEY, new C1<Integer, Integer>() {
                     @Override public Integer apply(Integer val) {
                         if (val == null) {

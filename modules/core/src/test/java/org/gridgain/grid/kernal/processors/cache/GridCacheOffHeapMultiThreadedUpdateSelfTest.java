@@ -15,8 +15,8 @@ import org.gridgain.testframework.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -47,7 +47,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testTransformTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testTransformTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -111,7 +111,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -167,7 +167,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutWithFilterTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutWithFilterTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -223,7 +223,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutxIfAbsentTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutxIfAbsentTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);

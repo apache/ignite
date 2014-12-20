@@ -26,8 +26,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test tx salvage.
@@ -136,7 +136,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link GridCacheTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageAfterTimeout(GridCacheTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         stopNodeAndSleep(SALVAGE_TIMEOUT + DELTA_AFTER);
@@ -155,7 +155,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link GridCacheTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageBeforeTimeout(GridCacheTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         List<Integer> nearSizes = new ArrayList<>(GRID_CNT - 1);
@@ -182,7 +182,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *                (i.e. call {@link GridCacheTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void startTxAndPutKeys(final GridCacheTxConcurrency mode, final boolean prepare) throws Exception {
+    private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
         final Collection<Integer> keys = nearKeys(ignite);

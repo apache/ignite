@@ -12,8 +12,8 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Transactional cache metrics test.
@@ -196,7 +196,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      * @param put Put some data if {@code true}.
      * @throws Exception If failed.
      */
-    private void testCommits(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, boolean put)
+    private void testCommits(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
@@ -236,7 +236,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      * @param put Put some data if {@code true}.
      * @throws Exception If failed.
      */
-    private void testRollbacks(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    private void testRollbacks(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         boolean put) throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 

@@ -557,7 +557,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable GridCacheTxIsolation isolation,
+        @Nullable IgniteTxIsolation isolation,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
             "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)"));

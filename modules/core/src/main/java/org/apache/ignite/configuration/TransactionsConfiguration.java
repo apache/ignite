@@ -19,10 +19,10 @@ public class TransactionsConfiguration {
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 
     /** Default concurrency mode. */
-    public static final GridCacheTxConcurrency DFLT_TX_CONCURRENCY = GridCacheTxConcurrency.PESSIMISTIC;
+    public static final IgniteTxConcurrency DFLT_TX_CONCURRENCY = IgniteTxConcurrency.PESSIMISTIC;
 
     /** Default transaction isolation level. */
-    public static final GridCacheTxIsolation DFLT_TX_ISOLATION = GridCacheTxIsolation.REPEATABLE_READ;
+    public static final IgniteTxIsolation DFLT_TX_ISOLATION = IgniteTxIsolation.REPEATABLE_READ;
 
     /** Default transaction timeout. */
     public static final long DFLT_TRANSACTION_TIMEOUT = 0;
@@ -34,10 +34,10 @@ public class TransactionsConfiguration {
     private boolean txSerEnabled = DFLT_TX_SERIALIZABLE_ENABLED;
 
     /** Transaction isolation. */
-    private GridCacheTxIsolation dfltIsolation = DFLT_TX_ISOLATION;
+    private IgniteTxIsolation dfltIsolation = DFLT_TX_ISOLATION;
 
     /** Cache concurrency. */
-    private GridCacheTxConcurrency dfltConcurrency = DFLT_TX_CONCURRENCY;
+    private IgniteTxConcurrency dfltConcurrency = DFLT_TX_CONCURRENCY;
 
     /** Default transaction timeout. */
     private long dfltTxTimeout = DFLT_TRANSACTION_TIMEOUT;
@@ -68,7 +68,7 @@ public class TransactionsConfiguration {
     }
 
     /**
-     * Gets flag to enable/disable {@link GridCacheTxIsolation#SERIALIZABLE} isolation
+     * Gets flag to enable/disable {@link IgniteTxIsolation#SERIALIZABLE} isolation
      * level for cache transactions. Serializable level does carry certain overhead and
      * if not used, should be disabled. Default value is {@code false}.
      *
@@ -94,7 +94,7 @@ public class TransactionsConfiguration {
      * @return Default cache transaction concurrency.
      * @see IgniteTx
      */
-    public GridCacheTxConcurrency getDefaultTxConcurrency() {
+    public IgniteTxConcurrency getDefaultTxConcurrency() {
         return dfltConcurrency;
     }
 
@@ -103,7 +103,7 @@ public class TransactionsConfiguration {
      *
      * @param dfltConcurrency Default cache transaction concurrency.
      */
-    public void setDefaultTxConcurrency(GridCacheTxConcurrency dfltConcurrency) {
+    public void setDefaultTxConcurrency(IgniteTxConcurrency dfltConcurrency) {
         this.dfltConcurrency = dfltConcurrency;
     }
 
@@ -114,7 +114,7 @@ public class TransactionsConfiguration {
      * @return Default cache transaction isolation.
      * @see IgniteTx
      */
-    public GridCacheTxIsolation getDefaultTxIsolation() {
+    public IgniteTxIsolation getDefaultTxIsolation() {
         return dfltIsolation;
     }
 
@@ -123,7 +123,7 @@ public class TransactionsConfiguration {
      *
      * @param dfltIsolation Default cache transaction isolation.
      */
-    public void setDefaultTxIsolation(GridCacheTxIsolation dfltIsolation) {
+    public void setDefaultTxIsolation(IgniteTxIsolation dfltIsolation) {
         this.dfltIsolation = dfltIsolation;
     }
 

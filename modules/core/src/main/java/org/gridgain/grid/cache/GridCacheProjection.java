@@ -126,13 +126,13 @@ import java.util.concurrent.*;
  * only keys with identical affinity-key (see {@link GridCacheAffinityKeyMapped}) can participate in the
  * transaction, and only one lock on the <i>affinity-key</i> will be acquired for the whole transaction.
  * {@code Affinity-group-locked} transactions are started via
- * {@link #txStartAffinity(Object, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
+ * {@link #txStartAffinity(Object, IgniteTxConcurrency, IgniteTxIsolation, long, int)} method.
  * <p>
  * With {@code partition-based-group-locking} the keys are grouped by partition ID. This means that
  * only keys belonging to identical partition (see {@link GridCacheAffinity#partition(Object)}) can participate in the
  * transaction, and only one lock on the whole partition will be acquired for the whole transaction.
  * {@code Partition-group-locked} transactions are started via
- * {@link #txStartPartition(int, GridCacheTxConcurrency, GridCacheTxIsolation, long, int)} method.
+ * {@link #txStartPartition(int, IgniteTxConcurrency, IgniteTxIsolation, long, int)} method.
  * <p>
  * <i>Group locking</i> should always be used for transactions whenever possible. If your requirements fit either
  * <i>affinity-based</i> or <i>partition-based</i> scenarios outlined above then <i>group-locking</i>
@@ -1334,7 +1334,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation);
+    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
@@ -1348,7 +1348,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout,
+    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -1384,8 +1384,8 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+    public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
@@ -1420,8 +1420,8 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+    public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does
@@ -1843,7 +1843,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -1869,7 +1869,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -1895,7 +1895,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -1921,7 +1921,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -1947,7 +1947,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -1968,7 +1968,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:

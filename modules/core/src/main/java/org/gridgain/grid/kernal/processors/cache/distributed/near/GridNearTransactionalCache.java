@@ -27,7 +27,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Near cache for transactional cache.
@@ -373,7 +373,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     /** {@inheritDoc} */
     @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
             retval, timeout, filter);
 

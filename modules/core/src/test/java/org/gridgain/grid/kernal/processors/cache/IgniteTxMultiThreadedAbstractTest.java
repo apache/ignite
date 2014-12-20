@@ -18,8 +18,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests for local transactions.
@@ -36,8 +36,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkCommitMultithreaded(final GridCacheTxConcurrency concurrency,
-        final GridCacheTxIsolation isolation) throws Exception {
+    protected void checkCommitMultithreaded(final IgniteTxConcurrency concurrency,
+        final IgniteTxIsolation isolation) throws Exception {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 Thread t = Thread.currentThread();
@@ -63,8 +63,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    protected void checkRollbackMultithreaded(final GridCacheTxConcurrency concurrency,
-        final GridCacheTxIsolation isolation) throws Exception {
+    protected void checkRollbackMultithreaded(final IgniteTxConcurrency concurrency,
+        final IgniteTxIsolation isolation) throws Exception {
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {

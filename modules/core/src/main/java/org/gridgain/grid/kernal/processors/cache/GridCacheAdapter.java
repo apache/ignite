@@ -51,8 +51,8 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -490,7 +490,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
@@ -3120,7 +3120,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -3135,8 +3135,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
         return ctx.system() ?
@@ -3145,15 +3145,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return ctx.kernalContext().cache().transactions().txStartAffinity(name(), affinityKey, concurrency, isolation,
             timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
             timeout, txSize);
     }

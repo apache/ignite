@@ -36,11 +36,11 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** Transaction concurrency. */
     @GridToStringInclude
-    private GridCacheTxConcurrency concurrency;
+    private IgniteTxConcurrency concurrency;
 
     /** Transaction isolation. */
     @GridToStringInclude
-    private GridCacheTxIsolation isolation;
+    private IgniteTxIsolation isolation;
 
     /** Commit version for EC transactions. */
     @GridToStringInclude
@@ -208,14 +208,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Concurrency.
      */
-    public GridCacheTxConcurrency concurrency() {
+    public IgniteTxConcurrency concurrency() {
         return concurrency;
     }
 
     /**
      * @return Isolation level.
      */
-    public GridCacheTxIsolation isolation() {
+    public IgniteTxIsolation isolation() {
         return isolation;
     }
 
@@ -600,7 +600,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 byte concurrency0 = commState.getByte();
 
-                concurrency = GridCacheTxConcurrency.fromOrdinal(concurrency0);
+                concurrency = IgniteTxConcurrency.fromOrdinal(concurrency0);
 
                 commState.idx++;
 
@@ -638,7 +638,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
                 byte isolation0 = commState.getByte();
 
-                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
+                isolation = IgniteTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

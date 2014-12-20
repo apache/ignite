@@ -14,7 +14,7 @@ import org.jetbrains.annotations.*;
 /**
  * Cache transaction state.
  */
-public enum GridCacheTxState {
+public enum IgniteTxState {
     /** Transaction started. */
     ACTIVE,
 
@@ -43,7 +43,7 @@ public enum GridCacheTxState {
     UNKNOWN;
 
     /** Enumerated values. */
-    private static final GridCacheTxState[] VALS = values();
+    private static final IgniteTxState[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -51,7 +51,7 @@ public enum GridCacheTxState {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheTxState fromOrdinal(int ord) {
+    @Nullable public static IgniteTxState fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

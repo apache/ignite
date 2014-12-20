@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
@@ -97,8 +97,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,

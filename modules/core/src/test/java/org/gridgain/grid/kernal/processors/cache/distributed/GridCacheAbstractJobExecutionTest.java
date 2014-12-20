@@ -26,8 +26,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests cache access from within jobs.
@@ -103,7 +103,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
      * @param jobCnt Job count.
      * @throws Exception If fails.
      */
-    private void checkTransactions(final GridCacheTxConcurrency concur, final GridCacheTxIsolation isolation,
+    private void checkTransactions(final IgniteTxConcurrency concur, final IgniteTxIsolation isolation,
         final int jobCnt) throws Exception {
 
         info("Grid 0: " + grid(0).localNode().id());

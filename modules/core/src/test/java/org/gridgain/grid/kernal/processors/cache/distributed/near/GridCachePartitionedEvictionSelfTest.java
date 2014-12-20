@@ -23,8 +23,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -146,7 +146,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param concurrency Tx concurrency.
      * @param isolation Tx isolation.
      */
-    private void doTestEviction(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void doTestEviction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         assert concurrency != null;
         assert isolation != null;

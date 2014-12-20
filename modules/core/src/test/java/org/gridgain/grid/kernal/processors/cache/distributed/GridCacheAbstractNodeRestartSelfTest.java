@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test node restart.
@@ -211,7 +211,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @return Transaction concurrency to use in tests.
      */
-    protected GridCacheTxConcurrency txConcurrency() {
+    protected IgniteTxConcurrency txConcurrency() {
         return PESSIMISTIC;
     }
 

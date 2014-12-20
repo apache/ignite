@@ -26,8 +26,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test getting the same value twice within the same transaction.
@@ -210,7 +210,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      * @param put If {@code true}, then value will be pre-stored in cache.
      * @throws Exception If failed.
      */
-    private void checkDoubleGet(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, boolean put)
+    private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
         GridCache<Integer, String> cache = grid(0).cache(null);
 

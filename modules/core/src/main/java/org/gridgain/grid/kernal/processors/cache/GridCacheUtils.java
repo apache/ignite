@@ -1199,7 +1199,7 @@ public class GridCacheUtils {
      * @return New transaction.
      */
     public static IgniteTx txStartInternal(GridCacheContext ctx, GridCacheProjection prj,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
@@ -1612,8 +1612,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(GridCacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);

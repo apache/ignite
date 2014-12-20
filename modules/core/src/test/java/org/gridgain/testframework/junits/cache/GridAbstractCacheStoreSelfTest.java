@@ -428,12 +428,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxIsolation isolation() {
+        @Nullable @Override public IgniteTxIsolation isolation() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxConcurrency concurrency() {
+        @Nullable @Override public IgniteTxConcurrency concurrency() {
             return null;
         }
 
@@ -448,7 +448,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxState state() {
+        @Nullable @Override public IgniteTxState state() {
             return null;
         }
 

@@ -45,10 +45,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private GridCacheStore<String, String> testStore;
 
     /** Tx concurrency to use. */
-    private GridCacheTxConcurrency txConcurrency;
+    private IgniteTxConcurrency txConcurrency;
 
     /** Tx isolation to use. */
-    private GridCacheTxIsolation txIsolation;
+    private IgniteTxIsolation txIsolation;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -147,10 +147,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkPolicy0() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
             txConcurrency = concurrency;
 
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 txIsolation = isolation;
 
                 Ignite g = startGrids();

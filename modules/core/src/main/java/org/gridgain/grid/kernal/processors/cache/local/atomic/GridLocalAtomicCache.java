@@ -1251,7 +1251,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         GridCacheTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return new GridFinishedFutureEx<>(new UnsupportedOperationException("Locks are not supported for " +

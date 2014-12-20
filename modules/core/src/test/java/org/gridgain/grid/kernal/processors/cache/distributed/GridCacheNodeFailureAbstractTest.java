@@ -26,8 +26,8 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -148,7 +148,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    private void checkTransaction(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Throwable {
+    private void checkTransaction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         info("Grid will be stopped: " + idx);

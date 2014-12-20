@@ -17,8 +17,8 @@ import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multi-node test for group locking.
@@ -47,7 +47,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     /**
      * @throws Exception If failed.
      */
-    private void checkNonLocalKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkNonLocalKey(IgniteTxConcurrency concurrency) throws Exception {
         final UUID key = primaryKeyForCache(grid(1));
 
         GridCache<Object, Object> cache = grid(0).cache(null);
@@ -104,7 +104,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     /**
      * @throws Exception If failed.
      */
-    private void checkNearReadersUpdate(boolean touchAffKey, GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkNearReadersUpdate(boolean touchAffKey, IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);

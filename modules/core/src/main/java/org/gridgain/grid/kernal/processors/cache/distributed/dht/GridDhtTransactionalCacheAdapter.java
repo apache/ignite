@@ -28,8 +28,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
@@ -545,7 +545,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return lockAllAsyncInternal(keys, timeout, txx, isInvalidate, isRead, retval, isolation, filter);
     }
@@ -569,7 +569,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);

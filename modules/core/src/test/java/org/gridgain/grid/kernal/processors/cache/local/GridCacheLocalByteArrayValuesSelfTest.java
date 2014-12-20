@@ -24,8 +24,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Byte values test for LOCAL cache.
@@ -200,7 +200,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction(GridCache<Integer, Object> cache, GridCacheTxConcurrency concurrency,
+    private void testTransaction(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed(cache, concurrency, key, val, null, null);
     }
@@ -216,7 +216,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed(GridCache<Integer, Object> cache, GridCacheTxConcurrency concurrency,
+    private void testTransactionMixed(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
         IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);

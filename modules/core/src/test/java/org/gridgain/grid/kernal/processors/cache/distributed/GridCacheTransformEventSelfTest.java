@@ -27,8 +27,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -80,10 +80,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private GridCacheAtomicityMode atomicityMode;
 
     /** TX concurrency. */
-    private GridCacheTxConcurrency txConcurrency;
+    private IgniteTxConcurrency txConcurrency;
 
     /** TX isolation. */
-    private GridCacheTxIsolation txIsolation;
+    private IgniteTxIsolation txIsolation;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -145,7 +145,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void initialize(GridCacheMode cacheMode, GridCacheAtomicityMode atomicityMode,
-        GridCacheTxConcurrency txConcurrency, GridCacheTxIsolation txIsolation) throws Exception {
+        IgniteTxConcurrency txConcurrency, IgniteTxIsolation txIsolation) throws Exception {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
         this.txConcurrency = txConcurrency;
@@ -443,8 +443,8 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void checkTx(GridCacheMode cacheMode, GridCacheTxConcurrency txConcurrency,
-        GridCacheTxIsolation txIsolation) throws Exception {
+    private void checkTx(GridCacheMode cacheMode, IgniteTxConcurrency txConcurrency,
+        IgniteTxIsolation txIsolation) throws Exception {
         initialize(cacheMode, TRANSACTIONAL, txConcurrency, txIsolation);
 
         System.out.println("BEFORE: " + evts.size());

@@ -190,8 +190,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutNearTx() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
@@ -203,8 +203,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutPrimaryTx() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), PRIMARY));
@@ -216,8 +216,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutBackupTx() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 checkPutTx(true, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
 
                 checkPutTx(false, concurrency, isolation, keyForNode(grid(0).localNode(), BACKUP));
@@ -229,8 +229,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutMultipleKeysTx() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 checkPutTx(true, concurrency, isolation,
                     keyForNode(grid(0).localNode(), PRIMARY),
                     keyForNode(grid(0).localNode(), PRIMARY),
@@ -263,8 +263,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void checkPutTx(boolean putBefore, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, final Integer... keys) throws Exception {
+    private void checkPutTx(boolean putBefore, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, final Integer... keys) throws Exception {
         assertTrue(keys.length > 0);
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');

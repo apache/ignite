@@ -107,12 +107,12 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxIsolation isolation() {
+    @Override public IgniteTxIsolation isolation() {
         return tx.isolation();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxConcurrency concurrency() {
+    @Override public IgniteTxConcurrency concurrency() {
         return tx.concurrency();
     }
 
@@ -132,7 +132,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxState state() {
+    @Override public IgniteTxState state() {
         return tx.state();
     }
 

@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
-import static org.apache.ignite.transactions.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
@@ -173,7 +173,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private boolean salvageTx(GridCacheTxEx<K, V> tx, boolean warn, GridCacheTxEx.FinalizationStatus status) {
         assert tx != null;
 
-        GridCacheTxState state = tx.state();
+        IgniteTxState state = tx.state();
 
         if (state == ACTIVE || state == PREPARING || state == PREPARED) {
             try {
@@ -362,8 +362,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
@@ -494,9 +494,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * Creates a future that will wait for all ongoing transactions that maybe affected by topology update
      * to be finished. This set of transactions include
      * <ul>
-     *     <li/> All {@link GridCacheTxConcurrency#PESSIMISTIC} transactions with topology version
+     *     <li/> All {@link IgniteTxConcurrency#PESSIMISTIC} transactions with topology version
      *     less or equal to {@code topVer}.
-     *     <li/> {@link GridCacheTxConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
+     *     <li/> {@link IgniteTxConcurrency#OPTIMISTIC} transactions in PREPARING state with topology
      *     version less or equal to {@code topVer} and having transaction key with entry that belongs to
      *     one of partitions in {@code parts}.
      * </ul>
@@ -530,7 +530,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             else if (tx.concurrency() == OPTIMISTIC) {
                 // For OPTIMISTIC mode we wait only for txs in PREPARING state that
                 // have keys for given partitions.
-                GridCacheTxState state = tx.state();
+                IgniteTxState state = tx.state();
                 long txTopVer = tx.topologyVersion();
 
                 if ((state == PREPARING || state == PREPARED || state == COMMITTING)
@@ -1680,7 +1680,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param newState New state.
      * @param tx Cache transaction.
      */
-    public void onTxStateChange(@Nullable GridCacheTxState prevState, GridCacheTxState newState, IgniteTx tx) {
+    public void onTxStateChange(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTx tx) {
         // Notify synchronizations.
         for (GridCacheTxSynchronization s : syncs)
             s.onStateChanged(prevState, newState, tx);
@@ -1755,7 +1755,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         for (GridCacheTxEx<K, V> tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
-                GridCacheTxState state = tx.state();
+                IgniteTxState state = tx.state();
 
                 if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
                     if (--txNum == 0)

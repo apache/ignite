@@ -482,7 +482,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions.
      * If you do need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -506,7 +506,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -530,7 +530,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:

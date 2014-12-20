@@ -44,42 +44,42 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticReadCommitted() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.READ_COMMITTED);
+        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.READ_COMMITTED);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticRepeatableRead() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.REPEATABLE_READ);
+        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.REPEATABLE_READ);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadOptimisticSerializable() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.OPTIMISTIC, GridCacheTxIsolation.SERIALIZABLE);
+        checkTransactionalRead(IgniteTxConcurrency.OPTIMISTIC, IgniteTxIsolation.SERIALIZABLE);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticReadCommitted() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.READ_COMMITTED);
+        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.READ_COMMITTED);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticRepeatableRead() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.REPEATABLE_READ);
+        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.REPEATABLE_READ);
     }
 
     /**
      * @throws IgniteCheckedException If failed
      */
     public void testTxReadPessimisticSerializable() throws IgniteCheckedException {
-        checkTransactionalRead(GridCacheTxConcurrency.PESSIMISTIC, GridCacheTxIsolation.SERIALIZABLE);
+        checkTransactionalRead(IgniteTxConcurrency.PESSIMISTIC, IgniteTxIsolation.SERIALIZABLE);
     }
 
     /**
@@ -88,7 +88,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      * @param isolation Transaction isolation.
      * @throws IgniteCheckedException If failed
      */
-    protected void checkTransactionalRead(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    protected void checkTransactionalRead(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws IgniteCheckedException {
         GridCache<String, Integer> cache = cache(0);
 
