@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
@@ -143,7 +144,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -175,7 +176,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 

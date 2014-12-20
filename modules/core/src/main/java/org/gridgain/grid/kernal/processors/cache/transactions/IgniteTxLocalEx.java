@@ -7,11 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
@@ -20,7 +21,7 @@ import java.util.*;
 /**
  * Local transaction API.
  */
-public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
+public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     /**
      * @return Minimum version involved in transaction.
      */
@@ -29,7 +30,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
     /**
      * @return Future for this transaction.
      */
-    public IgniteFuture<GridCacheTxEx<K, V>> future();
+    public IgniteFuture<IgniteTxEx<K, V>> future();
 
     /**
      * @return Commit error.
@@ -54,7 +55,7 @@ public interface GridCacheTxLocalEx<K, V> extends GridCacheTxEx<K, V> {
     /**
      * @return Group lock entry if this is a group-lock transaction.
      */
-    @Nullable public GridCacheTxEntry<K, V> groupLockEntry();
+    @Nullable public IgniteTxEntry<K, V> groupLockEntry();
 
     /**
      * @param keys Keys to get.

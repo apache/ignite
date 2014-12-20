@@ -19,6 +19,7 @@ import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -915,7 +916,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param tx Committed transaction.
      */
-    public void onTxCommitted(GridCacheTxEx<K, V> tx) {
+    public void onTxCommitted(IgniteTxEx<K, V> tx) {
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
@@ -926,12 +927,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return;
             }
 
-            Collection<GridCacheTxEntry<K, V>> entries = tx.writeEntries();
+            Collection<IgniteTxEntry<K, V>> entries = tx.writeEntries();
 
             if (log.isDebugEnabled())
                 log.debug("Committed entries: " + entries);
 
-            for (GridCacheTxEntry<K, V> entry : entries) {
+            for (IgniteTxEntry<K, V> entry : entries) {
                 // Check updated or created GridCacheInternalKey keys.
                 if ((entry.op() == CREATE || entry.op() == UPDATE) && entry.key() instanceof GridCacheInternalKey) {
                     GridCacheInternal key = (GridCacheInternal)entry.key();

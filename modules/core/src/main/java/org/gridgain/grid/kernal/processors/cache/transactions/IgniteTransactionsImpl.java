@@ -116,7 +116,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        GridCacheTxEx<K, V> tx = (GridCacheTxEx<K, V>)cctx.tm().userTx();
+        IgniteTxEx<K, V> tx = (IgniteTxEx<K, V>)cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -194,7 +194,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw new IllegalStateException("Failed to start new transaction " +
                 "(current thread already has a transaction): " + tx);
 
-        GridCacheTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
+        IgniteTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
             false,
             false,
             sys,

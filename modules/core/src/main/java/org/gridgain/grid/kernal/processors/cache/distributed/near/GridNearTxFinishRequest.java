@@ -13,6 +13,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -88,8 +89,8 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<GridCacheTxEntry<K, V>> writeEntries,
-        Collection<GridCacheTxEntry<K, V>> recoverEntries,
+        Collection<IgniteTxEntry<K, V>> writeEntries,
+        Collection<IgniteTxEntry<K, V>> recoverEntries,
         @Nullable UUID subjId,
         int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,

@@ -16,11 +16,11 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -225,13 +225,13 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param tm Transaction manager.
      */
     @SuppressWarnings( {"unchecked"})
-    private void checkTm(Ignite g, GridCacheTxManager tm) {
-        Collection<GridCacheTxEx> txs = tm.txs();
+    private void checkTm(Ignite g, IgniteTxManager tm) {
+        Collection<IgniteTxEx> txs = tm.txs();
 
         info(">>> Number of transactions in the set [size=" + txs.size() +
             ", nodeId=" + g.cluster().localNode().id() + ']');
 
-        for (GridCacheTxEx tx : txs)
+        for (IgniteTxEx tx : txs)
             assert tx.done() : "Transaction is not finished: " + tx;
     }
 }

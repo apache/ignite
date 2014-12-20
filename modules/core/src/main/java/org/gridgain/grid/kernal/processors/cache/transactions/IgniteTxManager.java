@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -35,14 +36,14 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
+import static org.gridgain.grid.kernal.processors.cache.transactions.IgniteTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 import static org.gridgain.grid.util.GridConcurrentFactory.*;
 
 /**
  * Cache transaction manager.
  */
-public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Default maximum number of transactions that have completed. */
     private static final int DFLT_MAX_COMPLETED_TX_CNT = 262144; // 2^18
 
@@ -53,25 +54,25 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(GG_TX_SALVAGE_TIMEOUT, 100);
 
     /** Committing transactions. */
-    private final ThreadLocal<GridCacheTxEx> threadCtx = new GridThreadLocalEx<>();
+    private final ThreadLocal<IgniteTxEx> threadCtx = new GridThreadLocalEx<>();
 
     /** Per-thread transaction map. */
-    private final ConcurrentMap<Long, GridCacheTxEx<K, V>> threadMap = newMap();
+    private final ConcurrentMap<Long, IgniteTxEx<K, V>> threadMap = newMap();
 
     /** Per-ID map. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> idMap = newMap();
+    private final ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> idMap = newMap();
 
     /** Per-ID map for near transactions. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> nearIdMap = newMap();
+    private final ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> nearIdMap = newMap();
 
     /** TX handler. */
-    private GridCacheTxHandler<K, V> txHandler;
+    private IgniteTxHandler<K, V> txHandler;
 
     /** All transactions. */
-    private final Queue<GridCacheTxEx<K, V>> committedQ = new ConcurrentLinkedDeque8<>();
+    private final Queue<IgniteTxEx<K, V>> committedQ = new ConcurrentLinkedDeque8<>();
 
     /** Preparing transactions. */
-    private final Queue<GridCacheTxEx<K, V>> prepareQ = new ConcurrentLinkedDeque8<>();
+    private final Queue<IgniteTxEx<K, V>> prepareQ = new ConcurrentLinkedDeque8<>();
 
     /** Minimum start version. */
     private final ConcurrentNavigableMap<GridCacheVersion, AtomicInt> startVerCnts =
@@ -126,7 +127,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
-        for (GridCacheTxEx<K, V> tx : idMap.values()) {
+        for (IgniteTxEx<K, V> tx : idMap.values()) {
             if ((!tx.local() || tx.dht()) && !cctx.discovery().aliveAll(tx.masterNodeIds())) {
                 if (log.isDebugEnabled())
                     log.debug("Remaining transaction from left node: " + tx);
@@ -142,13 +143,13 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
 
-        txHandler = new GridCacheTxHandler<>(cctx);
+        txHandler = new IgniteTxHandler<>(cctx);
     }
 
     /**
      * @return TX handler.
      */
-    public GridCacheTxHandler<K, V> txHandler() {
+    public IgniteTxHandler<K, V> txHandler() {
         return txHandler;
     }
 
@@ -158,7 +159,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction.
      * @return {@code True} if transaction was salvaged by this call.
      */
-    public boolean salvageTx(GridCacheTxEx<K, V> tx) {
+    public boolean salvageTx(IgniteTxEx<K, V> tx) {
         return salvageTx(tx, false, USER_FINISH);
     }
 
@@ -170,7 +171,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param status Finalization status.
      * @return {@code True} if transaction was salvaged by this call.
      */
-    private boolean salvageTx(GridCacheTxEx<K, V> tx, boolean warn, GridCacheTxEx.FinalizationStatus status) {
+    private boolean salvageTx(IgniteTxEx<K, V> tx, boolean warn, IgniteTxEx.FinalizationStatus status) {
         assert tx != null;
 
         IgniteTxState state = tx.state();
@@ -196,8 +197,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     return false;
                 }
 
-                if (tx instanceof GridCacheTxRemoteEx) {
-                    GridCacheTxRemoteEx<K, V> rmtTx = (GridCacheTxRemoteEx<K, V>)tx;
+                if (tx instanceof IgniteTxRemoteEx) {
+                    IgniteTxRemoteEx<K, V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
                     rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(),
                         Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList());
@@ -246,7 +247,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * USE ONLY FOR MEMORY PROFILING DURING TESTS.
      */
     @Override public void printMemoryStats() {
-        GridCacheTxEx<K, V> firstTx = committedQ.peek();
+        IgniteTxEx<K, V> firstTx = committedQ.peek();
 
         int committedSize = committedQ.size();
 
@@ -258,9 +259,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (committedSize > 3000) {
             minStartVer = new GridCacheVersion(Integer.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, Integer.MAX_VALUE, 0);
 
-            GridCacheTxEx<K, V> stuck = null;
+            IgniteTxEx<K, V> stuck = null;
 
-            for (GridCacheTxEx<K, V> tx : txs())
+            for (IgniteTxEx<K, V> tx : txs())
                 if (tx.startVersion().isLess(minStartVer)) {
                     minStartVer = tx.startVersion();
                     dur = U.currentTimeMillis() - tx.startTime();
@@ -343,7 +344,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return {@code True} if transaction has been committed or rolled back,
      *      {@code false} otherwise.
      */
-    public boolean isCompleted(GridCacheTxEx<K, V> tx) {
+    public boolean isCompleted(IgniteTxEx<K, V> tx) {
         return committedVers.contains(tx.xidVersion()) || rolledbackVers.contains(tx.xidVersion());
     }
 
@@ -358,7 +359,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
-    public GridCacheTxLocalAdapter<K, V> newTx(
+    public IgniteTxLocalAdapter<K, V> newTx(
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
@@ -368,7 +369,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock) {
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
@@ -397,8 +398,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Created transaction.
      * @return Started transaction.
      */
-    @Nullable public <T extends GridCacheTxEx<K, V>> T onCreated(T tx) {
-        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+    @Nullable public <T extends IgniteTxEx<K, V>> T onCreated(T tx) {
+        ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> txIdMap = transactionMap(tx);
 
         // Start clean.
         txContextReset();
@@ -410,7 +411,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             return null;
         }
 
-        GridCacheTxEx<K, V> t;
+        IgniteTxEx<K, V> t;
 
         if ((t = txIdMap.putIfAbsent(tx.xidVersion(), tx)) == null) {
             // Add both, explicit and implicit transactions.
@@ -517,7 +518,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     }
                 });
 
-        for (GridCacheTxEx<K, V> tx : txs()) {
+        for (IgniteTxEx<K, V> tx : txs()) {
             // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
             // values pending to be overwritten by prepared transaction.
 
@@ -552,7 +553,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Started transaction.
      * @return {@code True} if transaction is not in completed set.
      */
-    public boolean onStarted(GridCacheTxEx<K, V> tx) {
+    public boolean onStarted(IgniteTxEx<K, V> tx) {
         assert tx.state() == ACTIVE || tx.isRollbackOnly() : "Invalid transaction state [locId=" + cctx.localNodeId() +
             ", tx=" + tx + ']';
 
@@ -578,7 +579,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Near version.
      */
     @Nullable public GridCacheVersion nearVersion(GridCacheVersion dhtVer) {
-        GridCacheTxEx<K, V> tx = idMap.get(dhtVer);
+        IgniteTxEx<K, V> tx = idMap.get(dhtVer);
 
         if (tx != null)
             return tx.nearXidVersion();
@@ -604,7 +605,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param ver Alternate version.
      * @param tx Transaction.
      */
-    public void addAlternateVersion(GridCacheVersion ver, GridCacheTxEx<K, V> tx) {
+    public void addAlternateVersion(GridCacheVersion ver, IgniteTxEx<K, V> tx) {
         if (idMap.putIfAbsent(ver, tx) == null)
             if (log.isDebugEnabled())
                 log.debug("Registered alternate transaction version [ver=" + ver + ", tx=" + tx + ']');
@@ -615,7 +616,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <T> T localTx() {
-        GridCacheTxEx<K, V> tx = tx();
+        IgniteTxEx<K, V> tx = tx();
 
         return tx != null && tx.local() ? (T)tx : null;
     }
@@ -625,7 +626,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     @SuppressWarnings({"unchecked"})
     public <T> T threadLocalTx() {
-        GridCacheTxEx<K, V> tx = tx(Thread.currentThread().getId());
+        IgniteTxEx<K, V> tx = tx(Thread.currentThread().getId());
 
         return tx != null && tx.local() && (!tx.dht() || tx.colocated()) && !tx.implicit() ? (T)tx : null;
     }
@@ -635,7 +636,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     public <T> T tx() {
-        GridCacheTxEx<K, V> tx = txContext();
+        IgniteTxEx<K, V> tx = txContext();
 
         return tx != null ? (T)tx : (T)tx(Thread.currentThread().getId());
     }
@@ -643,8 +644,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @return Local transaction.
      */
-    @Nullable public GridCacheTxEx<K, V> localTxx() {
-        GridCacheTxEx<K, V> tx = txx();
+    @Nullable public IgniteTxEx<K, V> localTxx() {
+        IgniteTxEx<K, V> tx = txx();
 
         return tx != null && tx.local() ? tx : null;
     }
@@ -653,7 +654,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Transaction for current thread.
      */
     @SuppressWarnings({"unchecked"})
-    public GridCacheTxEx<K, V> txx() {
+    public IgniteTxEx<K, V> txx() {
         return tx();
     }
 
@@ -661,7 +662,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return User transaction for current thread.
      */
     @Nullable public IgniteTx userTx() {
-        GridCacheTxEx<K, V> tx = txContext();
+        IgniteTxEx<K, V> tx = txContext();
 
         if (tx != null && tx.user() && tx.state() == ACTIVE)
             return tx;
@@ -675,7 +676,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return User transaction.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T extends GridCacheTxLocalEx<K, V>> T userTxx() {
+    @Nullable public <T extends IgniteTxLocalEx<K, V>> T userTxx() {
         return (T)userTx();
     }
 
@@ -700,7 +701,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Transaction with given ID.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T extends GridCacheTxEx<K, V>> T tx(GridCacheVersion txId) {
+    @Nullable public <T extends IgniteTxEx<K, V>> T tx(GridCacheVersion txId) {
         return (T)idMap.get(txId);
     }
 
@@ -709,7 +710,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Transaction with given ID.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T extends GridCacheTxEx<K, V>> T nearTx(GridCacheVersion txId) {
+    @Nullable public <T extends IgniteTxEx<K, V>> T nearTx(GridCacheVersion txId) {
         return (T)nearIdMap.get(txId);
     }
 
@@ -717,7 +718,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param txId Transaction ID.
      * @return Transaction with given ID.
      */
-    @Nullable public GridCacheTxEx<K, V> txx(GridCacheVersion txId) {
+    @Nullable public IgniteTxEx<K, V> txx(GridCacheVersion txId) {
         return idMap.get(txId);
     }
 
@@ -727,7 +728,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction to prepare.
      * @throws IgniteCheckedException If preparation failed.
      */
-    public void prepareTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+    public void prepareTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.timedOut())
                 throw new IgniteTxTimeoutException("Transaction timed out: " + this);
@@ -746,8 +747,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         // Clean up committed transactions queue.
         if (tx.pessimistic()) {
             if (tx.enforceSerializable() && txSerializableEnabled) {
-                for (Iterator<GridCacheTxEx<K, V>> it = committedQ.iterator(); it.hasNext();) {
-                    GridCacheTxEx<K, V> committedTx = it.next();
+                for (Iterator<IgniteTxEx<K, V>> it = committedQ.iterator(); it.hasNext();) {
+                    IgniteTxEx<K, V> committedTx = it.next();
 
                     assert committedTx != tx;
 
@@ -762,8 +763,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
 
         if (txSerializableEnabled && tx.optimistic() && tx.enforceSerializable()) {
-            Set<GridCacheTxKey<K>> readSet = tx.readSet();
-            Set<GridCacheTxKey<K>> writeSet = tx.writeSet();
+            Set<IgniteTxKey<K>> readSet = tx.readSet();
+            Set<IgniteTxKey<K>> writeSet = tx.writeSet();
 
             GridCacheVersion startTn = tx.startVersion();
 
@@ -776,8 +777,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             // Check that our read set does not intersect with write set
             // of all transactions that completed their write phase
             // while our transaction was in read phase.
-            for (Iterator<GridCacheTxEx<K, V>> it = committedQ.iterator(); it.hasNext();) {
-                GridCacheTxEx<K, V> committedTx = it.next();
+            for (Iterator<IgniteTxEx<K, V>> it = committedQ.iterator(); it.hasNext();) {
+                IgniteTxEx<K, V> committedTx = it.next();
 
                 assert committedTx != tx;
 
@@ -807,8 +808,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             // Check that our read and write sets do not intersect with write
             // sets of all active transactions.
-            for (Iterator<GridCacheTxEx<K, V>> iter = prepareQ.iterator(); iter.hasNext();) {
-                GridCacheTxEx<K, V> prepareTx = iter.next();
+            for (Iterator<IgniteTxEx<K, V>> iter = prepareQ.iterator(); iter.hasNext();) {
+                IgniteTxEx<K, V> prepareTx = iter.next();
 
                 if (prepareTx == tx)
                     // Skip yourself.
@@ -838,7 +839,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 }
 
                 if (tx.serializable() && !prepareTx.isRollbackOnly()) {
-                    Set<GridCacheTxKey<K>> prepareWriteSet = prepareTx.writeSet();
+                    Set<IgniteTxKey<K>> prepareWriteSet = prepareTx.writeSet();
 
                     if (GridFunc.intersects(prepareWriteSet, readSet, writeSet)) {
                         // Remove from active set.
@@ -867,7 +868,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction to check.
      * @return {@code True} if transaction can be discarded.
      */
-    private boolean isSafeToForget(GridCacheTxEx<K, V> tx) {
+    private boolean isSafeToForget(IgniteTxEx<K, V> tx) {
         Map.Entry<GridCacheVersion, AtomicInt> e = startVerCnts.firstEntry();
 
         if (e == null)
@@ -883,7 +884,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param tx Cache transaction.
      */
-    private void decrementStartVersionCount(GridCacheTxEx<K, V> tx) {
+    private void decrementStartVersionCount(IgniteTxEx<K, V> tx) {
         AtomicInt cnt = startVerCnts.get(tx.startVersion());
 
         assert cnt != null : "Failed to find start version count for transaction [startVerCnts=" + startVerCnts +
@@ -900,10 +901,10 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param tx Transaction.
      */
-    private void removeObsolete(GridCacheTxEx<K, V> tx) {
-        Collection<GridCacheTxEntry<K, V>> entries = (tx.local() && !tx.dht()) ? tx.allEntries() : tx.writeEntries();
+    private void removeObsolete(IgniteTxEx<K, V> tx) {
+        Collection<IgniteTxEntry<K, V>> entries = (tx.local() && !tx.dht()) ? tx.allEntries() : tx.writeEntries();
 
-        for (GridCacheTxEntry<K, V> entry : entries) {
+        for (IgniteTxEntry<K, V> entry : entries) {
             GridCacheEntryEx<K, V> cached = entry.cached();
 
             GridCacheContext<K, V> cacheCtx = entry.context();
@@ -973,7 +974,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param tx Tx to remove.
      */
-    public void removeCommittedTx(GridCacheTxEx<K, V> tx) {
+    public void removeCommittedTx(IgniteTxEx<K, V> tx) {
         committedVers.remove(tx.xidVersion());
     }
 
@@ -981,7 +982,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Committed transaction.
      * @return If transaction was not already present in committed set.
      */
-    public boolean addCommittedTx(GridCacheTxEx<K, V> tx) {
+    public boolean addCommittedTx(IgniteTxEx<K, V> tx) {
         return addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
     }
 
@@ -989,7 +990,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Committed transaction.
      * @return If transaction was not already present in committed set.
      */
-    public boolean addRolledbackTx(GridCacheTxEx<K, V> tx) {
+    public boolean addRolledbackTx(IgniteTxEx<K, V> tx) {
         return addRolledbackTx(tx.xidVersion());
     }
 
@@ -1042,7 +1043,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param tx Transaction.
      */
-    private void processCompletedEntries(GridCacheTxEx<K, V> tx) {
+    private void processCompletedEntries(IgniteTxEx<K, V> tx) {
         if (tx.needsCompletedVersions()) {
             GridCacheVersion min = minVersion(tx.readEntries(), tx.xidVersion(), tx);
 
@@ -1082,11 +1083,11 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param vers Collection of versions that will be populated.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private void collectPendingVersions(Iterable<GridCacheTxEntry<K, V>> entries,
+    private void collectPendingVersions(Iterable<IgniteTxEntry<K, V>> entries,
         GridCacheVersion baseVer, Set<GridCacheVersion> vers) {
 
         // The locks are not released yet, so we can safely list pending candidates versions.
-        for (GridCacheTxEntry<K, V> txEntry : entries) {
+        for (IgniteTxEntry<K, V> txEntry : entries) {
             GridCacheEntryEx<K, V> cached = txEntry.cached();
 
             try {
@@ -1120,9 +1121,9 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction.
      * @return Minimal available version.
      */
-    private GridCacheVersion minVersion(Iterable<GridCacheTxEntry<K, V>> entries, GridCacheVersion min,
-        GridCacheTxEx<K, V> tx) {
-        for (GridCacheTxEntry<K, V> txEntry : entries) {
+    private GridCacheVersion minVersion(Iterable<IgniteTxEntry<K, V>> entries, GridCacheVersion min,
+        IgniteTxEx<K, V> tx) {
+        for (IgniteTxEntry<K, V> txEntry : entries) {
             GridCacheEntryEx<K, V> cached = txEntry.cached();
 
             // We are assuming that this method is only called on commit. In that
@@ -1143,7 +1144,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param tx Transaction to commit.
      */
-    public void commitTx(GridCacheTxEx<K, V> tx) {
+    public void commitTx(IgniteTxEx<K, V> tx) {
         assert tx != null;
         assert tx.state() == COMMITTING : "Invalid transaction state for commit from tm [state=" + tx.state() +
             ", expected=COMMITTING, tx=" + tx + ']';
@@ -1172,7 +1173,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 committedVers.firstx() + ", lastVer=" + committedVers.lastx() + ", tx=" + tx.xid() + ']');
         }
 
-        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+        ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> txIdMap = transactionMap(tx);
 
         if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Must process completed entries before unlocking!
@@ -1268,7 +1269,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param tx Transaction to rollback.
      */
-    public void rollbackTx(GridCacheTxEx<K, V> tx) {
+    public void rollbackTx(IgniteTxEx<K, V> tx) {
         assert tx != null;
 
         if (log.isDebugEnabled())
@@ -1277,7 +1278,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         // 1. Record transaction version to avoid duplicates.
         addRolledbackTx(tx);
 
-        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+        ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> txIdMap = transactionMap(tx);
 
         if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Unlock write resources.
@@ -1336,13 +1337,13 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param tx Tx to uncommit.
      */
-    public void uncommitTx(GridCacheTxEx<K, V> tx) {
+    public void uncommitTx(IgniteTxEx<K, V> tx) {
         assert tx != null;
 
         if (log.isDebugEnabled())
             log.debug("Uncommiting from TM: " + tx);
 
-        ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> txIdMap = transactionMap(tx);
+        ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> txIdMap = transactionMap(tx);
 
         if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 1. Unlock write resources.
@@ -1388,18 +1389,18 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction.
      * @return Transaction map.
      */
-    private ConcurrentMap<GridCacheVersion, GridCacheTxEx<K, V>> transactionMap(GridCacheTxEx<K, V> tx) {
+    private ConcurrentMap<GridCacheVersion, IgniteTxEx<K, V>> transactionMap(IgniteTxEx<K, V> tx) {
         return (tx.near() && !tx.local()) ? nearIdMap : idMap;
     }
 
     /**
      * @param tx Transaction to notify evictions for.
      */
-    private void notifyEvitions(GridCacheTxEx<K, V> tx) {
+    private void notifyEvitions(IgniteTxEx<K, V> tx) {
         if (tx.internal() && !tx.groupLock())
             return;
 
-        for (GridCacheTxEntry<K, V> txEntry : tx.allEntries())
+        for (IgniteTxEntry<K, V> txEntry : tx.allEntries())
             txEntry.cached().context().evicts().touch(txEntry, tx.local());
     }
 
@@ -1414,7 +1415,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
         // We only care about acquired locks.
         if (owner != null) {
-            GridCacheTxAdapter<K, V> tx = tx(owner.version());
+            IgniteTxAdapter<K, V> tx = tx(owner.version());
 
             if (tx == null)
                 tx = nearTx(owner.version());
@@ -1501,7 +1502,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return {@code True} if all keys were locked.
      * @throws IgniteCheckedException If lock has been cancelled.
      */
-    private boolean lockMultiple(GridCacheTxEx<K, V> tx, Iterable<GridCacheTxEntry<K, V>> entries)
+    private boolean lockMultiple(IgniteTxEx<K, V> tx, Iterable<IgniteTxEntry<K, V>> entries)
         throws IgniteCheckedException {
         assert tx.optimistic();
 
@@ -1512,7 +1513,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         // we wait for the lock.
         long timeout = tx.timeout() == 0 ? 0 : remainingTime;
 
-        for (GridCacheTxEntry<K, V> txEntry1 : entries) {
+        for (IgniteTxEntry<K, V> txEntry1 : entries) {
             // Check if this entry was prepared before.
             if (!txEntry1.markPrepared())
                 continue;
@@ -1528,7 +1529,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                     if (!entry1.tmLock(tx, timeout)) {
                         // Unlock locks locked so far.
-                        for (GridCacheTxEntry<K, V> txEntry2 : entries) {
+                        for (IgniteTxEntry<K, V> txEntry2 : entries) {
                             if (txEntry2 == txEntry1)
                                 break;
 
@@ -1577,15 +1578,15 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param txx Transaction.
      */
     @SuppressWarnings("unchecked")
-    private void unlockGroupLocks(GridCacheTxEx txx) {
-        GridCacheTxKey grpLockKey = txx.groupLockKey();
+    private void unlockGroupLocks(IgniteTxEx txx) {
+        IgniteTxKey grpLockKey = txx.groupLockKey();
 
         assert grpLockKey != null;
 
         if (grpLockKey == null)
             return;
 
-        GridCacheTxEntry txEntry = txx.entry(grpLockKey);
+        IgniteTxEntry txEntry = txx.entry(grpLockKey);
 
         assert txEntry != null || (txx.near() && !txx.local());
 
@@ -1620,8 +1621,8 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Owning transaction.
      * @param entries Entries to unlock.
      */
-    private void unlockMultiple(GridCacheTxEx<K, V> tx, Iterable<GridCacheTxEntry<K, V>> entries) {
-        for (GridCacheTxEntry<K, V> txEntry : entries) {
+    private void unlockMultiple(IgniteTxEx<K, V> tx, Iterable<IgniteTxEntry<K, V>> entries) {
+        for (IgniteTxEntry<K, V> txEntry : entries) {
             GridCacheContext<K, V> cacheCtx = txEntry.context();
 
             while (true) {
@@ -1689,7 +1690,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param tx Committing transaction.
      */
-    public void txContext(GridCacheTxEx tx) {
+    public void txContext(IgniteTxEx tx) {
         threadCtx.set(tx);
     }
 
@@ -1697,7 +1698,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Currently committing transaction.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCacheTxEx<K, V> txContext() {
+    private IgniteTxEx<K, V> txContext() {
         return threadCtx.get();
     }
 
@@ -1710,7 +1711,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @return Transaction version from transaction context.
      */
     @Nullable public GridCacheVersion txContextVersion() {
-        GridCacheTxEx<K, V> tx = txContext();
+        IgniteTxEx<K, V> tx = txContext();
 
         return tx == null ? null : tx.xidVersion();
     }
@@ -1725,7 +1726,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @return All transactions.
      */
-    public Collection<GridCacheTxEx<K, V>> txs() {
+    public Collection<IgniteTxEx<K, V>> txs() {
         return F.concat(false, idMap.values(), nearIdMap.values());
     }
 
@@ -1753,7 +1754,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public boolean txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         Collection<GridCacheVersion> processedVers = null;
 
-        for (GridCacheTxEx<K, V> tx : txs()) {
+        for (IgniteTxEx<K, V> tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteTxState state = tx.state();
 
@@ -1815,7 +1816,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      *
      * @param tx Committed transaction to add.
      */
-    private void addPessimisticRecovery(GridCacheTxEx<K, V> tx) {
+    private void addPessimisticRecovery(IgniteTxEx<K, V> tx) {
         if (pessimisticRecoveryBuf == null)
             return;
 
@@ -1847,13 +1848,13 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param nearXidVer Near tx ID.
      * @return Near local or colocated local transaction.
      */
-    @Nullable public GridCacheTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
+    @Nullable public IgniteTxEx<K, V> localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
         // First check if we have near transaction with this ID.
-        GridCacheTxEx<K, V> tx = idMap.get(nearXidVer);
+        IgniteTxEx<K, V> tx = idMap.get(nearXidVer);
 
         if (tx == null) {
             // Check all local transactions and mark them as waiting for recovery to prevent finish race.
-            for (GridCacheTxEx<K, V> txEx : idMap.values()) {
+            for (IgniteTxEx<K, V> txEx : idMap.values()) {
                 if (nearXidVer.equals(txEx.nearXidVersion())) {
                     if (!markFinalizing || !txEx.markFinalizing(RECOVERY_WAIT))
                         tx = txEx;
@@ -1875,7 +1876,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction.
      * @param commit Whether transaction should be committed or rolled back.
      */
-    public void finishOptimisticTxOnRecovery(final GridCacheTxEx<K, V> tx, boolean commit) {
+    public void finishOptimisticTxOnRecovery(final IgniteTxEx<K, V> tx, boolean commit) {
         if (log.isDebugEnabled())
             log.debug("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
 
@@ -1887,7 +1888,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
 
         if (tx instanceof GridDistributedTxRemoteAdapter) {
-            GridCacheTxRemoteEx<K,V> rmtTx = (GridCacheTxRemoteEx<K, V>)tx;
+            IgniteTxRemoteEx<K,V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
             rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
                 Collections.<GridCacheVersion>emptyList());
@@ -1905,7 +1906,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param tx Transaction to finish.
      * @param commitInfo Commit information.
      */
-    public void finishPessimisticTxOnRecovery(final GridCacheTxEx<K, V> tx, GridCacheCommittedTxInfo<K, V> commitInfo) {
+    public void finishPessimisticTxOnRecovery(final IgniteTxEx<K, V> tx, GridCacheCommittedTxInfo<K, V> commitInfo) {
         if (!tx.markFinalizing(RECOVERY_FINISH)) {
             if (log.isDebugEnabled())
                 log.debug("Will not try to finish pessimistic transaction (could not mark as finalizing): " + tx);
@@ -1914,7 +1915,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
 
         if (tx instanceof GridDistributedTxRemoteAdapter) {
-            GridCacheTxRemoteEx<K,V> rmtTx = (GridCacheTxRemoteEx<K, V>)tx;
+            IgniteTxRemoteEx<K,V> rmtTx = (IgniteTxRemoteEx<K, V>)tx;
 
             rmtTx.doneRemote(tx.xidVersion(), Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
                 Collections.<GridCacheVersion>emptyList());
@@ -1924,13 +1925,13 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             tx.prepare();
 
             if (commitInfo != null) {
-                for (GridCacheTxEntry<K, V> entry : commitInfo.recoveryWrites()) {
-                    GridCacheTxEntry<K, V> write = tx.writeMap().get(entry.txKey());
+                for (IgniteTxEntry<K, V> entry : commitInfo.recoveryWrites()) {
+                    IgniteTxEntry<K, V> write = tx.writeMap().get(entry.txKey());
 
                     if (write != null) {
                         GridCacheEntryEx<K, V> cached = write.cached();
 
-                        GridCacheTxEntry<K, V> recovered = entry.cleanCopy(write.context());
+                        IgniteTxEntry<K, V> recovered = entry.cleanCopy(write.context());
 
                         if (cached == null || cached.detached())
                             cached = write.context().cache().entryEx(entry.key(), tx.topologyVersion());
@@ -1942,10 +1943,10 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                         continue;
                     }
 
-                    ((GridCacheTxAdapter<K, V>)tx).recoveryWrites(commitInfo.recoveryWrites());
+                    ((IgniteTxAdapter<K, V>)tx).recoveryWrites(commitInfo.recoveryWrites());
 
                     // If write was not found, check read.
-                    GridCacheTxEntry<K, V> read = tx.readMap().remove(entry.txKey());
+                    IgniteTxEntry<K, V> read = tx.readMap().remove(entry.txKey());
 
                     if (read != null)
                         tx.writeMap().put(entry.txKey(), entry);
@@ -1969,7 +1970,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     public IgniteFuture<GridCacheCommittedTxInfo<K, V>> checkPessimisticTxCommitted(GridCachePessimisticCheckCommittedTxRequest req) {
         // First check if we have near transaction with this ID.
-        GridCacheTxEx<K, V> tx = localTxForRecovery(req.nearXidVersion(), !req.nearOnlyCheck());
+        IgniteTxEx<K, V> tx = localTxForRecovery(req.nearXidVersion(), !req.nearOnlyCheck());
 
         // Either we found near transaction or one of transactions is being committed by user.
         // Wait for it and send reply.
@@ -1979,7 +1980,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (log.isDebugEnabled())
                 log.debug("Found active near transaction, will wait for completion [req=" + req + ", tx=" + tx + ']');
 
-            final GridCacheTxEx<K, V> tx0 = tx;
+            final IgniteTxEx<K, V> tx0 = tx;
 
             return tx.finishFuture().chain(new C1<IgniteFuture<IgniteTx>, GridCacheCommittedTxInfo<K, V>>() {
                 @Override public GridCacheCommittedTxInfo<K, V> apply(IgniteFuture<IgniteTx> txFut) {
@@ -2035,7 +2036,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (GridCacheTxEx<K, V> tx : txs()) {
+                for (IgniteTxEx<K, V> tx : txs()) {
                     if ((tx.near() && !tx.local()) || (tx.storeUsed() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, false, RECOVERY_FINISH);
@@ -2082,7 +2083,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
          *
          * @param tx Transaction.
          */
-        private void commitIfPrepared(GridCacheTxEx<K, V> tx) {
+        private void commitIfPrepared(IgniteTxEx<K, V> tx) {
             assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
             assert !F.isEmpty(tx.transactionNodes());
             assert tx.nearXidVersion() != null;
@@ -2104,7 +2105,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
          *
          * @param tx Transaction.
          */
-        private void commitIfRemotelyCommitted(GridCacheTxEx<K, V> tx) {
+        private void commitIfRemotelyCommitted(IgniteTxEx<K, V> tx) {
             assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
 
             GridCachePessimisticCheckCommittedTxFuture<K, V> fut = new GridCachePessimisticCheckCommittedTxFuture<>(
@@ -2183,12 +2184,12 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         private static final long serialVersionUID = 0L;
 
         /** Transaction. */
-        private final GridCacheTxEx<K, V> tx;
+        private final IgniteTxEx<K, V> tx;
 
         /**
          * @param tx Transaction.
          */
-        private CommitListener(GridCacheTxEx<K, V> tx) {
+        private CommitListener(IgniteTxEx<K, V> tx) {
             this.tx = tx;
         }
 

@@ -22,6 +22,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.lang.*;
@@ -204,7 +205,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                 for (GridKernal g : grids) {
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
-                    GridCacheTxManager txMgr = cache.isNear() ?
+                    IgniteTxManager txMgr = cache.isNear() ?
                         ((GridNearCacheAdapter)cache).dht().context().tm() :
                         cache.context().tm();
 
@@ -335,7 +336,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                 for (GridKernal g : grids) {
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
-                    GridCacheTxManager txMgr = cache.isNear() ?
+                    IgniteTxManager txMgr = cache.isNear() ?
                         ((GridNearCacheAdapter)cache).dht().context().tm() :
                         cache.context().tm();
 

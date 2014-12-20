@@ -16,7 +16,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
@@ -141,7 +141,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkTransactions() {
         for (int i = 0; i < 3; i++) {
-            GridCacheTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
+            IgniteTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
 
             assertEquals("Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']',
                 0, tm.idMapSize());

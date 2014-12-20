@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.dr;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.jetbrains.annotations.*;
 
@@ -64,7 +65,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      */
     public GridDrResolveResult<V> resolveTx(
         GridCacheEntryEx<K, V> e,
-        GridCacheTxEntry<K, V> txEntry,
+        IgniteTxEntry<K, V> txEntry,
         GridCacheVersion newVer,
         GridCacheOperation op,
         V newVal,

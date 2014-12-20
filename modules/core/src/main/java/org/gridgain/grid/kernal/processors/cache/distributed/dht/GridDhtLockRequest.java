@@ -15,6 +15,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
@@ -115,7 +116,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         int dhtCnt,
         int nearCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
@@ -215,7 +216,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     public void addDhtKey(
         K key,
         byte[] keyBytes,
-        GridCacheTxEntry<K, V> writeEntry,
+        IgniteTxEntry<K, V> writeEntry,
         @Nullable GridCacheVersion drVer,
         boolean invalidateEntry,
         GridCacheContext<K, V> ctx

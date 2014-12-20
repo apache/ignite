@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -26,7 +27,7 @@ import static org.apache.ignite.transactions.IgniteTxState.*;
 /**
  * Local cache transaction.
  */
-class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
+class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,7 +66,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
+    @Override public IgniteFuture<IgniteTxEx<K, V>> future() {
         return fut.get();
     }
 
@@ -103,11 +104,11 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
         try {
             prepare();
 
-            return new GridFinishedFuture<GridCacheTxEx<K, V>>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTxEx<K, V>>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

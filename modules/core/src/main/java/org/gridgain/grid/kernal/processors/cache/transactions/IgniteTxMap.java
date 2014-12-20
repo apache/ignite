@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.*;
@@ -20,15 +20,15 @@ import java.util.*;
 /**
  * Grid cache transaction read or write set.
  */
-public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> implements Externalizable {
+public class IgniteTxMap<K, V> extends AbstractMap<IgniteTxKey<K>, IgniteTxEntry<K, V>> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Base transaction map. */
-    private Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap;
+    private Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> txMap;
 
     /** Entry set. */
-    private Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> entrySet;
+    private Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> entrySet;
 
     /** Cached size. */
     private int size = -1;
@@ -40,12 +40,12 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
     private boolean sealed;
 
     /** Filter. */
-    private IgnitePredicate<GridCacheTxEntry<K, V>> filter;
+    private IgnitePredicate<IgniteTxEntry<K, V>> filter;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheTxMap() {
+    public IgniteTxMap() {
         // No-op.
     }
 
@@ -53,8 +53,8 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
      * @param txMap Transaction map.
      * @param filter Filter.
      */
-    public GridCacheTxMap(Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap,
-        IgnitePredicate<GridCacheTxEntry<K, V>> filter) {
+    public IgniteTxMap(Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> txMap,
+        IgnitePredicate<IgniteTxEntry<K, V>> filter) {
         this.txMap = txMap;
         this.filter = filter;
     }
@@ -64,7 +64,7 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
      *
      * @return This map for chaining.
      */
-    GridCacheTxMap<K, V> seal() {
+    IgniteTxMap<K, V> seal() {
         sealed = true;
 
         return this;
@@ -78,16 +78,16 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> entrySet() {
+    @Override public Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> entrySet() {
         if (entrySet == null) {
-            entrySet = new GridSerializableSet<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>>() {
-                private Set<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> set = txMap.entrySet();
+            entrySet = new GridSerializableSet<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>>() {
+                private Set<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> set = txMap.entrySet();
 
-                @Override public Iterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> iterator() {
-                    return new GridSerializableIterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>>() {
-                        private Iterator<Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>> it = set.iterator();
+                @Override public Iterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> iterator() {
+                    return new GridSerializableIterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>>() {
+                        private Iterator<Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>>> it = set.iterator();
 
-                        private Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> cur;
+                        private Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> cur;
 
                         // Constructor.
                         {
@@ -98,11 +98,11 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
                             return cur != null;
                         }
 
-                        @Override public Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> next() {
+                        @Override public Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> next() {
                             if (cur == null)
                                 throw new NoSuchElementException();
 
-                            Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> e = cur;
+                            Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> e = cur;
 
                             advance();
 
@@ -117,7 +117,7 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
                             cur = null;
 
                             while (cur == null && it.hasNext()) {
-                                Entry<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> e = it.next();
+                                Entry<IgniteTxKey<K>, IgniteTxEntry<K, V>> e = it.next();
 
                                 if (filter.apply(e.getValue()))
                                     cur = e;
@@ -156,14 +156,14 @@ public class GridCacheTxMap<K, V> extends AbstractMap<GridCacheTxKey<K>, GridCac
 
     /** {@inheritDoc} */
     @Nullable
-    @Override public GridCacheTxEntry<K, V> get(Object key) {
-        GridCacheTxEntry<K, V> e = txMap.get(key);
+    @Override public IgniteTxEntry<K, V> get(Object key) {
+        IgniteTxEntry<K, V> e = txMap.get(key);
 
         return e == null ? null : filter.apply(e) ? e : null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxEntry<K, V> remove(Object key) {
+    @Override public IgniteTxEntry<K, V> remove(Object key) {
         throw new UnsupportedOperationException();
     }
 

@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -67,7 +68,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** Write entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridCacheTxEntry<K, V>> writeEntries;
+    private List<IgniteTxEntry<K, V>> writeEntries;
 
     /** Serialized write entries. */
     private byte[] writeEntriesBytes;
@@ -85,7 +86,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** Group lock key if this is a group-lock transaction. */
     @GridDirectTransient
-    private GridCacheTxKey grpLockKey;
+    private IgniteTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -135,7 +136,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock
     ) {
         super(lockVer, keyCnt);
@@ -245,7 +246,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Write entries list.
      */
-    public List<GridCacheTxEntry<K, V>> writeEntries() {
+    public List<IgniteTxEntry<K, V>> writeEntries() {
         return writeEntries;
     }
 
@@ -271,7 +272,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     public void addKeyBytes(
         K key,
         @Nullable byte[] keyBytes,
-        @Nullable GridCacheTxEntry<K, V> writeEntry,
+        @Nullable IgniteTxEntry<K, V> writeEntry,
         boolean retVal,
         @Nullable Collection<GridCacheMvccCandidate<K>> cands,
         @Nullable GridCacheVersion drVer,
@@ -328,7 +329,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Group lock key.
      */
-    @Nullable public GridCacheTxKey groupLockKey() {
+    @Nullable public IgniteTxKey groupLockKey() {
         return grpLockKey;
     }
 

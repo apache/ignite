@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -18,7 +18,7 @@ import java.io.*;
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class GridCacheTxKey<K> implements Externalizable {
+public class IgniteTxKey<K> implements Externalizable {
     /** Key. */
     @GridToStringInclude
     private K key;
@@ -29,7 +29,7 @@ public class GridCacheTxKey<K> implements Externalizable {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheTxKey() {
+    public IgniteTxKey() {
         // No-op.
     }
 
@@ -37,7 +37,7 @@ public class GridCacheTxKey<K> implements Externalizable {
      * @param key User key.
      * @param cacheId Cache ID.
      */
-    public GridCacheTxKey(K key, int cacheId) {
+    public IgniteTxKey(K key, int cacheId) {
         this.key = key;
         this.cacheId = cacheId;
     }
@@ -61,10 +61,10 @@ public class GridCacheTxKey<K> implements Externalizable {
         if (this == o)
             return true;
 
-        if (!(o instanceof GridCacheTxKey))
+        if (!(o instanceof IgniteTxKey))
             return false;
 
-        GridCacheTxKey that = (GridCacheTxKey)o;
+        IgniteTxKey that = (IgniteTxKey)o;
 
         return cacheId == that.cacheId && key.equals(that.key);
     }
@@ -92,6 +92,6 @@ public class GridCacheTxKey<K> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheTxKey.class, this);
+        return S.toString(IgniteTxKey.class, this);
     }
 }

@@ -15,6 +15,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -40,7 +41,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** Near writes. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheTxEntry<K, V>> nearWrites;
+    private Collection<IgniteTxEntry<K, V>> nearWrites;
 
     /** Serialized near writes. */
     @GridDirectCollection(byte[].class)
@@ -125,11 +126,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers,
         int txSize,
-        Collection<GridCacheTxEntry<K, V>> writes,
-        Collection<GridCacheTxEntry<K, V>> nearWrites,
-        Collection<GridCacheTxEntry<K, V>> recoverWrites,
+        Collection<IgniteTxEntry<K, V>> writes,
+        Collection<IgniteTxEntry<K, V>> nearWrites,
+        Collection<IgniteTxEntry<K, V>> recoverWrites,
         boolean onePhaseCommit,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -160,8 +161,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /**
      * @return Near writes.
      */
-    public Collection<GridCacheTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : nearWrites;
+    public Collection<IgniteTxEntry<K, V>> nearWrites() {
+        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
     }
 
     /**
@@ -254,7 +255,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             nearWritesBytes = new ArrayList<>(nearWrites.size());
 
-            for (GridCacheTxEntry<K, V> e : nearWrites)
+            for (IgniteTxEntry<K, V> e : nearWrites)
                 nearWritesBytes.add(ctx.marshaller().marshal(e));
         }
     }
@@ -267,7 +268,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             nearWrites = new ArrayList<>(nearWritesBytes.size());
 
             for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
+                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
 
             unmarshalTx(nearWrites, true, ctx, ldr);
         }

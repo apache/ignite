@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -796,7 +797,7 @@ public final class GridCacheMvcc<K> {
                 // Only Near and DHT remote candidates should be released.
                 assert !rmt.nearLocal();
 
-                GridCacheTxEx tx = cctx.tm().tx(rmt.version());
+                IgniteTxEx tx = cctx.tm().tx(rmt.version());
 
                 if (tx != null) {
                     tx.systemInvalidate(true);

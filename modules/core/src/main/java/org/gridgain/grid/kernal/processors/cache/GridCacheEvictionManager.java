@@ -20,6 +20,7 @@ import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -675,7 +676,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     /**
      * @param txEntry Transactional entry.
      */
-    public void touch(GridCacheTxEntry<K, V> txEntry, boolean loc) {
+    public void touch(IgniteTxEntry<K, V> txEntry, boolean loc) {
         if (!plcEnabled && memoryMode != OFFHEAP_TIERED)
             return;
 

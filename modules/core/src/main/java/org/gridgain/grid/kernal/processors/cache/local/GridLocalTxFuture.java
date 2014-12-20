@@ -14,6 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -27,8 +28,8 @@ import static org.apache.ignite.transactions.IgniteTxState.*;
 /**
  * Replicated cache transaction future.
  */
-final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
+final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteTxEx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -177,7 +178,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     void checkLocks() {
-        for (GridCacheTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
                     GridCacheEntryEx<K, V> entry = txEntry.cached();
@@ -226,7 +227,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback [owner=" + owner + ", entry=" + entry + ']');
 
-        for (GridCacheTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
                     GridCacheEntryEx<K,V> cached = txEntry.cached();

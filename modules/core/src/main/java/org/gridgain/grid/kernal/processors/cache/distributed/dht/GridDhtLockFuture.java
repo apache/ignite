@@ -16,6 +16,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -1177,7 +1178,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param entries Entries to check.
          */
         @SuppressWarnings({"ForLoopReplaceableByForEach"})
-        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<GridCacheTxKey<K>> keys, UUID nodeId, long msgId,
+        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<IgniteTxKey<K>> keys, UUID nodeId, long msgId,
             @Nullable List<GridDhtCacheEntry<K, V>> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
                 return;

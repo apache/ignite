@@ -18,6 +18,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -105,7 +106,7 @@ public class GridCacheUtils {
     /** Read filter. */
     private static final IgnitePredicate READ_FILTER = new P1<Object>() {
         @Override public boolean apply(Object e) {
-            return ((GridCacheTxEntry)e).op() == READ;
+            return ((IgniteTxEntry)e).op() == READ;
         }
 
         @Override public String toString() {
@@ -116,7 +117,7 @@ public class GridCacheUtils {
     /** Write filter. */
     private static final IgnitePredicate WRITE_FILTER = new P1<Object>() {
         @Override public boolean apply(Object e) {
-            return ((GridCacheTxEntry)e).op() != READ;
+            return ((IgniteTxEntry)e).op() != READ;
         }
 
         @Override public String toString() {
@@ -125,15 +126,15 @@ public class GridCacheUtils {
     };
 
     /** Transfer required predicate. */
-    private static final IgnitePredicate TRANSFER_REQUIRED_PREDICATE = new P1<GridCacheTxEntry>() {
-        @Override public boolean apply(GridCacheTxEntry e) {
+    private static final IgnitePredicate TRANSFER_REQUIRED_PREDICATE = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
             return e.transferRequired();
         }
     };
 
     /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<GridCacheTxEntry, Object>() {
-        @Override public Object apply(GridCacheTxEntry e) {
+    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
+        @Override public Object apply(IgniteTxEntry e) {
             return e.key();
         }
 
@@ -143,9 +144,9 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<GridCacheTxEntry>, Collection<Object>>() {
+    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
         @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<GridCacheTxEntry> e) {
+        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
             return F.viewReadOnly(e, tx2key);
         }
 
@@ -166,8 +167,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<GridCacheTxEx, GridCacheVersion>() {
-        @Override public GridCacheVersion apply(GridCacheTxEx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteTxEx, GridCacheVersion>() {
+        @Override public GridCacheVersion apply(IgniteTxEx tx) {
             return tx.xidVersion();
         }
 
@@ -177,15 +178,15 @@ public class GridCacheUtils {
     };
 
     /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<GridCacheTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(GridCacheTxEntry e) {
+    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
+        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
             return e.cached();
         }
     };
 
     /** Transaction entry to key bytes. */
-    private static final IgniteClosure tx2keyBytes = new C1<GridCacheTxEntry, byte[]>() {
-        @Nullable @Override public byte[] apply(GridCacheTxEntry e) {
+    private static final IgniteClosure tx2keyBytes = new C1<IgniteTxEntry, byte[]>() {
+        @Nullable @Override public byte[] apply(IgniteTxEntry e) {
             return e.keyBytes();
         }
 
@@ -757,40 +758,40 @@ public class GridCacheUtils {
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, K> tx2key() {
-        return (IgniteClosure<GridCacheTxEntry<K, V>, K>)tx2key;
+    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, K> tx2key() {
+        return (IgniteClosure<IgniteTxEntry<K, V>, K>)tx2key;
     }
 
     /**
      * @return Closure that converts tx entry collection to key collection.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>> txCol2Key() {
-        return (IgniteClosure<Collection<GridCacheTxEntry<K, V>>, Collection<K>>)txCol2key;
+    public static <K, V> IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>> txCol2Key() {
+        return (IgniteClosure<Collection<IgniteTxEntry<K, V>>, Collection<K>>)txCol2key;
     }
 
     /**
      * @return Closure that converts tx entry to key.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, byte[]> tx2keyBytes() {
-        return (IgniteClosure<GridCacheTxEntry<K, V>, byte[]>)tx2keyBytes;
+    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, byte[]> tx2keyBytes() {
+        return (IgniteClosure<IgniteTxEntry<K, V>, byte[]>)tx2keyBytes;
     }
 
     /**
      * @return Converts transaction entry to cache entry.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
-        return (IgniteClosure<GridCacheTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
+    public static <K, V> IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>> tx2entry() {
+        return (IgniteClosure<IgniteTxEntry<K, V>, GridCacheEntryEx<K, V>>)tx2entry;
     }
 
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<GridCacheTxEx<K, V>, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion>)tx2xidVer;
     }
 
     /**
@@ -820,7 +821,7 @@ public class GridCacheUtils {
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> reads() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> reads() {
         return READ_FILTER;
     }
 
@@ -828,7 +829,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> writes() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> writes() {
         return WRITE_FILTER;
     }
 
@@ -836,7 +837,7 @@ public class GridCacheUtils {
      * @return Transfer required predicate.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> IgnitePredicate<GridCacheTxEntry<K, V>> transferRequired() {
+    public static <K, V> IgnitePredicate<IgniteTxEntry<K, V>> transferRequired() {
         return TRANSFER_REQUIRED_PREDICATE;
     }
 
@@ -1628,7 +1629,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 

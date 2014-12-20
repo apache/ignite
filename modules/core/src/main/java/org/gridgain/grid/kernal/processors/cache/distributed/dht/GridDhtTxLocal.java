@@ -16,6 +16,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -103,7 +104,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
@@ -229,7 +230,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
+    @Override public IgniteFuture<IgniteTxEx<K, V>> future() {
         return prepFut.get();
     }
 
@@ -242,7 +243,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @Override @Nullable protected IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry, long topVer) {
+        IgniteTxEntry<K, V> entry, long topVer) {
         // Don't add local node as reader.
         if (!cctx.localNodeId().equals(nearNodeId)) {
             GridCacheContext<K, V> cacheCtx = cached.context();
@@ -264,18 +265,18 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateExplicitVersion(GridCacheTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
+    @Override protected void updateExplicitVersion(IgniteTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
         throws GridCacheEntryRemovedException {
         // DHT local transactions don't have explicit locks.
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
         if (optimistic()) {
             assert isSystemInvalidate();
 
-            return prepareAsync(null, null, Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), 0, nearMiniId, null, true,
+            return prepareAsync(null, null, Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), 0, nearMiniId, null, true,
                 null);
         }
 
@@ -285,7 +286,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         if (fut == null) {
             // Future must be created before any exception can be thrown.
             if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture<>(cctx, this, nearMiniId,
-                Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), true, null)))
+                Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), true, null)))
                 return prepFut.get();
         }
         else
@@ -343,8 +344,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync(@Nullable Iterable<GridCacheTxEntry<K, V>> reads,
-        @Nullable Iterable<GridCacheTxEntry<K, V>> writes, Map<GridCacheTxKey<K>, GridCacheVersion> verMap, long msgId,
+    public IgniteFuture<IgniteTxEx<K, V>> prepareAsync(@Nullable Iterable<IgniteTxEntry<K, V>> reads,
+        @Nullable Iterable<IgniteTxEntry<K, V>> writes, Map<IgniteTxKey<K>, GridCacheVersion> verMap, long msgId,
         IgniteUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
         assert optimistic();
 
@@ -395,11 +396,11 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
         try {
             if (reads != null)
-                for (GridCacheTxEntry<K, V> e : reads)
+                for (IgniteTxEntry<K, V> e : reads)
                     addEntry(msgId, e);
 
             if (writes != null)
-                for (GridCacheTxEntry<K, V> e : writes)
+                for (IgniteTxEntry<K, V> e : writes)
                     addEntry(msgId, e);
 
             userPrepare();
@@ -476,8 +477,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                    @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+                prep.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                    @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
 
@@ -564,8 +565,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }

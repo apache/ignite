@@ -14,7 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
@@ -80,7 +80,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((GridCacheTxEx)tx, cctx);
+                        rsrc = new GridCacheXAResource((IgniteTxEx)tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

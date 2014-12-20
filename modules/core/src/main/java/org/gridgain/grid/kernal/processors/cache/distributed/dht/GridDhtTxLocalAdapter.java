@@ -16,6 +16,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -34,7 +35,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 /**
  * Replicated user transaction.
  */
-public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapter<K, V> {
+public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,7 +91,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
@@ -128,7 +129,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @return {@code True} if reader was added as a result of this call.
      */
     @Nullable protected abstract IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry, long topVer);
+        IgniteTxEntry<K, V> entry, long topVer);
 
     /**
      * @param commit Commit flag.
@@ -184,7 +185,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> dhtEntryMap = null;
             Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> nearEntryMap = null;
 
-            for (GridCacheTxEntry<K, V> e : allEntries()) {
+            for (IgniteTxEntry<K, V> e : allEntries()) {
                 assert e.cached() != null;
 
                 GridCacheContext<K, V> cacheCtx = e.cached().context();
@@ -321,7 +322,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             if (log.isDebugEnabled())
                 log.debug("Removing mapping for entry [nodeId=" + nodeId + ", entry=" + entry + ']');
 
-            GridCacheTxEntry<K, V> txEntry = txMap.get(entry.txKey());
+            IgniteTxEntry<K, V> txEntry = txMap.get(entry.txKey());
 
             if (txEntry == null)
                 return false;
@@ -349,7 +350,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             ClusterNode n = mapping.getKey();
 
             for (GridDhtCacheEntry<K, V> entry : mapping.getValue()) {
-                GridCacheTxEntry<K, V> txEntry = txMap.get(entry.txKey());
+                IgniteTxEntry<K, V> txEntry = txMap.get(entry.txKey());
 
                 if (txEntry != null) {
                     GridDistributedTxMapping<K, V> m = map.get(n.id());
@@ -376,7 +377,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
      * @return Future for active transactions for the time when reader was added.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, GridCacheTxEntry<K, V> e) throws IgniteCheckedException {
+    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, IgniteTxEntry<K, V> e) throws IgniteCheckedException {
         init();
 
         IgniteTxState state = state();
@@ -397,7 +398,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
         GridDhtCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
-            GridCacheTxEntry<K, V> entry = txMap.get(e.txKey());
+            IgniteTxEntry<K, V> entry = txMap.get(e.txKey());
 
             if (entry != null) {
                 entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
@@ -468,7 +469,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     IgniteFuture<GridCacheReturn<V>> lockAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<GridCacheEntryEx<K, V>> entries,
-        List<GridCacheTxEntry<K, V>> writeEntries,
+        List<IgniteTxEntry<K, V>> writeEntries,
         boolean onePhaseCommit,
         GridCacheVersion[] drVers,
         long msgId,
@@ -507,7 +508,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             for (GridCacheEntryEx<K, V> entry : entries) {
                 K key = entry.key();
 
-                GridCacheTxEntry<K, V> txEntry = entry(entry.txKey());
+                IgniteTxEntry<K, V> txEntry = entry(entry.txKey());
 
                 // First time access.
                 if (txEntry == null) {
@@ -517,7 +518,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
                     cached.unswap(!read, read);
 
-                    GridCacheTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
+                    IgniteTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
 
                     txEntry = addEntry(NOOP, null, null, cached, -1, CU.<K, V>empty(), false, -1L, -1L,
                         drVers != null ? drVers[drVerIdx++] : null);
@@ -613,7 +614,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<GridCacheTxKey<K>> keys) {
+    @Override protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
         assert groupLock();
 
         for (GridDistributedTxMapping<K, V> mapping : dhtMap.values())
@@ -626,8 +627,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
         Map<ClusterNode, List<GridDhtCacheEntry<K, V>>> locNearMap = null;
 
-        for (GridCacheTxKey<K> key : keys) {
-            GridCacheTxEntry<K, V> txEntry = entry(key);
+        for (IgniteTxKey<K> key : keys) {
+            IgniteTxEntry<K, V> txEntry = entry(key);
 
             if (!txEntry.groupLockEntry() || txEntry.context().isNear())
                 continue;

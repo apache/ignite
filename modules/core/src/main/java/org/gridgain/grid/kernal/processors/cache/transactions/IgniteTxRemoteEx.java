@@ -7,14 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
+
+import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.util.*;
 
 /**
  * Local transaction API.
  */
-public interface GridCacheTxRemoteEx<K, V> extends GridCacheTxEx<K, V> {
+public interface IgniteTxRemoteEx<K, V> extends IgniteTxEx<K, V> {
     /**
      * @return Remote thread ID.
      */
@@ -33,5 +35,5 @@ public interface GridCacheTxRemoteEx<K, V> extends GridCacheTxEx<K, V> {
      * @param e Sets write value for pessimistic transactions.
      * @return {@code True} if entry was found.
      */
-    public boolean setWriteValue(GridCacheTxEntry<K, V> e);
+    public boolean setWriteValue(IgniteTxEntry<K, V> e);
 }

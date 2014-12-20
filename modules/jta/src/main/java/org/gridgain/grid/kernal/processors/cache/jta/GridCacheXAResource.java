@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.jta;
 import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.transaction.xa.*;
@@ -33,7 +34,7 @@ public final class GridCacheXAResource implements XAResource {
     private GridCacheContext cctx;
 
     /** Cache transaction. */
-    private GridCacheTxEx cacheTx;
+    private IgniteTxEx cacheTx;
 
     /** */
     private IgniteLogger log;
@@ -45,7 +46,7 @@ public final class GridCacheXAResource implements XAResource {
      * @param cacheTx Cache jta.
      * @param cctx Cache context.
      */
-    public GridCacheXAResource(GridCacheTxEx cacheTx, GridCacheContext cctx) {
+    public GridCacheXAResource(IgniteTxEx cacheTx, GridCacheContext cctx) {
         assert cacheTx != null;
         assert cctx != null;
 

@@ -20,6 +20,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -133,7 +134,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -152,7 +153,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -179,7 +180,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
@@ -199,7 +200,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
                     // Unproxy.
                     if (prepare)
-                        U.<GridCacheTxEx>field(tx, "tx").prepare();
+                        U.<IgniteTxEx>field(tx, "tx").prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());

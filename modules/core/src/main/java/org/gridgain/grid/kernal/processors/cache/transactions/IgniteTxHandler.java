@@ -7,12 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -28,20 +29,20 @@ import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
+import static org.gridgain.grid.kernal.processors.cache.transactions.IgniteTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
  * Isolated logic to process cache messages.
  */
-public class GridCacheTxHandler<K, V> {
+public class IgniteTxHandler<K, V> {
     /** Logger. */
     private IgniteLogger log;
 
     /** Shared cache context. */
     private GridCacheSharedContext<K, V> ctx;
 
-    public IgniteFuture<GridCacheTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+    public IgniteFuture<IgniteTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         return prepareTx(nearNodeId, null, req);
     }
@@ -49,10 +50,10 @@ public class GridCacheTxHandler<K, V> {
     /**
      * @param ctx Shared cache context.
      */
-    public GridCacheTxHandler(GridCacheSharedContext<K, V> ctx) {
+    public IgniteTxHandler(GridCacheSharedContext<K, V> ctx) {
         this.ctx = ctx;
 
-        log = ctx.logger(GridCacheTxHandler.class);
+        log = ctx.logger(IgniteTxHandler.class);
 
         ctx.io().addHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage<K, V>>() {
             @Override public void apply(UUID nodeId, GridCacheMessage<K, V> msg) {
@@ -137,7 +138,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public IgniteFuture<GridCacheTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    public IgniteFuture<IgniteTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
         assert nearNodeId != null;
         assert req != null;
@@ -163,7 +164,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteFuture<GridCacheTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
+    private IgniteFuture<IgniteTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
 
         IgniteFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
@@ -171,12 +172,12 @@ public class GridCacheTxHandler<K, V> {
         return new GridEmbeddedFuture<>(
             ctx.kernalContext(),
             fut,
-            new C2<Object, Exception, IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public IgniteFuture<GridCacheTxEx<K, V>> apply(Object o, Exception ex) {
+            new C2<Object, Exception, IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public IgniteFuture<IgniteTxEx<K, V>> apply(Object o, Exception ex) {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    IgniteFuture<GridCacheTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
+                    IgniteFuture<IgniteTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
                         req.transactionNodes(), req.last(), req.lastBackups());
 
                     if (locTx.isRollbackOnly())
@@ -185,8 +186,8 @@ public class GridCacheTxHandler<K, V> {
                     return fut;
                 }
             },
-            new C2<GridCacheTxEx<K, V>, Exception, GridCacheTxEx<K, V>>() {
-                @Nullable @Override public GridCacheTxEx<K, V> apply(GridCacheTxEx<K, V> tx, Exception e) {
+            new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
+                @Nullable @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> tx, Exception e) {
                     if (e != null) {
                         // tx can be null of exception occurred.
                         if (tx != null)
@@ -209,7 +210,7 @@ public class GridCacheTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteFuture<GridCacheTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
+    private IgniteFuture<IgniteTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
@@ -221,7 +222,7 @@ public class GridCacheTxHandler<K, V> {
         }
 
         try {
-            for (GridCacheTxEntry<K, V> e : F.concat(false, req.reads(), req.writes()))
+            for (IgniteTxEntry<K, V> e : F.concat(false, req.reads(), req.writes()))
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
@@ -273,7 +274,7 @@ public class GridCacheTxHandler<K, V> {
         }
 
         if (tx != null) {
-            IgniteFuture<GridCacheTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
+            IgniteFuture<IgniteTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
                 req.dhtVersions(), req.messageId(), req.miniId(), req.transactionNodes(), req.last(),
                 req.lastBackups());
 
@@ -288,8 +289,8 @@ public class GridCacheTxHandler<K, V> {
 
             final GridDhtTxLocal<K, V> tx0 = tx;
 
-            fut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> txFut) {
+            fut.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> txFut) {
                     try {
                         txFut.get();
                     }
@@ -305,7 +306,7 @@ public class GridCacheTxHandler<K, V> {
             return fut;
         }
         else
-            return new GridFinishedFuture<>(ctx.kernalContext(), (GridCacheTxEx<K, V>)null);
+            return new GridFinishedFuture<>(ctx.kernalContext(), (IgniteTxEx<K, V>)null);
     }
 
     /**
@@ -314,7 +315,7 @@ public class GridCacheTxHandler<K, V> {
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         GridNearTxPrepareFuture<K, V> fut = (GridNearTxPrepareFuture<K, V>)ctx.mvcc()
-            .<GridCacheTxEx<K, V>>future(res.version(), res.futureId());
+            .<IgniteTxEx<K, V>>future(res.version(), res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -352,7 +353,7 @@ public class GridCacheTxHandler<K, V> {
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
         GridDhtTxPrepareFuture<K, V> fut = (GridDhtTxPrepareFuture<K, V>)ctx.mvcc().
-            <GridCacheTxEx<K, V>>future(res.version(), res.futureId());
+            <IgniteTxEx<K, V>>future(res.version(), res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -539,13 +540,13 @@ public class GridCacheTxHandler<K, V> {
                 tx.nearFinishMiniId(req.miniId());
                 tx.recoveryWrites(req.recoveryWrites());
 
-                Collection<GridCacheTxEntry<K, V>> writeEntries = req.writes();
+                Collection<IgniteTxEntry<K, V>> writeEntries = req.writes();
 
                 if (!F.isEmpty(writeEntries)) {
                     // In OPTIMISTIC mode, we get the values at PREPARE stage.
                     assert tx.concurrency() == PESSIMISTIC;
 
-                    for (GridCacheTxEntry<K, V> entry : writeEntries)
+                    for (IgniteTxEntry<K, V> entry : writeEntries)
                         tx.addEntry(req.messageId(), entry);
                 }
 
@@ -783,9 +784,9 @@ public class GridCacheTxHandler<K, V> {
      */
     protected void finish(
         UUID nodeId,
-        GridCacheTxRemoteEx<K, V> tx,
+        IgniteTxRemoteEx<K, V> tx,
         GridDhtTxFinishRequest<K, V> req,
-        Collection<GridCacheTxEntry<K, V>> writes) {
+        Collection<IgniteTxEntry<K, V>> writes) {
         // We don't allow explicit locks for transactions and
         // therefore immediately return if transaction is null.
         // However, we may decide to relax this restriction in
@@ -817,7 +818,7 @@ public class GridCacheTxHandler<K, V> {
                         // In OPTIMISTIC mode, we get the values at PREPARE stage.
                         assert tx.concurrency() == PESSIMISTIC;
 
-                        for (GridCacheTxEntry<K, V> entry : writes) {
+                        for (IgniteTxEntry<K, V> entry : writes) {
                             if (log.isDebugEnabled())
                                 log.debug("Unmarshalled transaction entry from pessimistic transaction [key=" +
                                     entry.key() + ", value=" + entry.value() + ", tx=" + tx + ']');
@@ -936,7 +937,7 @@ public class GridCacheTxHandler<K, V> {
             if (!tx.isSystemInvalidate() && !F.isEmpty(req.writes())) {
                 int idx = 0;
 
-                for (GridCacheTxEntry<K, V> entry : req.writes()) {
+                for (IgniteTxEntry<K, V> entry : req.writes()) {
                     GridCacheContext<K, V> cacheCtx = entry.context();
 
                     tx.addWrite(entry, ctx.deploy().globalLoader());
@@ -1077,7 +1078,7 @@ public class GridCacheTxHandler<K, V> {
 
         boolean marked = false;
 
-        for (GridCacheTxEntry<K, V> txEntry : req.writes()) {
+        for (IgniteTxEntry<K, V> txEntry : req.writes()) {
             GridDistributedCacheEntry<K, V> entry = null;
 
             GridCacheContext<K, V> cacheCtx = txEntry.context();
@@ -1234,7 +1235,7 @@ public class GridCacheTxHandler<K, V> {
         if (ldr != null) {
             boolean marked = false;
 
-            for (GridCacheTxEntry<K, V> txEntry : req.nearWrites()) {
+            for (IgniteTxEntry<K, V> txEntry : req.nearWrites()) {
                 GridDistributedCacheEntry<K, V> entry = null;
 
                 GridCacheContext<K, V> cacheCtx = txEntry.context();

@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -304,7 +305,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
 
         txs.add(tx);
 
-        GridCacheTxEx tx0 = (GridCacheTxEx)tx;
+        IgniteTxEx tx0 = (IgniteTxEx)tx;
 
         if (!tx0.local())
             throw new IgniteCheckedException("Tx is not local: " + tx);

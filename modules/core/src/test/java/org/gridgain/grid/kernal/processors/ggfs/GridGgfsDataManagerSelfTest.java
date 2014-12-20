@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -181,7 +182,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<GridCacheTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -269,7 +270,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<GridCacheTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -349,7 +350,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<GridCacheTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }

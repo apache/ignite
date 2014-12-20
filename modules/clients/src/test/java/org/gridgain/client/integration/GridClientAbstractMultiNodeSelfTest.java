@@ -28,6 +28,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -781,11 +782,11 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 
-            GridCacheTxManager<Object, Object> tm = cacheCtx.tm();
+            IgniteTxManager<Object, Object> tm = cacheCtx.tm();
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
-            GridCacheTxEx t = tm.tx(v);
+            IgniteTxEx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey("x1")))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());

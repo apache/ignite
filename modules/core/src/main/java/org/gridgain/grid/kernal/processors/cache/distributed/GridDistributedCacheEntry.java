@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -711,7 +712,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
@@ -746,7 +747,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 

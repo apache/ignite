@@ -13,6 +13,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -53,7 +54,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @Override public IgniteFuture<Boolean> txLockAsync(
         Collection<? extends K> keys,
         long timeout,
-        GridCacheTxLocalEx<K, V> tx,
+        IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
         IgniteTxIsolation isolation,
@@ -68,7 +69,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        GridCacheTxLocalEx<K, V> tx = ctx.tm().userTxx();
+        IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
         return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, filter);
@@ -86,7 +87,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @return Future for locks.
      */
     protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
+        @Nullable IgniteTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         @Nullable IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**

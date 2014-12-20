@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -297,7 +298,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -770,7 +771,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 boolean explicit = false;
 
                 for (K key : mappedKeys) {
-                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+                    IgniteTxKey<K> txKey = cctx.txKey(key);
 
                     while (true) {
                         GridNearCacheEntry<K, V> entry = null;
@@ -858,7 +859,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
+                                    IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
                                         tx.addKeyMapping(txKey, mapping.node());

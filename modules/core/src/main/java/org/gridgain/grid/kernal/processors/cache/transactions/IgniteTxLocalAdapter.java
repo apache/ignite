@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
@@ -15,6 +15,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -38,22 +39,22 @@ import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K, V>
-    implements GridCacheTxLocalEx<K, V> {
+public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
+    implements IgniteTxLocalEx<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Per-transaction read map. */
     @GridToStringExclude
-    protected Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> txMap;
+    protected Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> txMap;
 
     /** Read view on transaction map. */
     @GridToStringExclude
-    protected GridCacheTxMap<K, V> readView;
+    protected IgniteTxMap<K, V> readView;
 
     /** Write view on transaction map. */
     @GridToStringExclude
-    protected GridCacheTxMap<K, V> writeView;
+    protected IgniteTxMap<K, V> writeView;
 
     /** Minimal version encountered (either explicit lock or XID of this transaction). */
     protected GridCacheVersion minVer;
@@ -85,7 +86,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    protected GridCacheTxLocalAdapter() {
+    protected IgniteTxLocalAdapter() {
         // No-op.
     }
 
@@ -103,7 +104,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and lock is acquired for whole partition.
      */
-    protected GridCacheTxLocalAdapter(
+    protected IgniteTxLocalAdapter(
         GridCacheSharedContext<K, V> cctx,
         GridCacheVersion xidVer,
         boolean implicit,
@@ -115,7 +116,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
@@ -186,61 +187,61 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasWriteKey(GridCacheTxKey<K> key) {
+    @Override public boolean hasWriteKey(IgniteTxKey<K> key) {
         return writeView.containsKey(key);
     }
 
     /**
      * @return Transaction read set.
      */
-    @Override public Set<GridCacheTxKey<K>> readSet() {
-        return txMap == null ? Collections.<GridCacheTxKey<K>>emptySet() : readView.keySet();
+    @Override public Set<IgniteTxKey<K>> readSet() {
+        return txMap == null ? Collections.<IgniteTxKey<K>>emptySet() : readView.keySet();
     }
 
     /**
      * @return Transaction write set.
      */
-    @Override public Set<GridCacheTxKey<K>> writeSet() {
-        return txMap == null ? Collections.<GridCacheTxKey<K>>emptySet() : writeView.keySet();
+    @Override public Set<IgniteTxKey<K>> writeSet() {
+        return txMap == null ? Collections.<IgniteTxKey<K>>emptySet() : writeView.keySet();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removed(GridCacheTxKey<K> key) {
+    @Override public boolean removed(IgniteTxKey<K> key) {
         if (txMap == null)
             return false;
 
-        GridCacheTxEntry<K, V> e = txMap.get(key);
+        IgniteTxEntry<K, V> e = txMap.get(key);
 
         return e != null && e.op() == DELETE;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> readMap() {
-        return readView == null ? Collections.<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>emptyMap() : readView;
+    @Override public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap() {
+        return readView == null ? Collections.<IgniteTxKey<K>, IgniteTxEntry<K, V>>emptyMap() : readView;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<GridCacheTxKey<K>, GridCacheTxEntry<K, V>> writeMap() {
-        return writeView == null ? Collections.<GridCacheTxKey<K>, GridCacheTxEntry<K, V>>emptyMap() : writeView;
+    @Override public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> writeMap() {
+        return writeView == null ? Collections.<IgniteTxKey<K>, IgniteTxEntry<K, V>>emptyMap() : writeView;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxEntry<K, V>> allEntries() {
-        return txMap == null ? Collections.<GridCacheTxEntry<K, V>>emptySet() : txMap.values();
+    @Override public Collection<IgniteTxEntry<K, V>> allEntries() {
+        return txMap == null ? Collections.<IgniteTxEntry<K, V>>emptySet() : txMap.values();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxEntry<K, V>> readEntries() {
-        return readView == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : readView.values();
+    @Override public Collection<IgniteTxEntry<K, V>> readEntries() {
+        return readView == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : readView.values();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxEntry<K, V>> writeEntries() {
-        return writeView == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : writeView.values();
+    @Override public Collection<IgniteTxEntry<K, V>> writeEntries() {
+        return writeView == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : writeView.values();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheTxEntry<K, V> entry(GridCacheTxKey<K> key) {
+    @Nullable @Override public IgniteTxEntry<K, V> entry(IgniteTxKey<K> key) {
         return txMap == null ? null : txMap.get(key);
     }
 
@@ -276,7 +277,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         K key,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) throws GridCacheFilterFailedException {
-        GridCacheTxEntry<K, V> e = txMap == null ? null : txMap.get(cacheCtx.txKey(key));
+        IgniteTxEntry<K, V> e = txMap == null ? null : txMap.get(cacheCtx.txKey(key));
 
         if (e != null) {
             // We should look at tx entry previous value. If this is a user peek then previous
@@ -312,7 +313,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             return cctx.kernalContext().closure().callLocalSafe(
                 new GPC<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        return cacheCtx.store().loadAllFromStore(GridCacheTxLocalAdapter.this, keys, c);
+                        return cacheCtx.store().loadAllFromStore(IgniteTxLocalAdapter.this, keys, c);
                     }
                 },
                 true);
@@ -388,7 +389,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      */
     @SuppressWarnings({"CatchGenericClass"})
     private void uncommit() {
-        for (GridCacheTxEntry<K, V> e : writeMap().values()) {
+        for (IgniteTxEntry<K, V> e : writeMap().values()) {
             try {
                 GridCacheEntryEx<K, V> cacheEntry = e.cached();
 
@@ -411,7 +412,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param key Key.
      * @return Cache entry.
      */
-    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key) {
+    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key) {
         return cacheCtx.cache().entryEx(key.key());
     }
 
@@ -422,7 +423,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param topVer Topology version.
      * @return Cache entry.
      */
-    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, long topVer) {
+    protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, long topVer) {
         return cacheCtx.cache().entryEx(key.key(), topVer);
     }
 
@@ -435,7 +436,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @throws IgniteCheckedException If batch update failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
+    protected void batchStoreCommit(Iterable<IgniteTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
         if (store != null && storeEnabled() && (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
@@ -446,7 +447,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                     boolean skipNear = near() && store.writeToStoreFromDht();
 
-                    for (GridCacheTxEntry<K, V> e : writeEntries) {
+                    for (IgniteTxEntry<K, V> e : writeEntries) {
                         if (skipNear && e.cached().isNear())
                             continue;
 
@@ -600,7 +601,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
                  */
-                for (GridCacheTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {
+                for (IgniteTxEntry<K, V> txEntry : (near() ? allEntries() : writeEntries())) {
                     GridCacheContext<K, V> cacheCtx = txEntry.context();
 
                     GridDrType drType = cacheCtx.isDrEnabled() ? DR_PRIMARY : DR_NONE;
@@ -947,7 +948,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (near())
                     // Must evict near entries before rolling back from
                     // transaction manager, so they will be removed from cache.
-                    for (GridCacheTxEntry<K, V> e : allEntries())
+                    for (IgniteTxEntry<K, V> e : allEntries())
                         evictNearEntry(e, false);
 
                 cctx.tm().rollbackTx(this);
@@ -1016,10 +1017,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (pessimistic() && !readCommitted())
                 addActiveCache(cacheCtx);
 
-            GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
+            IgniteTxKey<K> txKey = cacheCtx.txKey(key);
 
             // Check write map (always check writes first).
-            GridCacheTxEntry<K, V> txEntry = entry(txKey);
+            IgniteTxEntry<K, V> txEntry = entry(txKey);
 
             // Either non-read-committed or there was a previous write.
             if (txEntry != null) {
@@ -1251,7 +1252,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     if (isRollbackOnly()) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring loaded value for read because transaction was rolled back: " +
-                                GridCacheTxLocalAdapter.this);
+                                IgniteTxLocalAdapter.this);
 
                         return;
                     }
@@ -1267,9 +1268,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                     V visibleVal = val;
 
-                    GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
+                    IgniteTxKey<K> txKey = cacheCtx.txKey(key);
 
-                    GridCacheTxEntry<K, V> txEntry = entry(txKey);
+                    IgniteTxEntry<K, V> txEntry = entry(txKey);
 
                     if (txEntry != null) {
                         if (!readCommitted())
@@ -1314,7 +1315,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                     if (pessimistic() && !readCommitted() && !isRollbackOnly() &&
                                         (!groupLock() || F.eq(e.key(), groupLockKey()))) {
                                         U.error(log, "Inconsistent transaction state (entry got removed while " +
-                                            "holding lock) [entry=" + e + ", tx=" + GridCacheTxLocalAdapter.this + "]");
+                                            "holding lock) [entry=" + e + ", tx=" + IgniteTxLocalAdapter.this + "]");
 
                                         setRollbackOnly();
 
@@ -1382,7 +1383,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     if (!b && !readCommitted()) {
                         // There is no store - we must mark the entries.
                         for (K key : missedMap.keySet()) {
-                            GridCacheTxEntry<K, V> txEntry = entry(cacheCtx.txKey(key));
+                            IgniteTxEntry<K, V> txEntry = entry(cacheCtx.txKey(key));
 
                             if (txEntry != null)
                                 txEntry.markValid();
@@ -1396,7 +1397,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                         // In read-committed mode touch entries that have just been read.
                         for (K key : notFound) {
-                            GridCacheTxEntry<K, V> txEntry = entry(cacheCtx.txKey(key));
+                            IgniteTxEntry<K, V> txEntry = entry(cacheCtx.txKey(key));
 
                             GridCacheEntryEx<K, V> entry = txEntry == null ? cacheCtx.cache().peekEx(key) :
                                 txEntry.cached();
@@ -1455,9 +1456,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                 // We already have a return value.
                                 continue;
 
-                            GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
+                            IgniteTxKey<K> txKey = cacheCtx.txKey(key);
 
-                            GridCacheTxEntry<K, V> txEntry = entry(txKey);
+                            IgniteTxEntry<K, V> txEntry = entry(txKey);
 
                             assert txEntry != null;
 
@@ -1471,7 +1472,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
                                             F.first(txEntry.transformClosures()) : null;
 
-                                    V val = cached.innerGet(GridCacheTxLocalAdapter.this,
+                                    V val = cached.innerGet(IgniteTxLocalAdapter.this,
                                         cacheCtx.isSwapOrOffheapEnabled(),
                                         /*read-through*/false,
                                         /*fail-fast*/true,
@@ -1479,7 +1480,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                         /*metrics*/true,
                                         /*events*/true,
                                         /*temporary*/true,
-                                        CU.subjectId(GridCacheTxLocalAdapter.this, cctx),
+                                        CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                         transformClo,
                                         resolveTaskName(),
                                         filter);
@@ -1610,7 +1611,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         new FinishClosure<Map<K, V>>() {
                             @Override Map<K, V> finish(Map<K, V> loaded) {
                                 for (Map.Entry<K, V> entry : loaded.entrySet()) {
-                                    GridCacheTxEntry<K, V> txEntry = entry(cacheCtx.txKey(entry.getKey()));
+                                    IgniteTxEntry<K, V> txEntry = entry(cacheCtx.txKey(entry.getKey()));
 
                                     V val = entry.getValue();
 
@@ -1790,9 +1791,9 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (cacheCtx.portableEnabled())
                     key = (K)cacheCtx.marshalToPortable(key);
 
-                GridCacheTxKey<K> txKey = cacheCtx.txKey(key);
+                IgniteTxKey<K> txKey = cacheCtx.txKey(key);
 
-                GridCacheTxEntry<K, V> txEntry = entry(txKey);
+                IgniteTxEntry<K, V> txEntry = entry(txKey);
 
                 // First time access.
                 if (txEntry == null) {
@@ -2004,7 +2005,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) throws IgniteCheckedException {
         for (K k : keys) {
-            GridCacheTxEntry<K, V> txEntry = entry(cacheCtx.txKey(k));
+            IgniteTxEntry<K, V> txEntry = entry(cacheCtx.txKey(k));
 
             if (txEntry == null)
                 throw new IgniteCheckedException("Transaction entry is null (most likely collection of keys passed into cache " +
@@ -2499,7 +2500,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * Adds key mapping to transaction.
      * @param keys Keys to add.
      */
-    protected void addGroupTxMapping(Collection<GridCacheTxKey<K>> keys) {
+    protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
         // No-op. This method is overriden in transactions that store key to remote node mapping
         // for commit.
     }
@@ -2525,7 +2526,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             ", part=" + part + ", groupLockKey=" + grpLockKey + ']');
                 }
                 else {
-                    GridCacheTxKey affinityKey = cacheCtx.txKey(
+                    IgniteTxKey affinityKey = cacheCtx.txKey(
                         (K)cacheCtx.config().getAffinityMapper().affinityKey(key));
 
                     if (!grpLockKey.equals(affinityKey))
@@ -2593,8 +2594,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
         if (txMap == null) {
             txMap = new LinkedHashMap<>(txSize > 0 ? txSize : 16, 1.0f);
 
-            readView = new GridCacheTxMap<>(txMap, CU.<K, V>reads());
-            writeView = new GridCacheTxMap<>(txMap, CU.<K, V>writes());
+            readView = new IgniteTxMap<>(txMap, CU.<K, V>reads());
+            writeView = new IgniteTxMap<>(txMap, CU.<K, V>writes());
 
             return cctx.tm().onStarted(this);
         }
@@ -2681,11 +2682,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param drVer DR version.
      * @return Transaction entry.
      */
-    protected final GridCacheTxEntry<K, V> addEntry(GridCacheOperation op, @Nullable V val,
+    protected final IgniteTxEntry<K, V> addEntry(GridCacheOperation op, @Nullable V val,
         @Nullable IgniteClosure<V, V> transformClos, GridCacheEntryEx<K, V> entry, long ttl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean filtersSet, long drTtl,
         long drExpireTime, @Nullable GridCacheVersion drVer) {
-        GridCacheTxKey<K> key = entry.txKey();
+        IgniteTxKey<K> key = entry.txKey();
 
         checkInternal(key);
 
@@ -2695,7 +2696,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 
-        GridCacheTxEntry<K, V> old = txMap.get(key);
+        IgniteTxEntry<K, V> old = txMap.get(key);
 
         // Keep old filter if already have one (empty filter is always overridden).
         if (!filtersSet || !F.isEmptyOrNulls(filter)) {
@@ -2704,7 +2705,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 filter = old.filters();
         }
 
-        GridCacheTxEntry<K, V> txEntry;
+        IgniteTxEntry<K, V> txEntry;
 
         if (old != null) {
             if (transformClos != null) {
@@ -2743,7 +2744,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (drTtl >= 0L)
                 ttl = drTtl;
 
-            txEntry = new GridCacheTxEntry<>(entry.context(), this, op, val, transformClos, ttl, entry, filter, drVer);
+            txEntry = new IgniteTxEntry<>(entry.context(), this, op, val, transformClos, ttl, entry, filter, drVer);
 
             txEntry.drExpireTime(drExpireTime);
 
@@ -2780,7 +2781,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param entry Entry.
      * @throws GridCacheEntryRemovedException If entry was concurrently removed.
      */
-    protected void updateExplicitVersion(GridCacheTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
+    protected void updateExplicitVersion(IgniteTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
         throws GridCacheEntryRemovedException {
         if (!entry.context().isDht()) {
             // All put operations must wait for async locks to complete,
@@ -2802,7 +2803,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridToStringBuilder.toString(GridCacheTxLocalAdapter.class, this, "super", super.toString(),
+        return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
             "size", (txMap == null ? 0 : txMap.size()));
     }
 
@@ -2811,10 +2812,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param ttl Time to live.
      * @return {@code true} if tx entry exists for this key, {@code false} otherwise.
      */
-    boolean entryTtl(GridCacheTxKey<K> key, long ttl) {
+    public boolean entryTtl(IgniteTxKey<K> key, long ttl) {
         assert key != null;
 
-        GridCacheTxEntry<K, V> e = entry(key);
+        IgniteTxEntry<K, V> e = entry(key);
 
         if (e != null) {
             e.ttl(ttl);
@@ -2830,11 +2831,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param expireTime Expire time.
      * @return {@code true} if tx entry exists for this key, {@code false} otherwise.
      */
-    boolean entryTtlDr(GridCacheTxKey<K> key, long ttl, long expireTime) {
+    boolean entryTtlDr(IgniteTxKey<K> key, long ttl, long expireTime) {
         assert key != null;
         assert ttl >= 0;
 
-        GridCacheTxEntry<K, V> e = entry(key);
+        IgniteTxEntry<K, V> e = entry(key);
 
         if (e != null) {
             e.ttl(ttl);
@@ -2848,10 +2849,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param key Key.
      * @return Tx entry time to live.
      */
-    long entryTtl(GridCacheTxKey<K> key) {
+    public long entryTtl(IgniteTxKey<K> key) {
         assert key != null;
 
-        GridCacheTxEntry<K, V> e = entry(key);
+        IgniteTxEntry<K, V> e = entry(key);
 
         return e != null ? e.ttl() : 0;
     }
@@ -2860,10 +2861,10 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @param key Key.
      * @return Tx entry expire time.
      */
-    long entryExpireTime(GridCacheTxKey<K> key) {
+    public long entryExpireTime(IgniteTxKey<K> key) {
         assert key != null;
 
-        GridCacheTxEntry<K, V> e = entry(key);
+        IgniteTxEntry<K, V> e = entry(key);
 
         if (e != null) {
             long ttl = e.ttl();

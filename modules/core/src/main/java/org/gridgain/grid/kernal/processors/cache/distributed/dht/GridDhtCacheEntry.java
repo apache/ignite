@@ -15,6 +15,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -223,7 +224,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter<K, V> dhtTx = (GridDhtTxLocalAdapter<K, V>)tx;
@@ -425,7 +426,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             if (!F.isEmpty(cands)) {
                 for (GridCacheMvccCandidate<K> c : cands) {
-                    GridCacheTxEx<K, V> tx = cctx.tm().tx(c.version());
+                    IgniteTxEx<K, V> tx = cctx.tm().tx(c.version());
 
                     if (tx != null) {
                         assert tx.local();

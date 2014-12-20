@@ -15,6 +15,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -213,7 +214,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (error() instanceof IgniteTxHeuristicException) {
                     long topVer = this.tx.topologyVersion();
 
-                    for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {
+                    for (IgniteTxEntry<K, V> e : this.tx.writeMap().values()) {
                         GridCacheContext<K, V> cacheCtx = e.context();
 
                         try {

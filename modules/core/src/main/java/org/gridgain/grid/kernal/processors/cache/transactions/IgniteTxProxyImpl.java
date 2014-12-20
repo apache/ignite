@@ -31,7 +31,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private GridCacheTxEx<K, V> tx;
+    private IgniteTxEx<K, V> tx;
 
     /** Gateway. */
     @GridToStringExclude
@@ -47,7 +47,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     /**
      * @param tx Transaction.
      */
-    public IgniteTxProxyImpl(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
+    public IgniteTxProxyImpl(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
         assert tx != null;
         assert cctx != null;
 
@@ -294,7 +294,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (GridCacheTxAdapter<K, V>)in.readObject();
+        tx = (IgniteTxAdapter<K, V>)in.readObject();
     }
 
     /** {@inheritDoc} */

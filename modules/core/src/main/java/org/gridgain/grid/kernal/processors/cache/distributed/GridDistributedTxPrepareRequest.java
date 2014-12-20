@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -57,7 +58,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Transaction read set. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheTxEntry<K, V>> reads;
+    private Collection<IgniteTxEntry<K, V>> reads;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -66,7 +67,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Transaction write entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheTxEntry<K, V>> writes;
+    private Collection<IgniteTxEntry<K, V>> writes;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -75,7 +76,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** DHT versions to verify. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<GridCacheTxKey<K>, GridCacheVersion> dhtVers;
+    private Map<IgniteTxKey<K>, GridCacheVersion> dhtVers;
 
     /** Serialized map. */
     @GridToStringExclude
@@ -84,7 +85,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** Group lock key, if any. */
     @GridToStringInclude
     @GridDirectTransient
-    private GridCacheTxKey grpLockKey;
+    private IgniteTxKey grpLockKey;
 
     /** Group lock key bytes. */
     @GridToStringExclude
@@ -122,10 +123,10 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param txNodes Transaction nodes mapping.
      */
     public GridDistributedTxPrepareRequest(
-        GridCacheTxEx<K, V> tx,
-        @Nullable Collection<GridCacheTxEntry<K, V>> reads,
-        Collection<GridCacheTxEntry<K, V>> writes,
-        GridCacheTxKey grpLockKey,
+        IgniteTxEx<K, V> tx,
+        @Nullable Collection<IgniteTxEntry<K, V>> reads,
+        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes
     ) {
@@ -167,7 +168,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param key Key for which version is verified.
      * @param dhtVer DHT version to check.
      */
-    public void addDhtVersion(GridCacheTxKey<K> key, @Nullable GridCacheVersion dhtVer) {
+    public void addDhtVersion(IgniteTxKey<K> key, @Nullable GridCacheVersion dhtVer) {
         if (dhtVers == null)
             dhtVers = new HashMap<>();
 
@@ -177,8 +178,8 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Map of versions to be verified.
      */
-    public Map<GridCacheTxKey<K>, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap() : dhtVers;
+    public Map<IgniteTxKey<K>, GridCacheVersion> dhtVersions() {
+        return dhtVers == null ? Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap() : dhtVers;
     }
 
     /**
@@ -222,35 +223,35 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Read set.
      */
-    public Collection<GridCacheTxEntry<K, V>> reads() {
+    public Collection<IgniteTxEntry<K, V>> reads() {
         return reads;
     }
 
     /**
      * @return Write entries.
      */
-    public Collection<GridCacheTxEntry<K, V>> writes() {
+    public Collection<IgniteTxEntry<K, V>> writes() {
         return writes;
     }
 
     /**
      * @param reads Reads.
      */
-    protected void reads(Collection<GridCacheTxEntry<K, V>> reads) {
+    protected void reads(Collection<IgniteTxEntry<K, V>> reads) {
         this.reads = reads;
     }
 
     /**
      * @param writes Writes.
      */
-    protected void writes(Collection<GridCacheTxEntry<K, V>> writes) {
+    protected void writes(Collection<IgniteTxEntry<K, V>> writes) {
         this.writes = writes;
     }
 
     /**
      * @return Group lock key if preparing group-lock transaction.
      */
-    @Nullable public GridCacheTxKey groupLockKey() {
+    @Nullable public IgniteTxKey groupLockKey() {
         return grpLockKey;
     }
 
@@ -278,7 +279,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             writesBytes = new ArrayList<>(writes.size());
 
-            for (GridCacheTxEntry<K, V> e : writes)
+            for (IgniteTxEntry<K, V> e : writes)
                 writesBytes.add(ctx.marshaller().marshal(e));
         }
 
@@ -287,7 +288,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
             readsBytes = new ArrayList<>(reads.size());
 
-            for (GridCacheTxEntry<K, V> e : reads)
+            for (IgniteTxEntry<K, V> e : reads)
                 readsBytes.add(ctx.marshaller().marshal(e));
         }
 
@@ -309,7 +310,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             writes = new ArrayList<>(writesBytes.size());
 
             for (byte[] arr : writesBytes)
-                writes.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
+                writes.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
 
             unmarshalTx(writes, false, ctx, ldr);
         }
@@ -318,7 +319,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             reads = new ArrayList<>(readsBytes.size());
 
             for (byte[] arr : readsBytes)
-                reads.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
+                reads.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
 
             unmarshalTx(reads, false, ctx, ldr);
         }
@@ -339,13 +340,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param col Set to write.
      * @throws IOException If write failed.
      */
-    private void writeCollection(ObjectOutput out, Collection<GridCacheTxEntry<K, V>> col) throws IOException {
+    private void writeCollection(ObjectOutput out, Collection<IgniteTxEntry<K, V>> col) throws IOException {
         boolean empty = F.isEmpty(col);
 
         if (!empty) {
             out.writeInt(col.size());
 
-            for (GridCacheTxEntry<K, V> e : col) {
+            for (IgniteTxEntry<K, V> e : col) {
                 V val = e.value();
                 boolean hasWriteVal = e.hasWriteValue();
                 boolean hasReadVal = e.hasReadValue();
@@ -374,9 +375,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private Collection<GridCacheTxEntry<K, V>> readCollection(ObjectInput in) throws IOException,
+    @Nullable private Collection<IgniteTxEntry<K, V>> readCollection(ObjectInput in) throws IOException,
         ClassNotFoundException {
-        List<GridCacheTxEntry<K, V>> col = null;
+        List<IgniteTxEntry<K, V>> col = null;
 
         int size = in.readInt();
 
@@ -385,10 +386,10 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
             col = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                col.add((GridCacheTxEntry<K, V>)in.readObject());
+                col.add((IgniteTxEntry<K, V>)in.readObject());
         }
 
-        return col == null ? Collections.<GridCacheTxEntry<K,V>>emptyList() : col;
+        return col == null ? Collections.<IgniteTxEntry<K,V>>emptyList() : col;
     }
 
     /** {@inheritDoc} */

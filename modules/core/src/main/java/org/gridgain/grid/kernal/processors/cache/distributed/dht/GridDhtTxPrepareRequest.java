@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
@@ -49,7 +50,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** Near writes. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheTxEntry<K, V>> nearWrites;
+    private Collection<IgniteTxEntry<K, V>> nearWrites;
 
     /** Serialized near writes. */
     @GridDirectCollection(byte[].class)
@@ -58,7 +59,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<GridCacheTxKey<K>, GridCacheVersion> owned;
+    private Map<IgniteTxKey<K>, GridCacheVersion> owned;
 
     /** Owned versions bytes. */
     private byte[] ownedBytes;
@@ -106,9 +107,9 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         IgniteUuid miniId,
         long topVer,
         GridDhtTxLocalAdapter<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> dhtWrites,
-        Collection<GridCacheTxEntry<K, V>> nearWrites,
-        GridCacheTxKey grpLockKey,
+        Collection<IgniteTxEntry<K, V>> dhtWrites,
+        Collection<IgniteTxEntry<K, V>> nearWrites,
+        IgniteTxKey grpLockKey,
         boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
@@ -177,8 +178,8 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Near writes.
      */
-    public Collection<GridCacheTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : nearWrites;
+    public Collection<IgniteTxEntry<K, V>> nearWrites() {
+        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
     }
 
     /**
@@ -244,7 +245,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(GridCacheTxKey<K> key, GridCacheVersion ownerMapped) {
+    public void owned(IgniteTxKey<K> key, GridCacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -254,7 +255,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     /**
      * @return Owned versions map.
      */
-    public Map<GridCacheTxKey<K>, GridCacheVersion> owned() {
+    public Map<IgniteTxKey<K>, GridCacheVersion> owned() {
         return owned;
     }
 
@@ -267,7 +268,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             ownedBytes = CU.marshal(ctx, owned);
 
             if (ctx.deploymentEnabled()) {
-                for (GridCacheTxKey<K> k : owned.keySet())
+                for (IgniteTxKey<K> k : owned.keySet())
                     prepareObject(k, ctx);
             }
         }
@@ -277,7 +278,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
 
             nearWritesBytes = new ArrayList<>(nearWrites.size());
 
-            for (GridCacheTxEntry<K, V> e : nearWrites)
+            for (IgniteTxEntry<K, V> e : nearWrites)
                 nearWritesBytes.add(ctx.marshaller().marshal(e));
         }
     }
@@ -293,7 +294,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
             nearWrites = new ArrayList<>(nearWritesBytes.size());
 
             for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<GridCacheTxEntry<K, V>>unmarshal(arr, ldr));
+                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
 
             unmarshalTx(nearWrites, true, ctx, ldr);
         }

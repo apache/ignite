@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -158,11 +159,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
@@ -316,7 +317,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * {@inheritDoc}
      */
     @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
+        @Nullable IgniteTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
         @Nullable IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         assert tx == null || tx instanceof GridNearTxLocal;
 

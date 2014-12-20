@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -127,7 +128,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtLockResponse<K, V> res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<K> keys = req.keys();
-        List<GridCacheTxEntry<K, V>> writes = req.writeEntries();
+        List<IgniteTxEntry<K, V>> writes = req.writeEntries();
 
         GridDhtTxRemote<K, V> tx = null;
 
@@ -139,9 +140,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (key == null)
                 continue;
 
-            GridCacheTxKey<K> txKey = ctx.txKey(key);
+            IgniteTxKey<K> txKey = ctx.txKey(key);
 
-            GridCacheTxEntry<K, V> writeEntry = writes == null ? null : writes.get(i);
+            IgniteTxEntry<K, V> writeEntry = writes == null ? null : writes.get(i);
 
             assert F.isEmpty(req.candidatesByIndex(i));
 
@@ -379,10 +380,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 res.nearEvicted(nearTx.evicted());
             else {
                 if (!F.isEmpty(req.nearKeys())) {
-                    Collection<GridCacheTxKey<K>> nearEvicted = new ArrayList<>(req.nearKeys().size());
+                    Collection<IgniteTxKey<K>> nearEvicted = new ArrayList<>(req.nearKeys().size());
 
-                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<K, GridCacheTxKey<K>>() {
-                        @Override public GridCacheTxKey<K> apply(K k) {
+                    nearEvicted.addAll(F.viewReadOnly(req.nearKeys(), new C1<K, IgniteTxKey<K>>() {
+                        @Override public IgniteTxKey<K> apply(K k) {
                             return ctx.txKey(k);
                         }
                     }));
@@ -541,7 +542,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout,
-        GridCacheTxLocalEx<K, V> txx,
+        IgniteTxLocalEx<K, V> txx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
@@ -565,7 +566,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys,
         long timeout,
-        GridCacheTxLocalEx<K, V> txx,
+        IgniteTxLocalEx<K, V> txx,
         boolean isInvalidate,
         boolean isRead,
         boolean retval,
@@ -980,7 +981,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     boolean filterPassed = false;
 
                                     if (tx != null && tx.onePhaseCommit()) {
-                                        GridCacheTxEntry<K, V> writeEntry = tx.entry(ctx.txKey(e.key()));
+                                        IgniteTxEntry<K, V> writeEntry = tx.entry(ctx.txKey(e.key()));
 
                                         assert writeEntry != null :
                                             "Missing tx entry for locked cache entry: " + e;
@@ -1050,7 +1051,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void sendLockReply(
         ClusterNode nearNode,
-        @Nullable GridCacheTxEx<K,V> tx,
+        @Nullable IgniteTxEx<K,V> tx,
         GridNearLockRequest<K, V> req,
         GridNearLockResponse<K, V> res
     ) {

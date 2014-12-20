@@ -855,7 +855,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx) {
-        GridCacheTxManager tm = new GridCacheTxManager();
+        IgniteTxManager tm = new IgniteTxManager();
         GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();

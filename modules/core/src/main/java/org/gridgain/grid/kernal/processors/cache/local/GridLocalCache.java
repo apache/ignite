@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -86,7 +87,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys, long timeout,
-        GridCacheTxLocalEx<K, V> tx, boolean isRead,
+        IgniteTxLocalEx<K, V> tx, boolean isRead,
         boolean retval, IgniteTxIsolation isolation, boolean invalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return lockAllAsync(keys, timeout, tx, filter);
@@ -95,7 +96,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        GridCacheTxLocalEx<K, V> tx = ctx.tm().localTx();
+        IgniteTxLocalEx<K, V> tx = ctx.tm().localTx();
 
         return lockAllAsync(keys, timeout, tx, filter);
     }
@@ -108,7 +109,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable GridCacheTxLocalEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 

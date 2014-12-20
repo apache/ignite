@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -170,7 +171,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException {
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate<K> cand = addLocal(
             tx.threadId(),
             tx.xidVersion(),
@@ -266,7 +267,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      *
      * @param tx Transaction to unlock.
      */
-    @Override public void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 

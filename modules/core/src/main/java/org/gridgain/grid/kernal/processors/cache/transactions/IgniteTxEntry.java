@@ -7,12 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -30,7 +31,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, IgniteOptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +41,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** Owning transaction. */
     @GridToStringExclude
-    private GridCacheTxEx<K, V> tx;
+    private IgniteTxEx<K, V> tx;
 
     /** Cache key. */
     @GridToStringInclude
@@ -53,7 +54,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     private int cacheId;
 
     /** Transient tx key. */
-    private GridCacheTxKey<K> txKey;
+    private IgniteTxKey<K> txKey;
 
     /** Cache value. */
     @GridToStringInclude
@@ -131,7 +132,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * Required by {@link Externalizable}
      */
-    public GridCacheTxEntry() {
+    public IgniteTxEntry() {
         /* No-op. */
     }
 
@@ -147,7 +148,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param entry Cache entry.
      * @param drVer Data center replication version.
      */
-    public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op, V val,
+    public IgniteTxEntry(GridCacheContext<K, V> ctx, IgniteTxEx<K, V> tx, GridCacheOperation op, V val,
         long ttl, long drExpireTime, GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -183,8 +184,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param filters Put filters.
      * @param drVer Data center replication version.
      */
-    public GridCacheTxEntry(GridCacheContext<K, V> ctx, GridCacheTxEx<K, V> tx, GridCacheOperation op,
-        V val, IgniteClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K,V> entry,
+    public IgniteTxEntry(GridCacheContext<K, V> ctx, IgniteTxEx<K, V> tx, GridCacheOperation op,
+        V val, IgniteClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K, V> entry,
         IgnitePredicate<GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -265,8 +266,8 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
      * @param ctx Context.
      * @return Clean copy of this entry.
      */
-    public GridCacheTxEntry<K, V> cleanCopy(GridCacheContext<K, V> ctx) {
-        GridCacheTxEntry<K, V> cp = new GridCacheTxEntry<>();
+    public IgniteTxEntry<K, V> cleanCopy(GridCacheContext<K, V> ctx) {
+        IgniteTxEntry<K, V> cp = new IgniteTxEntry<>();
 
         cp.key = key;
         cp.cacheId = cacheId;
@@ -392,9 +393,9 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
     /**
      * @return Tx key.
      */
-    public GridCacheTxKey<K> txKey() {
+    public IgniteTxKey<K> txKey() {
         if (txKey == null)
-            txKey = new GridCacheTxKey<>(key, cacheId);
+            txKey = new IgniteTxKey<>(key, cacheId);
 
         return txKey;
     }
@@ -846,7 +847,7 @@ public class GridCacheTxEntry<K, V> implements GridPeerDeployAware, Externalizab
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridToStringBuilder.toString(GridCacheTxEntry.class, this,
+        return GridToStringBuilder.toString(IgniteTxEntry.class, this,
             "keyBytesSize", keyBytes == null ? "null" : Integer.toString(keyBytes.length),
             "xidVer", tx == null ? "null" : tx.xidVersion());
     }
