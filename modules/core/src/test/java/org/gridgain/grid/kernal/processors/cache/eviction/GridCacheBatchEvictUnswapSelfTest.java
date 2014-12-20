@@ -48,7 +48,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
         cacheCfg.setStore(new GridCacheStoreAdapter<Long, String>() {
-            @Nullable @Override public String load(@Nullable GridCacheTx tx, Long key) {
+            @Nullable @Override public String load(@Nullable IgniteTx tx, Long key) {
                 return null;
             }
 
@@ -58,11 +58,11 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                     c.apply((long)i, String.valueOf(i));
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, Long key,
+            @Override public void put(@Nullable IgniteTx tx, Long key,
                 @Nullable String val) {
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, Long key) {
+            @Override public void remove(@Nullable IgniteTx tx, Long key) {
             }
         });
 

@@ -420,7 +420,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 g0.cache(null).put(i, i);
 
             for (int i = 0; i < 100; i++) {
-                try (GridCacheTx tx = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Integer val = (Integer) g0.cache(null).get(i);
 
                     assertEquals((Integer) i, val);
@@ -443,7 +443,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            GridCacheTx tx = explicitTx ? cache().txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? cache().txStart(concurrency, isolation) : null;
 
             try {
                 cache().putAll(F.asMap(1, "Hello", 2, "World"));
@@ -476,7 +476,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            GridCacheTx tx = cache().txStart(concurrency, isolation);
+            IgniteTx tx = cache().txStart(concurrency, isolation);
 
             try {
                 String old = (String)cache().get(1);
@@ -532,7 +532,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k0, "val" + k0, k1, "val" + k1, k2, "val" + k2);
 
-            GridCacheTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
@@ -621,7 +621,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k1, "val" + k1, k2, "val" + k2);
 
-            GridCacheTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? g0.cache(null).txStart(concurrency, isolation) : null;
 
             try {
                 if (separate) {
@@ -734,7 +734,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         clearStores(3);
 
-        try (GridCacheTx tx = g0.cache(null).txStart(OPTIMISTIC, READ_COMMITTED)) {
+        try (IgniteTx tx = g0.cache(null).txStart(OPTIMISTIC, READ_COMMITTED)) {
             g0.cache(null).putAll(map);
 
             tx.commit();
@@ -799,7 +799,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = F.asMap(k0, "value" + k0, k1, "value" + k1, k2, "value" + k2);
 
-            GridCacheTx tx = g0.cache(null).txStart(concurrency, isolation);
+            IgniteTx tx = g0.cache(null).txStart(concurrency, isolation);
 
             try {
                 if (separate) {

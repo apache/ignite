@@ -393,7 +393,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ValueObject load(@Nullable GridCacheTx tx,
+        @Override public ValueObject load(@Nullable IgniteTx tx,
             Integer key) throws IgniteCheckedException {
             assert key != null;
 
@@ -401,7 +401,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx,
+        @Override public void put(@Nullable IgniteTx tx,
             Integer key, ValueObject val) throws IgniteCheckedException {
             assert key != null;
             assert val != null;
@@ -410,7 +410,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx,
+        @Override public void remove(@Nullable IgniteTx tx,
             Integer key) throws IgniteCheckedException {
             assert key != null;
 

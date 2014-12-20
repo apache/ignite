@@ -211,7 +211,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            GridCacheTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
+                            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
 
                             try {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
@@ -310,7 +310,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            GridCacheTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);

@@ -185,7 +185,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
-                    try (GridCacheTx tx = cache.txStart()) {
+                    try (IgniteTx tx = cache.txStart()) {
                         cache.put(1, "value");
                         cache.put(2, "value");
                         cache.put(3, "value");

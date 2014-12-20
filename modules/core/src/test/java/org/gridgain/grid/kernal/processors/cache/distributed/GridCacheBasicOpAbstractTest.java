@@ -252,7 +252,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            GridCacheTx tx = cache1.txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+            IgniteTx tx = cache1.txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
 
             try {
                 cache1.put("tx1", "val1");
@@ -317,7 +317,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         GridCache<String, String> cache2 = ignite2.cache(null);
         GridCache<String, String> cache3 = ignite3.cache(null);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         cache1.put("key", "val");
 

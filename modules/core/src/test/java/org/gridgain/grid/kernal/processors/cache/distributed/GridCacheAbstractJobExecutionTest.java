@@ -125,7 +125,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 @Override public Void applyx(final Integer i) throws IgniteCheckedException {
                     GridCache<String, int[]> cache = this.ignite.cache(null);
 
-                    try (GridCacheTx tx = cache.txStart(concur, isolation)) {
+                    try (IgniteTx tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");
 
                         if (arr == null)
@@ -159,7 +159,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
 
-            try (GridCacheTx tx = c.txStart(concur, isolation)) {
+            try (IgniteTx tx = c.txStart(concur, isolation)) {
                 int[] arr = c.get("TestKey");
 
                 assertNotNull(arr);

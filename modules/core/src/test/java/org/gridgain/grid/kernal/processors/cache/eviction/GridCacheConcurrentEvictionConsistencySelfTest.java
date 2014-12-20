@@ -178,7 +178,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 // Put or remove?
                                 if (rnd.nextBoolean())
                                     cache.putx(j, j);

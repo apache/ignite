@@ -23,7 +23,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Tests for replicated transactions.
  */
-public class GridCacheReplicatedTxMultiThreadedSelfTest extends GridCacheTxMultiThreadedAbstractTest {
+public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThreadedAbstractTest {
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

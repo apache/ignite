@@ -25,7 +25,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
  * Tests for local transactions.
  */
 @SuppressWarnings( {"BusyWait"})
-public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAbstractTest {
+public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @return Thread count.
      */
@@ -219,7 +219,7 @@ public abstract class GridCacheTxMultiThreadedAbstractTest extends GridCacheTxAb
 
                     for (int i = 0; i < ITERATIONS; i++) {
                         while (true) {
-                            try (GridCacheTx tx = cache.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            try (IgniteTx tx = cache.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                 long val = cache.get(key);
 
                                 cache.put(key, val + 1);

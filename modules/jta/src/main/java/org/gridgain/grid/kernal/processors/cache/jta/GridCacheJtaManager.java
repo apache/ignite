@@ -59,7 +59,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                     Transaction jtaTx = jtaTm.getTransaction();
 
                     if (jtaTx != null) {
-                        GridCacheTx tx = cctx.tm().userTx();
+                        IgniteTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
                             TransactionsConfiguration tCfg = cctx.kernalContext().config()

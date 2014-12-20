@@ -102,7 +102,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).cache(null).tx();
 
             if (tx != null)
                 tx.close();

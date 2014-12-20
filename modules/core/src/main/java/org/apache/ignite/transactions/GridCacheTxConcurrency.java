@@ -12,7 +12,7 @@ package org.apache.ignite.transactions;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Transaction concurrency control. See {@link GridCacheTx} for more information
+ * Transaction concurrency control. See {@link IgniteTx} for more information
  * on transaction concurrency controls.
  */
 public enum GridCacheTxConcurrency {

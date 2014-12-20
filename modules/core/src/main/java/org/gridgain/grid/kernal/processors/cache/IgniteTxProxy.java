@@ -14,6 +14,6 @@ import org.apache.ignite.transactions.*;
 /**
  * Marker interface for transaction proxy.
  */
-public interface GridCacheTxProxy extends GridCacheTx {
+public interface IgniteTxProxy extends IgniteTx {
     // No-op.
 }

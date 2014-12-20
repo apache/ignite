@@ -117,19 +117,19 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, String val) throws IgniteCheckedException {
+        @Override public void put(IgniteTx tx, Integer key, String val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
     }

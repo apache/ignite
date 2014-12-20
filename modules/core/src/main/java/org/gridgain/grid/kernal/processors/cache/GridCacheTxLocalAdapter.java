@@ -2971,8 +2971,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<GridCacheTx>, T>() {
-                        @Override public T apply(IgniteFuture<GridCacheTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteFuture<IgniteTx> f) {
                             throw new GridClosureException(e);
                         }
                     });
@@ -2988,8 +2988,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     ", tx=" + this + ']'));
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<GridCacheTx>, T>() {
-                        @Override public T apply(IgniteFuture<GridCacheTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteFuture<IgniteTx> f) {
                             throw ex;
                         }
                     });
@@ -3006,8 +3006,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 if (commit && commitAfterLock()) {
                     rollback = false;
 
-                    return commitAsync().chain(new CX1<IgniteFuture<GridCacheTx>, T>() {
-                        @Override public T applyx(IgniteFuture<GridCacheTx> f) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteFuture<IgniteTx>, T>() {
+                        @Override public T applyx(IgniteFuture<IgniteTx> f) throws IgniteCheckedException {
                             f.get();
 
                             return r;
@@ -3021,8 +3021,8 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<GridCacheTx>, T>() {
-                        @Override public T apply(IgniteFuture<GridCacheTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteFuture<IgniteTx> f) {
                             throw new GridClosureException(ex);
                         }
                     });

@@ -195,7 +195,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 
-            GridCacheTx tx = cache.tx();
+            IgniteTx tx = cache.tx();
 
             assert tx != null;
 
@@ -220,7 +220,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
             if (ctx != null) {
                 txCtx.remove();
 
-                GridCacheTx tx = cache.tx();
+                IgniteTx tx = cache.tx();
 
                 if (tx != null)
                     tx.rollback();

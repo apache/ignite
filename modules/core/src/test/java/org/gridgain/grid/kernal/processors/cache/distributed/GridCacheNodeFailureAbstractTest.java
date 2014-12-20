@@ -157,7 +157,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         GridCache<Integer, String> cache = cache(idx);
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation);
+        IgniteTx tx = cache.txStart(concurrency, isolation);
 
         try {
             cache.put(KEY, VALUE);

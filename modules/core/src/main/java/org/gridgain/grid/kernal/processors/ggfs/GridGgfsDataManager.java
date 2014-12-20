@@ -677,7 +677,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            try (GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -1117,7 +1117,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
             // Lock keys.

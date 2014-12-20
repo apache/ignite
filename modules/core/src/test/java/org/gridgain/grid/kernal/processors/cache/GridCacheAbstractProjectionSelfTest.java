@@ -185,7 +185,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         int size = 10;
 
         if (atomicityMode() == TRANSACTIONAL) {
-            GridCacheTx tx = prj.txStart();
+            IgniteTx tx = prj.txStart();
 
             for (int i = 0; i < size; i++)
                 prj.put("key" + i, i);
@@ -735,7 +735,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         if (atomicityMode() == ATOMIC)
             return;
 
-        GridCacheTx tx = cache().txStart();
+        IgniteTx tx = cache().txStart();
 
         GridCacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);
 

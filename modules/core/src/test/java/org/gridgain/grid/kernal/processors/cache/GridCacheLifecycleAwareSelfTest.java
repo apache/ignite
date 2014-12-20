@@ -51,7 +51,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key) {
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) {
             return null;
         }
 
@@ -61,35 +61,35 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable GridCacheTx tx, @Nullable Collection keys,
+        @Override public void loadAll(@Nullable IgniteTx tx, @Nullable Collection keys,
             IgniteBiInClosure c) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map map) {
+        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map map) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key) {
+        @Override public void remove(@Nullable IgniteTx tx, Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable GridCacheTx tx,
+        @Override public void removeAll(@Nullable IgniteTx tx,
             @Nullable Collection keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) {
+        @Override public void txEnd(IgniteTx tx, boolean commit) {
             // No-op.
         }
     }

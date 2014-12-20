@@ -21,18 +21,18 @@ public interface GridCacheTxSynchronization {
     /**
      * State change callback for transaction. Note that unless transaction has been
      * completed, it is possible to mark it for <tt>rollbackOnly</tt> by calling
-     * {@link GridCacheTx#setRollbackOnly()} on the passed in transaction.
-     * You can check the return value of {@link GridCacheTx#setRollbackOnly() setRollbackOnly()}
+     * {@link IgniteTx#setRollbackOnly()} on the passed in transaction.
+     * You can check the return value of {@link IgniteTx#setRollbackOnly() setRollbackOnly()}
      * method to see if transaction was indeed marked for rollback or not.
      *
      * @param prevState Previous state of the transaction. If transaction has just been
      *      started, then previous state is {@code null}.
      * @param newState New state of the transaction. In majority of the cases this will be the
-     *      same as {@link GridCacheTx#state() tx.state()}, but it is also possible
+     *      same as {@link IgniteTx#state() tx.state()}, but it is also possible
      *      that transaction may be marked for rollback concurrently with this method
      *      invocation, and in that case <tt>newState</tt> reflects the actual state of the
      *      transition this callback is associated with.
      * @param tx Transaction whose state has changed.
      */
-    public void onStateChanged(@Nullable GridCacheTxState prevState, GridCacheTxState newState, GridCacheTx tx);
+    public void onStateChanged(@Nullable GridCacheTxState prevState, GridCacheTxState newState, IgniteTx tx);
 }

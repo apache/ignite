@@ -12,7 +12,7 @@ package org.apache.ignite.transactions;
 import org.jetbrains.annotations.*;
 
 /**
- * Defines different cache transaction isolation levels. See {@link GridCacheTx}
+ * Defines different cache transaction isolation levels. See {@link IgniteTx}
  * documentation for more information about cache transaction isolation levels.
  */
 public enum GridCacheTxIsolation {

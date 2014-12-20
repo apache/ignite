@@ -120,7 +120,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
 
-                    try (GridCacheTx tx = cache.txStart()) {
+                    try (IgniteTx tx = cache.txStart()) {
                         int kv = RAND.nextInt(keyRange);
 
                         cache.put(kv, kv);

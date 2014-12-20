@@ -29,7 +29,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
  */
-public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
     private static TestIndexingSpi idxSpi = new TestIndexingSpi();
 
@@ -277,7 +277,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
 
             info("Start transaction.");
 
-            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -301,7 +301,7 @@ public abstract class GridCacheTxExceptionAbstractSelfTest extends GridCacheAbst
         try {
             info("Start transaction.");
 
-            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 

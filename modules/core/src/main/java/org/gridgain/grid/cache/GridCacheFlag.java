@@ -70,7 +70,7 @@ public enum GridCacheFlag {
      * Instead of updating remote entries with new values, small invalidation
      * messages will be sent to set the values to {@code null}.
      *
-     * @see GridCacheTx#isInvalidate()
+     * @see IgniteTx#isInvalidate()
      * @see GridCacheConfiguration#isInvalidate()
      */
     INVALIDATE,

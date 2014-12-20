@@ -169,7 +169,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** */
     @GridToStringExclude
-    private AtomicReference<GridFutureAdapter<GridCacheTx>> finFut = new AtomicReference<>();
+    private AtomicReference<GridFutureAdapter<IgniteTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
     private AtomicLong topVer = new AtomicLong(-1);
@@ -924,11 +924,11 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public IgniteFuture<GridCacheTx> finishFuture() {
-        GridFutureAdapter<GridCacheTx> fut = finFut.get();
+    @Override public IgniteFuture<IgniteTx> finishFuture() {
+        GridFutureAdapter<IgniteTx> fut = finFut.get();
 
         if (fut == null) {
-            fut = new GridFutureAdapter<GridCacheTx>(cctx.kernalContext()) {
+            fut = new GridFutureAdapter<IgniteTx>(cctx.kernalContext()) {
                 @Override public String toString() {
                     return S.toString(GridFutureAdapter.class, this, "tx", GridCacheTxAdapter.this);
                 }
@@ -1050,7 +1050,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         if (notify) {
-            GridFutureAdapter<GridCacheTx> fut = finFut.get();
+            GridFutureAdapter<IgniteTx> fut = finFut.get();
 
             if (fut != null)
                 fut.onDone(this);
@@ -1354,7 +1354,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      * Transaction shadow class to be used for deserialization.
      */
-    private static class TxShadow extends GridMetadataAwareAdapter implements GridCacheTx {
+    private static class TxShadow extends GridMetadataAwareAdapter implements IgniteTx {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1496,7 +1496,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<GridCacheTx> commitAsync() {
+        @Override public IgniteFuture<IgniteTx> commitAsync() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1507,7 +1507,7 @@ public abstract class GridCacheTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o || o instanceof GridCacheTx && xid.equals(((GridCacheTx)o).xid());
+            return this == o || o instanceof IgniteTx && xid.equals(((IgniteTx)o).xid());
         }
 
         /** {@inheritDoc} */

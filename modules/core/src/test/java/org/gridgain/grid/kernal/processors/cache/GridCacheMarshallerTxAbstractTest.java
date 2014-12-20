@@ -83,7 +83,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         String key2 = UUID.randomUUID().toString();
         GridCacheWrongValue1 wrongValue = new GridCacheWrongValue1();
 
-        GridCacheTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
             grid().cache(null).put(key, value);
 

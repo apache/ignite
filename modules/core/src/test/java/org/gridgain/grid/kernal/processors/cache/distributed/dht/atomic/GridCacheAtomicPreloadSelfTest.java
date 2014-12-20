@@ -104,7 +104,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
                 info(">>>>>>>>>>>>>>>");
 
-                try (GridCacheTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                try (IgniteTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
                     try {
                         // Lock if pessimistic, read if optimistic.
                         cache.get(key);

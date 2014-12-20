@@ -33,7 +33,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
  * Tests for local transactions.
  */
 @SuppressWarnings( {"BusyWait"})
-abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
+abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -46,7 +46,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
     /**
      * Start grid by default.
      */
-    protected GridCacheTxAbstractTest() {
+    protected IgniteTxAbstractTest() {
         super(false /*start grid. */);
     }
 
@@ -167,7 +167,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);
 
-            GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+            IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
             try {
                 int prevKey = -1;
@@ -262,7 +262,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                GridCacheTx t = cache.tx();
+                IgniteTx t = cache.tx();
 
                 assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                     ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';
@@ -304,7 +304,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < iterations(); i++) {
             GridCache<Integer, String> cache = cache(gridIdx);
 
-            GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+            IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
             try {
                 for (Integer key : getKeys()) {
@@ -367,7 +367,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
                 throw e;
             }
             finally {
-                GridCacheTx t1 = cache.tx();
+                IgniteTx t1 = cache.tx();
 
                 debug("t1=" + t1);
 
@@ -407,7 +407,7 @@ abstract class GridCacheTxAbstractTest extends GridCommonAbstractTest {
                     for (int j = 0; j < gridCount(); j++) {
                         GridCache<Integer, String> cache = cache(j);
 
-                        GridCacheTx tx = cache.tx();
+                        IgniteTx tx = cache.tx();
 
                         assertNull("Transaction is not completed: " + tx, tx);
 

@@ -120,7 +120,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 GridCache<String, String> cache = grid(0).cache(null);
 
-                GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 cache.get(key);
 
@@ -180,7 +180,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     public void testMvccFinishKeys() throws Exception {
         GridCache<String, Integer> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
 
             cache.get(key);

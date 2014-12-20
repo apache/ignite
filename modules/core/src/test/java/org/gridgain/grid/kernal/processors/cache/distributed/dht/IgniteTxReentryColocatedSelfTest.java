@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.near;
+package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.cache.*;
@@ -20,7 +20,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class GridCacheTxReentryNearSelfTest extends GridCacheTxReentryAbstractSelfTest {
+public class IgniteTxReentryColocatedSelfTest extends IgniteTxReentryAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;
@@ -66,6 +66,6 @@ public class GridCacheTxReentryNearSelfTest extends GridCacheTxReentryAbstractSe
 
     /** {@inheritDoc} */
     @Override protected boolean nearEnabled() {
-        return true;
+        return false;
     }
 }

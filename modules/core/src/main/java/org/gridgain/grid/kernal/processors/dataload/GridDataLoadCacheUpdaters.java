@@ -264,7 +264,7 @@ public class GridDataLoadCacheUpdaters {
                 Integer part = e.getKey();
                 int cnt = e.getValue();
 
-                GridCacheTx tx = cache.txStartPartition(part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
+                IgniteTx tx = cache.txStartPartition(part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
 
                 try {
                     updateAll(cache, rmvPartMap == null ? null : rmvPartMap.get(part),

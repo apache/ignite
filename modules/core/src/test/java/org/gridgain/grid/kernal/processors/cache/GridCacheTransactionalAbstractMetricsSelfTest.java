@@ -201,7 +201,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            GridCacheTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = cache.txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)
@@ -241,7 +241,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            GridCacheTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = cache.txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)

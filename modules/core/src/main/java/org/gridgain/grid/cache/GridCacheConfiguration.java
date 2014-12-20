@@ -1252,8 +1252,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Maximum batch size for write-behind cache store operations. Store operations (get or remove)
      * are combined in a batch of this size to be passed to
-     * {@link GridCacheStore#putAll(GridCacheTx, Map)} or
-     * {@link GridCacheStore#removeAll(GridCacheTx, Collection)} methods.
+     * {@link GridCacheStore#putAll(IgniteTx, Map)} or
+     * {@link GridCacheStore#removeAll(IgniteTx, Collection)} methods.
      * <p/>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_BATCH_SIZE}.
      *

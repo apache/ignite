@@ -22,7 +22,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 /**
  * Simple cache test.
  */
-public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
+public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -114,7 +114,7 @@ public class GridCacheTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
         GridCache<Integer, String> cache = cache(idx);
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation, TIMEOUT, 0);
+        IgniteTx tx = cache.txStart(concurrency, isolation, TIMEOUT, 0);
 
         try {
             info("Storing value in cache [key=1, val=1]");

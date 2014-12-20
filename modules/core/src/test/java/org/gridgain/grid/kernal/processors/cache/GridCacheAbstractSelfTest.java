@@ -86,7 +86,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCacheTx tx = cache().tx();
+        IgniteTx tx = cache().tx();
 
         if (tx != null) {
             tx.close();
@@ -274,15 +274,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     clo.apply(e.getKey(), e.getValue());
             }
 
-            @Override public Object load(GridCacheTx tx, Object key) {
+            @Override public Object load(IgniteTx tx, Object key) {
                 return map.get(key);
             }
 
-            @Override public void put(GridCacheTx tx, Object key, @Nullable Object val) {
+            @Override public void put(IgniteTx tx, Object key, @Nullable Object val) {
                 map.put(key, val);
             }
 
-            @Override public void remove(GridCacheTx tx, Object key) {
+            @Override public void remove(IgniteTx tx, Object key) {
                 map.remove(key);
             }
         };

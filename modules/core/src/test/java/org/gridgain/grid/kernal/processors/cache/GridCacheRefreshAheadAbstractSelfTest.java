@@ -122,7 +122,7 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(GridCacheTx tx, Object key) throws IgniteCheckedException {
+        @Nullable @Override public Object load(IgniteTx tx, Object key) throws IgniteCheckedException {
             if (trackLoads) {
                 wasAsyncLoad = wasAsyncLoad || !testThread.equals(Thread.currentThread());
 
@@ -138,12 +138,12 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Object key, Object val) throws IgniteCheckedException {
+        @Override public void put(IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
             /* No-op. */
         }
 

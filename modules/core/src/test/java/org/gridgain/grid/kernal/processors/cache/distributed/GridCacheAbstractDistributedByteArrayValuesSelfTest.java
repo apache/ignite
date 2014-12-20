@@ -328,7 +328,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     private void testTransactionMixed0(GridCache<Integer, Object>[] caches, GridCacheTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
         for (GridCache<Integer, Object> cache : caches) {
-            GridCacheTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
 
             try {
                 cache.put(key1, val1);

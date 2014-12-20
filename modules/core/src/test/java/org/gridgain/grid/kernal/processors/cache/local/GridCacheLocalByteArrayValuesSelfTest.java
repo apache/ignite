@@ -219,7 +219,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     private void testTransactionMixed(GridCache<Integer, Object> cache, GridCacheTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
-        GridCacheTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
 
         try {
             cache.put(key1, val1);

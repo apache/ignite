@@ -33,7 +33,7 @@ import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 /**
  * Abstract test for originating node failure.
  */
-public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int GRID_CNT = 5;
 
@@ -147,7 +147,7 @@ public abstract class GridCacheTxOriginatingNodeFailureAbstractSelfTest extends 
 
                 assertNotNull(cache);
 
-                GridCacheTxProxyImpl tx = (GridCacheTxProxyImpl)cache.txStart();
+                IgniteTxProxyImpl tx = (IgniteTxProxyImpl)cache.txStart();
 
                 GridCacheTxEx txEx = GridTestUtils.getFieldValue(tx, "tx");
 

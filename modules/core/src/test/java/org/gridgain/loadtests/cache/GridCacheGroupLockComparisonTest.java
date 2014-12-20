@@ -164,7 +164,7 @@ public class GridCacheGroupLockComparisonTest {
 
                     // Threads should not lock the same key.
 
-                    try (GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
+                    try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
                         for (long i = 0; i < BATCH_SIZE; i++) {
                             cache.put(new GridCacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
 

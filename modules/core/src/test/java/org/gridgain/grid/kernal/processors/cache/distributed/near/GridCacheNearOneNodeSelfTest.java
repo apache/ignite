@@ -141,7 +141,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         GridCache<Integer, String> near = cache();
         GridCacheAdapter<Integer, String> dht = dht();
 
-        try (GridCacheTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
+        try (IgniteTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
             near.putx(2, "2");
             near.put(3, "3");
 
@@ -269,7 +269,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -288,7 +288,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -351,7 +351,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -361,13 +361,13 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
+        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
             throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

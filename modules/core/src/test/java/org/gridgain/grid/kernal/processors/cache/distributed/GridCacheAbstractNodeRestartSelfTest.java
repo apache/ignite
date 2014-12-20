@@ -623,7 +623,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 int c = 0;
 
                                 try {
-                                    try (GridCacheTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                    try (IgniteTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
                                         if (c % logFreq == 0)
@@ -772,7 +772,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = 0;
 
-                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
                                     if (c % logFreq == 0)

@@ -56,7 +56,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
 
             GridCache<String, Integer> cache = cache();
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
 
                 for (int i = 0; i < 1000; i++) {

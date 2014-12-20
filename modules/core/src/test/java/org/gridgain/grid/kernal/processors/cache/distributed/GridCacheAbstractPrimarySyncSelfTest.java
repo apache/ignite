@@ -84,7 +84,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
                 GridCache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (cache.entry(i).primary()) {
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.put(i, i);
 
                         tx.commit();

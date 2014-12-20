@@ -453,7 +453,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    public IgniteFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
+    public IgniteFuture<IgniteTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())

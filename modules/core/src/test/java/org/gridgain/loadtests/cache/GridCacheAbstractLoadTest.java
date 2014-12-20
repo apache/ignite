@@ -134,7 +134,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while (!done.get()) {
                         if (tx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 writeClos.apply(cache);
 
                                 tx.commit();
@@ -156,7 +156,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while(!done.get()) {
                         if (tx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 readClos.apply(cache);
 
                                 tx.commit();

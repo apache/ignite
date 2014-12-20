@@ -106,7 +106,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
+public interface IgniteTx extends GridMetadataAware, AutoCloseable {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -233,7 +233,7 @@ public interface GridCacheTx extends GridMetadataAware, AutoCloseable {
      *
      * @return Future for commit operation.
      */
-    public IgniteFuture<GridCacheTx> commitAsync();
+    public IgniteFuture<IgniteTx> commitAsync();
 
     /**
      * Rolls back this transaction.

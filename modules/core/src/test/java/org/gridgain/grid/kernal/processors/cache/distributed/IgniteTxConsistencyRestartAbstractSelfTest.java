@@ -31,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  *
  */
-public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -148,7 +148,7 @@ public abstract class GridCacheTxConsistencyRestartAbstractSelfTest extends Grid
 
                 Collections.sort(keys);
 
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Map<Integer, Integer> map = cache.getAll(keys);
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {

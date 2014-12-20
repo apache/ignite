@@ -125,7 +125,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -158,7 +158,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -191,7 +191,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -224,7 +224,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -257,7 +257,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -290,7 +290,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -310,7 +310,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         assertEquals(1, store.getPutAllCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -321,7 +321,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testMultipleOperations() throws Exception {
         GridCache<Integer, String> cache = cache(0);
 
-        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
             cache.put(2, "val");
             cache.put(3, "val");
@@ -337,7 +337,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(0, store.getPutCount());
         assertEquals(1, store.getPutAllCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }

@@ -47,7 +47,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try {
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, 1));
 
                         if (idx != null) {
@@ -97,7 +97,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             T retVal;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new PollClosure(id));
 
                     if (idx != null) {
@@ -146,7 +146,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, items.size()));
 
                     if (idx != null) {
@@ -199,7 +199,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
                     if (idx != null) {

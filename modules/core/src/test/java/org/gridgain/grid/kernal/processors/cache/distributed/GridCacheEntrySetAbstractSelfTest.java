@@ -82,7 +82,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void putAndCheckEntrySet(GridCache<Object, Object> cache) throws Exception {
-        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 
             if (total == null)

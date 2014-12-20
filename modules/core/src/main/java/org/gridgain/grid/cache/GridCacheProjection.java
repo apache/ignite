@@ -86,7 +86,7 @@ import java.util.concurrent.*;
  * </li>
  * <li>
  *  Various {@code 'txStart(..)'} methods to perform various cache
- *  operations within a transaction (see {@link GridCacheTx} for more information).
+ *  operations within a transaction (see {@link IgniteTx} for more information).
  * </li>
  * <li>
  *  {@link #queries()} method to get an instance of {@link GridCacheQueries} service for working
@@ -115,7 +115,7 @@ import java.util.concurrent.*;
  * and {@code 'remove(..)'} operations are transactional and will participate in an ongoing transaction,
  * if any. Other methods like {@code 'peek(..)'} or various {@code 'contains(..)'} methods may
  * be transaction-aware, i.e. check in-transaction entries first, but will not affect the current
- * state of transaction. See {@link GridCacheTx} documentation for more information
+ * state of transaction. See {@link IgniteTx} documentation for more information
  * about transactions.
  * <h1 class="header">Group Locking</h1>
  * <i>Group Locking</i> is a feature where instead of acquiring individual locks, GridGain will lock
@@ -370,7 +370,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Reloads a single key from persistent storage. This method
-     * delegates to {@link GridCacheStore#load(GridCacheTx, Object)}
+     * delegates to {@link GridCacheStore#load(IgniteTx, Object)}
      * method.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in transactions, however it does not violate
@@ -384,7 +384,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Asynchronously reloads a single key from persistent storage. This method
-     * delegates to {@link GridCacheStore#load(GridCacheTx, Object)}
+     * delegates to {@link GridCacheStore#load(IgniteTx, Object)}
      * method.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in transactions, however it does not violate
@@ -485,7 +485,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If the value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disable, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#load(GridCacheTx, Object)} method.
+     * {@link GridCacheStore#load(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -510,7 +510,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If the value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#load(GridCacheTx, Object)} method.
+     * {@link GridCacheStore#load(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -534,7 +534,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
+     * {@link GridCacheStore#loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -558,7 +558,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * If some value is not present in cache, then it will be looked up from swap storage. If
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link GridCacheStore} persistent storage via
-     * {@link GridCacheStore#loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
+     * {@link GridCacheStore#loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -580,13 +580,13 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage,  {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -619,13 +619,13 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap and read-through is allowed,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage,  {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage,  {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -654,7 +654,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -687,7 +687,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -720,7 +720,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * transfer the transforming closure that will be applied on each remote node involved in transaction.
      * It may add significant performance gain when dealing with large values as the value is much larger
      * than the closure itself. If write-through is enabled, the stored value will be persisted to
-     * {@link GridCacheStore} via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * {@link GridCacheStore} via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -767,7 +767,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -790,14 +790,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putxIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -821,14 +821,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putxIfAbsentAsync(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -854,7 +854,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -880,7 +880,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -902,14 +902,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #replacex(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -932,14 +932,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * {@link GridCacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
      * which in its turn may load the value from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #replacex(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -964,7 +964,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -990,7 +990,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * should always be used whenever return value is not required.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1013,7 +1013,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1038,7 +1038,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1061,7 +1061,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#putAll(GridCacheTx, Map)} method.
+     * via {@link GridCacheStore#putAll(IgniteTx, Map)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1091,7 +1091,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1117,7 +1117,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1138,7 +1138,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * so value stored in cache is guaranteed to be consistent with the filters.
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#putAll(GridCacheTx, Map)} method.
+     * via {@link GridCacheStore#putAll(IgniteTx, Map)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1168,7 +1168,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that will be applied on each remote node involved in transaction. It may add significant performance
      * gain when dealing with large values as the value is much larger than the closure itself.
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1194,7 +1194,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that will be applied on each remote node involved in transaction. It may add significant
      * performance gain when dealing with large values as the value is much larger than the closure itself.
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1323,7 +1323,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart() throws IllegalStateException;
+    public IgniteTx txStart() throws IllegalStateException;
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -1334,7 +1334,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation);
+    public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
@@ -1348,7 +1348,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout,
+    public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -1384,7 +1384,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
+    public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
@@ -1420,7 +1420,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
+    public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
@@ -1430,7 +1430,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    @Nullable public GridCacheTx tx();
+    @Nullable public IgniteTx tx();
 
     /**
      * Gets entry from cache with the specified key. The returned entry can
@@ -1582,14 +1582,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the disk-based swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1615,14 +1615,14 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(GridCacheTx, Object)} method will be used.
+     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1646,7 +1646,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1673,7 +1673,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1697,7 +1697,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1722,7 +1722,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1744,7 +1744,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * pass.
      * <p>
      * If write-through is enabled, the values will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#removeAll(GridCacheTx, Collection)} method.
+     * via {@link GridCacheStore#removeAll(IgniteTx, Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1766,7 +1766,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * passed in filters do pass.
      * <p>
      * If write-through is enabled, the values will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#removeAll(GridCacheTx, Collection)} method.
+     * via {@link GridCacheStore#removeAll(IgniteTx, Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1795,7 +1795,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * other concurrent transactional updates.
      * <p>
      * If write-through is enabled, the values will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#removeAll(GridCacheTx, Collection)} method.
+     * via {@link GridCacheStore#removeAll(IgniteTx, Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1820,7 +1820,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * is empty, then transaction will quickly become very heavy and slow.
      * <p>
      * If write-through is enabled, the values will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#removeAll(GridCacheTx, Collection)} method.
+     * via {@link GridCacheStore#removeAll(IgniteTx, Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

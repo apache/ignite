@@ -64,7 +64,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         initStore(2);
 
         try {
-            GridCacheTx tx = null;
+            IgniteTx tx = null;
 
             store.put(tx, 1, "v1");
             store.put(tx, 2, "v2");

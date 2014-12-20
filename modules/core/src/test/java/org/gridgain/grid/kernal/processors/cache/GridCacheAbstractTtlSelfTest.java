@@ -58,7 +58,7 @@ public abstract class GridCacheAbstractTtlSelfTest extends GridCacheAbstractSelf
         String key = "1";
         int ttl = 500;
 
-        try (GridCacheTx tx = c.txStart()) {
+        try (IgniteTx tx = c.txStart()) {
             GridCacheEntry<String, Integer> entry = c.entry(key);
 
             entry.timeToLive(ttl);

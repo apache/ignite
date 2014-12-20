@@ -19,10 +19,10 @@ import java.util.*;
 
 /**
  * Cache storage convenience adapter. It provides default implementation for bulk operations, such
- * as {@link #loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
- * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
- * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
- * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
+ * as {@link #loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
+ * {@link #putAll(IgniteTx, Map)}, and {@link #removeAll(IgniteTx, Collection)}
+ * by sequentially calling corresponding {@link #load(IgniteTx, Object)},
+ * {@link #put(IgniteTx, Object, Object)}, and {@link #remove(IgniteTx, Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However in many cases
  * it maybe more preferable to take advantage of database batch update functionality, and therefore
  * default adapter implementation may not be the best option.
@@ -47,7 +47,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys,
+    @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys,
         IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         assert keys != null;
 
@@ -60,7 +60,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(GridCacheTx tx, Map<? extends K, ? extends V> map)
+    @Override public void putAll(IgniteTx tx, Map<? extends K, ? extends V> map)
         throws IgniteCheckedException {
         assert map != null;
 
@@ -69,7 +69,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(GridCacheTx tx, Collection<? extends K> keys)
+    @Override public void removeAll(IgniteTx tx, Collection<? extends K> keys)
         throws IgniteCheckedException {
         assert keys != null;
 
@@ -86,7 +86,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      * @param commit {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 }

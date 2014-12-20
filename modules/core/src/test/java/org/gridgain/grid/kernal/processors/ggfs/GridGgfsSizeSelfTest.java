@@ -495,7 +495,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
                 @Override public void run() {
                     try {
 
-                        try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             metaCache.get(id);
 
                             latch.await();
@@ -513,7 +513,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
             // Now add file ID to trash listing so that delete worker could "see" it.
 
-            try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, GridGgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new GridGgfsListingEntry(info));
 

@@ -186,7 +186,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
 
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
@@ -225,7 +225,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         final IgniteClosure<T, T> newValClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);

@@ -104,7 +104,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         c.put(CNTR_KEY, 0);
 
         for (int i = 0; i < 10; i++) {
-            try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 c.get(CNTR_KEY);
 
                 ctx.closure().callLocalSafe((new Callable<Boolean>() {
@@ -139,7 +139,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
-                    GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ);
+                    IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
                         int cntr = c.get(CNTR_KEY);
@@ -228,7 +228,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         info("*** Cntr in lock thread: " + cntr);
 
-                        GridCacheTx tx = c.txStart(OPTIMISTIC, READ_COMMITTED);
+                        IgniteTx tx = c.txStart(OPTIMISTIC, READ_COMMITTED);
 
                         try {
 

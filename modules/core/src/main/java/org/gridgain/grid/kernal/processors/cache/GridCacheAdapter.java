@@ -3033,10 +3033,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheTx tx() {
+    @Nullable @Override public IgniteTx tx() {
         GridCacheTxAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        return tx == null ? null : new GridCacheTxProxyImpl<>(tx, ctx.shared());
+        return tx == null ? null : new IgniteTxProxyImpl<>(tx, ctx.shared());
     }
 
     /** {@inheritDoc} */
@@ -3113,14 +3113,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart() throws IllegalStateException {
+    @Override public IgniteTx txStart() throws IllegalStateException {
         TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -3135,7 +3135,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency,
+    @Override public IgniteTx txStart(GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
@@ -3145,14 +3145,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
+    @Override public IgniteTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return ctx.kernalContext().cache().transactions().txStartAffinity(name(), affinityKey, concurrency, isolation,
             timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
+    @Override public IgniteTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
             timeout, txSize);
@@ -3454,7 +3454,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<GridCacheTx> commitTxAsync(final GridCacheTx tx) {
+    public IgniteFuture<IgniteTx> commitTxAsync(final IgniteTx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();
@@ -3463,9 +3463,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             IgniteFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteFuture<GridCacheTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteFuture<GridCacheTx>>() {
-                        @Override public IgniteFuture<GridCacheTx> apply(Object o, Exception e) {
+                IgniteFuture<IgniteTx> f = new GridEmbeddedFuture<>(fut,
+                    new C2<Object, Exception, IgniteFuture<IgniteTx>>() {
+                        @Override public IgniteFuture<IgniteTx> apply(Object o, Exception e) {
                             return tx.commitAsync();
                         }
                     }, ctx.kernalContext());
@@ -3475,7 +3475,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return f;
             }
 
-            IgniteFuture<GridCacheTx> f = tx.commitAsync();
+            IgniteFuture<IgniteTx> f = tx.commitAsync();
 
             saveFuture(holder, f);
 
@@ -3494,7 +3494,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param tx Transaction to commit.
      * @throws IgniteCheckedException If commit failed.
      */
-    void commitTx(GridCacheTx tx) throws IgniteCheckedException {
+    void commitTx(IgniteTx tx) throws IgniteCheckedException {
         awaitLastFut();
 
         tx.commit();
@@ -3506,7 +3506,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param tx Transaction to commit.
      * @throws IgniteCheckedException If commit failed.
      */
-    void rollbackTx(GridCacheTx tx) throws IgniteCheckedException {
+    void rollbackTx(IgniteTx tx) throws IgniteCheckedException {
         awaitLastFut();
 
         tx.rollback();
@@ -3518,7 +3518,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param tx Transaction to commit.
      * @throws IgniteCheckedException If commit failed.
      */
-    void endTx(GridCacheTx tx) throws IgniteCheckedException {
+    void endTx(IgniteTx tx) throws IgniteCheckedException {
         awaitLastFut();
 
         tx.close();

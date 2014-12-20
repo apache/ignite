@@ -29,7 +29,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 /**
  * Checks multithreaded put/get cache operations on one node.
  */
-public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbstractTest {
+public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstractTest {
     /** Debug flag. */
     private static final boolean DEBUG = false;
 
@@ -43,7 +43,7 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * Default constructor.
      *
      */
-    protected GridCacheTxConcurrentGetAbstractTest() {
+    protected IgniteTxConcurrentGetAbstractTest() {
         super(true /** Start grid. */);
     }
 
@@ -114,7 +114,7 @@ public abstract class GridCacheTxConcurrentGetAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private String txGet(Ignite ignite, String key) throws Exception {
-        try (GridCacheTx tx = ignite.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = ignite.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             GridCacheEntryEx<String, Integer> dhtEntry = dht(ignite).peekEx(key);
 
             if (DEBUG)

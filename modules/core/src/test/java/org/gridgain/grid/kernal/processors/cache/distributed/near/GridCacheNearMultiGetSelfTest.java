@@ -221,7 +221,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         if (put)
             cache.put(key, val = Integer.toString(key));
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
         try {
             if (isTestDebug()) {
@@ -291,7 +291,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             throw e;
         }
         finally {
-            GridCacheTx t = cache.tx();
+            IgniteTx t = cache.tx();
 
             assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                 ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';

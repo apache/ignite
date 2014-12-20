@@ -247,7 +247,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                             GridCache<Integer, Integer> cache = node.cache(null);
 
                             try {
-                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     info(">>> Locked key, waiting for latch: " + key);
@@ -318,7 +318,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 
@@ -401,7 +401,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                             GridCache<Integer, Integer> cache = node.cache(null);
 
                             try {
-                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
                                     commitLatch.await();
@@ -454,7 +454,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         int key = (int)Thread.currentThread().getId();
 
                         try {
-                            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 // This method should block until all previous transactions are completed.
                                 cache.put(key, key);
 

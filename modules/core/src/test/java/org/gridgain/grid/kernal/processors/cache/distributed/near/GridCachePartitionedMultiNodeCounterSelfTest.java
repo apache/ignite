@@ -304,7 +304,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                 GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                                try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     if (DEBUG)
                                         info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                             ", oldCntr=" + oldCntr + ", node=" + priId + ", dhtEntry=" + dhtEntry +
@@ -399,7 +399,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                     Integer oldCntr = c.peek(CNTR_KEY);
 
-                                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                         if (DEBUG)
                                             info("Started tx [grid=" + near.name() + ", primary=false, xid=" +
                                                 tx.xid() + ", oldCntr=" + oldCntr + ", node=" + nearId +
@@ -636,7 +636,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     Integer oldCntr = c.peek(CNTR_KEY);
 
-                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + near.name() + ", primary=false, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + nearId + ", nearEntry=" + nearEntry + ']');
@@ -707,7 +707,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + pri.name() + ", dhtEntry=" +

@@ -26,7 +26,7 @@ import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 /**
  * Tests transaction during cache preloading.
  */
-public abstract class GridCacheTxPreloadAbstractTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 6;
 
@@ -150,7 +150,7 @@ public abstract class GridCacheTxPreloadAbstractTest extends GridCacheAbstractSe
 
             GridCache<String, Integer> cache = cache(i);
 
-            try (GridCacheTx tx = cache.txStart(txConcurrency, GridCacheTxIsolation.READ_COMMITTED)) {
+            try (IgniteTx tx = cache.txStart(txConcurrency, GridCacheTxIsolation.READ_COMMITTED)) {
                 cache.transform(TX_KEY, new C1<Integer, Integer>() {
                     @Override public Integer apply(Integer val) {
                         if (val == null) {

@@ -140,7 +140,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     public void testLocalQuery() throws Exception {
         cache1.clearAll();
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             cache1.put(new CacheKey(1), new CacheValue("1"));
@@ -182,7 +182,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
         ignite3.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             for (int i = 1; i <= keyCnt; i++)

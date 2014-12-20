@@ -70,18 +70,18 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         final AtomicInteger rmvCnt = new AtomicInteger();
 
         store = new GridCacheStoreAdapter() {
-            @Override public Object load(@Nullable GridCacheTx tx, Object key) {
+            @Override public Object load(@Nullable IgniteTx tx, Object key) {
                 info(">>> Get [key=" + key + ']');
 
                 return null;
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, Object key,
+            @Override public void put(@Nullable IgniteTx tx, Object key,
                 @Nullable Object val) {
                 putCnt.incrementAndGet();
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, Object key) {
+            @Override public void remove(@Nullable IgniteTx tx, Object key) {
                 rmvCnt.incrementAndGet();
             }
         };
@@ -93,7 +93,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         try {
             cache.get(1);
 
-            GridCacheTx tx = cache.txStart();
+            IgniteTx tx = cache.txStart();
 
             try {
                 for (int i = 1; i <= 10; i++)

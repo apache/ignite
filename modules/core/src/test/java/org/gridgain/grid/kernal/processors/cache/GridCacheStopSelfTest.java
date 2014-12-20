@@ -138,7 +138,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         if (startTx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 cache.put(key, key);
 
                                 readyLatch.countDown();

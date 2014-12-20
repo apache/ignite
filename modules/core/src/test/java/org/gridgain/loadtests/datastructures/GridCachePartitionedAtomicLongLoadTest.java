@@ -103,7 +103,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < DURATION && !Thread.currentThread().isInterrupted()) {
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 long seqVal = seq.incrementAndGet();
 

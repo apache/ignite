@@ -985,7 +985,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /** */
     private static class TestStore implements GridCacheStore<Object,Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key)
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             return null;
         }
@@ -997,37 +997,37 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable GridCacheTx tx,
+        @Override public void loadAll(@Nullable IgniteTx tx,
             @Nullable Collection<?> keys, IgniteBiInClosure<Object, Object> c) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map<?, ?> map)
+        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map<?, ?> map)
             throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key)
+        @Override public void remove(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable GridCacheTx tx,
+        @Override public void removeAll(@Nullable IgniteTx tx,
             @Nullable Collection<?> keys) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
             // No-op.
         }
     }

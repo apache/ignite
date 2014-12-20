@@ -100,7 +100,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
         try {
             for (int i = 1; i <= 10; i++) {
@@ -165,7 +165,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i <= 10; i++)
                 cache.putx(i, Integer.toString(i));
 

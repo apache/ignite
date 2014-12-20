@@ -61,7 +61,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         cache.transform(key, new IncClosure());
 
                         tx.commit();
@@ -125,7 +125,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         Integer val = cache.put(key, i);
 
                         assertNotNull(val);
@@ -181,7 +181,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         cache.putx(key, i, new TestFilter());
 
                         tx.commit();
@@ -237,7 +237,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         assertFalse(cache.putxIfAbsent(key, 100));
 
                         tx.commit();

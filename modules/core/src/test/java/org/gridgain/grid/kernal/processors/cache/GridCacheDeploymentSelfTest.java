@@ -432,7 +432,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Object> cache = g1.cache(null);
 
-            try (GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+            try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                 cache.put(new GridCacheAffinityKey<>("key1", affKey), "val1");
 
                 tx.commit();

@@ -866,7 +866,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             assertNotNull(txIsolation);
             assertNotNull(op);
 
-            try (GridCacheTx tx = cache(0).txStart(txConcurrency, txIsolation)) {
+            try (IgniteTx tx = cache(0).txStart(txConcurrency, txIsolation)) {
                 update(0, op, key1, 100, 1);
                 update(0, op, key2, 200, 2);
                 update(0, op, key3, 300, 3);

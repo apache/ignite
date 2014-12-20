@@ -1507,19 +1507,19 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key)
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key)
+        @Override public void remove(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             // No-op.
         }

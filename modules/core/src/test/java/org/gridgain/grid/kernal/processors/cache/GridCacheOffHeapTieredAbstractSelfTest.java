@@ -226,7 +226,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     private void checkPutGetRemoveTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, Integer> c = grid(0).cache(null);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.put(key, key));
 
@@ -251,7 +251,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     private void checkPutGetRemoveTxByteArray(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, byte[]> c = grid(0).cache(null);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         byte[] val = new byte[] {key.byteValue()};
 
@@ -370,7 +370,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         assertTrue(map0.isEmpty());
 
-        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+        try (IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
             c.putAll(map);
 
             tx.commit();
@@ -383,7 +383,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (Map.Entry<Integer, Integer> e : map.entrySet())
             checkValue(e.getKey(), e.getValue());
 
-        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+        try (IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
             c.removeAll(map.keySet());
 
             tx.commit();
@@ -458,7 +458,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         TestValue val = new TestValue(new byte[10]);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.put(key, val));
 

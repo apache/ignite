@@ -15,7 +15,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 /**
  *
  */
-public class GridCacheTxConsistencyColocatedRestartSelfTest extends GridCacheTxConsistencyRestartAbstractSelfTest {
+public class IgniteTxConsistencyColocatedRestartSelfTest extends IgniteTxConsistencyRestartAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return GridCacheMode.PARTITIONED;

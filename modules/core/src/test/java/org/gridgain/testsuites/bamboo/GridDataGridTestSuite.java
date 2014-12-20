@@ -248,8 +248,8 @@ public class GridDataGridTestSuite extends TestSuite {
         // TODO: GG-7434
         // suite.addTestSuite(GridReplicatedTxPreloadTest.class);
 
-        suite.addTestSuite(GridCacheTxReentryNearSelfTest.class);
-        suite.addTestSuite(GridCacheTxReentryColocatedSelfTest.class);
+        suite.addTestSuite(IgniteTxReentryNearSelfTest.class);
+        suite.addTestSuite(IgniteTxReentryColocatedSelfTest.class);
 
         suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
 

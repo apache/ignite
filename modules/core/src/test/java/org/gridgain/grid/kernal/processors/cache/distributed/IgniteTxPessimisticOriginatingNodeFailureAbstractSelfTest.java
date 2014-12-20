@@ -35,7 +35,7 @@ import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 /**
  * Abstract test for originating node failure.
  */
-public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int GRID_CNT = 5;
 
@@ -170,14 +170,14 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
 
                 assertNotNull(cache);
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 try {
                     cache.putAll(map);
 
                     info("Before commitAsync");
 
-                    IgniteFuture<GridCacheTx> fut = tx.commitAsync();
+                    IgniteFuture<IgniteTx> fut = tx.commitAsync();
 
                     info("Got future for commitAsync().");
 
@@ -311,7 +311,7 @@ public abstract class GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTe
 
         assertNotNull(cache);
 
-        try (GridCacheTx tx = cache.txStart()) {
+        try (IgniteTx tx = cache.txStart()) {
             cache.getAll(keys);
 
             // Should not send any messages.

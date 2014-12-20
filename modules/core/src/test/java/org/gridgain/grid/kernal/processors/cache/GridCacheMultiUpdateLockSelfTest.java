@@ -127,7 +127,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         info(">>>> Checking tx in new grid.");
 
-                        try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             assertEquals(2, c.get("a"));
                             assertEquals(4, c.get("b"));
                             assertEquals(6, c.get("c"));
@@ -148,7 +148,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                 info(">>>> Checking tx commit.");
 
-                GridCacheTx tx = cache0.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = cache0.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     cache0.put("a", 1);

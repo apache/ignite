@@ -142,7 +142,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<IgniteTx> commitAsync() {
         try {
             prepare();
         }
@@ -172,7 +172,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         rollbackAsync().get();
     }
 
-    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
+    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 
@@ -180,7 +180,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             state(ROLLED_BACK);
 
-            return new GridFinishedFuture<GridCacheTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTx>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

@@ -95,7 +95,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         Thread stopper = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    try (GridCacheTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         g0.cache(null).get(1);
 
                         latch.countDown();

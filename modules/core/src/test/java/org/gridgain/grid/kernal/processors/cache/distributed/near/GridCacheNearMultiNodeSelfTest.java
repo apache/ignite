@@ -152,7 +152,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         store.reset();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).cache(null).tx();
 
             if (tx != null) {
                 error("Ending zombie transaction: " + tx);
@@ -366,7 +366,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
-            try (GridCacheTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (IgniteTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
                 near.putx(2, "2");
 
                 String s = near.put(3, "3");
@@ -499,7 +499,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
-            try (GridCacheTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (IgniteTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
                 assertTrue(near.putx(2, "2"));
 
                 String s = near.put(3, "3");
@@ -810,7 +810,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         if (transactional()) {
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Simple transaction get.
                 assertEquals(val, cache.get(key));
 
@@ -855,7 +855,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(1).peekNearOnly(key));
 
         if (transactional()) {
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Read.
                 assertEquals(val, cache.get(key));
 
@@ -931,7 +931,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -941,13 +941,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
+        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
             throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

@@ -608,7 +608,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             Session ses = new Session(terminalId());
 
             try {
-                try (GridCacheTx tx = cache.txStart()) {
+                try (IgniteTx tx = cache.txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());

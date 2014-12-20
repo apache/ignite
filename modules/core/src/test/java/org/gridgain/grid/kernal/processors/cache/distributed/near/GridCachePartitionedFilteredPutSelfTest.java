@@ -127,7 +127,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private void doFilteredPut() throws Exception {
         GridCache<Integer, Integer> c = cache();
 
-        try (GridCacheTx tx = c.txStart()) {
+        try (IgniteTx tx = c.txStart()) {
             assert !c.putx(1, 1, F.<Integer, Integer>cacheHasPeekValue());
 
             tx.commit();
@@ -144,7 +144,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private void doPutAndRollback() throws Exception {
         GridCache<Integer, Integer> c = cache();
 
-        try (GridCacheTx tx = c.txStart()) {
+        try (IgniteTx tx = c.txStart()) {
             assert c.putx(1, 1);
 
             tx.rollback();

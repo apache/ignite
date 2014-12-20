@@ -94,7 +94,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
 
         cache.clearAll();
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation);
+        IgniteTx tx = cache.txStart(concurrency, isolation);
 
         try {
             cache.put("key", 1);

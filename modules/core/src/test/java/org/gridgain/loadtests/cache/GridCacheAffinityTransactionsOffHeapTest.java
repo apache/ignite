@@ -65,7 +65,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         GridCache<Object, Integer> c = cache(key);
 
-        try (GridCacheTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+        try (IgniteTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
             Integer val = c.get(key);
             Integer userVal1 = c.get(new UserKey(key, 0));
             Integer userVal2 = c.get(new UserKey(key, 1));

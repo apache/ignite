@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -19,7 +18,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 /**
  * Tests cache transaction during preloading.
  */
-public class GridCacheDhtTxPreloadSelfTest extends GridCacheTxPreloadAbstractTest {
+public class GridCacheDhtTxPreloadSelfTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;

@@ -151,7 +151,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Partition: " + cache.affinity().partition(1));
 
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");
 
                         String s = cache.get(1);

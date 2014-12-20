@@ -23,7 +23,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  *
  */
 public class GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest extends
-    GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTest {
+    IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> ignoreMessageClasses() {
         return F.asList((Class<?>)GridNearTxFinishRequest.class, GridDhtTxFinishRequest.class);

@@ -118,7 +118,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
      */
     private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable GridCacheTx tx, Object key)
+        @Override public Object load(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             assert false;
 
@@ -126,13 +126,13 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Object key, @Nullable Object val)
+        @Override public void put(IgniteTx tx, Object key, @Nullable Object val)
             throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Object key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
             // No-op
         }
     }

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.*;
  * Mode indicating how GridGain should wait for write replies from other nodes. Default
  * value is {@link #FULL_ASYNC}}, which means that GridGain will not wait for responses from
  * participating nodes. This means that by default remote nodes may get their state updated slightly after
- * any of the cache write methods complete, or after {@link GridCacheTx#commit()} method completes.
+ * any of the cache write methods complete, or after {@link IgniteTx#commit()} method completes.
  * <p>
  * Note that regardless of write synchronization mode, cache data will always remain fully
  * consistent across all participating nodes.
@@ -35,7 +35,7 @@ public enum GridCacheWriteSynchronizationMode {
     /**
      * Flag indicating that GridGain will not wait for write or commit responses from participating nodes,
      * which means that remote nodes may get their state updated a bit after any of the cache write methods
-     * complete, or after {@link GridCacheTx#commit()} method completes.
+     * complete, or after {@link IgniteTx#commit()} method completes.
      */
     FULL_ASYNC,
 

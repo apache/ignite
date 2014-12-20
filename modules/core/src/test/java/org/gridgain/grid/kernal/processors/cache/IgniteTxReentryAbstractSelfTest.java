@@ -35,7 +35,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 /**
  * Tests reentry in pessimistic repeatable read tx.
  */
-public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -93,7 +93,7 @@ public abstract class GridCacheTxReentryAbstractSelfTest extends GridCommonAbstr
             // Find test key.
             int key = testKey();
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // One near lock request.
                 cache.get(key);
 

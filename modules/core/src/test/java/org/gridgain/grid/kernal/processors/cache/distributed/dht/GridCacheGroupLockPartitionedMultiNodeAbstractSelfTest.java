@@ -52,7 +52,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
         GridCache<Object, Object> cache = grid(0).cache(null);
 
-        GridCacheTx tx = null;
+        IgniteTx tx = null;
         try {
             tx = cache.txStartAffinity(key, concurrency, READ_COMMITTED, 0, 2);
 
@@ -146,7 +146,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
             assertEquals("val3", reader.cache(null).peek(key3));
         }
 
-        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
+        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
             cache.putAll(F.asMap(
                 key1, "val01",
                 key2, "val02",

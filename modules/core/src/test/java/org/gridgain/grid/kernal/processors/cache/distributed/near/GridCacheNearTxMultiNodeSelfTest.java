@@ -127,7 +127,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheProjection cache = priIgnite.cache(null).flagsOn(GridCacheFlag.CLONE);
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.get(mainKey);
@@ -190,7 +190,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     private void testReadersUpdate(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, 1);
 
@@ -205,7 +205,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals((Integer)1, c.get(i));
         }
 
-        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, 2);
 

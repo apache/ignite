@@ -94,8 +94,8 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
 
             for (final GridCacheTxEx<K, V> tx : txs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<GridCacheTx>>() {
-                        @Override public void apply(IgniteFuture<GridCacheTx> t) {
+                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<IgniteTx>>() {
+                        @Override public void apply(IgniteFuture<IgniteTx> t) {
                             remainingTxs.remove(tx);
 
                             checkRemaining();

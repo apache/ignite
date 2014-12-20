@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 /**
  * Cache transaction proxy.
  */
-public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externalizable {
+public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,14 +39,14 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheTxProxyImpl() {
+    public IgniteTxProxyImpl() {
         // No-op.
     }
 
     /**
      * @param tx Transaction.
      */
-    public GridCacheTxProxyImpl(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
+    public IgniteTxProxyImpl(GridCacheTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
         assert tx != null;
         assert cctx != null;
 
@@ -190,7 +190,7 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<IgniteTx> commitAsync() {
         enter();
 
         try {
@@ -298,6 +298,6 @@ public class GridCacheTxProxyImpl<K, V> implements GridCacheTxProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheTxProxyImpl.class, this);
+        return S.toString(IgniteTxProxyImpl.class, this);
     }
 }

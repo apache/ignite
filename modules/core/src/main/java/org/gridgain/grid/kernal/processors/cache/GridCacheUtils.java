@@ -155,8 +155,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID. */
-    private static final IgniteClosure<GridCacheTx, IgniteUuid> tx2xid = new C1<GridCacheTx, IgniteUuid>() {
-        @Override public IgniteUuid apply(GridCacheTx tx) {
+    private static final IgniteClosure<IgniteTx, IgniteUuid> tx2xid = new C1<IgniteTx, IgniteUuid>() {
+        @Override public IgniteUuid apply(IgniteTx tx) {
             return tx.xid();
         }
 
@@ -796,7 +796,7 @@ public class GridCacheUtils {
     /**
      * @return Closure which converts transaction to xid.
      */
-    public static IgniteClosure<GridCacheTx, IgniteUuid> tx2xid() {
+    public static IgniteClosure<IgniteTx, IgniteUuid> tx2xid() {
         return tx2xid;
     }
 
@@ -1198,7 +1198,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static GridCacheTx txStartInternal(GridCacheContext ctx, GridCacheProjection prj,
+    public static IgniteTx txStartInternal(GridCacheContext ctx, GridCacheProjection prj,
         GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1212,7 +1212,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
-    public static String txString(@Nullable GridCacheTx tx) {
+    public static String txString(@Nullable IgniteTx tx) {
         if (tx == null)
             return "null";
 
@@ -1615,7 +1615,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(GridCacheProjection<K, V> cache, GridCacheTxConcurrency concurrency,
         GridCacheTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
-        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();

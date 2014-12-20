@@ -190,7 +190,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<GridCacheAtomicSequence>() {
                 @Override
                 public GridCacheAtomicSequence call() throws Exception {
-                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
 
@@ -308,7 +308,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<GridCacheAtomicLong>() {
                 @Override
                 public GridCacheAtomicLong call() throws Exception {
-                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
 
@@ -404,7 +404,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<GridCacheAtomicReference<T>>() {
                 @Override
                 public GridCacheAtomicReference<T> call() throws Exception {
-                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
 
@@ -503,7 +503,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<GridCacheAtomicStamped<T, S>>() {
                 @Override
                 public GridCacheAtomicStamped<T, S> call() throws Exception {
-                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
 
@@ -774,7 +774,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             return CU.outTx(new Callable<GridCacheCountDownLatch>() {
                     @Override public GridCacheCountDownLatch call() throws Exception {
-                        try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
 
@@ -838,7 +838,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     @Override public Boolean call() throws Exception {
                         GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             // Check correctness type of removable object.
                             GridCacheCountDownLatchValue val =
                                 cast(dsView.get(key), GridCacheCountDownLatchValue.class);
@@ -885,7 +885,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    try (GridCacheTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
                         R val = cast(dsView.get(key), cls);
 

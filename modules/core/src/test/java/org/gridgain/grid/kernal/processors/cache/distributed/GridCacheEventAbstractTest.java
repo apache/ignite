@@ -253,7 +253,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.put(key, val) == null;
 
@@ -285,7 +285,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.put(key, val) == null;
 
@@ -351,7 +351,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.putAsync(key, val).get() == null;
 
@@ -383,7 +383,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.putAsync(key, val).get() == null;
 
@@ -443,7 +443,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.putx(key, val);
 
@@ -473,7 +473,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert cache.putx(key, val);
 
@@ -533,7 +533,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 Map.Entry<String, Integer> e = iter.next();
 
@@ -606,7 +606,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
-                GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
                 Map.Entry<String, Integer> e = iter.next();
 
@@ -683,7 +683,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Integer val = e.getValue();
 
                 // Optimistic.
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert !cache.putx(key, val, hasPeekVal);
                 assert cache.putx(key, val, noPeekVal);
@@ -718,7 +718,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 assert !cache.putx(key, val, hasPeekVal);
                 assert cache.putx(key, val, noPeekVal);

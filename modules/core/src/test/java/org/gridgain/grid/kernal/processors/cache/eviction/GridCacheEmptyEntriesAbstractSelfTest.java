@@ -124,16 +124,16 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         checkPolicy0();
 
         testStore = new GridCacheStoreAdapter<String, String>() {
-            @Override public String load(@Nullable GridCacheTx tx, String key) {
+            @Override public String load(@Nullable IgniteTx tx, String key) {
                 return null;
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, String key,
+            @Override public void put(@Nullable IgniteTx tx, String key,
                 @Nullable String val) {
                 // No-op.
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, String key) {
+            @Override public void remove(@Nullable IgniteTx tx, String key) {
                 // No-op.
             }
         };
@@ -199,7 +199,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkExplicitTx(GridCache<String, String> cache) throws Exception {
-        GridCacheTx tx = cache.txStart();
+        IgniteTx tx = cache.txStart();
 
         try {
             assertNull(cache.get("key1"));

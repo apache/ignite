@@ -343,7 +343,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
 
-                        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             String v = cache.get(key);
 
                             assert v == null || v.equals(Integer.toString(key)) : "Invalid value for key [key=" + key +

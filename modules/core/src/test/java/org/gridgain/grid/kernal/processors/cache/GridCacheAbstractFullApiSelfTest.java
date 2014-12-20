@@ -429,7 +429,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAll() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         cache().put("key1", 1);
         cache().put("key2", 2);
@@ -517,7 +517,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testGetAllDuplicatesTx() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache().getAll(F.asList("key1", "key1", "key1"));
             }
         }
@@ -528,7 +528,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testGetTxNonExistingKey() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx ignored = cache().txStart()) {
+            try (IgniteTx ignored = cache().txStart()) {
                 cache().get("key999123");
             }
         }
@@ -539,7 +539,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testGetAllFilteredTx() throws Exception {
         if (txEnabled()) {
-            GridCacheTx tx = cache().txStart();
+            IgniteTx tx = cache().txStart();
 
             cache().put("key1", 100);
             cache().put("key2", 101);
@@ -701,7 +701,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPutTx() throws Exception {
         if (txEnabled()) {
-            GridCacheTx tx = cache().txStart();
+            IgniteTx tx = cache().txStart();
 
             assert cache().put("key1", 1) == null;
             assert cache().put("key2", 2) == null;
@@ -776,7 +776,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key3", 3);
 
 
-        GridCacheTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
 
         try {
             cache.transform("key1", INCR_CLOS);
@@ -983,7 +983,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         throws Exception {
         GridCacheProjection<String, Integer> cache = cache();
 
-        GridCacheTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
+        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
@@ -1034,7 +1034,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put("key", 4);
 
-        GridCacheTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
+        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             cache.remove("key");
@@ -1102,7 +1102,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!put)
             cache.put("key", 1);
 
-        GridCacheTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
 
         try {
             if (put)
@@ -1129,7 +1129,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutFiltered() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         cache().put("key1", 1, F.<String, Integer>cacheNoPeekValue());
         cache().put("key2", 100, gte100);
@@ -1267,7 +1267,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutAsyncFiltered() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         assert cache().putAsync("key1", 1, gte100).get() == null;
         assert cache().putAsync("key2", 101, F.<String, Integer>cacheNoPeekValue()).get() == null;
@@ -1314,7 +1314,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkPutx(boolean inTx) throws Exception {
-        GridCacheTx tx = inTx ? cache().txStart() : null;
+        IgniteTx tx = inTx ? cache().txStart() : null;
 
         assert cache().putx("key1", 1);
         assert cache().putx("key2", 2);
@@ -1412,7 +1412,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkFilters1(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         cache().putx("key1", 0);
 
-        GridCacheTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
 
         try {
             assert cache().putx("key1", 100);
@@ -1451,7 +1451,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkFilters2(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         cache().putx("key1", 100);
 
-        GridCacheTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
 
         try {
             cache().put("key1", 101, F.<GridCacheEntry<String, Integer>>alwaysFalse());
@@ -1489,7 +1489,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkFilters3(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
         cache().putx("key1", 100);
 
-        GridCacheTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
 
         try {
             assertEquals((Integer)100, cache().put("key1", 101, F.<GridCacheEntry<String, Integer>>alwaysTrue()));
@@ -1524,7 +1524,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutxFiltered() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             cache().putx("key1", 1, F.<String, Integer>cacheHasPeekValue());
@@ -1548,14 +1548,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutxAsync() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         cache().put("key2", 1);
 
         IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
         IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteFuture<GridCacheTx> f = tx == null ? null : tx.commitAsync();
+        IgniteFuture<IgniteTx> f = tx == null ? null : tx.commitAsync();
 
         assert fut1.get();
         assert fut2.get();
@@ -1732,7 +1732,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutIfAbsent() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assert cache().putIfAbsent("key", 1) == null;
@@ -1807,7 +1807,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutIfAbsentAsync() throws Exception {
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             IgniteFuture<Integer> fut1 = cache().putIfAbsentAsync("key", 1);
@@ -1888,7 +1888,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().clear("key3");
 
         // Same checks inside tx.
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assertFalse(cache().putxIfAbsent("key2", 3));
@@ -1952,7 +1952,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().clear("key3");
 
         // Same checks inside tx.
-        GridCacheTx tx = inTx ? cache().txStart() : null;
+        IgniteTx tx = inTx ? cache().txStart() : null;
 
         try {
             assertFalse(cache().putxIfAbsentAsync("key2", 3).get());
@@ -2046,7 +2046,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().evict("key");
         cache().clear("key2");
 
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assert cache().replace("key", 4, 5);
@@ -2093,7 +2093,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().evict("key");
         cache().clear("key2");
 
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assert cache().replacex("key", 5);
@@ -2154,7 +2154,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().evict("key");
         cache().clear("key2");
 
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assert cache().replaceAsync("key", 4, 5).get();
@@ -2203,7 +2203,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().evict("key");
         cache().clear("key2");
 
-        GridCacheTx tx = txEnabled() ? cache().txStart() : null;
+        IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
             assert cache().replacexAsync("key", 5).get();
@@ -2445,7 +2445,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllDuplicatesTx() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx tx = cache().txStart()) {
+            try (IgniteTx tx = cache().txStart()) {
                 cache().removeAll(Arrays.asList("key1", "key1", "key1"));
 
                 tx.commit();
@@ -3862,7 +3862,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.put("key", 1);
 
-        GridCacheTx tx = txEnabled() ? cache.txStart() : null;
+        IgniteTx tx = txEnabled() ? cache.txStart() : null;
 
         try {
             cache.replace("key", 2);
@@ -3899,7 +3899,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put("key", 1);
 
-            try (GridCacheTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
+            try (IgniteTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
                 cache.remove("key");
 
                 assertNull(cache.peek("key"));
@@ -3975,7 +3975,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         if (txEnabled()) {
-            GridCacheTx tx = cache.txStart();
+            IgniteTx tx = cache.txStart();
 
             cache.replace(key, 2);
 
@@ -4072,7 +4072,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)100, peek(cache2.projection(gte100), "key2"));
 
         if (txEnabled()) {
-            GridCacheTx tx = cache().txStart();
+            IgniteTx tx = cache().txStart();
 
             assertEquals((Integer)1, cache1.replace("key1", 101));
             assertEquals((Integer)100, cache2.replace("key2", 2));
@@ -4217,7 +4217,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             String key = "1";
             int ttl = 500;
 
-            try (GridCacheTx tx = c.txStart()) {
+            try (IgniteTx tx = c.txStart()) {
                 GridCacheEntry<String, Integer> entry = c.entry(key);
 
                 entry.timeToLive(ttl);
@@ -4283,7 +4283,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         if (inTx) {
             // Rollback transaction for the first time.
-            GridCacheTx tx = c.txStart();
+            IgniteTx tx = c.txStart();
 
             try {
                 entry.timeToLive(ttl);
@@ -4302,7 +4302,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
-        GridCacheTx tx = inTx ? c.txStart() : null;
+        IgniteTx tx = inTx ? c.txStart() : null;
 
         try {
             entry.timeToLive(ttl);
@@ -4676,7 +4676,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testOptimisticTxMissingKey() throws Exception {
         if (txEnabled()) {
 
-            try (GridCacheTx tx = cache().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx tx = cache().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertTrue(cache().removex(UUID.randomUUID().toString()));
 
@@ -4693,7 +4693,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testOptimisticTxMissingKeyNoCommit() throws Exception {
         if (txEnabled()) {
 
-            try (GridCacheTx tx = cache().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx tx = cache().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertTrue(cache().removex(UUID.randomUUID().toString()));
 
@@ -4772,7 +4772,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxMissingKey() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx tx = cache().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx tx = cache().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertFalse(cache().removex(UUID.randomUUID().toString()));
 
@@ -4788,7 +4788,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxMissingKeyNoCommit() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx tx = cache().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx tx = cache().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
                 assertFalse(cache().removex(UUID.randomUUID().toString()));
 
@@ -4802,7 +4802,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxRepeatableRead() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache().putx("key", 1);
 
                 assert cache().get("key") == 1;
@@ -4815,7 +4815,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPessimisticTxRepeatableReadOnUpdate() throws Exception {
         if (txEnabled()) {
-            try (GridCacheTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = cache().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache().put("key", 1);
 
                 assert cache().put("key", 2) == 1;

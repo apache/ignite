@@ -192,7 +192,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                 GridCache<Object, Object> c = cache(0);
 
                 try {
-                    GridCacheTx tx = c.txStart(mode, REPEATABLE_READ);
+                    IgniteTx tx = c.txStart(mode, REPEATABLE_READ);
 
                     for (Integer key : keys)
                         c.put(key, "val" + key);

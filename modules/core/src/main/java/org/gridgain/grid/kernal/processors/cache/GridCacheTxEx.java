@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
+public interface GridCacheTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     @SuppressWarnings("PublicInnerClass")
     public enum FinalizationStatus {
         /** Transaction was not finalized yet. */
@@ -391,7 +391,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
     /**
      * @return Future for transaction completion.
      */
-    public IgniteFuture<GridCacheTx> finishFuture();
+    public IgniteFuture<IgniteTx> finishFuture();
 
     /**
      * @param state Transaction state.
@@ -420,7 +420,7 @@ public interface GridCacheTxEx<K, V> extends GridCacheTx, GridTimeoutObject {
      *
      * @return Rollback future.
      */
-    public IgniteFuture<GridCacheTx> rollbackAsync();
+    public IgniteFuture<IgniteTx> rollbackAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired

@@ -164,7 +164,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
             GridCacheProjection<String, Integer> c = cache(aff.mapKeyToNode(key));
 
-            try (GridCacheTx tx = c.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = c.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
                 c.put(key, kv);

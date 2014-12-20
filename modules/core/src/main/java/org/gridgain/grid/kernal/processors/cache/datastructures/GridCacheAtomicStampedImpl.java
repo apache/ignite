@@ -212,7 +212,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
 
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
@@ -254,7 +254,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);

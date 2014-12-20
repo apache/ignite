@@ -108,15 +108,15 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
         }
     }
 
-    @Override public Long load(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
+    @Override public Long load(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
         return null; // No-op.
     }
 
-    @Override public void put(GridCacheTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
+    @Override public void put(IgniteTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
         // No-op.
     }
 
-    @Override public void remove(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
+    @Override public void remove(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
         // No-op.
     }
 }

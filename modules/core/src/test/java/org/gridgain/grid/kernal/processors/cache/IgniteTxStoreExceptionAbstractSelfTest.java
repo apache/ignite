@@ -29,7 +29,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
  */
-public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
     private static TestStore store = new TestStore();
 
@@ -276,7 +276,7 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
 
             info("Start transaction.");
 
-            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -300,7 +300,7 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
         try {
             info("Start transaction.");
 
-            try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -589,7 +589,7 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
         }
 
 
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key) throws IgniteCheckedException {
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
             return null;
         }
 
@@ -599,31 +599,31 @@ public abstract class GridCacheTxStoreExceptionAbstractSelfTest extends GridCach
                 throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void loadAll(@Nullable GridCacheTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
+        @Override public void loadAll(@Nullable IgniteTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
             throws IgniteCheckedException {
         }
 
-        @Override public void put(@Nullable GridCacheTx tx, Object key, Object val) throws IgniteCheckedException {
+        @Override public void put(@Nullable IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void putAll(@Nullable GridCacheTx tx, Map<?, ?> map) throws IgniteCheckedException {
+        @Override public void putAll(@Nullable IgniteTx tx, Map<?, ?> map) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void remove(@Nullable GridCacheTx tx, Object key) throws IgniteCheckedException {
+        @Override public void remove(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void removeAll(@Nullable GridCacheTx tx, Collection<?> keys) throws IgniteCheckedException {
+        @Override public void removeAll(@Nullable IgniteTx tx, Collection<?> keys) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
-        @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
             if (fail && commit)
                 throw new IgniteCheckedException("Store exception");
         }

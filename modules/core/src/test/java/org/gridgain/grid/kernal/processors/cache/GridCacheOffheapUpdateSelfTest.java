@@ -58,13 +58,13 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Object> locCache = grid(1).cache(null);
 
-            try (GridCacheTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putxIfAbsent(key, 0);
 
                 tx.commit();
             }
 
-            try (GridCacheTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(0, rmtCache.get(key));
 
                 rmtCache.putx(key, 1);
@@ -72,7 +72,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            try (GridCacheTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, rmtCache.get(key));
 
                 rmtCache.putx(key, 2);
@@ -116,11 +116,11 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             assertEquals(10, cache.get(key));
 
-            try (GridCacheTx ignored = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 assertEquals(10, cache.get(key));
             }
 
-            try (GridCacheTx ignored = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx ignored = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
                 assertEquals(10, cache.get(key));
             }
         }

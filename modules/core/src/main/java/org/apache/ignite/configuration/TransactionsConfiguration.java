@@ -92,7 +92,7 @@ public class TransactionsConfiguration {
      * specified. Default value is defined by {@link #DFLT_TX_CONCURRENCY}.
      *
      * @return Default cache transaction concurrency.
-     * @see GridCacheTx
+     * @see IgniteTx
      */
     public GridCacheTxConcurrency getDefaultTxConcurrency() {
         return dfltConcurrency;
@@ -112,7 +112,7 @@ public class TransactionsConfiguration {
      * specified. Default value is defined by {@link #DFLT_TX_ISOLATION}.
      *
      * @return Default cache transaction isolation.
-     * @see GridCacheTx
+     * @see IgniteTx
      */
     public GridCacheTxIsolation getDefaultTxIsolation() {
         return dfltIsolation;

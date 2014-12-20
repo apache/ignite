@@ -378,7 +378,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems"})
-    @Override public void loadAll(@Nullable GridCacheTx tx,
+    @Override public void loadAll(@Nullable IgniteTx tx,
         @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store load all [keys=" + keys + ", tx=" + tx + ']');
@@ -421,7 +421,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store load [key=" + key + ", tx=" + tx + ']');
 
@@ -451,14 +451,14 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map<? extends K, ? extends V> map)
+    @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map<? extends K, ? extends V> map)
         throws IgniteCheckedException {
         for (Map.Entry<? extends K, ? extends V> e : map.entrySet())
             put(tx, e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException {
+    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
 
@@ -466,14 +466,14 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable GridCacheTx tx, @Nullable Collection<? extends K> keys)
+    @Override public void removeAll(@Nullable IgniteTx tx, @Nullable Collection<? extends K> keys)
         throws IgniteCheckedException {
         for (K key : keys)
             remove(tx, key);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
 
@@ -481,7 +481,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 

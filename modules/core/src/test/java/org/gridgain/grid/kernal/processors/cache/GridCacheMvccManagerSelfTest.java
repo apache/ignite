@@ -89,7 +89,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
 
             GridCache<Integer, Integer> cache = ignite.cache(null);
 
-            GridCacheTx tx = cache.txStart();
+            IgniteTx tx = cache.txStart();
 
             cache.put(1, 1);
 

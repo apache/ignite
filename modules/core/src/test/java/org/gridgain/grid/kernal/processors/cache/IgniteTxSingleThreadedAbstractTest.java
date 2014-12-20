@@ -18,7 +18,7 @@ import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
  * Tests for local transactions.
  */
 @SuppressWarnings( {"BusyWait"})
-public abstract class GridCacheTxSingleThreadedAbstractTest extends GridCacheTxAbstractTest {
+public abstract class IgniteTxSingleThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */

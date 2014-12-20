@@ -107,7 +107,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
 
             assert cache().put("key", 1) == null;
 
-            GridCacheTx tx = cache().tx();
+            IgniteTx tx = cache().tx();
 
             assert tx != null;
             assert tx.state() == ACTIVE;

@@ -74,7 +74,7 @@ import java.util.Map.*;
  * Cache API supports distributed transactions. All {@code 'get(..)'}, {@code 'put(..)'}, {@code 'replace(..)'},
  * and {@code 'remove(..)'} operations are transactional and will participate in an ongoing transaction.
  * Other methods like {@code 'peek(..)'} may be transaction-aware, i.e. check in-transaction entries first, but
- * will not affect the current state of transaction. See {@link GridCacheTx} documentation for more information
+ * will not affect the current state of transaction. See {@link IgniteTx} documentation for more information
  * about transactions.
  * @param <K> Key type.
  * @param <V> Value type.

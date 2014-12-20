@@ -250,7 +250,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
             ses = new GridDsiSession(terminalId);
 
         try {
-            try (GridCacheTx tx = cache.txStart()) {
+            try (IgniteTx tx = cache.txStart()) {
                 GridDsiRequest req = new GridDsiRequest(getId());
 
                 req.setMessageId(getId());

@@ -146,7 +146,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         GridCache<Integer, String> cache = cache(idx);
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
         try {
             cache.put(KEY, VAL);

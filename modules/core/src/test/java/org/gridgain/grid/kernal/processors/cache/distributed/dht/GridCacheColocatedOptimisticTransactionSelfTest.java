@@ -109,7 +109,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      */
     public void testOptimisticTransaction() throws Exception {
         for (GridCache<Integer, String> cache : caches) {
-            GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.put(KEY, VAL);

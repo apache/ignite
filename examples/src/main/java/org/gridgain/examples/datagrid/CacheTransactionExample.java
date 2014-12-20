@@ -81,7 +81,7 @@ public class CacheTransactionExample {
         // Clone every object we get from cache, so we can freely update it.
         GridCacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
-        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct = cache.get(acctId);
 
             assert acct != null;
