@@ -219,6 +219,7 @@ public interface IgniteTx extends GridMetadataAware, AutoCloseable {
      *
      * @throws IgniteCheckedException If commit failed.
      */
+    @IgniteAsyncSupported
     public void commit() throws IgniteCheckedException;
 
     /**
@@ -240,5 +241,6 @@ public interface IgniteTx extends GridMetadataAware, AutoCloseable {
      *
      * @throws IgniteCheckedException If rollback failed.
      */
+    @IgniteAsyncSupported
     public void rollback() throws IgniteCheckedException;
 }

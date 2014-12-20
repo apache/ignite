@@ -119,6 +119,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @see ComputeJobContext#affinityKey()
      * @throws IgniteCheckedException If job failed.
      */
+    @IgniteAsyncSupported
     public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteCheckedException;
 
     /**
@@ -135,6 +136,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @see ComputeJobContext#cacheName()
      * @see ComputeJobContext#affinityKey()
      */
+    @IgniteAsyncSupported
     public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws IgniteCheckedException;
 
     /**
@@ -150,6 +152,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If task failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteCheckedException;
 
     /**
@@ -165,6 +168,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If task failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteCheckedException;
 
     /**
@@ -182,6 +186,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteCheckedException If task failed.
      * @see ComputeTask for information about task execution.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteCheckedException;
 
     /**
@@ -192,6 +197,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to broadcast to all projection nodes.
      * @throws IgniteCheckedException If job failed.
      */
+    @IgniteAsyncSupported
     public void broadcast(Runnable job) throws IgniteCheckedException;
 
     /**
@@ -204,6 +210,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of results for this execution.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R> Collection<R> broadcast(Callable<R> job) throws IgniteCheckedException;
 
     /**
@@ -218,6 +225,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of results for this execution.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException;
 
     /**
@@ -228,6 +236,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job closure to execute.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public void run(Runnable job) throws IgniteCheckedException;
 
     /**
@@ -238,6 +247,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param jobs Collection of jobs to execute.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public void run(Collection<? extends Runnable> jobs) throws IgniteCheckedException;
 
     /**
@@ -250,6 +260,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R> R call(Callable<R> job) throws IgniteCheckedException;
 
     /**
@@ -262,6 +273,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of job results for this execution.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws IgniteCheckedException;
 
     /**
@@ -275,6 +287,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Future with reduced job result for this execution.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteCheckedException;
 
     /**
@@ -289,6 +302,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Job result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException;
 
     /**
@@ -303,6 +317,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Collection of job results.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws IgniteCheckedException;
 
     /**
@@ -319,6 +334,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Future with reduced job result for this execution.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
         IgniteReducer<R1, R2> rdc) throws IgniteCheckedException;
 
