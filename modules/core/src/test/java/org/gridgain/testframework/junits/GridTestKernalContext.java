@@ -11,9 +11,9 @@ package org.gridgain.testframework.junits;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 
 import java.util.*;
 
@@ -31,6 +31,8 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             new GridKernalGatewayImpl(null),
             null,
             false);
+
+        GridTestUtils.setFieldValue(grid(), "cfg", config());
     }
 
     /**

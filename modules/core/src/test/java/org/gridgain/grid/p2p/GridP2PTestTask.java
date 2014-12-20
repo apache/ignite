@@ -49,8 +49,10 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
+        UUID nodeId = ignite != null ? ignite.configuration().getNodeId() : null;
+
         for (ClusterNode node : subgrid)
-            if (!node.id().equals(ignite.configuration().getNodeId()))
+            if (!node.id().equals(nodeId))
                 map.put(new GridP2PTestJob(arg1), node);
 
         return map;
