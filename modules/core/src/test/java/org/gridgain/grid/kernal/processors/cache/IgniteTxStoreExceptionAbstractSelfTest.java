@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
+ * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.
  */
 public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -395,7 +395,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, GridCacheTxRollbackException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -432,7 +432,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, GridCacheTxRollbackException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -479,7 +479,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, GridCacheTxRollbackException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         for (Integer key : m.keySet())
             checkValue(key, putBefore);
@@ -513,7 +513,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, GridCacheTxRollbackException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         checkValue(key, putBefore);
     }

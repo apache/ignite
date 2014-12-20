@@ -399,7 +399,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
                     return null;
                 }
-            }, GridCacheTxHeuristicException.class, null);
+            }, IgniteTxHeuristicException.class, null);
         }
         finally {
             unlockLatch.countDown();

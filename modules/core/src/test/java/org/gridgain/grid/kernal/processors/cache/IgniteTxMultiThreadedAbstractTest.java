@@ -230,7 +230,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                                 break;
                             }
-                            catch(GridCacheTxOptimisticException e) {
+                            catch(IgniteTxOptimisticException e) {
                                 log.info("Got error, will retry: " + e);
                             }
                         }

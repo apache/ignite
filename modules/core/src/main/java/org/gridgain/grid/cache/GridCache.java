@@ -68,23 +68,23 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *
      * @param syncs Transaction synchronizations to register.
      */
-    public void txSynchronize(@Nullable GridCacheTxSynchronization syncs);
+    public void txSynchronize(@Nullable IgniteTxSynchronization syncs);
 
     /**
      * Removes transaction synchronizations.
      *
      * @param syncs Transactions synchronizations to remove.
-     * @see #txSynchronize(GridCacheTxSynchronization)
+     * @see #txSynchronize(IgniteTxSynchronization)
      */
-    public void txUnsynchronize(@Nullable GridCacheTxSynchronization syncs);
+    public void txUnsynchronize(@Nullable IgniteTxSynchronization syncs);
 
     /**
      * Gets registered transaction synchronizations.
      *
      * @return Registered transaction synchronizations.
-     * @see #txSynchronize(GridCacheTxSynchronization)
+     * @see #txSynchronize(IgniteTxSynchronization)
      */
-    public Collection<GridCacheTxSynchronization> txSynchronizations();
+    public Collection<IgniteTxSynchronization> txSynchronizations();
 
     /**
      * Gets affinity service to provide information about data partitioning

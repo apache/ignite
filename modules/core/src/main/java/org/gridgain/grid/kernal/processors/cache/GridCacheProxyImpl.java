@@ -149,7 +149,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(@Nullable GridCacheTxSynchronization syncs) {
+    @Override public void txSynchronize(@Nullable IgniteTxSynchronization syncs) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -161,7 +161,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnsynchronize(@Nullable GridCacheTxSynchronization syncs) {
+    @Override public void txUnsynchronize(@Nullable IgniteTxSynchronization syncs) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -173,7 +173,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxSynchronization> txSynchronizations() {
+    @Override public Collection<IgniteTxSynchronization> txSynchronizations() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

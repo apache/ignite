@@ -129,7 +129,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (GridCacheTxOptimisticException e) {
+                    catch (IgniteTxOptimisticException e) {
                         info("Caught cache optimistic exception: " + e);
                     }
 

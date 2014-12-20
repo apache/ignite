@@ -334,7 +334,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (timedOut())
-                throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
 
             IgniteTxState state = state();
 
@@ -565,7 +565,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
         if (state != COMMITTING) {
             if (timedOut())
-                throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
 
             setRollbackOnly();
 
@@ -819,7 +819,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                             throw ex;
                         }
                         else {
-                            IgniteCheckedException err = new GridCacheTxHeuristicException("Failed to locally write to cache " +
+                            IgniteCheckedException err = new IgniteTxHeuristicException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
@@ -2643,23 +2643,23 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected void checkValid() throws IgniteCheckedException {
         if (isRollbackOnly()) {
             if (timedOut())
-                throw new GridCacheTxTimeoutException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutException("Cache transaction timed out: " + this);
 
             IgniteTxState state = state();
 
             if (state == ROLLING_BACK || state == ROLLED_BACK)
-                throw new GridCacheTxRollbackException("Cache transaction is marked as rollback-only " +
+                throw new IgniteTxRollbackException("Cache transaction is marked as rollback-only " +
                     "(will be rolled back automatically): " + this);
 
             if (state == UNKNOWN)
-                throw new GridCacheTxHeuristicException("Cache transaction is in unknown state " +
+                throw new IgniteTxHeuristicException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
         if (remainingTime() == 0 && setRollbackOnly())
-            throw new GridCacheTxTimeoutException("Cache transaction timed out " +
+            throw new IgniteTxTimeoutException("Cache transaction timed out " +
                 "(was rolled back automatically): " + this);
     }
 
@@ -2983,7 +2983,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
             if (!locked) {
                 setRollbackOnly();
 
-                final GridClosureException ex = new GridClosureException(new GridCacheTxTimeoutException("Failed to " +
+                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutException("Failed to " +
                     "acquire lock within provided timeout for transaction [timeout=" + timeout() +
                     ", tx=" + this + ']'));
 
@@ -3063,7 +3063,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                     throw new GridClosureException(e);
 
                 if (!locked)
-                    throw new GridClosureException(new GridCacheTxTimeoutException("Failed to acquire lock " +
+                    throw new GridClosureException(new IgniteTxTimeoutException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() + ", tx=" + this + ']'));
 
                 IgniteFuture<T> fut = postLock();

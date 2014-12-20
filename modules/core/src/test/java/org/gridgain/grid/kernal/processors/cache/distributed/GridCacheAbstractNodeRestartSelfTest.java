@@ -495,7 +495,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (GridCacheTxRollbackException | ClusterTopologyException ignored) {
+                                catch (IgniteTxRollbackException | ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 

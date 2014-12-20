@@ -159,7 +159,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -210,7 +210,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             Throwable th = this.err.get();
 
             if (super.onDone(tx, th != null ? th : err)) {
-                if (error() instanceof GridCacheTxHeuristicException) {
+                if (error() instanceof IgniteTxHeuristicException) {
                     long topVer = this.tx.topologyVersion();
 
                     for (GridCacheTxEntry<K, V> e : this.tx.writeMap().values()) {

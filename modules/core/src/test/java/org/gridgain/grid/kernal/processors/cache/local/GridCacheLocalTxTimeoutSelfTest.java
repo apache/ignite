@@ -136,14 +136,14 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             info("Received expected optimistic exception: " + e.getMessage());
 
             wasEx = true;
 
             tx.rollback();
         }
-        catch (GridCacheTxTimeoutException e) {
+        catch (IgniteTxTimeoutException e) {
             info("Received expected timeout exception: " + e.getMessage());
 
             wasEx = true;

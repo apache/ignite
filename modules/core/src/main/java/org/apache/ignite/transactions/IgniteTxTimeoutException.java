@@ -12,32 +12,28 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 
 /**
- * Exception thrown whenever grid transaction enters an unknown state.
- * This exception is usually thrown whenever commit partially succeeds.
- * Cache will still resolve this situation automatically to ensure data
- * integrity, by invalidating all values participating in this transaction
- * on remote nodes.
+ * Exception thrown whenever grid transactions time out.
  */
-public class GridCacheTxHeuristicException extends IgniteCheckedException {
+public class IgniteTxTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new heuristic exception with given error message.
+     * Creates new timeout exception with given error message.
      *
      * @param msg Error message.
      */
-    public GridCacheTxHeuristicException(String msg) {
+    public IgniteTxTimeoutException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new heuristic exception with given error message and optional nested exception.
+     * Creates new timeout exception with given error message and optional nested exception.
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public GridCacheTxHeuristicException(String msg, Throwable cause) {
+    public IgniteTxTimeoutException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

@@ -89,7 +89,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     private GridCacheTxCommitBuffer<K, V> pessimisticRecoveryBuf;
 
     /** Transaction synchronizations. */
-    private final Collection<GridCacheTxSynchronization> syncs =
+    private final Collection<IgniteTxSynchronization> syncs =
         new GridConcurrentHashSet<>();
 
     /** Transaction finish synchronizer. */
@@ -212,7 +212,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                         "crashed or left grid: " + CU.txString(tx));
                 }
             }
-            catch (GridCacheTxOptimisticException ignore) {
+            catch (IgniteTxOptimisticException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure while invalidating transaction (will rollback): " +
                         tx.xidVersion());
@@ -730,7 +730,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     public void prepareTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.timedOut())
-                throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
 
             throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
@@ -738,7 +738,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (tx.remainingTime() == 0) {
             tx.setRollbackOnly();
 
-            throw new GridCacheTxTimeoutException("Transaction timed out: " + this);
+            throw new IgniteTxTimeoutException("Transaction timed out: " + this);
         }
 
         boolean txSerializableEnabled = cctx.txConfig().isTxSerializableEnabled();
@@ -799,7 +799,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     if (GridFunc.intersects(committedTx.writeSet(), readSet)) {
                         tx.setRollbackOnly();
 
-                        throw new GridCacheTxOptimisticException("Failed to prepare transaction " +
+                        throw new IgniteTxOptimisticException("Failed to prepare transaction " +
                             "(committed vs. read-set conflict): " + tx);
                     }
                 }
@@ -846,7 +846,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
                         tx.setRollbackOnly();
 
-                        throw new GridCacheTxOptimisticException(
+                        throw new IgniteTxOptimisticException(
                             "Failed to prepare transaction (read-set/write-set conflict): " + tx);
                     }
                 }
@@ -859,7 +859,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         if (!lockMultiple(tx, tx.optimisticLockEntries())) {
             tx.setRollbackOnly();
 
-            throw new GridCacheTxOptimisticException("Failed to prepare transaction (lock conflict): " + tx);
+            throw new IgniteTxOptimisticException("Failed to prepare transaction (lock conflict): " + tx);
         }
     }
 
@@ -1651,7 +1651,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param sync Transaction synchronizations to add.
      */
-    public void addSynchronizations(GridCacheTxSynchronization... sync) {
+    public void addSynchronizations(IgniteTxSynchronization... sync) {
         if (F.isEmpty(sync))
             return;
 
@@ -1661,7 +1661,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param sync Transaction synchronizations to remove.
      */
-    public void removeSynchronizations(GridCacheTxSynchronization... sync) {
+    public void removeSynchronizations(IgniteTxSynchronization... sync) {
         if (F.isEmpty(sync))
             return;
 
@@ -1671,7 +1671,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @return Registered transaction synchronizations
      */
-    public Collection<GridCacheTxSynchronization> synchronizations() {
+    public Collection<IgniteTxSynchronization> synchronizations() {
         return Collections.unmodifiableList(new LinkedList<>(syncs));
     }
 
@@ -1682,7 +1682,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     public void onTxStateChange(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTx tx) {
         // Notify synchronizations.
-        for (GridCacheTxSynchronization s : syncs)
+        for (IgniteTxSynchronization s : syncs)
             s.onStateChanged(prevState, newState, tx);
     }
 
@@ -2197,7 +2197,7 @@ public class GridCacheTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             try {
                 t.get();
             }
-            catch (GridCacheTxOptimisticException ignore) {
+            catch (IgniteTxOptimisticException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure while committing prepared transaction (will rollback): " +
                         tx);

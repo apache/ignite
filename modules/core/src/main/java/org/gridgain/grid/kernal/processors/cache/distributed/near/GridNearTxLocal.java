@@ -691,14 +691,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             if (!state(PREPARING)) {
                 if (setRollbackOnly()) {
                     if (timedOut())
-                        pessimisticFut.onError(new GridCacheTxTimeoutException("Transaction timed out and was " +
+                        pessimisticFut.onError(new IgniteTxTimeoutException("Transaction timed out and was " +
                             "rolled back: " + this));
                     else
                         pessimisticFut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" +
                             state() + ", tx=" + this + ']'));
                 }
                 else
-                    pessimisticFut.onError(new GridCacheTxRollbackException("Invalid transaction state for prepare " +
+                    pessimisticFut.onError(new IgniteTxRollbackException("Invalid transaction state for prepare " +
                         "[state=" + state() + ", tx=" + this + ']'));
 
                 return fut;
@@ -870,7 +870,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (state() != PREPARING) {
             if (timedOut())
                 return new GridFinishedFuture<>(cctx.kernalContext(),
-                    new GridCacheTxTimeoutException("Transaction timed out: " + this));
+                    new IgniteTxTimeoutException("Transaction timed out: " + this));
 
             setRollbackOnly();
 
@@ -898,18 +898,18 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             else
                 fut.prepare(reads, writes, txNodes);
         }
-        catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
+        catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            fut.onError(new GridCacheTxRollbackException("Failed to prepare transaction: " + this, e));
+            fut.onError(new IgniteTxRollbackException("Failed to prepare transaction: " + this, e));
 
             try {
                 rollback();
             }
-            catch (GridCacheTxOptimisticException e1) {
+            catch (IgniteTxOptimisticException e1) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e1 + ']');
 
@@ -959,7 +959,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                 fut.finish();
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -979,7 +979,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                         fut.finish();
                     }
-                    catch (GridCacheTxOptimisticException e) {
+                    catch (IgniteTxOptimisticException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -1172,7 +1172,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         void onError(Throwable e) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();

@@ -324,7 +324,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     throw e;
                 }
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 

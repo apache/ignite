@@ -14,7 +14,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class GridCacheTxRollbackException extends IgniteCheckedException {
+public class IgniteTxRollbackException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -23,7 +23,7 @@ public class GridCacheTxRollbackException extends IgniteCheckedException {
      *
      * @param msg Error message.
      */
-    public GridCacheTxRollbackException(String msg) {
+    public IgniteTxRollbackException(String msg) {
         super(msg);
     }
 
@@ -33,7 +33,7 @@ public class GridCacheTxRollbackException extends IgniteCheckedException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public GridCacheTxRollbackException(String msg, Throwable cause) {
+    public IgniteTxRollbackException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

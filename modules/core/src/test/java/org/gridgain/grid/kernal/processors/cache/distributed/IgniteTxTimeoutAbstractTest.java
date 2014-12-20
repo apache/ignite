@@ -137,7 +137,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
             assert false : "Timeout never happened for transaction: " + tx;
         }
-        catch (GridCacheTxTimeoutException e) {
+        catch (IgniteTxTimeoutException e) {
             info("Received expected timeout exception [msg=" + e.getMessage() + ", tx=" + tx + ']');
         }
         finally {

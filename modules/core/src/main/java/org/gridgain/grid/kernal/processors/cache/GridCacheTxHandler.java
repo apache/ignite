@@ -192,7 +192,7 @@ public class GridCacheTxHandler<K, V> {
                         if (tx != null)
                             tx.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof GridCacheTxOptimisticException))
+                        if (!(e instanceof IgniteTxOptimisticException))
                             U.error(log, "Failed to prepare DHT transaction: " + tx, e);
                     }
 
@@ -296,7 +296,7 @@ public class GridCacheTxHandler<K, V> {
                     catch (IgniteCheckedException e) {
                         tx0.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof GridCacheTxOptimisticException))
+                        if (!(e instanceof IgniteTxOptimisticException))
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                     }
                 }
@@ -518,7 +518,7 @@ public class GridCacheTxHandler<K, V> {
                             req.taskNameHash()));
 
                     if (tx == null || !ctx.tm().onStarted(tx))
-                        throw new GridCacheTxRollbackException("Attempt to start a completed transaction: " + req);
+                        throw new IgniteTxRollbackException("Attempt to start a completed transaction: " + req);
 
                     tx.topologyVersion(req.topologyVersion());
                 }
@@ -654,9 +654,9 @@ public class GridCacheTxHandler<K, V> {
                 res.invalidPartitions(dhtTx.invalidPartitions());
         }
         catch (IgniteCheckedException e) {
-            if (e instanceof GridCacheTxRollbackException)
+            if (e instanceof IgniteTxRollbackException)
                 U.error(log, "Transaction was rolled back before prepare completed: " + dhtTx, e);
-            else if (e instanceof GridCacheTxOptimisticException) {
+            else if (e instanceof IgniteTxOptimisticException) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + dhtTx);
             }
@@ -733,7 +733,7 @@ public class GridCacheTxHandler<K, V> {
                 nearTx.syncRollback(req.syncRollback());
             }
         }
-        catch (GridCacheTxRollbackException e) {
+        catch (IgniteTxRollbackException e) {
             if (log.isDebugEnabled())
                 log.debug("Received finish request for completed transaction (will ignore) [req=" + req + ", err=" +
                     e.getMessage() + ']');
@@ -1044,7 +1044,7 @@ public class GridCacheTxHandler<K, V> {
                     tx = ctx.tm().onCreated(tx);
 
                     if (tx == null || !ctx.tm().onStarted(tx))
-                        throw new GridCacheTxRollbackException("Attempt to start a completed transaction: " + tx);
+                        throw new IgniteTxRollbackException("Attempt to start a completed transaction: " + tx);
                 }
             }
             else
@@ -1133,7 +1133,7 @@ public class GridCacheTxHandler<K, V> {
                             tx = ctx.tm().onCreated(tx);
 
                             if (tx == null || !ctx.tm().onStarted(tx))
-                                throw new GridCacheTxRollbackException("Failed to acquire lock " +
+                                throw new IgniteTxRollbackException("Failed to acquire lock " +
                                     "(transaction has been completed): " + req.version());
                         }
 
@@ -1273,7 +1273,7 @@ public class GridCacheTxHandler<K, V> {
                                 tx = ctx.tm().onCreated(tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
-                                    throw new GridCacheTxRollbackException("Failed to acquire lock " +
+                                    throw new IgniteTxRollbackException("Failed to acquire lock " +
                                         "(transaction has been completed): " + req.version());
 
                                 if (!marked)

@@ -1314,7 +1314,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 catch (ClusterGroupEmptyException e) {
                     throw new IgniteException(e);
                 }
-                catch (GridCacheTxRollbackException | GridCachePartialUpdateException | ClusterTopologyException e) {
+                catch (IgniteTxRollbackException | GridCachePartialUpdateException | ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

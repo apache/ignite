@@ -3178,17 +3178,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(GridCacheTxSynchronization syncs) {
+    @Override public void txSynchronize(IgniteTxSynchronization syncs) {
         ctx.tm().addSynchronizations(syncs);
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnsynchronize(GridCacheTxSynchronization syncs) {
+    @Override public void txUnsynchronize(IgniteTxSynchronization syncs) {
         ctx.tm().removeSynchronizations(syncs);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxSynchronization> txSynchronizations() {
+    @Override public Collection<IgniteTxSynchronization> txSynchronizations() {
         return ctx.tm().synchronizations();
     }
 
@@ -3631,14 +3631,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                 return t;
             }
-            catch (GridInterruptedException | GridCacheTxHeuristicException | GridCacheTxRollbackException e) {
+            catch (GridInterruptedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
                 try {
                     tx.rollback();
 
-                    e = new GridCacheTxRollbackException("Transaction has been rolled back: " +
+                    e = new IgniteTxRollbackException("Transaction has been rolled back: " +
                         tx.xid(), e);
                 }
                 catch (IgniteCheckedException | AssertionError | RuntimeException e1) {

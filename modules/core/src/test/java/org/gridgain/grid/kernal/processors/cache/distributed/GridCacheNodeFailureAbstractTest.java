@@ -200,7 +200,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 checkCache.unlockAll(F.asList(KEY));
             }
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             U.warn(log, "Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             if (G.state(g.name()) == IgniteState.STARTED)

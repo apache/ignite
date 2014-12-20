@@ -479,9 +479,9 @@ public interface GridCacheTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      * Gets allowed remaining time for this transaction.
      *
      * @return Remaining time.
-     * @throws GridCacheTxTimeoutException If transaction timed out.
+     * @throws IgniteTxTimeoutException If transaction timed out.
      */
-    public long remainingTime() throws GridCacheTxTimeoutException;
+    public long remainingTime() throws IgniteTxTimeoutException;
 
     /**
      * @return Alternate transaction versions.

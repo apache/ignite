@@ -153,7 +153,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
             tx.commit();
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             log.warning("Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             tx.rollback();

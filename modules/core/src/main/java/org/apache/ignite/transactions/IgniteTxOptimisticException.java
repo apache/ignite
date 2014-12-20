@@ -12,28 +12,28 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 
 /**
- * Exception thrown whenever grid transactions time out.
+ * Exception thrown whenever grid transactions fail optimistically.
  */
-public class GridCacheTxTimeoutException extends IgniteCheckedException {
+public class IgniteTxOptimisticException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new timeout exception with given error message.
+     * Creates new optimistic exception with given error message.
      *
      * @param msg Error message.
      */
-    public GridCacheTxTimeoutException(String msg) {
+    public IgniteTxOptimisticException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new timeout exception with given error message and optional nested exception.
+     * Creates new optimistic exception with given error message and optional nested exception.
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public GridCacheTxTimeoutException(String msg, Throwable cause) {
+    public IgniteTxOptimisticException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

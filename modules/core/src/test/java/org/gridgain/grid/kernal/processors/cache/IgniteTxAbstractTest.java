@@ -227,7 +227,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 if (isTestDebug())
                     debug("Committed transaction [i=" + i + ", tx=" + tx + ']');
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                     error("Received invalid optimistic failure.", e);
 
@@ -352,7 +352,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                 debug("Rolled back transaction: " + tx);
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 tx.rollback();
 
                 log.warning("Rolled back transaction due to optimistic exception [tx=" + tx + ", e=" + e + ']');

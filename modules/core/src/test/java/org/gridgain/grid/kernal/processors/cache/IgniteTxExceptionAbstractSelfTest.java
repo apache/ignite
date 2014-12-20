@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link GridCacheTxHeuristicException}.
+ * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -315,7 +315,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             fail("Transaction should fail.");
         }
-        catch (GridCacheTxHeuristicException e) {
+        catch (IgniteTxHeuristicException e) {
             log.info("Expected exception: " + e);
         }
 
@@ -390,7 +390,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, GridCacheTxHeuristicException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         checkEmpty(key);
     }
@@ -427,7 +427,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, GridCacheTxHeuristicException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         checkEmpty(key);
     }
@@ -474,7 +474,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, GridCacheTxHeuristicException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         for (Integer key : m.keySet())
             checkEmpty(key);
@@ -508,7 +508,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, GridCacheTxHeuristicException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         checkEmpty(key);
     }

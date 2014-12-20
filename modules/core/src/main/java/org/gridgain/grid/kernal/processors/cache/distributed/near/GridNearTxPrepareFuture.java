@@ -178,12 +178,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxOptimisticException) {
+            if (e instanceof IgniteTxOptimisticException) {
                 assert nodeId != null : "Missing node ID for optimistic failure exception: " + e;
 
                 tx.removeKeysMapping(nodeId, mappings);
             }
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -322,14 +322,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     if (!tx.state(PREPARING)) {
                         if (tx.setRollbackOnly()) {
                             if (tx.timedOut())
-                                onError(null, null, new GridCacheTxTimeoutException("Transaction timed out and " +
+                                onError(null, null, new IgniteTxTimeoutException("Transaction timed out and " +
                                     "was rolled back: " + this));
                             else
                                 onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
                                     "[state=" + tx.state() + ", tx=" + this + ']'));
                         }
                         else
-                            onError(null, null, new GridCacheTxRollbackException("Invalid transaction state for " +
+                            onError(null, null, new IgniteTxRollbackException("Invalid transaction state for " +
                                 "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
                         return;
@@ -345,7 +345,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     prepare0();
                 }
-                catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
+                catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
                     onError(cctx.localNodeId(), null, e);
                 }
                 catch (IgniteCheckedException e) {
@@ -357,7 +357,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     tx.rollbackAsync();
 
-                    onError(null, null, new GridCacheTxRollbackException(msg, e));
+                    onError(null, null, new IgniteTxRollbackException(msg, e));
                 }
             }
             else {

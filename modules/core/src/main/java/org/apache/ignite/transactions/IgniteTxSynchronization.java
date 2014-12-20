@@ -15,9 +15,9 @@ import org.jetbrains.annotations.*;
 /**
  * Synchronization callback for transaction. You can subscribe to receive transaction
  * state change callbacks by registering transaction synchronization via
- * {@link GridCache#txSynchronize(GridCacheTxSynchronization)} method.
+ * {@link GridCache#txSynchronize(IgniteTxSynchronization)} method.
  */
-public interface GridCacheTxSynchronization {
+public interface IgniteTxSynchronization {
     /**
      * State change callback for transaction. Note that unless transaction has been
      * completed, it is possible to mark it for <tt>rollbackOnly</tt> by calling

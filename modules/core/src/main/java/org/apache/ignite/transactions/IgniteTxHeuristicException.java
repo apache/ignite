@@ -12,28 +12,32 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 
 /**
- * Exception thrown whenever grid transactions fail optimistically.
+ * Exception thrown whenever grid transaction enters an unknown state.
+ * This exception is usually thrown whenever commit partially succeeds.
+ * Cache will still resolve this situation automatically to ensure data
+ * integrity, by invalidating all values participating in this transaction
+ * on remote nodes.
  */
-public class GridCacheTxOptimisticException extends IgniteCheckedException {
+public class IgniteTxHeuristicException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new optimistic exception with given error message.
+     * Creates new heuristic exception with given error message.
      *
      * @param msg Error message.
      */
-    public GridCacheTxOptimisticException(String msg) {
+    public IgniteTxHeuristicException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new optimistic exception with given error message and optional nested exception.
+     * Creates new heuristic exception with given error message and optional nested exception.
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public GridCacheTxOptimisticException(String msg, Throwable cause) {
+    public IgniteTxHeuristicException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

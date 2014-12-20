@@ -256,7 +256,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug())
                 info("Committed transaction: " + tx);
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                 error("Received invalid optimistic failure.", e);
 

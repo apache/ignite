@@ -155,7 +155,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -171,7 +171,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 try {
                     get();
                 }
-                catch (GridCacheTxHeuristicException ignore) {
+                catch (IgniteTxHeuristicException ignore) {
                     // Future should complete with GridCacheTxHeuristicException.
                 }
                 catch (IgniteCheckedException err) {
