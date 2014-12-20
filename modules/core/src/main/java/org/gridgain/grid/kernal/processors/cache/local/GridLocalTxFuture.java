@@ -12,8 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -23,7 +22,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.GridCacheTxState.*;
 
 /**
  * Replicated cache transaction future.

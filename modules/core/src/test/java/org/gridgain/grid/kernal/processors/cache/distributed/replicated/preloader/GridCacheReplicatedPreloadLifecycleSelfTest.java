@@ -14,7 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -24,8 +23,8 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**

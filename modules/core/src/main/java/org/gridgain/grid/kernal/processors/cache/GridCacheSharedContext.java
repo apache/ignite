@@ -14,6 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -149,7 +150,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @return Transactions configuration.
      */
-    public GridTransactionsConfiguration txConfig() {
+    public TransactionsConfiguration txConfig() {
         return kernalCtx.config().getTransactionsConfiguration();
     }
 

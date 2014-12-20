@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 
 /**
  * Marker interface for transaction proxy.

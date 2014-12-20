@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.eclipse.jetty.util.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -21,14 +22,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -93,7 +93,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        GridTransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
+        TransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
 
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);

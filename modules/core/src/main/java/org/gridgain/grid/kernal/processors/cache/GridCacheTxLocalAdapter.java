@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -30,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 

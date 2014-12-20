@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -25,8 +26,8 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Multithreaded partition cache put get test.

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -30,9 +30,9 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheTxEx.FinalizationStatus.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**

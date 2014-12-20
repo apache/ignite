@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.store.*;
@@ -35,8 +36,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Test for group locking.

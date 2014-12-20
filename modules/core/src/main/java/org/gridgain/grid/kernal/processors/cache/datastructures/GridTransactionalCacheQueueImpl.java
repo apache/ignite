@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -19,8 +19,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * {@link GridCacheQueue} implementation using transactional cache.

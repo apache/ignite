@@ -10,14 +10,14 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
 import java.io.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Demonstrates how to use cache transactions.

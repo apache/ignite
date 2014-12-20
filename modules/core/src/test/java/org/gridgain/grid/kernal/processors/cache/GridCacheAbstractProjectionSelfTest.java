@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -770,7 +772,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         tx.commit();
 
-        GridTransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
+        TransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
 
         tx = cache().txStart(
             tCfg.getDefaultTxConcurrency(),

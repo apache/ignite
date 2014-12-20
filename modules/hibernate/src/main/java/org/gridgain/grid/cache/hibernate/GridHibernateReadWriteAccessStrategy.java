@@ -10,7 +10,7 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
 import org.hibernate.cache.*;
@@ -18,8 +18,8 @@ import org.hibernate.cache.spi.access.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Implementation of {@link AccessType#READ_WRITE} cache access strategy.

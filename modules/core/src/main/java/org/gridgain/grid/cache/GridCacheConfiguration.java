@@ -13,6 +13,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;

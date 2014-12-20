@@ -19,6 +19,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;

@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -21,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Grid transactions implementation.
@@ -39,7 +40,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStart() throws IllegalStateException {
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -55,7 +56,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         return txStart0(
             concurrency,
@@ -109,7 +110,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      */
     private GridCacheTx txStart0(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +

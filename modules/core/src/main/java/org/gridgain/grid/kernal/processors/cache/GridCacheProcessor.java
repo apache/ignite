@@ -53,7 +53,7 @@ import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
@@ -899,6 +899,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
 
+        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
+
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
     }
@@ -1001,6 +1003,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkCache(ClusterNode rmt) throws IgniteCheckedException {
+        checkTransactionConfiguration(rmt);
+
         GridCacheAttributes[] rmtAttrs = U.cacheAttributes(rmt);
         GridCacheAttributes[] locAttrs = U.cacheAttributes(ctx.discovery().localNode());
 
@@ -1010,8 +1014,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
         IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
-
-        // TODO GG-9141 Check tx configuration consistency.
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
@@ -1164,6 +1166,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "deploymentMode", "Deployment mode",
                     locDepMode, rmtDepMode, true);
             }
+        }
+    }
+
+    /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        TransactionsConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
+
+        if (txCfg != null) {
+            TransactionsConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
+
+            if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
+                throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
+                    "(fix txSerializableEnabled property or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [rmtNodeId=" + rmt.id() +
+                    ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
+                    ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
         }
     }
 

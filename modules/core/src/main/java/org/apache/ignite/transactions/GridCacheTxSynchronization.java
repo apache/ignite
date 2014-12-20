@@ -7,8 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache;
+package org.apache.ignite.transactions;
 
+import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 /**

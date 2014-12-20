@@ -18,6 +18,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -50,8 +51,8 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
@@ -3113,7 +3114,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public GridCacheTx txStart() throws IllegalStateException {
-        GridTransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
@@ -3123,7 +3124,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        GridTransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
 
         return txStart(
             concurrency,
@@ -3602,7 +3603,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit()) {
-            GridTransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
+            TransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
 
             tx = ctx.tm().newTx(
                 true,

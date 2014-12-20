@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -20,7 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 
 /**
  * Tests transaction during cache preloading.

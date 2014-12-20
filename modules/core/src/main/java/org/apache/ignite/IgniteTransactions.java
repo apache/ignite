@@ -10,6 +10,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 

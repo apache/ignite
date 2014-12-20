@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -26,7 +27,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 
 /**
  * Near cache for transactional cache.

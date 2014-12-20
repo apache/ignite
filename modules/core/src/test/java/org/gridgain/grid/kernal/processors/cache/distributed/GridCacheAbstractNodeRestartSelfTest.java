@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -24,8 +25,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Test node restart.

@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
@@ -53,7 +54,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(txConcurrency);
         txCfg.setDefaultTxIsolation(txIsolation);

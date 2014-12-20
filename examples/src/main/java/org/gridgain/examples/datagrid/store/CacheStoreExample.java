@@ -11,7 +11,7 @@ package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
 import java.util.*;

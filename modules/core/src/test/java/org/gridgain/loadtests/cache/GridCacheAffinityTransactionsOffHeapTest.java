@@ -11,7 +11,7 @@ package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -24,8 +24,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**

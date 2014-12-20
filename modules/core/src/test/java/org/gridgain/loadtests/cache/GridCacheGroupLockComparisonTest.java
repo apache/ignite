@@ -10,6 +10,7 @@
 package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.*;
@@ -20,8 +21,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.REPEATABLE_READ;
 
 /**
  * Performance comparison between putAll and group lock.

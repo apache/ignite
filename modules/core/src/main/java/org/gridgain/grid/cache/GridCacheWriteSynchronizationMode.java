@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 /**

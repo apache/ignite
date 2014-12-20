@@ -10,15 +10,14 @@
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.transaction.xa.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.GridCacheTxState.*;
 
 /**
  * Cache XA resource implementation.

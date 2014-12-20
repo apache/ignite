@@ -9,6 +9,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -35,7 +36,7 @@ public enum CacheFlag {
      * Instead of updating remote entries with new values, small invalidation
      * messages will be sent to set the values to {@code null}.
      *
-     * @see org.gridgain.grid.cache.GridCacheTx#isInvalidate()
+     * @see GridCacheTx#isInvalidate()
      * @see org.gridgain.grid.cache.GridCacheConfiguration#isInvalidate()
      */
     INVALIDATE,

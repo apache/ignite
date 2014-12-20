@@ -10,6 +10,8 @@
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -60,7 +62,7 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                         GridCacheTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
-                            GridTransactionsConfiguration tCfg = cctx.kernalContext().config()
+                            TransactionsConfiguration tCfg = cctx.kernalContext().config()
                                 .getTransactionsConfiguration();
 
                             tx = cctx.tm().newTx(

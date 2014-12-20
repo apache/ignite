@@ -12,7 +12,7 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -118,14 +118,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link org.gridgain.grid.cache.store.GridCacheStore#load(org.gridgain.grid.cache.GridCacheTx, Object)} method will be used.
+     * storage, {@link org.gridgain.grid.cache.store.GridCacheStore#load(GridCacheTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link org.gridgain.grid.cache.store.GridCacheStore}
-     * via {@link org.gridgain.grid.cache.store.GridCacheStore#put(org.gridgain.grid.cache.GridCacheTx, Object, Object)} method.
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#put(GridCacheTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -153,7 +153,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * other concurrent transactional updates.
      * <p>
      * If write-through is enabled, the values will be removed from {@link org.gridgain.grid.cache.store.GridCacheStore}
-     * via {@link org.gridgain.grid.cache.store.GridCacheStore#removeAll(org.gridgain.grid.cache.GridCacheTx, java.util.Collection)} method.
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#removeAll(GridCacheTx, java.util.Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

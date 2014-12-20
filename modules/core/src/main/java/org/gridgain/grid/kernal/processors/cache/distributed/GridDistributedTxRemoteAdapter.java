@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -25,7 +26,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.GridCacheTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 

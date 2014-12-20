@@ -7,12 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache;
+package org.apache.ignite.configuration;
+
+import org.apache.ignite.transactions.*;
 
 /**
  * Transactions configuration.
  */
-public class GridTransactionsConfiguration {
+public class TransactionsConfiguration {
     /** Default value for 'txSerializableEnabled' flag. */
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 
@@ -49,14 +51,14 @@ public class GridTransactionsConfiguration {
     /**
      * Empty constructor.
      */
-    public GridTransactionsConfiguration() {
+    public TransactionsConfiguration() {
         // No-op.
     }
 
     /**
      * @param cfg Configuration to copy.
      */
-    public GridTransactionsConfiguration(GridTransactionsConfiguration cfg) {
+    public TransactionsConfiguration(TransactionsConfiguration cfg) {
         dfltConcurrency = cfg.getDefaultTxConcurrency();
         dfltIsolation = cfg.getDefaultTxIsolation();
         dfltTxTimeout = cfg.getDefaultTxTimeout();

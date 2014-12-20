@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**

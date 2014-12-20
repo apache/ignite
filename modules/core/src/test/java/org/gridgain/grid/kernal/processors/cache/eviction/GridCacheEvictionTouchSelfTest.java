@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -26,8 +27,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -44,7 +45,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(PESSIMISTIC);
         txCfg.setDefaultTxIsolation(REPEATABLE_READ);

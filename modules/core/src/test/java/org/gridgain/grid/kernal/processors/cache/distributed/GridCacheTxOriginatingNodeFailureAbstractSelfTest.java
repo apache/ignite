@@ -28,7 +28,7 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
 
 /**
  * Abstract test for originating node failure.

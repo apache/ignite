@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;

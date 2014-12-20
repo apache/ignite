@@ -9,13 +9,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Multithreaded update test with off heap enabled.

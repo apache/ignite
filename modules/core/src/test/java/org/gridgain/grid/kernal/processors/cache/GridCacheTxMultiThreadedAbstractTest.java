@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
@@ -18,8 +18,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.GridCacheTxIsolation.*;
 
 /**
  * Tests for local transactions.

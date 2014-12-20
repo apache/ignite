@@ -27,7 +27,7 @@ public interface IgniteFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */

@@ -11,7 +11,7 @@ package org.gridgain.client;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
