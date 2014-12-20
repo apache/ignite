@@ -79,11 +79,11 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
@@ -97,23 +97,23 @@ public class GridDataGridTestSuite extends TestSuite {
         // Local cache.
         suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicProjectionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
+        suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
+        suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalGetAndTransformStoreSelfTest.class);
+        suite.addTestSuite(GridCacheLocalGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicGetAndTransformStoreSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalLoadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalLockSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalRefreshAheadSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxSingleThreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxTimeoutSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalEventSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
-//        suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTtlSelfTest.class);
-//        suite.addTestSuite(GridCacheTransformEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalLoadAllSelfTest.class);
+        suite.addTestSuite(GridCacheLocalLockSelfTest.class);
+        suite.addTestSuite(GridCacheLocalMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCacheLocalRefreshAheadSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxSingleThreadedSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxTimeoutSelfTest.class);
+        suite.addTestSuite(GridCacheLocalEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
+        suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTtlSelfTest.class);
+        suite.addTestSuite(GridCacheTransformEventSelfTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);

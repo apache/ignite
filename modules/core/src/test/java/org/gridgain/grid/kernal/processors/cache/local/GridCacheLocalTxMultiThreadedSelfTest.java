@@ -68,7 +68,7 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends GridCacheTxMultiThrea
 
     /** {@inheritDoc} */
     @Override protected int iterations() {
-        return 20;
+        return 1000;
     }
 
     /** {@inheritDoc} */
