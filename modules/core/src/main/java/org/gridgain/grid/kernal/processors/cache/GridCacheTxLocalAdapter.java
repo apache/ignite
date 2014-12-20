@@ -437,98 +437,97 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
     protected void batchStoreCommit(Iterable<GridCacheTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
-        if (store != null && storeEnabled() && (!internal() || groupLock())) {
+        if (store != null && storeEnabled() && (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
-                // Implicit transactions are always updated at the end.
-                if (isBatchUpdate()) {
-                    if (writeEntries != null) {
-                        Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;
-                        List<K> rmvCol = null;
+                if (writeEntries != null) {
+                    Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;
+                    List<K> rmvCol = null;
 
-                        /*
-                         * Batch database processing.
-                         */
-                        for (GridCacheTxEntry<K, V> e : writeEntries) {
-                            boolean intercept = e.context().config().getInterceptor() != null;
+                    boolean skipNear = near() && store.writeToStoreFromDht();
 
-                            if (intercept || !F.isEmpty(e.transformClosures()))
-                                e.cached().unswap(true, false);
+                    for (GridCacheTxEntry<K, V> e : writeEntries) {
+                        if (skipNear && e.cached().isNear())
+                            continue;
 
-                            GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(e, false);
+                        boolean intercept = e.context().config().getInterceptor() != null;
 
-                            GridCacheContext<K, V> cacheCtx = e.context();
+                        if (intercept || !F.isEmpty(e.transformClosures()))
+                            e.cached().unswap(true, false);
 
-                            GridCacheOperation op = res.get1();
-                            K key = e.key();
-                            V val = res.get2();
-                            GridCacheVersion ver = writeVersion();
+                        GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(e, false);
 
-                            if (op == CREATE || op == UPDATE) {
-                                // Batch-process all removes if needed.
-                                if (rmvCol != null && !rmvCol.isEmpty()) {
-                                    store.removeAllFromStore(this, rmvCol);
+                        GridCacheContext<K, V> cacheCtx = e.context();
 
-                                    // Reset.
-                                    rmvCol.clear();
-                                }
+                        GridCacheOperation op = res.get1();
+                        K key = e.key();
+                        V val = res.get2();
+                        GridCacheVersion ver = writeVersion();
 
-                                if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal(true);
+                        if (op == CREATE || op == UPDATE) {
+                            // Batch-process all removes if needed.
+                            if (rmvCol != null && !rmvCol.isEmpty()) {
+                                store.removeAllFromStore(this, rmvCol);
 
-                                    val = (V)cacheCtx.config().getInterceptor().onBeforePut(key, old, val);
-
-                                    if (val == null)
-                                        continue;
-
-                                    val = cacheCtx.unwrapTemporary(val);
-                                }
-
-                                if (putMap == null)
-                                    putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
-
-                                putMap.put(key, F.t(val, ver));
+                                // Reset.
+                                rmvCol.clear();
                             }
-                            else if (op == DELETE) {
-                                // Batch-process all puts if needed.
-                                if (putMap != null && !putMap.isEmpty()) {
-                                    store.putAllToStore(this, putMap);
 
-                                    // Reset.
-                                    putMap.clear();
-                                }
+                            if (intercept) {
+                                V old = e.cached().rawGetOrUnmarshal(true);
 
-                                if (intercept) {
-                                    V old = e.cached().rawGetOrUnmarshal(true);
+                                val = (V)cacheCtx.config().getInterceptor().onBeforePut(key, old, val);
 
-                                    IgniteBiTuple<Boolean, V> t = cacheCtx.config().<K, V>getInterceptor()
-                                        .onBeforeRemove(key, old);
+                                if (val == null)
+                                    continue;
 
-                                    if (cacheCtx.cancelRemove(t))
-                                        continue;
-                                }
-
-                                if (rmvCol == null)
-                                    rmvCol = new LinkedList<>();
-
-                                rmvCol.add(key);
+                                val = cacheCtx.unwrapTemporary(val);
                             }
-                            else if (log.isDebugEnabled())
-                                log.debug("Ignoring NOOP entry for batch store commit: " + e);
+
+                            if (putMap == null)
+                                putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
+
+                            putMap.put(key, F.t(val, ver));
                         }
+                        else if (op == DELETE) {
+                            // Batch-process all puts if needed.
+                            if (putMap != null && !putMap.isEmpty()) {
+                                store.putAllToStore(this, putMap);
 
-                        if (putMap != null && !putMap.isEmpty()) {
-                            assert rmvCol == null || rmvCol.isEmpty();
+                                // Reset.
+                                putMap.clear();
+                            }
 
-                            // Batch put at the end of transaction.
-                            store.putAllToStore(this, putMap);
+                            if (intercept) {
+                                V old = e.cached().rawGetOrUnmarshal(true);
+
+                                IgniteBiTuple<Boolean, V> t = cacheCtx.config().<K, V>getInterceptor()
+                                    .onBeforeRemove(key, old);
+
+                                if (cacheCtx.cancelRemove(t))
+                                    continue;
+                            }
+
+                            if (rmvCol == null)
+                                rmvCol = new LinkedList<>();
+
+                            rmvCol.add(key);
                         }
+                        else if (log.isDebugEnabled())
+                            log.debug("Ignoring NOOP entry for batch store commit: " + e);
+                    }
 
-                        if (rmvCol != null && !rmvCol.isEmpty()) {
-                            assert putMap == null || putMap.isEmpty();
+                    if (putMap != null && !putMap.isEmpty()) {
+                        assert rmvCol == null || rmvCol.isEmpty();
 
-                            // Batch remove at the end of transaction.
-                            store.removeAllFromStore(this, rmvCol);
-                        }
+                        // Batch put at the end of transaction.
+                        store.putAllToStore(this, putMap);
+                    }
+
+                    if (rmvCol != null && !rmvCol.isEmpty()) {
+                        assert putMap == null || putMap.isEmpty();
+
+                        // Batch remove at the end of transaction.
+                        store.removeAllFromStore(this, rmvCol);
                     }
                 }
 
@@ -954,7 +953,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
 
                 GridCacheStoreManager<K, V> store = store();
 
-                if (store != null && isBatchUpdate()) {
+                if (store != null && (near() || store.writeToStoreFromDht())) {
                     if (!internal() || groupLock())
                         store.txEnd(this, false);
                 }
@@ -2609,7 +2608,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
      * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
      *      cache (e.g. they have different stores).
      */
-    private void addActiveCache(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
+    protected void addActiveCache(GridCacheContext<K, V> cacheCtx) throws IgniteCheckedException {
         int cacheId = cacheCtx.cacheId();
 
         // Check if we can enlist new cache to transaction.
@@ -2798,15 +2797,6 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 }
             }
         }
-    }
-
-    /**
-     * @return {@code True} if updates should be batched up.
-     */
-    protected boolean isBatchUpdate() {
-        GridCacheStoreManager<K, V> store = store();
-
-        return store != null;
     }
 
     /** {@inheritDoc} */

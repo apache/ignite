@@ -509,7 +509,7 @@ public class GridCacheTxHandler<K, V> {
                             READ_COMMITTED,
                             /*timeout */0,
                             req.isInvalidate(),
-                            req.explicitLock(),
+                            req.storeEnabled(),
                             req.txSize(),
                             req.groupLockKey(),
                             false,
@@ -522,6 +522,8 @@ public class GridCacheTxHandler<K, V> {
 
                     tx.topologyVersion(req.topologyVersion());
                 }
+
+                tx.storeEnabled(req.storeEnabled());
 
                 if (!tx.markFinalizing(USER_FINISH)) {
                     if (log.isDebugEnabled())

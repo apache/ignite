@@ -410,6 +410,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
             else {
                 entry = e;
 
+                addActiveCache(dhtCache.context());
+
                 while (true) {
                     GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(entry.key(), topologyVersion());
 
@@ -509,6 +511,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
                 // First time access.
                 if (txEntry == null) {
                     GridDhtCacheEntry<K, V> cached = dhtCache.entryExx(key, topVer);
+
+                    addActiveCache(dhtCache.context());
 
                     cached.unswap(!read, read);
 

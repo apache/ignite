@@ -81,7 +81,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param explicitLock Explicit lock flag.
+     * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and whole partition should be locked.
@@ -101,7 +101,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         GridCacheTxIsolation isolation,
         long timeout,
         boolean invalidate,
-        boolean explicitLock,
+        boolean storeEnabled,
         int txSize,
         @Nullable GridCacheTxKey grpLockKey,
         boolean partLock,
@@ -119,7 +119,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             isolation,
             timeout,
             invalidate,
-            explicitLock,
+            storeEnabled,
             txSize,
             grpLockKey,
             partLock,
@@ -200,12 +200,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isBatchUpdate() {
-        // Cache store updates may happen from DHT local transactions if write behind is enabled.
-        return super.isBatchUpdate() && (store().writeToStoreFromDht() || onePhaseCommit());
     }
 
     /** {@inheritDoc} */

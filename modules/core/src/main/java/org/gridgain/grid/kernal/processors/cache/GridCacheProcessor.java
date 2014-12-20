@@ -422,7 +422,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries());
+            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries(), ctx.store());
     }
 
     /**
@@ -568,8 +568,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
-            GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, isNearEnabled(cfg));
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(nearStore);
+            GridCacheStore store = cacheStore(ctx.gridName(), cfg);
+
+            GridCacheStoreManager storeMgr = new GridCacheStoreManager(store);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
@@ -707,10 +708,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
                 drMgr = ctx.createComponent(GridCacheDrManager.class);
-
-                GridCacheStore dhtStore = cacheStore(ctx.gridName(), cfg, false);
-
-                storeMgr = new GridCacheStoreManager(dhtStore);
 
                 cacheCtx = new GridCacheContext(
                     ctx,
@@ -1740,29 +1737,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param gridName Grid name.
      * @param cfg Cache configuration.
-     * @param near Whether or not store retrieved for near cache.
      * @return Instance if {@link GridCacheWriteBehindStore} if write-behind store is configured,
      *         or user-defined cache store.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCacheStore cacheStore(String gridName, GridCacheConfiguration cfg, boolean near) {
+    private GridCacheStore cacheStore(String gridName, GridCacheConfiguration cfg) {
         if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
             return cfg.getStore();
 
-        // Write-behind store is used in DHT cache only.
-        if (!near) {
-            GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
-                cfg.getStore());
+        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
+            cfg.getStore());
 
-            store.setFlushSize(cfg.getWriteBehindFlushSize());
-            store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
-            store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
-            store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setFlushSize(cfg.getWriteBehindFlushSize());
+        store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
+        store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
+        store.setBatchSize(cfg.getWriteBehindBatchSize());
 
-            return store;
-        }
-        else
-            return cfg.getStore();
+        return store;
     }
 
     /**
