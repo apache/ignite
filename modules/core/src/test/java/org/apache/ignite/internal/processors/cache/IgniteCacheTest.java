@@ -74,9 +74,7 @@ public class IgniteCacheTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
-
-        return cfg;
+        return defaultCacheConfiguration();
     }
 
     /**
