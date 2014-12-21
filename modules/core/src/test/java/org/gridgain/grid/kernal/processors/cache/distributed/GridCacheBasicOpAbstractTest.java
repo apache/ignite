@@ -317,9 +317,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         IgniteCache<String, String> cache2 = ignite2.jcache(null);
         IgniteCache<String, String> cache3 = ignite3.jcache(null);
 
-        GridCacheTx tx = ignite1.transactions().txStart();
-
         cache1.put("key", "val");
+
+        GridCacheTx tx = ignite1.transactions().txStart();
 
         long ttl = 500;
 

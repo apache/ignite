@@ -666,7 +666,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             Duration duration = cached.hasValue() ?
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
-                                            txEntry.ttl(GridCacheMapEntry.toTtl(duration));
+                                            txEntry.ttl(GridCacheUtils.toTtl(duration));
                                         }
                                     }
 
@@ -782,6 +782,11 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                                             nearCached.innerReload(CU.<K, V>empty());
                                     }
                                     else if (op == READ) {
+                                        Duration duration = expiryForAccess(txEntry);
+
+                                        if (duration != null)
+                                            cached.updateTtl(null, GridCacheUtils.toTtl(duration));
+
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }
@@ -857,12 +862,28 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         }
                     }
                 }
+
+                if (!near()) {
+                    for (GridCacheTxEntry<K, V> txEntry : readEntries()) {
+                        Duration duration = expiryForAccess(txEntry);
+
+                        if (duration != null)
+                            txEntry.cached().updateTtl(null, GridCacheUtils.toTtl(duration));
+                    }
+                }
             }
             finally {
                 cctx.tm().txContextReset();
             }
         }
         else {
+            for (GridCacheTxEntry<K, V> txEntry : readEntries()) {
+                Duration duration = expiryForAccess(txEntry);
+
+                if (duration != null)
+                    txEntry.cached().updateTtl(null, GridCacheUtils.toTtl(duration));
+            }
+
             GridCacheStoreManager<K, V> store = store();
 
             if (store != null && (!internal() || groupLock())) {
@@ -894,6 +915,19 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
         }
+    }
+
+    /**
+     * @param txEntry Tx entry.
+     * @return New duration.
+     */
+    @Nullable private Duration expiryForAccess(GridCacheTxEntry<K, V> txEntry) {
+        ExpiryPolicy expiry = txEntry.expiry();
+
+        if (expiry == null)
+            expiry = txEntry.context().expiry();
+
+        return expiry != null ? expiry.getExpiryForAccess() : null;
     }
 
     /**
@@ -2110,7 +2144,7 @@ public abstract class GridCacheTxLocalAdapter<K, V> extends GridCacheTxAdapter<K
                         ExpiryPolicy expiryPlc = txEntry.expiry() != null ? txEntry.expiry() : cacheCtx.expiry();
 
                         if (expiryPlc != null)
-                            txEntry.ttl(GridCacheMapEntry.toTtl(expiryPlc.getExpiryForAccess()));
+                            txEntry.ttl(GridCacheUtils.toTtl(expiryPlc.getExpiryForAccess()));
                     }
 
                     break; // While.

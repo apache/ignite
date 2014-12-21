@@ -235,7 +235,14 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.size();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

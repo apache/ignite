@@ -514,7 +514,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends GridCacheTxLocalAdapte
 
                     GridCacheTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
 
-                    txEntry = addEntry(NOOP, null, null, cached, null, CU.<K, V>empty(), false, -1L, -1L,
+                    txEntry = addEntry(read ? READ : NOOP, null, null, cached, null, CU.<K, V>empty(), false, -1L, -1L,
                         drVers != null ? drVers[drVerIdx++] : null);
 
                     if (w != null) {

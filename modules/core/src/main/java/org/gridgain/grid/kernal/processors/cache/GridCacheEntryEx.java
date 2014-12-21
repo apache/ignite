@@ -876,7 +876,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param ver Version.
      * @param ttl Time to live.
      */
-    public void updateTtl(GridCacheVersion ver, long ttl);
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
 
     /**
      * @return Value.

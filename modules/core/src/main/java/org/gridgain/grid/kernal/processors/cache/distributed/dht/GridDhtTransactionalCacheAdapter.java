@@ -208,7 +208,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             tx.addWrite(
                                 ctx,
-                                writeEntry == null ? NOOP : writeEntry.op(),
+                                writeEntry == null ? (req.txRead() ? READ : NOOP) : writeEntry.op(),
                                 txKey,
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
                                 writeEntry == null ? null : writeEntry.value(),

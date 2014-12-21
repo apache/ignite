@@ -1519,7 +1519,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (!pass) {
                     if (expiryPlc != null && hasValueUnlocked()) {
-                        long ttl = toTtl(expiryPlc.getExpiryForAccess());
+                        long ttl = GridCacheUtils.toTtl(expiryPlc.getExpiryForAccess());
 
                         if (ttl != -1L)
                             updateTtl(ttl);
@@ -1583,7 +1583,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 long expireTime;
 
                 if (expiryPlc != null) {
-                    ttl = toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
+                    ttl = GridCacheUtils.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
 
                     if (ttl == -1L) {
                         ttl = ttlExtras();
@@ -1674,28 +1674,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         }
 
         return new IgniteBiTuple<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old));
-    }
-
-    /**
-     * @param duration Duration.
-     * @return TTL.
-     */
-    public static long toTtl(Duration duration) {
-        if (duration == null)
-            return -1;
-
-        if (duration.getDurationAmount() == 0) {
-            if (duration.isEternal())
-                return 0;
-
-            assert duration.isZero();
-
-            return 1L;
-        }
-
-        assert duration.getTimeUnit() != null;
-
-        return duration.getTimeUnit().toMillis(duration.getDurationAmount());
     }
 
     /** {@inheritDoc} */
@@ -3426,14 +3404,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
+    @Override public void updateTtl(@Nullable GridCacheVersion ver, long ttl) {
         synchronized (this) {
             updateTtl(ttl);
 
             /*
             TODO IGNITE-41.
             try {
-                if (ver.equals(version()))
+                if (var == null || ver.equals(version()))
                     updateTtl(ttl);
             }
             catch (GridCacheEntryRemovedException ignored) {

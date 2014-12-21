@@ -2723,17 +2723,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public long forCreate() {
-            return GridCacheMapEntry.toTtl(plc.getExpiryForCreation());
+            return toTtl(plc.getExpiryForCreation());
         }
 
         /** {@inheritDoc} */
         @Override public long forUpdate() {
-            return GridCacheMapEntry.toTtl(plc.getExpiryForUpdate());
+            return toTtl(plc.getExpiryForUpdate());
         }
 
         /** {@inheritDoc} */
         @Override public long forAccess() {
-            return GridCacheMapEntry.toTtl(plc.getExpiryForAccess());
+            return toTtl(plc.getExpiryForAccess());
         }
 
         /** {@inheritDoc} */

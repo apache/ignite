@@ -21,6 +21,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -575,7 +576,17 @@ public class GridDistributedTxRemoteAdapter<K, V> extends GridCacheTxAdapter<K, 
                                         }
                                     }
                                     else if (op == READ) {
-                                        assert near();
+                                        ExpiryPolicy expiry = txEntry.expiry();
+
+                                        if (expiry == null)
+                                            expiry = cacheCtx.expiry();
+
+                                        if (expiry != null) {
+                                            Duration duration = expiry.getExpiryForAccess();
+
+                                            if (duration != null)
+                                                cached.updateTtl(null, GridCacheUtils.toTtl(duration));
+                                        }
 
                                         if (log.isDebugEnabled())
                                             log.debug("Ignoring READ entry when committing: " + txEntry);

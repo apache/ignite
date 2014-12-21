@@ -157,6 +157,33 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             filterAccessReplace(key);
         }
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            for (final Integer key : keys()) {
+                log.info("Test txGet [key=" + key + ']');
+
+                txGet(key);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void txGet(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        try (GridCacheTx tx = ignite(0).transactions().txStart()) {
+            assertEquals((Integer)1, cache.get(key));
+
+            tx.commit();
+        }
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**

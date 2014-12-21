@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -43,7 +42,7 @@ public class GridCacheAccessExpiryPolicy implements GridCacheExpiryPolicy {
         if (duration == null)
             return null;
 
-        return new GridCacheAccessExpiryPolicy(GridCacheMapEntry.toTtl(duration));
+        return new GridCacheAccessExpiryPolicy(GridCacheUtils.toTtl(duration));
     }
 
     /**
