@@ -156,7 +156,11 @@ public class GridNextPageResponse implements Externalizable {
             int cols = in.readInt();
             int dataSize = in.readInt();
 
-            Data data = Data.create(null, dataSize);
+            byte[] dataBytes = new byte[dataSize];
+
+            in.readFully(dataBytes);
+
+            Data data = Data.create(null, dataBytes);
 
             for (int r = 0; r < rowCnt; r++) {
                 Value[] row = new Value[cols];

@@ -96,21 +96,19 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testTwoStep() throws Exception {
         fillCaches();
 
-        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select * from _cnts_");
-
-        q.addMapQuery("_cnts_", "select count(*) cnt from \"partitioned\".FactPurchase");
-
         GridCacheQueriesEx<Integer, FactPurchase> qx =
             (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
 
-        for (List<?> row : qx.execute(q).get())
-            X.println("__ "  + row);
+//        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
+//            X.println("___ "  + e);
 
+        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
 
+        q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2 ,2);
 
-//        Object cnt = .next().get(0);
-//
-//        assertEquals(10L, cnt);
+        Object cnt = qx.execute(q).get().iterator().next().get(0);
+
+        assertEquals(10L, cnt);
     }
 
     /** @throws Exception If failed. */
@@ -134,8 +132,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void fillCaches() throws IgniteCheckedException, InterruptedException {
-        awaitPartitionMapExchange();
-
         int idGen = 0;
 
         GridCache<Integer, Object> dimCache = ignite.cache("replicated");
