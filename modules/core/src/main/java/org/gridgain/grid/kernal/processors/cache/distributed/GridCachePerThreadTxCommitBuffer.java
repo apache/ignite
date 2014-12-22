@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -48,7 +49,7 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     }
 
     /** {@inheritDoc} */
-    @Override public void addCommittedTx(GridCacheTxEx<K, V> tx) {
+    @Override public void addCommittedTx(IgniteTxEx<K, V> tx) {
         long threadId = tx.threadId();
 
         StoreKey key = new StoreKey(tx.eventNodeId(), threadId);

@@ -21,7 +21,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Simple cache test.
  */
-public class GridCacheReplicatedTxTimeoutSelfTest extends GridCacheTxTimeoutAbstractTest {
+public class GridCacheReplicatedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
 

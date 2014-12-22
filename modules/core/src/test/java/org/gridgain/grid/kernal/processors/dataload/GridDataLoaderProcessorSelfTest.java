@@ -14,7 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -216,12 +215,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             int s3 = g3.cache(null).primaryKeySet().size();
             int total = threads * cnt;
 
-            if (mode == REPLICATED) {
-                assertEquals(total, s2);
-                assertEquals(total, s3);
-            }
-            else
-                assertEquals(total, s2 + s3);
+            assertEquals(total, s2 + s3);
 
             final IgniteDataLoader<Integer, Integer> rmvLdr = g2.dataLoader(null);
 
@@ -308,11 +302,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO GG-4121
-     *
      * @throws Exception If failed.
      */
-    public void _testReplicatedMultiThreadedGroupLock() throws Exception {
+    public void testReplicatedMultiThreadedGroupLock() throws Exception {
         mode = REPLICATED;
         useGrpLock = true;
 

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.lang.*;
@@ -57,7 +58,7 @@ public abstract class GridCacheAbstractTtlSelfTest extends GridCacheAbstractSelf
         String key = "1";
         int ttl = 500;
 
-        try (GridCacheTx tx = c.txStart()) {
+        try (IgniteTx tx = c.txStart()) {
             GridCacheEntry<String, Integer> entry = c.entry(key);
 
             entry.timeToLive(ttl);

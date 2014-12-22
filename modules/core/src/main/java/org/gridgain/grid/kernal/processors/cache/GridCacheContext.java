@@ -15,7 +15,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.kernal.*;
@@ -33,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
@@ -170,6 +170,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
+    /** System cache flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -275,6 +278,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         else
             cacheId = 1;
+
+        sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
     }
 
     /**
@@ -307,6 +312,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @return System cache flag.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /**
@@ -516,8 +528,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key to construct tx key for.
      * @return Transaction key.
      */
-    public GridCacheTxKey<K> txKey(K key) {
-        return new GridCacheTxKey<>(key, cacheId);
+    public IgniteTxKey<K> txKey(K key) {
+        return new IgniteTxKey<>(key, cacheId);
     }
 
     /**
@@ -751,7 +763,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache transaction manager.
      */
-    public GridCacheTxManager<K, V> tm() {
+    public IgniteTxManager<K, V> tm() {
          return sharedCtx.tm();
     }
 
@@ -929,8 +941,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
-     * exceptions.
+     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
      *
      * @param e Element.
      * @param p Predicates.
@@ -938,14 +949,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    public <K, V> boolean isAll(GridCacheEntryEx<K, V> e,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws IgniteCheckedException {
+    public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
+        @Nullable IgnitePredicate<GridCacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
-     * exceptions.
+     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
      *
      * @param e Element.
      * @param p Predicates.
@@ -1570,7 +1580,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @return Portable object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws PortableException In case of error.
      */
     @Nullable public Object marshalToPortable(@Nullable Object obj) throws PortableException {
         assert portableEnabled();
@@ -1635,7 +1645,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param col List to unwrap.
      * @return Unwrapped list.
      */
-    private ArrayList<Object> unwrapPortables(ArrayList<Object> col) {
+    private Collection<Object> unwrapPortables(ArrayList<Object> col) {
         int size = col.size();
 
         for (int i = 0; i < size; i++) {

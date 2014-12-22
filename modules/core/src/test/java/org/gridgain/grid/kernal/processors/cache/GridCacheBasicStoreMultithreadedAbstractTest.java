@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -81,17 +82,17 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
         final AtomicInteger cntr = new AtomicInteger();
 
         store = new GridCacheStoreAdapter<Integer, Integer>() {
-            @Override public Integer load(@Nullable GridCacheTx tx, Integer key) {
+            @Override public Integer load(@Nullable IgniteTx tx, Integer key) {
                 return cntr.incrementAndGet();
             }
 
             /** {@inheritDoc} */
-            @Override public void put(GridCacheTx tx, Integer key, @Nullable Integer val) {
+            @Override public void put(IgniteTx tx, Integer key, @Nullable Integer val) {
                 assert false;
             }
 
             /** {@inheritDoc} */
-            @Override public void remove(GridCacheTx tx, Integer key) {
+            @Override public void remove(IgniteTx tx, Integer key) {
                 assert false;
             }
         };

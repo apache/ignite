@@ -15,6 +15,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -35,8 +36,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
@@ -494,7 +495,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
                 @Override public void run() {
                     try {
 
-                        try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             metaCache.get(id);
 
                             latch.await();
@@ -512,7 +513,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
             // Now add file ID to trash listing so that delete worker could "see" it.
 
-            try (GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, GridGgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new GridGgfsListingEntry(info));
 

@@ -15,6 +15,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -41,8 +42,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
@@ -676,7 +677,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            try (GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -1116,7 +1117,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
             // Lock keys.

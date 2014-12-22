@@ -22,7 +22,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Simple cache test.
  */
-public class GridCachePartitionedTxTimeoutSelfTest extends GridCacheTxTimeoutAbstractTest {
+public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstractTest {
     /** Transaction timeout. */
     private static final long TIMEOUT = 50;
 
@@ -33,7 +33,7 @@ public class GridCachePartitionedTxTimeoutSelfTest extends GridCacheTxTimeoutAbs
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setTxSerializableEnabled(true);
         txCfg.setDefaultTxTimeout(TIMEOUT);

@@ -12,17 +12,18 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -80,7 +81,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkSimpleTxs(boolean nearEnabled, GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkSimpleTxs(boolean nearEnabled, IgniteTxConcurrency concurrency) throws Exception {
         try {
             this.nearEnabled = nearEnabled;
 
@@ -103,7 +104,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
                 info("Checking transaction for key [idx=" + i + ", key=" + key + ']');
                 info(">>>>>>>>>>>>>>>");
 
-                try (GridCacheTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                try (IgniteTx tx = txs.txStart(concurrency, REPEATABLE_READ)) {
                     try {
                         // Lock if pessimistic, read if optimistic.
                         cache.get(key);
@@ -140,7 +141,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkTransactions() {
         for (int i = 0; i < 3; i++) {
-            GridCacheTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
+            IgniteTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
 
             assertEquals("Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']',
                 0, tm.idMapSize());

@@ -15,6 +15,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -162,7 +163,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public IgniteFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        GridCacheTxEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
+        IgniteTxEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
         IgniteBiInClosure<K, V> vis) {
         return (IgniteFuture)loadAsync(tx, keys, reload, false, filter, subjId, taskName, true);
     }
@@ -248,7 +249,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param filter Filter.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable GridCacheTxEx tx, @Nullable Collection<? extends K> keys,
+    public IgniteFuture<Map<K, V>> loadAsync(@Nullable IgniteTxEx tx, @Nullable Collection<? extends K> keys,
         boolean reload, boolean forcePrimary, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         @Nullable UUID subjId, String taskName, boolean deserializePortable) {
         if (F.isEmpty(keys))
@@ -257,7 +258,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridCacheTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (GridCacheTxLocalEx<K, V>)tx : null;
+        IgniteTxLocalEx<K, V> txx = (tx != null && tx.local()) ? (IgniteTxLocalEx<K, V>)tx : null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, reload, forcePrimary, txx, filter,
             subjId, taskName, deserializePortable);

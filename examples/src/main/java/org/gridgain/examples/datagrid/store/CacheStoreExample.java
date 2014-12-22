@@ -11,7 +11,7 @@ package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
 import java.util.*;
@@ -46,7 +46,7 @@ public class CacheStoreExample {
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);
 
-            try (GridCacheTx tx = cache.txStart()) {
+            try (IgniteTx tx = cache.txStart()) {
                 Person val = cache.get(id);
 
                 System.out.println("Read value: " + val);

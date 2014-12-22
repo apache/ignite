@@ -24,7 +24,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 /**
  * Test txs in single-threaded mode for colocated cache.
  */
-public class GridCacheColocatedTxSingleThreadedSelfTest extends GridCacheTxSingleThreadedAbstractTest {
+public class GridCacheColocatedTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

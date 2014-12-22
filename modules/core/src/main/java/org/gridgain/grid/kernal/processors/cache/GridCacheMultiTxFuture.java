@@ -11,7 +11,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,10 +33,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Transactions to wait for. */
-    private final Set<GridCacheTxEx<K, V>> txs = new GridLeanSet<>();
+    private final Set<IgniteTxEx<K, V>> txs = new GridLeanSet<>();
 
     /** */
-    private Set<GridCacheTxEx<K, V>> remainingTxs;
+    private Set<IgniteTxEx<K, V>> remainingTxs;
 
     /** Logger. */
     private IgniteLogger log;
@@ -62,21 +63,21 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /**
      * @return Transactions to wait for.
      */
-    public Set<GridCacheTxEx<K, V>> txs() {
+    public Set<IgniteTxEx<K, V>> txs() {
         return txs;
     }
 
     /**
      * @return Remaining transactions.
      */
-    public Set<GridCacheTxEx<K, V>> remainingTxs() {
+    public Set<IgniteTxEx<K, V>> remainingTxs() {
         return remainingTxs;
     }
 
     /**
      * @param tx Transaction to add.
      */
-    public void addTx(GridCacheTxEx<K, V> tx) {
+    public void addTx(IgniteTxEx<K, V> tx) {
         txs.add(tx);
     }
 
@@ -92,10 +93,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
         else {
             remainingTxs = new GridConcurrentHashSet<>(txs);
 
-            for (final GridCacheTxEx<K, V> tx : txs) {
+            for (final IgniteTxEx<K, V> tx : txs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<GridCacheTx>>() {
-                        @Override public void apply(IgniteFuture<GridCacheTx> t) {
+                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<IgniteTx>>() {
+                        @Override public void apply(IgniteFuture<IgniteTx> t) {
                             remainingTxs.remove(tx);
 
                             checkRemaining();

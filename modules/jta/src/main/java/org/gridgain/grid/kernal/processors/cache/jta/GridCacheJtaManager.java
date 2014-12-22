@@ -10,9 +10,11 @@
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
@@ -57,26 +59,28 @@ public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> 
                     Transaction jtaTx = jtaTm.getTransaction();
 
                     if (jtaTx != null) {
-                        GridCacheTx tx = cctx.tm().userTx();
+                        IgniteTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
-                            GridTransactionsConfiguration tCfg = cctx.kernalContext().config()
+                            TransactionsConfiguration tCfg = cctx.kernalContext().config()
                                 .getTransactionsConfiguration();
 
                             tx = cctx.tm().newTx(
-                                false,
-                                false,
+                                /*implicit*/false,
+                                /*implicit single*/false,
+                                /*system*/false,
                                 tCfg.getDefaultTxConcurrency(),
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
-                                false,
-                                0,
-                                /** group lock keys */null,
-                                /** partition lock */false
+                                /*invalidate*/false,
+                                /*store enabled*/true,
+                                /*tx size*/0,
+                                /*group lock keys*/null,
+                                /*partition lock*/false
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((GridCacheTxEx)tx, cctx);
+                        rsrc = new GridCacheXAResource((IgniteTxEx)tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

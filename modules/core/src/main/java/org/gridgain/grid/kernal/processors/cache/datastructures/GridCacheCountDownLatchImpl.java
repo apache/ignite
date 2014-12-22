@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -22,8 +22,8 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache count down latch implementation.
@@ -211,7 +211,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            GridCacheTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
+                            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
 
                             try {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
@@ -310,7 +310,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            GridCacheTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);

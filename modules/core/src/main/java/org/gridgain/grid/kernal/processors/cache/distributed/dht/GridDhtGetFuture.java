@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -63,7 +64,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private long topVer;
 
     /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
     private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
@@ -106,7 +107,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         UUID reader,
         LinkedHashMap<? extends K, Boolean> keys,
         boolean reload,
-        @Nullable GridCacheTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,

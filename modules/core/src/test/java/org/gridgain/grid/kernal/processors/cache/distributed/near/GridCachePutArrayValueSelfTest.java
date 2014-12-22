@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -33,7 +32,6 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setDgcFrequency(0);
 
         return cacheCfg;
     }

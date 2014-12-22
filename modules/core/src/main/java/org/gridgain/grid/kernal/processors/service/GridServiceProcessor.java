@@ -17,6 +17,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
@@ -39,8 +40,8 @@ import java.util.concurrent.*;
 import static java.util.Map.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -619,7 +620,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);

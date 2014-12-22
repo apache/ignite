@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests near cache.
  */
-public class GridCacheNearTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
+public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;

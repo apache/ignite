@@ -10,7 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -19,8 +19,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test transaction with wrong marshalling.
@@ -83,7 +83,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         String key2 = UUID.randomUUID().toString();
         GridCacheWrongValue1 wrongValue = new GridCacheWrongValue1();
 
-        GridCacheTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
             grid().cache(null).put(key, value);
 

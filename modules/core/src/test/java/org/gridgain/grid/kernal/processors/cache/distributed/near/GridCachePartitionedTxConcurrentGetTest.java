@@ -19,7 +19,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Checks multithreaded put/get partitioned cache operations on one node.
  */
-public class GridCachePartitionedTxConcurrentGetTest extends GridCacheTxConcurrentGetAbstractTest {
+public class GridCachePartitionedTxConcurrentGetTest extends IgniteTxConcurrentGetAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

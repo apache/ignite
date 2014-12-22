@@ -98,7 +98,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void _testPartitioned() throws Exception { // TODO GG-9141
+    public void testPartitioned() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
 

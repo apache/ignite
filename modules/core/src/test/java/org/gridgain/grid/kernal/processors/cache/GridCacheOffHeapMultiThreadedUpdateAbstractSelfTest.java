@@ -64,7 +64,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      * @throws Exception If failed.
      */
-    public void _testTransform() throws Exception { // TODO GG-9141
+    public void testTransform() throws Exception {
         testTransform(keyForNode(0));
 
         if (gridCount() > 1)

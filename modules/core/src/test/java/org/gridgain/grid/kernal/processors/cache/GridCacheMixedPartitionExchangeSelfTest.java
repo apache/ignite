@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -23,8 +24,8 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test case checks partition exchange when non-cache node joins topology (partition
@@ -84,7 +85,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         GridCache<Integer, Integer> prj = grid(g).cache(null);
 
-                        try (GridCacheTx tx = prj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = prj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             Integer val = prj.get(key);
 
                             val = val == null ? 1 : val + 1;

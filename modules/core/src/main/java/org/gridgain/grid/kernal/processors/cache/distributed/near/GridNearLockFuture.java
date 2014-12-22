@@ -12,12 +12,13 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Cache lock future.
@@ -248,7 +250,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -296,7 +298,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -769,7 +771,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 boolean explicit = false;
 
                 for (K key : mappedKeys) {
-                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+                    IgniteTxKey<K> txKey = cctx.txKey(key);
 
                     while (true) {
                         GridNearCacheEntry<K, V> entry = null;
@@ -846,6 +848,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             timeout,
                                             mappedKeys.size(),
                                             inTx() ? tx.size() : mappedKeys.size(),
+                                            inTx() && tx.syncCommit(),
                                             inTx() ? tx.groupLockKey() : null,
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
@@ -856,7 +859,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
+                                    IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
                                         tx.addKeyMapping(txKey, mapping.node());
@@ -1099,7 +1102,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req);
+                    cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                 }
                 catch (ClusterTopologyException ex) {
                     assert fut != null;
@@ -1114,7 +1117,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req);
+                            cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
                         catch (ClusterTopologyException ex) {
                             assert fut != null;

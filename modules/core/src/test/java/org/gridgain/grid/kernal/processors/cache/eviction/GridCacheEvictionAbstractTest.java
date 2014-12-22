@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -27,8 +28,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -211,7 +212,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     }
 
     /** @throws Exception If failed. */
-    public void _testPartitionedNearEnabled() throws Exception { // TODO GG-9141
+    public void testPartitionedNearEnabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
         nearMax = 3;
@@ -342,7 +343,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
 
-                        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             String v = cache.get(key);
 
                             assert v == null || v.equals(Integer.toString(key)) : "Invalid value for key [key=" + key +

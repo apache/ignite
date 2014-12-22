@@ -15,6 +15,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -116,19 +117,19 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, String val) throws IgniteCheckedException {
+        @Override public void put(IgniteTx tx, Integer key, String val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
     }

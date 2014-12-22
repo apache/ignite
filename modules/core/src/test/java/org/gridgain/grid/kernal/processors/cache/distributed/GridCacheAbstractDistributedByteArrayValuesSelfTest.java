@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.swapspace.file.*;
@@ -18,8 +19,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.junit.Assert.*;
 
 /**
@@ -308,7 +309,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction0(GridCache<Integer, Object>[] caches, GridCacheTxConcurrency concurrency,
+    private void testTransaction0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed0(caches, concurrency, key, val, null, null);
     }
@@ -324,10 +325,10 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed0(GridCache<Integer, Object>[] caches, GridCacheTxConcurrency concurrency,
+    private void testTransactionMixed0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
         for (GridCache<Integer, Object> cache : caches) {
-            GridCacheTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
 
             try {
                 cache.put(key1, val1);

@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -19,8 +20,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Group lock abstract test for partitioned cache.
@@ -62,7 +63,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    private void checkUpdateEntry(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkUpdateEntry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCache<GridCacheAffinityKey<Integer>, Integer> cache = cache(0);
@@ -74,7 +75,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
             cache.put(new GridCacheAffinityKey<>(i, affinityKey), i);
 
         for (int i = 0; i < 3; i++) {
-            try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
+            try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
                 Set<GridCacheEntry<GridCacheAffinityKey<Integer>, Integer>> set =
                     cache.entrySet(cache(0).affinity().partition(affinityKey));
 
@@ -105,7 +106,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         final GridCache<UUID, String> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
+        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
             0, 2)) {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

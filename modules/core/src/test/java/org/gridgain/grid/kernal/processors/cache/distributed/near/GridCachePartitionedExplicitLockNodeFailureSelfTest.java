@@ -53,7 +53,6 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setDgcFrequency(0);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(GRID_CNT - 1);
         cc.setAtomicityMode(TRANSACTIONAL);

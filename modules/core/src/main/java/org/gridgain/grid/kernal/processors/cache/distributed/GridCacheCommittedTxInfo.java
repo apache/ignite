@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 
@@ -32,7 +33,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
 
     /** Recovery writes, i.e. values that have never been sent to remote nodes. */
     @GridToStringInclude
-    private Collection<GridCacheTxEntry<K, V>> recoveryWrites;
+    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -44,7 +45,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @param tx Committed cache transaction.
      */
-    public GridCacheCommittedTxInfo(GridCacheTxEx<K, V> tx) {
+    public GridCacheCommittedTxInfo(IgniteTxEx<K, V> tx) {
         assert !tx.local() || !tx.replicated();
 
         originatingTxId = tx.nearXidVersion();
@@ -72,8 +73,8 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @return Collection of recovery writes.
      */
-    public Collection<GridCacheTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : recoveryWrites;
+    public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
+        return recoveryWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : recoveryWrites;
     }
 
     /** {@inheritDoc} */

@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -24,8 +25,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -135,7 +136,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++) {
                     cache.putx(i, Integer.toString(i));
 
@@ -168,7 +169,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         store.resetLastMethod();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (GridCacheTx tx = cache.txStart()) {
+            try (IgniteTx tx = cache.txStart()) {
                 for (int i = 1; i <= 10; i++) {
                     String val = cache.remove(i);
 
@@ -206,7 +207,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++)
                     cache.putx(i, Integer.toString(i));
 

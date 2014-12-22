@@ -12,7 +12,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -116,7 +115,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * </ul>
      *
      * @param addrs Known nodes addresses.
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     @IgniteSpiConfiguration(optional = true)
     public synchronized void setAddresses(Collection<String> addrs) throws IgniteSpiException {
@@ -137,7 +136,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param ipStr Address string.
      * @return Socket addresses (may contain 1 or more addresses if provided string
      *      includes port range).
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private static Collection<InetSocketAddress> address(String ipStr) throws IgniteSpiException {
         ipStr = ipStr.trim();
@@ -180,7 +179,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param errMsg Error message.
      * @return Socket addresses (may contain 1 or more addresses if provided string
      *      includes port range).
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
         throws IgniteSpiException {

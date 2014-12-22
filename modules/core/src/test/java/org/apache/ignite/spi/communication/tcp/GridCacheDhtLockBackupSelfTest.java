@@ -14,8 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -85,7 +83,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setDgcFrequency(0);
 
         return cacheCfg;
     }
@@ -231,10 +228,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         /** */
         private int delayTime;
-
-        /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
 
         /**
          * Creates test communication spi.

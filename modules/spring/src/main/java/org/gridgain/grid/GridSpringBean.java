@@ -258,7 +258,9 @@ public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, 
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
-        throw new UnsupportedOperationException();
+        assert g != null;
+
+        return g.jcache(name);
     }
 
     /** {@inheritDoc} */

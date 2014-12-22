@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -40,7 +40,6 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         cc.setPreloadBatchSize(preloadBatchSize);
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, partitions));
         cc.setBackups(backups);
-        cc.setDgcFrequency(0);
 
         c.setCacheConfiguration(cc);
 

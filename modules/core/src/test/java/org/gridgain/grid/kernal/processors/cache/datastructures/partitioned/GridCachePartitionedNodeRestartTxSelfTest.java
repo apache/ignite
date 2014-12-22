@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
@@ -24,8 +25,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -146,7 +147,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            try (GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Integer val = (Integer) grid(i).cache(null).get(key);
 
                 assertEquals("Simple check failed for node: " + i, (Integer) i, val);
@@ -171,7 +172,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            try (GridCacheTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid(i).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 GridCacheAtomicLongValue atomicVal = ((GridCacheAtomicLongValue) grid(i).cache(null).get(key));
@@ -229,7 +230,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         // Init cache data.
 
-        try (GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put simple value.
             grid(0).cache(null).put(key, INIT_GRID_NUM);
 
@@ -252,7 +253,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         // Init cache data.
 
-        try (GridCacheTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid(0).cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put custom data
             grid(0).cache(null).put(new GridCacheInternalKeyImpl(key), new GridCacheAtomicLongValue(INIT_GRID_NUM));
 
