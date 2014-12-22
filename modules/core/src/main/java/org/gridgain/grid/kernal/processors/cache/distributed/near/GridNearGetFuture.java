@@ -92,7 +92,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private boolean deserializePortable;
 
     /** Expiry policy. */
-    private GridCacheExpiryPolicy expiryPlc;
+    private IgniteCacheExpiryPolicy expiryPlc;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -124,7 +124,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable GridCacheExpiryPolicy expiryPlc
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 

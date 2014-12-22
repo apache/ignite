@@ -18,6 +18,7 @@ import javax.cache.expiry.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -38,7 +39,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
             IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     IgniteCache<Object,Object> cache = g.jcache(null).
-                        withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000)));
+                        withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
                     long key = 0;
 

@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -4144,7 +4145,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         long ttl = 500;
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
@@ -4191,7 +4192,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         int ttl = 500;
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
@@ -4215,7 +4216,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int ttl = 500;
 
             try (IgniteTx tx = grid(0).ignite().transactions().txStart()) {
-                final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+                final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                 grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 
@@ -4260,7 +4261,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
         int ttl = 1000;
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         final GridCache<String, Integer> c = cache();
 
@@ -4666,7 +4667,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         long ttl = 500;
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
 

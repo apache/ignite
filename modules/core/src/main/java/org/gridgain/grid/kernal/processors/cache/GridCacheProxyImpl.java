@@ -1882,7 +1882,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
-        throw new UnsupportedOperationException();
+        return delegate.expiry();
     }
 
     /** {@inheritDoc} */

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -23,7 +22,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -199,7 +197,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry to map.
      * @param val Value to write.
      * @param valBytes Value bytes.
-     * @param drTtl DR TTL (optional).
+     * @param transformC Transform closure.
+     * @param ttl TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
      */
@@ -207,7 +206,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         @Nullable V val,
         @Nullable byte[] valBytes,
         IgniteClosure<V, V> transformC,
-        long drTtl,
+        long ttl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer) {
         long topVer = updateReq.topologyVersion();
@@ -247,7 +246,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     val,
                     valBytes,
                     transformC,
-                    drTtl,
+                    ttl,
                     drExpireTime,
                     drVer);
             }
@@ -259,7 +258,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param TTL for near cache update (optional).
+     * @param transformC Transform closure.
+     * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
     public void addNearWriteEntries(Iterable<UUID> readers,

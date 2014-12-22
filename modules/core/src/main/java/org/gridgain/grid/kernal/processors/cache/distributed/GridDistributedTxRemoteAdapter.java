@@ -587,7 +587,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             Duration duration = expiry.getExpiryForAccess();
 
                                             if (duration != null)
-                                                cached.updateTtl(null, GridCacheUtils.toTtl(duration));
+                                                cached.updateTtl(null, CU.toTtl(duration));
                                         }
 
                                         if (log.isDebugEnabled())

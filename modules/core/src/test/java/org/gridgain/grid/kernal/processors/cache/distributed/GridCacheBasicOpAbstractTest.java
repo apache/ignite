@@ -324,7 +324,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
         long ttl = 500;
 
-        cache1.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl))).put("key", "val");
+        cache1.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put("key", "val");
 
         assert cache1.get("key") != null;
 

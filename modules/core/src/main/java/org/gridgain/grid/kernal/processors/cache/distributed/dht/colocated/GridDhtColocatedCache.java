@@ -243,8 +243,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keyCheck)
             validateCacheKeys(keys);
 
-        final GridCacheAccessExpiryPolicy expiry =
-            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
+        final GetExpiryPolicy expiry =
+            GetExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {

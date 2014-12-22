@@ -492,7 +492,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         filterBytes = marshalFilter(filter, ctx);
 
         if (expiryPlc != null)
-            expiryPlcBytes = CU.marshal(ctx, new GridCacheExternalizableExpiryPolicy(expiryPlc));
+            expiryPlcBytes = CU.marshal(ctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
     }
 
     /** {@inheritDoc} */

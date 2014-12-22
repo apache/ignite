@@ -11,12 +11,19 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
+import org.jdk8.backport.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -28,6 +35,9 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static final Map<Object, Object> storeMap = new ConcurrentHashMap8<>();
 
     /**
      * @return Grids count to start.
@@ -55,6 +65,8 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        storeMap.clear();
     }
 
     /** {@inheritDoc} */
@@ -101,10 +113,19 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         cfg.setDistributionMode(distributionMode());
         cfg.setPortableEnabled(portableEnabled());
 
+        cfg.setStore(cacheStore());
+
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache store.
+     */
+    protected GridCacheStore<?, ?> cacheStore() {
+        return null;
     }
 
     /**
@@ -163,5 +184,31 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
         return grid(idx).jcache(null);
+    }
+
+    /**
+     *
+     */
+    public class TestStore extends GridCacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+            for (Map.Entry<Object, Object> e : storeMap.entrySet())
+                clo.apply(e.getKey(), e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object load(IgniteTx tx, Object key) {
+            return storeMap.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(IgniteTx tx, Object key, @Nullable Object val) {
+            storeMap.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(IgniteTx tx, Object key) {
+            storeMap.remove(key);
+        }
     }
 }

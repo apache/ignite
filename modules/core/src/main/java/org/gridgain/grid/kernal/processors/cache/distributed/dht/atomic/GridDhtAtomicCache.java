@@ -107,8 +107,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
-                V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+            @Override
+            public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
+                                                  V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
                 return new GridDhtAtomicCacheEntry<>(ctx, topVer, key, hash, val, next, ttl, hdrId);
             }
         });
@@ -197,7 +198,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         ctx.io().addDisconnectListener(new GridDisconnectListener() {
-            @Override public void onNodeDisconnected(UUID nodeId) {
+            @Override
+            public void onNodeDisconnected(UUID nodeId) {
                 scheduleAtomicFutureRecheck();
             }
         });
@@ -271,7 +273,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
 
         return asyncOp(new CO<IgniteFuture<Map<K, V>>>() {
-            @Override public IgniteFuture<Map<K, V>> apply() {
+            @Override
+            public IgniteFuture<Map<K, V>> apply() {
                 return getAllAsync0(keys,
                     false,
                     forcePrimary,
@@ -691,7 +694,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash);
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
-            @Override public IgniteFuture<Object> apply() {
+            @Override
+            public IgniteFuture<Object> apply() {
                 updateFut.map();
 
                 return updateFut;
@@ -730,8 +734,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final GridCacheAccessExpiryPolicy expiry =
-            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
+        final GetExpiryPolicy expiry =
+            GetExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
@@ -894,7 +898,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        GridCacheExpiryPolicy expiry = null;
+        IgniteCacheExpiryPolicy expiry = null;
 
         try {
             // If batch store update is enabled, we need to lock all entries.
@@ -944,7 +948,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean replicate = ctx.isDrEnabled();
 
-                        expiry = expiryPolicy(req.expiry() != null ? req.expiry() : ctx.expiry());
+                        ExpiryPolicy plc = req.expiry() != null ? req.expiry() : ctx.expiry();
+
+                        if (plc != null)
+                            expiry = new UpdateExpiryPolicy(plc);
 
                         if (storeEnabled() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
@@ -1069,7 +1076,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         boolean replicate,
         String taskName,
-        @Nullable GridCacheExpiryPolicy expiry
+        @Nullable IgniteCacheExpiryPolicy expiry
     ) throws GridCacheEntryRemovedException {
         // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue(); // Should not request return values for putAll.
@@ -1112,7 +1119,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (ttl != -1L) {
                             entry.updateTtl(null, ttl);
 
-                            expiry.onAccessUpdated(entry.key(),
+                            expiry.ttlUpdated(entry.key(),
                                 entry.getOrMarshalKeyBytes(),
                                 entry.version(),
                                 entry.readers());
@@ -1423,7 +1430,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CI2<GridNearAtomicUpdateRequest<K, V>, GridNearAtomicUpdateResponse<K, V>> completionCb,
         boolean replicate,
         String taskName,
-        @Nullable GridCacheExpiryPolicy expiry
+        @Nullable IgniteCacheExpiryPolicy expiry
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn<Object> retVal = null;
         Collection<IgniteBiTuple<GridDhtCacheEntry<K, V>, GridCacheVersion>> deleted = null;
@@ -1563,12 +1570,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 newValBytes = null;
 
                             // If put the same value as in request then do not need to send it back.
-                            if (op == TRANSFORM || writeVal != updRes.newValue())
+                            if (op == TRANSFORM || writeVal != updRes.newValue()) {
                                 res.addNearValue(i,
                                     updRes.newValue(),
                                     newValBytes,
                                     ttl,
                                     expireTime);
+                            }
                             else
                                 res.addNearTtl(i, ttl, expireTime);
 
@@ -1630,6 +1638,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Response.
      * @param replicate Whether replication is enabled.
      * @param batchRes Batch update result.
+     * @param taskName Task name.
      * @param expiry Expiry policy.
      * @return Deleted entries.
      */
@@ -1650,7 +1659,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean replicate,
         UpdateBatchResult<K, V> batchRes,
         String taskName,
-        @Nullable GridCacheExpiryPolicy expiry
+        @Nullable IgniteCacheExpiryPolicy expiry
     ) {
         assert putMap == null ^ rmvKeys == null;
 
@@ -2230,11 +2239,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 UPDATE :
                                 DELETE;
 
-                        long ttl = req.drTtl(i);
+                        long ttl = req.ttl(i);
                         long expireTime = req.drExpireTime(i);
 
                         if (ttl != -1L && expireTime == -1L)
-                            expireTime = GridCacheMapEntry.toExpireTime(ttl);
+                            expireTime = CU.toExpireTime(ttl);
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
@@ -2245,7 +2254,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             valBytes,
                             /*write-through*/false,
                             /*retval*/false,
-                            null,
+                            /*expiry policy*/null,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
@@ -2413,14 +2422,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             U.error(log, "Failed to send near update reply (did node leave grid?) [nodeId=" + nodeId +
                 ", res=" + res + ']', e);
         }
-    }
-
-    /**
-     * @param plc Expiry policy.
-     * @return Expiry policy wrapper.
-     */
-    private static GridCacheExpiryPolicy expiryPolicy(@Nullable ExpiryPolicy plc) {
-        return plc == null ? null : new UpdateExpiryPolicy(plc);
     }
 
     /** {@inheritDoc} */
@@ -2704,7 +2705,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      *
      */
-    private static class UpdateExpiryPolicy implements GridCacheExpiryPolicy {
+    private static class UpdateExpiryPolicy implements IgniteCacheExpiryPolicy {
         /** */
         private final ExpiryPolicy plc;
 
@@ -2739,10 +2740,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAccessUpdated(Object key,
-            byte[] keyBytes,
-            GridCacheVersion ver,
-            @Nullable Collection<UUID> rdrs) {
+        @Override public void ttlUpdated(Object key,
+                                         byte[] keyBytes,
+                                         GridCacheVersion ver,
+                                         @Nullable Collection<UUID> rdrs) {
             if (entries == null)
                 entries = new HashMap<>();
 

@@ -15,7 +15,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -66,9 +65,7 @@ public abstract class GridCacheRefreshAheadAbstractSelfTest extends GridCommonAb
     public void testReadAhead() throws Exception {
         store.testThread(Thread.currentThread());
 
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000L));
-
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000L));
 
         grid(0).jcache(null).withExpiryPolicy(expiry).put(1, "1");
 

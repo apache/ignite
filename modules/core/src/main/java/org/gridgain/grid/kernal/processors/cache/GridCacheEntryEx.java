@@ -293,7 +293,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -426,7 +426,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
-        @Nullable GridCacheExpiryPolicy expiryPlc,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,

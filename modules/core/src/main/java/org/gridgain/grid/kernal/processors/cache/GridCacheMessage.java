@@ -334,10 +334,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
             boolean transferExpiry = transferExpiryPolicy();
 
             for (IgniteTxEntry<K, V> e : txEntries) {
-                if (transferExpiry)
-                    e.transferExpiryPolicyIfNeeded();
-
-                e.marshal(ctx);
+                e.marshal(ctx, transferExpiry);
 
                 if (ctx.deploymentEnabled()) {
                     prepareObject(e.key(), ctx);
@@ -348,6 +345,9 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         }
     }
 
+    /**
+     * @return {@code True} if entries expire policy should be marshalled.
+     */
     protected boolean transferExpiryPolicy() {
         return false;
     }
@@ -358,8 +358,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void unmarshalTx(Iterable<IgniteTxEntry<K, V>> txEntries, boolean near,
-        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    protected final void unmarshalTx(Iterable<IgniteTxEntry<K, V>> txEntries,
+        boolean near,
+        GridCacheSharedContext<K, V> ctx,
+        ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 

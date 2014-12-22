@@ -20,7 +20,6 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.expiry.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -71,10 +70,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> drVers;
 
-    /** DR TTLs. */
-    private GridLongList drTtls;
+    /** TTLs. */
+    private GridLongList ttls;
 
-    /** DR TTLs. */
+    /** DR expire time. */
     private GridLongList drExpireTimes;
 
     /** Near TTLs. */
@@ -156,6 +155,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param topVer Topology version.
      * @param forceTransformBackups Force transform backups flag.
      * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -204,7 +204,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
      * @param transformC Transform closure.
-     * @param drTtl DR TTL (optional).
+     * @param ttl TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
      */
@@ -213,7 +213,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         @Nullable V val,
         @Nullable byte[] valBytes,
         IgniteClosure<V, V> transformC,
-        long drTtl,
+        long ttl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer) {
         keys.add(key);
@@ -240,16 +240,17 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         else if (drVers != null)
             drVers.add(drVer);
 
-        if (drTtl >= 0) {
-            if (drTtls == null) {
-                drTtls = new GridLongList(keys.size());
+        if (ttl >= 0) {
+            if (ttls == null) {
+                ttls = new GridLongList(keys.size());
 
                 for (int i = 0; i < keys.size() - 1; i++)
-                    drTtls.add(-1);
+                    ttls.add(-1);
             }
-
-            drTtls.add(drTtl);
         }
+
+        if (ttls != null)
+            ttls.add(ttl);
 
         if (drExpireTime >= 0) {
             if (drExpireTimes == null) {
@@ -258,9 +259,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 for (int i = 0; i < keys.size() - 1; i++)
                     drExpireTimes.add(-1);
             }
-
-            drExpireTimes.add(drExpireTime);
         }
+
+        if (drExpireTimes != null)
+            drExpireTimes.add(drExpireTime);
     }
 
     /**
@@ -278,7 +280,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         @Nullable byte[] valBytes,
         IgniteClosure<V, V> transformC,
         long ttl,
-        long expireTime) {
+        long expireTime)
+    {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
             nearKeyBytes = new ArrayList<>();
@@ -313,9 +316,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 for (int i = 0; i < nearKeys.size() - 1; i++)
                     nearTtls.add(-1);
             }
-
-            nearTtls.add(ttl);
         }
+
+        if (nearTtls != null)
+            nearTtls.add(ttl);
 
         if (expireTime >= 0) {
             if (nearExpireTimes == null) {
@@ -324,9 +328,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 for (int i = 0; i < nearKeys.size() - 1; i++)
                     nearExpireTimes.add(-1);
             }
-
-            nearExpireTimes.add(expireTime);
         }
+
+        if (nearExpireTimes != null)
+            nearExpireTimes.add(expireTime);
     }
 
     /** {@inheritDoc} */
@@ -548,21 +553,14 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /**
-     * @return DR TTLs.
-     */
-    @Nullable public GridLongList drTtls() {
-        return drTtls;
-    }
-
-    /**
      * @param idx Index.
-     * @return DR TTL.
+     * @return TTL.
      */
-    public long drTtl(int idx) {
-        if (drTtls != null) {
-            assert idx >= 0 && idx < drTtls.size();
+    public long ttl(int idx) {
+        if (ttls != null) {
+            assert idx >= 0 && idx < ttls.size();
 
-            return drTtls.get(idx);
+            return ttls.get(idx);
         }
 
         return -1L;
@@ -677,7 +675,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.vals = vals;
         _clone.valBytes = valBytes;
         _clone.drVers = drVers;
-        _clone.drTtls = drTtls;
+        _clone.ttls = ttls;
         _clone.drExpireTimes = drExpireTimes;
         _clone.syncMode = syncMode;
         _clone.nearKeys = nearKeys;
@@ -718,7 +716,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 4:
-                if (!commState.putLongList(drTtls))
+                if (!commState.putLongList(ttls))
                     return false;
 
                 commState.idx++;
@@ -1001,7 +999,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (drTtls0 == LONG_LIST_NOT_READ)
                     return false;
 
-                drTtls = drTtls0;
+                ttls = drTtls0;
 
                 commState.idx++;
 

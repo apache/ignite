@@ -12,37 +12,41 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
- *
+ * Wrapper for {@link ExpiryPolicy} used to track information about cache entries
+ * whose time to live was modified after access.
  */
-public interface GridCacheExpiryPolicy {
+public interface IgniteCacheExpiryPolicy {
     /**
      * @return TTL.
      */
-    public abstract long forCreate();
+    public long forCreate();
 
     /**
      * @return TTL.
      */
-    public abstract long forUpdate();
+    public long forUpdate();
 
     /**
      * @return TTL.
      */
-    public abstract long forAccess();
+    public long forAccess();
 
     /**
+     * Callback when entry's ttl is updated on access.
+     *
      * @param key Entry key.
      * @param keyBytes Entry key bytes.
      * @param ver Entry version.
      * @param rdrs Entry readers.
      */
-    public void onAccessUpdated(Object key,
-        byte[] keyBytes,
-        GridCacheVersion ver,
-        @Nullable Collection<UUID> rdrs);
+    public void ttlUpdated(Object key,
+       byte[] keyBytes,
+       GridCacheVersion ver,
+       @Nullable Collection<UUID> rdrs);
 
     /**
      * @return Entries with TTL updated on access.

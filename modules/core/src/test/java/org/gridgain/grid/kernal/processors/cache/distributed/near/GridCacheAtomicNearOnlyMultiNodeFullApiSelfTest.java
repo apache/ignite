@@ -16,6 +16,7 @@ import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
@@ -155,7 +156,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         long ttl = 500;
 
         grid(0).jcache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl))).put(key, 1);
+            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);
 

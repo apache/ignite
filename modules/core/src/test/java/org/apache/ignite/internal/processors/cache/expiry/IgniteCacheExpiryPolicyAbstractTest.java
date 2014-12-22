@@ -29,6 +29,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -57,6 +58,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        storeMap.clear();
     }
 
     /**
@@ -165,6 +168,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                 txGet(key);
             }
+
+            txGetAll();
         }
     }
 
@@ -186,6 +191,29 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         checkTtl(key, 62_000L, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void txGetAll() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            vals.put(i, i);
+
+        cache.putAll(vals);
+
+        try (IgniteTx tx = ignite(0).transactions().txStart()) {
+            assertEquals(vals, cache.getAll(vals.keySet()));
+
+            tx.commit();
+        }
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 62_000L);
     }
 
     /**
@@ -564,10 +592,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
 
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
+
         // Update from another node.
         cache1.put(key, 2);
 
         checkTtl(key, 61_000L);
+
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
 
         // Update from another node with provided TTL.
         cache1.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE, null)).put(key, 3);
@@ -580,6 +614,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cache0.put(key, 1);
 
         checkTtl(key, 60_000L);
+
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
 
         // Update from near node with provided TTL.
         cache0.withExpiryPolicy(new TestPolicy(null, TTL_FOR_EXPIRE + 1, null)).put(key, 2);
@@ -607,6 +644,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
 
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
+
         IgniteCache<Integer, Integer> cache1 = jcache(1);
 
         // Update from another node.
@@ -614,6 +654,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         for (Integer key : vals.keySet())
             checkTtl(key, 61_000L);
+
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
 
         // Update from another node with provided TTL.
         cache1.withExpiryPolicy(new TestPolicy(null, 1000L, null)).putAll(vals);
@@ -625,6 +668,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         // Try create again.
         cache0.putAll(vals);
+
+        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+            Thread.sleep(100);
 
         // Update from near node with provided TTL.
         cache1.withExpiryPolicy(new TestPolicy(null, 1101L, null)).putAll(vals);
@@ -752,6 +798,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }
 
+        storeMap.clear();
+
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
                 assertNull("Unexpected non-null value for grid " + i, jcache(i).get(key));
@@ -787,7 +835,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 e = cache.context().near().dht().peekEx(key);
 
             if (e == null)
-                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
             else {
                 found = true;
 

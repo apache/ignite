@@ -383,8 +383,9 @@ public class GridWebSessionFilter implements Filter {
                     GridCacheProjection<String, GridWebSession> cache0;
 
                     if (cached.getMaxInactiveInterval() > 0) {
-                        ExpiryPolicy plc =
-                            new TouchedExpiryPolicy(new Duration(MILLISECONDS, cached.getMaxInactiveInterval() * 1000));
+                        long ttl = cached.getMaxInactiveInterval() * 1000;
+
+                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                         cache0 = ((GridCacheProjectionEx<String, GridWebSession>)cache).withExpiryPolicy(plc);
                     }

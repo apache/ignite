@@ -701,7 +701,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheExpiryPolicy expirePlc)
+        @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
 
@@ -734,7 +734,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         Object transformClo,
         String taskName,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.isStoreEnabled())
@@ -885,14 +885,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (ret != null && expiryPlc != null) {
                 long ttl = expiryPlc.forAccess();
 
-                assert ttl >= 0 : ttl;
-
                 updateTtl(ttl);
 
-                expiryPlc.onAccessUpdated(key(),
+                expiryPlc.ttlUpdated(key(),
                     getOrMarshalKeyBytes(),
                     version(),
-                    hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
+                    hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
             }
         }
 
@@ -1520,7 +1518,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (!pass) {
                     if (expiryPlc != null && hasValueUnlocked()) {
-                        long ttl = GridCacheUtils.toTtl(expiryPlc.getExpiryForAccess());
+                        long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
 
                         if (ttl != -1L)
                             updateTtl(ttl);
@@ -1584,7 +1582,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 long expireTime;
 
                 if (expiryPlc != null) {
-                    ttl = GridCacheUtils.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
+                    ttl = CU.toTtl(hadVal ? expiryPlc.getExpiryForUpdate() : expiryPlc.getExpiryForCreation());
 
                     if (ttl == -1L) {
                         ttl = ttlExtras();
@@ -1687,7 +1685,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable byte[] valBytes,
         boolean writeThrough,
         boolean retval,
-        @Nullable GridCacheExpiryPolicy expiryPlc,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
@@ -1833,10 +1831,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         if (newTtl != -1L) {
                             updateTtl(newTtl);
 
-                            expiryPlc.onAccessUpdated(key,
+                            expiryPlc.ttlUpdated(key,
                                 getOrMarshalKeyBytes(),
                                 version(),
-                                hasReaders() ? ((GridDhtCacheEntry)this).readers() : null);
+                                hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
                         }
                     }
 
@@ -2498,10 +2496,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param ttl Time to live.
      */
     private void updateTtl(long ttl) {
+        assert ttl >= 0 : ttl;
         assert Thread.holdsLock(this);
-
-        if (ttl == -1L)
-            return;
 
         long expireTime = toExpireTime(ttl);
 

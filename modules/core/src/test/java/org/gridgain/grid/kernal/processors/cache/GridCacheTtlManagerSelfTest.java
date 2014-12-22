@@ -24,6 +24,7 @@ import org.gridgain.testframework.junits.common.*;
 import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -90,7 +91,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
             final String key = "key";
 
             g.jcache(null).withExpiryPolicy(
-                    new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000))).put(key, 1);
+                    new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
             assertEquals(1, g.jcache(null).get(key));
 

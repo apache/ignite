@@ -288,7 +288,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     public void testExpiration() throws Exception {
         ignite.jcache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 1000))).put("key1", 1);
+            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put("key1", 1);
 
         GridCache<String, Integer> cache = ignite.cache(null);
 

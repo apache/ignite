@@ -24,8 +24,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
 import javax.cache.expiry.*;
-import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -163,7 +163,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         GridCacheAffinity<String> aff = dht0.affinity();
 
-        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 10));
+        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
 
         for (int kv = 0; kv < KEY_CNT; kv++) {
             String key = String.valueOf(kv);

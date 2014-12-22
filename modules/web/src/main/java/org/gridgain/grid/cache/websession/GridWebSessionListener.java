@@ -87,8 +87,9 @@ class GridWebSessionListener {
                     GridCacheProjection<String, GridWebSession> cache0;
 
                     if (maxInactiveInterval > 0) {
-                        ExpiryPolicy plc =
-                            new TouchedExpiryPolicy(new Duration(MILLISECONDS, maxInactiveInterval * 1000));
+                        long ttl = maxInactiveInterval * 1000;
+
+                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
                         cache0 = ((GridCacheProjectionEx<String, GridWebSession>)cache).withExpiryPolicy(plc);
                     }

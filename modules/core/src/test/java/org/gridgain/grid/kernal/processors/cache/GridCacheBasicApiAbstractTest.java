@@ -27,6 +27,7 @@ import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -498,7 +499,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         ignite.events().localListen(lsnr, EVTS_CACHE);
 
-        ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L));
+        ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 200L));
 
         try {
             int key = (int)System.currentTimeMillis();

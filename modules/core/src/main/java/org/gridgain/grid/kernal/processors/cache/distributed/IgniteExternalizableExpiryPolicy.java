@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -17,9 +18,16 @@ import java.io.*;
 import java.util.concurrent.*;
 
 /**
- *
+ * Externalizable wrapper for {@link ExpiryPolicy}.
  */
-public class GridCacheExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable {
+public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, IgniteOptimizedMarshallable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
+    private static Object GG_CLASS_ID;
+
     /** */
     private ExpiryPolicy plc;
 
@@ -44,17 +52,22 @@ public class GridCacheExternalizableExpiryPolicy implements ExpiryPolicy, Extern
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheExternalizableExpiryPolicy() {
+    public IgniteExternalizableExpiryPolicy() {
         // No-op.
     }
 
     /**
      * @param plc Expiry policy.
      */
-    public GridCacheExternalizableExpiryPolicy(ExpiryPolicy plc) {
+    public IgniteExternalizableExpiryPolicy(ExpiryPolicy plc) {
         assert plc != null;
 
         this.plc = plc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object ggClassId() {
+        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */
@@ -148,6 +161,6 @@ public class GridCacheExternalizableExpiryPolicy implements ExpiryPolicy, Extern
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheExternalizableExpiryPolicy.class, this);
+        return S.toString(IgniteExternalizableExpiryPolicy.class, this);
     }
 }

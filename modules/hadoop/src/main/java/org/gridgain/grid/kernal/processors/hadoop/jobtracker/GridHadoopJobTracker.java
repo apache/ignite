@@ -121,7 +121,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     jobMetaPrj = prj = sysCache.projection(GridHadoopJobId.class, GridHadoopJobMetadata.class);
 
                     if (ctx.configuration().getFinishedJobInfoTtl() > 0) {
-                        TouchedExpiryPolicy finishedJobPlc = new TouchedExpiryPolicy(
+                        ExpiryPolicy finishedJobPlc = new ModifiedExpiryPolicy(
                             new Duration(MILLISECONDS, ctx.configuration().getFinishedJobInfoTtl()));
 
                         finishedJobMetaPrj = ((GridCacheProjectionEx<GridHadoopJobId, GridHadoopJobMetadata>)prj).

@@ -34,6 +34,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
@@ -931,7 +932,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
-                Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
@@ -968,7 +969,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
-                Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
@@ -1005,7 +1006,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
-                Duration duration = new Duration(TimeUnit.MILLISECONDS, ttl);
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }

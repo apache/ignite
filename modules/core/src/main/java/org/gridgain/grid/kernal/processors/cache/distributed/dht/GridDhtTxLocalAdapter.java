@@ -126,10 +126,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param msgId Message ID.
      * @param cached Cached entry.
      * @param entry Transaction entry.
+     * @param topVer Topology version.
      * @return {@code True} if reader was added as a result of this call.
      */
-    @Nullable protected abstract IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        IgniteTxEntry<K, V> entry, long topVer);
+    @Nullable protected abstract IgniteFuture<Boolean> addReader(long msgId,
+        GridDhtCacheEntry<K, V> cached,
+        IgniteTxEntry<K, V> entry,
+        long topVer);
 
     /**
      * @param commit Commit flag.
@@ -520,7 +523,15 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
                     IgniteTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
 
-                    txEntry = addEntry(read ? READ : NOOP, null, null, cached, null, CU.<K, V>empty(), false, -1L, -1L,
+                    txEntry = addEntry(NOOP,
+                        null,
+                        null,
+                        cached,
+                        null,
+                        CU.<K, V>empty(),
+                        false,
+                        -1L,
+                        -1L,
                         drVers != null ? drVers[drVerIdx++] : null);
 
                     if (w != null) {
@@ -572,6 +583,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     }
 
     /**
+     * @param cacheCtx Context.
      * @param ret Return value.
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
@@ -583,7 +595,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         final GridCacheContext<K, V> cacheCtx,
         GridCacheReturn<V> ret,
         final Collection<? extends K> passedKeys,
-        boolean read,
+        final boolean read,
         final Set<K> skipped,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (log.isDebugEnabled())
@@ -596,7 +608,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
         IgniteFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
-            lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
+            lockTimeout(),
+            this,
+            isInvalidate(),
+            read,
+            /*retval*/false,
+            isolation,
+            CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(
             fut,
@@ -605,7 +623,15 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock on keys: " + passedKeys);
 
-                    postLockWrite(cacheCtx, passedKeys, skipped, null, null, ret, /*remove*/false, /*retval*/false,
+                    postLockWrite(cacheCtx,
+                        passedKeys,
+                        skipped,
+                        null,
+                        null,
+                        ret,
+                        /*remove*/false,
+                        /*retval*/false,
+                        /*read*/true,
                         filter == null ? CU.<K, V>empty() : filter);
 
                     return ret;

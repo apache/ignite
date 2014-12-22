@@ -180,6 +180,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @param nodeId Node ID.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -213,7 +215,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         valBytes,
                         /*write-through*/false,
                         /*retval*/false,
-                        null,
+                        /**expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,

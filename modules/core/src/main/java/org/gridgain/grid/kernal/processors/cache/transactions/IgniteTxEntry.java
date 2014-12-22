@@ -134,7 +134,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
-    /** */
+    /** Expiry policy transfer flag. */
     private boolean transferExpiryPlc;
 
     /**
@@ -730,17 +730,11 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * Marks expiry policy for transfer if it explicitly set and differs from default one.
-     */
-    public void transferExpiryPolicyIfNeeded() {
-        transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
-    }
-
-    /**
      * @param ctx Context.
+     * @param transferExpiry {@code True} if expire policy should be marshalled.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    public void marshal(GridCacheSharedContext<K, V> ctx, boolean transferExpiry) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (keyBytes == null)
@@ -754,6 +748,9 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
             else if (filterBytes == null)
                 filterBytes = CU.marshal(ctx, filters);
         }
+
+        if (transferExpiry)
+            transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
         val.marshal(ctx, context(), depEnabled);
     }
@@ -837,7 +834,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         out.writeBoolean(grpLock);
         CU.writeVersion(out, drVer);
 
-        out.writeObject(transferExpiryPlc ? new GridCacheExternalizableExpiryPolicy(expiryPlc) : null);
+        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */

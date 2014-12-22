@@ -89,7 +89,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private boolean deserializePortable;
 
     /** Expiry policy. */
-    private GridCacheExpiryPolicy expiryPlc;
+    private IgniteCacheExpiryPolicy expiryPlc;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -104,7 +104,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param topVer Topology version.
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
-     *        if called on backup node.
+     *          if called on backup node.
      * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -121,7 +121,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable GridCacheExpiryPolicy expiryPlc
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 

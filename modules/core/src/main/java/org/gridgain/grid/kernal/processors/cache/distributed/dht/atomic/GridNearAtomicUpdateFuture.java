@@ -163,8 +163,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param cached Cached entry if keys size is 1.
-     * @param expiryPlc Expiry policy.
+     * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext<K, V> cctx,

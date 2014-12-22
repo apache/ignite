@@ -428,7 +428,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.GridCacheExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.IgniteCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -483,7 +483,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheExpiryPolicy expiry
+        @Nullable IgniteCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
             null,
@@ -518,7 +518,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         int taskNameHash,
         boolean deserializePortable,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        @Nullable GridCacheExpiryPolicy expiry) {
+        @Nullable IgniteCacheExpiryPolicy expiry) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
             reader,
@@ -546,7 +546,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         long ttl = req.accessTtl();
 
-        final GridCacheAccessExpiryPolicy expiryPlc = ttl == -1L ? null : new GridCacheAccessExpiryPolicy(ttl);
+        final GetExpiryPolicy expiryPlc = ttl == -1L ? null : new GetExpiryPolicy(ttl);
 
         IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId,
@@ -599,7 +599,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param expiryPlc Expiry policy.
      */
-    public void sendTtlUpdateRequest(@Nullable final GridCacheExpiryPolicy expiryPlc) {
+    public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
                 @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
@@ -636,7 +636,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrs = expiryPlc.readers();
 
                     if (rdrs != null) {
-                        assert  !rdrs.isEmpty();
+                        assert !rdrs.isEmpty();
 
                         for (Map.Entry<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> e : rdrs.entrySet()) {
                             ClusterNode node = ctx.node(e.getKey());

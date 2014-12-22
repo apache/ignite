@@ -562,6 +562,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
      * @param storeEnabled Store enabled flag.
      * @param clone {@code True} if returned values should be cloned.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable .
      * @return Key-value map.
      * @throws IgniteCheckedException If failed.
      */
@@ -592,8 +594,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        final GridCacheAccessExpiryPolicy expiry =
-            GridCacheAccessExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
+        final GetExpiryPolicy expiry =
+            GetExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
 
         boolean success = true;
 
@@ -871,9 +873,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param op Operation.
      * @param keys Keys.
      * @param vals Values.
+     * @param expiryPlc Expiry policy.
      * @param ver Cache version.
      * @param filter Optional filter.
      * @param subjId Subject ID.
+     * @param taskName Task name.
      * @throws GridCachePartialUpdateException If update failed.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})

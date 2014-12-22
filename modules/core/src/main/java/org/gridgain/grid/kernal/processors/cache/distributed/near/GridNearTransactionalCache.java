@@ -129,6 +129,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param filter Filter.
+     * @param deserializePortable Deserialize portable flag.
      * @return Future.
      */
     IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,

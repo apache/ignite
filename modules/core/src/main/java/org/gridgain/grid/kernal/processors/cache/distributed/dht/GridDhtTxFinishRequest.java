@@ -79,7 +79,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** TTLs for optimistic transaction. */
     private GridLongList ttls;
 
-    /** TTLs for optimistic transaction. */
+    /** Near cache TTLs for optimistic transaction. */
     private GridLongList nearTtls;
 
     /**
