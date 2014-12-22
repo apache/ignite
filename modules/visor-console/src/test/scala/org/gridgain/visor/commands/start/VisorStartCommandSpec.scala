@@ -11,10 +11,11 @@
 
 package org.gridgain.visor.commands.start
 
+import org.scalatest._
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.start.VisorStartCommand._
 import org.gridgain.visor.commands.top.VisorTopologyCommand._
-import org.scalatest._
 
 /**
  * Unit test for 'start' command.

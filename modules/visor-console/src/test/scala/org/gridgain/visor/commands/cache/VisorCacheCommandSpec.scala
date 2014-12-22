@@ -11,11 +11,13 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.apache.ignite.Ignition
 import org.gridgain.grid.cache.query.GridCacheQuerySqlField
+
+import org.apache.ignite.Ignition
+import org.scalatest._
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.cache.VisorCacheCommand._
-import org.scalatest._
 
 /**
  * Unit test for 'events' command.

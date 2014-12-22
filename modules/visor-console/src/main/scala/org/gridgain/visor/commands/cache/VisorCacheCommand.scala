@@ -11,7 +11,7 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.cache.{VisorCacheAggregatedMetrics, VisorCacheConfiguration, VisorCacheMetrics2, VisorCacheMetricsCollectorTask}
+import org.gridgain.grid.kernal.visor.cache._
 import org.gridgain.grid.kernal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.gridgain.grid.util.typedef._
 
@@ -285,7 +285,7 @@ class VisorCacheCommand {
 
                 sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
-                sortAggregatedData(aggrData, sortType getOrElse "lr", reversed).foreach(
+                sortAggregatedData(aggrData, sortType.getOrElse("lr"), reversed).foreach(
                     ad => {
                         // Add cache host as visor variable.
                         registerCacheName(ad.cacheName)
@@ -299,29 +299,29 @@ class VisorCacheCommand {
                                 ),
                             ad.nodes,
                             (
-                                "min: " + ad.minSize,
-                                "avg: " + formatDouble(ad.avgSize),
-                                "max: " + ad.maxSize
+                                "min: " + ad.minimumSize,
+                                "avg: " + formatDouble(ad.averageSize),
+                                "max: " + ad.maximumSize
                                 ),
                             (
-                                "min: " + ad.minHits,
-                                "avg: " + formatDouble(ad.avgHits),
-                                "max: " + ad.maxHits
+                                "min: " + ad.minimumHits,
+                                "avg: " + formatDouble(ad.averageHits),
+                                "max: " + ad.maximumHits
                                 ),
                             (
-                                "min: " + ad.minMisses,
-                                "avg: " + formatDouble(ad.avgMisses),
-                                "max: " + ad.maxMisses
+                                "min: " + ad.minimumMisses,
+                                "avg: " + formatDouble(ad.averageMisses),
+                                "max: " + ad.maximumMisses
                                 ),
                             (
-                                "min: " + ad.minReads,
-                                "avg: " + formatDouble(ad.avgReads),
-                                "max: " + ad.maxReads
+                                "min: " + ad.minimumReads,
+                                "avg: " + formatDouble(ad.averageReads),
+                                "max: " + ad.maximumReads
                                 ),
                             (
-                                "min: " + ad.minWrites,
-                                "avg: " + formatDouble(ad.avgWrites),
-                                "max: " + ad.maxWrites
+                                "min: " + ad.minimumWrites,
+                                "avg: " + formatDouble(ad.averageWrites),
+                                "max: " + ad.maximumWrites
                                 )
                             )
                     }
@@ -347,38 +347,42 @@ class VisorCacheCommand {
 
                         println("\nCache '" + cacheNameVar + "':")
 
+                        val m = ad.metrics()
+
                         val csT = VisorTextTable()
 
                         csT += ("Name(@)", cacheNameVar)
-                        csT += ("Nodes", ad.nodes.size)
-                        csT += ("Size Min/Avg/Max", ad.minSize + " / " + formatDouble(ad.avgSize) + " / " + ad.maxSize)
+                        csT += ("Nodes", m.size())
+                        csT += ("Size Min/Avg/Max", ad.minimumSize + " / " + formatDouble(ad.averageSize) + " / " + ad.maximumSize)
 
                         val ciT = VisorTextTable()
 
                         ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size",
                             "Last Read/Write", "Hi/Mi/Rd/Wr")
 
-                        sortData(ad.metrics(), sortType getOrElse "lr", reversed).
-                            foreach(cd => {
-                                ciT += (
-                                    nodeId8Addr(cd.nodeId),
-                                    cd.cpus,
-                                    formatDouble(cd.heapUsed) + " %",
-                                    formatDouble(cd.cpuLoad) + " %",
-                                    X.timeSpan2HMSM(cd.upTime),
-                                    cd.size,
-                                    (
-                                        formatDateTime(cd.lastRead),
-                                        formatDateTime(cd.lastWrite)
-                                        ),
-                                    (
-                                        "Hi: " + cd.hits,
-                                        "Mi: " + cd.misses,
-                                        "Rd: " + cd.reads,
-                                        "Wr: " + cd.writes
-                                        )
-                                    )
-                            })
+                        sortData(m.toMap, sortType.getOrElse("lr"), reversed).foreach { case (nid, cm) => {
+                            val nm = grid.node(nid).metrics()
+
+                            ciT += (
+                                nodeId8Addr(nid),
+                                nm.getTotalCpus,
+                                formatDouble(nm.getHeapMemoryUsed() / nm.getHeapMemoryMaximum() * 100.0d) + " %",
+
+                                formatDouble(nm.getCurrentCpuLoad * 100.0) + " %",
+                                X.timeSpan2HMSM(nm.getUpTime),
+                                cm.size(),
+                                (
+                                    formatDateTime(cm.readTime),
+                                    formatDateTime(cm.writeTime)
+                                ),
+                                (
+                                    "Hi: " + cm.hits(),
+                                    "Mi: " + cm.misses(),
+                                    "Rd: " + cm.reads(),
+                                    "Wr: " + cm.writes()
+                                )
+                            )
+                        }}
 
                         csT.render()
 
@@ -394,15 +398,13 @@ class VisorCacheCommand {
                         println("'Wr' - Number of cache writes.")
 
                         // Print metrics.
-                        val qm = ad.queryMetrics()
-
                         nl()
                         println("Aggregated queries metrics:")
-                        println("  Minimum execution time: " + X.timeSpan2HMSM(qm.minTime))
-                        println("  Maximum execution time: " + X.timeSpan2HMSM(qm.maxTime))
-                        println("  Average execution time: " + X.timeSpan2HMSM(qm.avgTime.toLong))
-                        println("  Total number of executions: " + qm.execs)
-                        println("  Total number of failures:   " + qm.fails)
+                        println("  Minimum execution time: " + X.timeSpan2HMSM(ad.minimumQueryTime()))
+                        println("  Maximum execution time: " + X.timeSpan2HMSM(ad.maximumQueryTime))
+                        println("  Average execution time: " + X.timeSpan2HMSM(ad.averageQueryTime.toLong))
+                        println("  Total number of executions: " + ad.execsQuery)
+                        println("  Total number of failures:   " + ad.failsQuery)
 
                         gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
                             nl()
@@ -514,19 +516,18 @@ class VisorCacheCommand {
      * @param reverse Whether to reverse sorting or not.
      * @return Sorted data.
      */
-    private def sortData(data: Iterable[VisorCacheMetrics2], arg: String, reverse: Boolean): List[VisorCacheMetrics2] = {
+    private def sortData(data: Map[UUID, VisorCacheMetrics], arg: String, reverse: Boolean) = {
         assert(data != null)
         assert(arg != null)
 
         val sorted = arg.trim match {
-            case "lr" => data.toList.sortBy(_.lastRead)
-            case "lw" => data.toList.sortBy(_.lastWrite)
-            case "hi" => data.toList.sortBy(_.hits)
-            case "mi" => data.toList.sortBy(_.misses)
-            case "rd" => data.toList.sortBy(_.reads)
-            case "wr" => data.toList.sortBy(_.writes)
-            case "cn" => data.toList.sortWith((x, y) => x.cacheName == null ||
-                x.cacheName.toLowerCase < y.cacheName.toLowerCase)
+            case "lr" => data.toSeq.sortBy(_._2.readTime)
+            case "lw" => data.toSeq.sortBy(_._2.writeTime)
+            case "hi" => data.toSeq.sortBy(_._2.hits)
+            case "mi" => data.toSeq.sortBy(_._2.misses)
+            case "rd" => data.toSeq.sortBy(_._2.reads)
+            case "wr" => data.toSeq.sortBy(_._2.writes)
+            case "cn" => data.toSeq.sortBy(_._1)
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -551,10 +552,10 @@ class VisorCacheCommand {
         val sorted = arg.trim match {
             case "lr" => data.toList.sortBy(_.lastRead)
             case "lw" => data.toList.sortBy(_.lastWrite)
-            case "hi" => data.toList.sortBy(_.avgHits)
-            case "mi" => data.toList.sortBy(_.avgMisses)
-            case "rd" => data.toList.sortBy(_.avgReads)
-            case "wr" => data.toList.sortBy(_.avgWrites)
+            case "hi" => data.toList.sortBy(_.averageHits)
+            case "mi" => data.toList.sortBy(_.averageMisses)
+            case "rd" => data.toList.sortBy(_.averageReads)
+            case "wr" => data.toList.sortBy(_.averageWrites)
             case "cn" => data.toList.sortWith((x, y) =>
                 x.cacheName == null || (y.cacheName != null && x.cacheName.toLowerCase < y.cacheName.toLowerCase))
 
@@ -607,9 +608,9 @@ class VisorCacheCommand {
                     ),
                 ad.nodes,
                 (
-                    "min: " + ad.minSize,
-                    "avg: " + formatDouble(ad.avgSize),
-                    "max: " + ad.maxSize
+                    "min: " + ad.minimumSize,
+                    "avg: " + formatDouble(ad.averageSize),
+                    "max: " + ad.maximumSize
                 ))
         })
 

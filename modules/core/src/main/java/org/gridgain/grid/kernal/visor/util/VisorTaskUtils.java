@@ -778,4 +778,46 @@ public class VisorTaskUtils {
             return false;
         }
     }
+
+    /**
+     * Run command in separated console.
+     *
+     * @param args A string array containing the program and its arguments.
+     * @return Started process.
+     */
+    public static Process openInConsole(String... args) throws IOException {
+        return openInConsole(null, args);
+    }
+
+    /**
+     * Run command in separated console.
+     *
+     * @param workFolder Work folder for command.
+     * @param args A string array containing the program and its arguments.
+     * @return Started process.
+     * @throws IOException If failed to start process.
+     */
+    public static Process openInConsole(@Nullable File workFolder, String... args)
+        throws IOException {
+        String[] commands = args;
+
+        String cmd = F.concat(Arrays.asList(args), " ");
+
+        if (U.isWindows())
+            commands = F.asArray("cmd", "/c", String.format("start %s", cmd));
+
+        if (U.isMacOs())
+            commands = F.asArray("osascript", "-e",
+                String.format("tell application \"Terminal\" to do script \"%s\"", cmd));
+
+        if (U.isUnix())
+            commands = F.asArray("xterm", "-sl", "1024", "-geometry", "200x50", "-e", cmd);
+
+        ProcessBuilder pb = new ProcessBuilder(commands);
+
+        if (workFolder != null)
+            pb.directory(workFolder);
+
+        return pb.start();
+    }
 }

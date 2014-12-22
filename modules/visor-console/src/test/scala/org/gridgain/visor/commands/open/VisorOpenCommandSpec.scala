@@ -12,6 +12,7 @@
 package org.gridgain.visor.commands.open
 
 import org.apache.ignite.IgniteCheckedException
+
 import org.gridgain.visor._
 
 /**

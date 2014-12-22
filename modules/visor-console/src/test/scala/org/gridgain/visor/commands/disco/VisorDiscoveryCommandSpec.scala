@@ -13,7 +13,7 @@ package org.gridgain.visor.commands.disco
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.{_}
+
 import org.gridgain.visor._
 import org.gridgain.visor.commands.disco.VisorDiscoveryCommand._
 

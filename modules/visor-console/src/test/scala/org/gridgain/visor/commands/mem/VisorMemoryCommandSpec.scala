@@ -11,8 +11,9 @@
 
 package org.gridgain.visor.commands.mem
 
-import org.gridgain.visor._
 import org.scalatest._
+
+import org.gridgain.visor._
 
 /**
  * Unit test for memory commands.

@@ -24,65 +24,77 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /** Cache name. */
     private final String cacheName;
 
-    /** Nodes with this cache. */
-    private Collection<UUID> nodes = new ArrayList<>();
+    /** Node IDs with cache metrics. */
+    private Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
 
-    /** Min number of elements in the cache. */
-    private int minSize = Integer.MAX_VALUE;
+    /** Minimum number of elements in the cache. */
+    private transient Integer minSize;
 
-    /** Avg number of elements in the cache. */
-    private double avgSize;
+    /** Average number of elements in the cache. */
+    private transient Double avgSize;
 
-    /** Max number of elements in the cache. */
-    private int maxSize = Integer.MIN_VALUE;
-
-    /** Gets last read time of the owning cache. */
-    private long lastRead;
+    /** Maximum number of elements in the cache. */
+    private transient Integer maxSize;
 
     /** Gets last read time of the owning cache. */
-    private long lastWrite;
+    private transient Long lastRead;
 
-    /** Hits of the owning cache. */
-    private int minHits = Integer.MAX_VALUE;
+    /** Gets last read time of the owning cache. */
+    private transient Long lastWrite;
 
-    /** Hits of the owning cache. */
-    private double avgHits;
+    /** Minimum hits of the owning cache. */
+    private transient Integer minHits;
 
-    /** Hits of the owning cache. */
-    private int maxHits = Integer.MIN_VALUE;
+    /** Average hits of the owning cache. */
+    private transient Double avgHits;
+
+    /** Maximum hits of the owning cache. */
+    private transient Integer maxHits;
 
     /** Minimum misses of the owning cache. */
-    private int minMisses = Integer.MAX_VALUE;
+    private transient Integer minMisses;
 
     /** Average misses of the owning cache. */
-    private double avgMisses;
+    private transient Double avgMisses;
 
     /** Maximum misses of the owning cache. */
-    private int maxMisses = Integer.MIN_VALUE;
+    private transient Integer maxMisses;
 
     /** Minimum total number of reads of the owning cache. */
-    private int minReads = Integer.MAX_VALUE;
+    private transient Integer minReads;
 
     /** Average total number of reads of the owning cache. */
-    private double avgReads;
+    private transient Double avgReads;
 
     /** Maximum total number of reads of the owning cache. */
-    private int maxReads = Integer.MIN_VALUE;
+    private transient Integer maxReads;
 
     /** Minimum total number of writes of the owning cache. */
-    private int minWrites = Integer.MAX_VALUE;
+    private transient Integer minWrites;
 
     /** Average total number of writes of the owning cache. */
-    private double avgWrites;
+    private transient Double avgWrites;
 
     /** Maximum total number of writes of the owning cache. */
-    private int maxWrites = Integer.MIN_VALUE;
+    private transient Integer maxWrites;
 
-    /**  */
-    private VisorCacheQueryAggregatedMetrics qryMetrics = new VisorCacheQueryAggregatedMetrics();
+    /** Minimum execution time of query. */
+    private transient Long minQryTime;
 
-    /**  */
-    private Collection<VisorCacheMetrics2> metrics = new ArrayList<>();
+    /** Average execution time of query. */
+    private transient Double avgQryTime;
+
+    /** Maximum execution time of query. */
+    private transient Long maxQryTime;
+
+    /** Total execution time of query. */
+    private transient Long totalQryTime;
+
+    /** Number of executions. */
+    private transient Integer execsQry;
+
+    /** Total number of times a query execution failed. */
+    private transient Integer failsQry;
 
     /**
      * Create data transfer object with given parameters.
@@ -104,258 +116,343 @@ public class VisorCacheAggregatedMetrics implements Serializable {
      * @return Nodes.
      */
     public Collection<UUID> nodes() {
-        return nodes;
+        return metrics.keySet();
     }
 
     /**
-     * @return Min size.
+     * @return Minimum number of elements in the cache.
      */
-    public int minSize() {
+    public int minimumSize() {
+        if (minSize == null) {
+            minSize = Integer.MAX_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                minSize = Math.min(minSize, metric.size());
+        }
+
         return minSize;
     }
 
     /**
-     * @param size New min size.
+     * @return Average number of elements in the cache.
      */
-    public void minSize(int size) {
-        minSize = Math.min(minSize, size);
-    }
+    public double averageSize() {
+        if (avgSize == null) {
+            avgSize = 0.0d;
 
-    /**
-     * @return Avg size.
-     */
-    public double avgSize() {
+            for (VisorCacheMetrics metric : metrics.values())
+                avgSize += metric.size();
+
+            avgSize /= metrics.size();
+        }
+
         return avgSize;
     }
 
     /**
-     * @param avgSize New avg size.
+     * @return Maximum number of elements in the cache.
      */
-    public void avgSize(double avgSize) {
-        this.avgSize = avgSize;
-    }
+    public int maximumSize() {
+        if (maxSize == null) {
+            maxSize = Integer.MIN_VALUE;
 
-    /**
-     * @return Max size.
-     */
-    public int maxSize() {
+            for (VisorCacheMetrics metric : metrics.values())
+                maxSize = Math.max(maxSize, metric.size());
+        }
+
         return maxSize;
     }
 
     /**
-     * @param size New max size.
-     */
-    public void maxSize(int size) {
-        maxSize = Math.max(maxSize, size);
-    }
-
-    /**
-     * @return Last read.
+     * @return Last read time of the owning cache.
      */
     public long lastRead() {
+        if (lastRead == null) {
+            lastRead = Long.MIN_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                lastRead = Math.max(lastRead, metric.readTime());
+        }
+
         return lastRead;
     }
 
     /**
-     * @param lastRead New last read.
-     */
-    public void lastRead(long lastRead) {
-        this.lastRead = Math.max(this.lastRead, lastRead);
-    }
-
-    /**
-     * @return Last write.
+     * @return Last read time of the owning cache.
      */
     public long lastWrite() {
+        if (lastWrite == null) {
+            lastWrite = Long.MIN_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                lastWrite = Math.max(lastWrite, metric.readTime());
+        }
+
         return lastWrite;
     }
 
     /**
-     * @param lastWrite New last write.
+     * @return Minimum hits of the owning cache.
      */
-    public void lastWrite(long lastWrite) {
-        this.lastWrite = Math.max(this.lastWrite, lastWrite);
-    }
+    public int minimumHits() {
+        if (minHits == null) {
+            minHits = Integer.MAX_VALUE;
 
-    /**
-     * @return Min hits.
-     */
-    public int minHits() {
+            for (VisorCacheMetrics metric : metrics.values())
+                minHits = Math.min(minHits, metric.hits());
+        }
+
         return minHits;
     }
 
     /**
-     * @param minHits New min hits.
+     * @return Average hits of the owning cache.
      */
-    public void minHits(int minHits) {
-        this.minHits = Math.min(this.minHits, minHits);
-    }
+    public double averageHits() {
+        if (avgHits == null) {
+            avgHits = 0.0d;
 
-    /**
-     * @return Avg hits.
-     */
-    public double avgHits() {
+            for (VisorCacheMetrics metric : metrics.values())
+                avgHits += metric.hits();
+
+            avgHits /= metrics.size();
+        }
+
         return avgHits;
     }
 
     /**
-     * @param avgHits New avg hits.
+     * @return Maximum hits of the owning cache.
      */
-    public void avgHits(double avgHits) {
-        this.avgHits = avgHits;
-    }
+    public int maximumHits() {
+        if (maxHits == null) {
+            maxHits = Integer.MIN_VALUE;
 
-    /**
-     * @return Max hits.
-     */
-    public int maxHits() {
+            for (VisorCacheMetrics metric : metrics.values())
+                maxHits = Math.max(maxHits, metric.hits());
+        }
+
         return maxHits;
     }
 
     /**
-     * @param hits New max hits.
+     * @return Minimum misses of the owning cache.
      */
-    public void maxHits(int hits) {
-        maxHits = Math.max(maxHits, hits);
-    }
+    public int minimumMisses() {
+        if (minMisses == null) {
+            minMisses = Integer.MAX_VALUE;
 
-    /**
-     * @return Min misses.
-     */
-    public int minMisses() {
+            for (VisorCacheMetrics metric : metrics.values())
+                minMisses = Math.min(minMisses, metric.misses());
+        }
+
         return minMisses;
     }
 
     /**
-     * @param misses New min misses.
+     * @return Average misses of the owning cache.
      */
-    public void minMisses(int misses) {
-        minMisses = Math.min(minMisses, misses);
-    }
+    public double averageMisses() {
+        if (avgMisses == null) {
+            avgMisses = 0.0d;
 
-    /**
-     * @return Avg misses.
-     */
-    public double avgMisses() {
+            for (VisorCacheMetrics metric : metrics.values())
+                avgMisses += metric.misses();
+
+            avgMisses /= metrics.size();
+        }
+
         return avgMisses;
     }
 
     /**
-     * @param avgMisses New avg misses.
+     * @return Maximum misses of the owning cache.
      */
-    public void avgMisses(double avgMisses) {
-        this.avgMisses = avgMisses;
-    }
+    public int maximumMisses() {
+        if (maxMisses == null) {
+            maxMisses = Integer.MIN_VALUE;
 
-    /**
-     * @return Max misses.
-     */
-    public int maxMisses() {
+            for (VisorCacheMetrics metric : metrics.values())
+                maxMisses = Math.max(maxMisses, metric.misses());
+        }
+
         return maxMisses;
     }
 
     /**
-     * @param maxMisses New max misses.
+     * @return Minimum total number of reads of the owning cache.
      */
-    public void maxMisses(int maxMisses) {
-        this.maxMisses = maxMisses;
-    }
+    public int minimumReads() {
+        if (minReads == null) {
+            minReads = Integer.MAX_VALUE;
 
-    /**
-     * @return Min reads.
-     */
-    public int minReads() {
+            for (VisorCacheMetrics metric : metrics.values())
+                minReads = Math.min(minReads, metric.reads());
+        }
+
         return minReads;
     }
 
     /**
-     * @param reads New min reads.
+     * @return Average total number of reads of the owning cache.
      */
-    public void minReads(int reads) {
-        minReads = Math.min(minReads, reads);
-    }
+    public double averageReads() {
+        if (avgReads == null) {
+            avgReads = 0.0d;
 
-    /**
-     * @return Avg reads.
-     */
-    public double avgReads() {
+            for (VisorCacheMetrics metric : metrics.values())
+                avgReads += metric.reads();
+
+            avgReads /= metrics.size();
+        }
+
         return avgReads;
     }
 
     /**
-     * @param avgReads New avg reads.
+     * @return Maximum total number of reads of the owning cache.
      */
-    public void avgReads(double avgReads) {
-        this.avgReads = avgReads;
-    }
+    public int maximumReads() {
+        if (maxReads == null) {
+            maxReads = Integer.MIN_VALUE;
 
-    /**
-     * @return Max reads.
-     */
-    public int maxReads() {
+            for (VisorCacheMetrics metric : metrics.values())
+                maxReads = Math.max(maxReads, metric.reads());
+        }
+
         return maxReads;
     }
 
     /**
-     * @param reads New max reads.
+     * @return Minimum total number of writes of the owning cache.
      */
-    public void maxReads(int reads) {
-        maxReads = Math.max(maxReads, reads);
-    }
+    public int minimumWrites() {
+        if (minWrites == null) {
+            minWrites = Integer.MAX_VALUE;
 
-    /**
-     * @return Min writes.
-     */
-    public int minWrites() {
+            for (VisorCacheMetrics metric : metrics.values())
+                minWrites = Math.min(minWrites, metric.writes());
+        }
+
         return minWrites;
     }
 
     /**
-     * @param writes New min writes.
+     * @return Average total number of writes of the owning cache.
      */
-    public void minWrites(int writes) {
-        minWrites = Math.min(minWrites, writes);
-    }
+    public double averageWrites() {
+        if (avgWrites == null) {
+            avgWrites = 0.0d;
 
-    /**
-     * @return Avg writes.
-     */
-    public double avgWrites() {
+            for (VisorCacheMetrics metric : metrics.values())
+                avgWrites += metric.writes();
+
+            avgWrites /= metrics.size();
+        }
+
         return avgWrites;
     }
 
     /**
-     * @param avgWrites New avg writes.
+     * @return Maximum total number of writes of the owning cache.
      */
-    public void avgWrites(double avgWrites) {
-        this.avgWrites = avgWrites;
-    }
+    public int maximumWrites() {
+        if (maxWrites == null) {
+            maxWrites = Integer.MIN_VALUE;
 
-    /**
-     * @return Max writes.
-     */
-    public int maxWrites() {
+            for (VisorCacheMetrics metric : metrics.values())
+                maxWrites = Math.max(maxWrites, metric.writes());
+        }
+
         return maxWrites;
     }
 
     /**
-     * @param writes New max writes.
+     * @return Minimum execution time of query.
      */
-    public void maxWrites(int writes) {
-        maxWrites = Math.max(maxWrites, writes);
+    public long minimumQueryTime() {
+        if (minQryTime == null) {
+            minQryTime = Long.MAX_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                minQryTime = Math.min(minQryTime, metric.queryMetrics().minimumTime());
+        }
+
+        return minQryTime;
     }
 
     /**
-     * @return Query metrics.
+     * @return Average execution time of query.
      */
-    public VisorCacheQueryAggregatedMetrics queryMetrics() {
-        return qryMetrics;
+    public double averageQueryTime() {
+        if (avgQryTime == null) {
+            avgQryTime = 0.0d;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                avgQryTime += metric.queryMetrics().averageTime();
+
+            avgQryTime /= metrics.size();
+        }
+
+        return avgQryTime;
     }
 
     /**
-     * @return Metrics.
+     * @return Maximum execution time of query.
      */
-    public Collection<VisorCacheMetrics2> metrics() {
+    public long maximumQueryTime() {
+        if (maxQryTime == null) {
+            maxQryTime = Long.MIN_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                maxQryTime = Math.max(maxQryTime, metric.queryMetrics().maximumTime());
+        }
+
+        return maxQryTime;
+    }
+
+    /**
+     * @return Total execution time of query.
+     */
+    public long totalQueryTime() {
+        if (totalQryTime == null)
+            totalQryTime = (long)(averageQueryTime() * execsQuery());
+
+        return totalQryTime;
+    }
+
+    /**
+     * @return Number of executions.
+     */
+    public int execsQuery() {
+        if (execsQry == null) {
+            execsQry = 0;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                execsQry = execsQry + metric.queryMetrics().executions();
+        }
+
+        return execsQry;
+    }
+
+    /**
+     * @return Total number of times a query execution failed.
+     */
+    public int failsQuery() {
+        if (failsQry == null) {
+            failsQry = 0;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                failsQry = failsQry + metric.queryMetrics().fails();
+        }
+
+        return failsQry;
+    }
+
+    /**
+     * @return Node IDs with cache metrics.
+     */
+    public Map<UUID, VisorCacheMetrics> metrics() {
         return metrics;
     }
 
