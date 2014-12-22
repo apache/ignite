@@ -107,19 +107,19 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(null, forceLocDep))
+                if (!commState.putBoolean("forceLocDep", forceLocDep))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(null, reqId))
+                if (!commState.putLong("reqId", reqId))
                     return false;
 
                 commState.idx++;
@@ -136,7 +136,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -149,7 +149,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                forceLocDep = commState.getBoolean(null);
+                forceLocDep = commState.getBoolean("forceLocDep");
 
                 commState.idx++;
 
@@ -157,7 +157,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLong(null);
+                reqId = commState.getLong("reqId");
 
                 commState.idx++;
 

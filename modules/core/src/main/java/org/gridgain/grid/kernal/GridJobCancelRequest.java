@@ -134,19 +134,19 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(null, jobId))
+                if (!commState.putGridUuid("jobId", jobId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, sesId))
+                if (!commState.putGridUuid("sesId", sesId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(null, sys))
+                if (!commState.putBoolean("sys", sys))
                     return false;
 
                 commState.idx++;
@@ -163,7 +163,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid jobId0 = commState.getGridUuid(null);
+                IgniteUuid jobId0 = commState.getGridUuid("jobId");
 
                 if (jobId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -173,7 +173,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                IgniteUuid sesId0 = commState.getGridUuid(null);
+                IgniteUuid sesId0 = commState.getGridUuid("sesId");
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -186,7 +186,7 @@ public class GridJobCancelRequest extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                sys = commState.getBoolean(null);
+                sys = commState.getBoolean("sys");
 
                 commState.idx++;
 

@@ -211,19 +211,19 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, failedKeysBytes))
+                if (!commState.putByteArray("failedKeysBytes", failedKeysBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putCacheVersion(null, futVer))
+                if (!commState.putCacheVersion("futVer", futVer))
                     return false;
 
                 commState.idx++;
@@ -270,7 +270,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (commState.idx) {
             case 3:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -280,7 +280,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 4:
-                byte[] failedKeysBytes0 = commState.getByteArray(null);
+                byte[] failedKeysBytes0 = commState.getByteArray("failedKeysBytes");
 
                 if (failedKeysBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -290,7 +290,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 5:
-                GridCacheVersion futVer0 = commState.getCacheVersion(null);
+                GridCacheVersion futVer0 = commState.getCacheVersion("futVer");
 
                 if (futVer0 == CACHE_VER_NOT_READ)
                     return false;

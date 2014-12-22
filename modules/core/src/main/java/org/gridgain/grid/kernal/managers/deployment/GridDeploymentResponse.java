@@ -131,19 +131,19 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArrayList(null, byteSrc))
+                if (!commState.putByteArrayList("byteSrc", byteSrc))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putString(null, errMsg))
+                if (!commState.putString("errMsg", errMsg))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(null, success))
+                if (!commState.putBoolean("success", success))
                     return false;
 
                 commState.idx++;
@@ -160,7 +160,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridByteArrayList byteSrc0 = commState.getByteArrayList(null);
+                GridByteArrayList byteSrc0 = commState.getByteArrayList("byteSrc");
 
                 if (byteSrc0 == BYTE_ARR_LIST_NOT_READ)
                     return false;
@@ -170,7 +170,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                String errMsg0 = commState.getString(null);
+                String errMsg0 = commState.getString("errMsg");
 
                 if (errMsg0 == STR_NOT_READ)
                     return false;
@@ -183,7 +183,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                success = commState.getBoolean(null);
+                success = commState.getBoolean("success");
 
                 commState.idx++;
 

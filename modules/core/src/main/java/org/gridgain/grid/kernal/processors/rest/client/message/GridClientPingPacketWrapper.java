@@ -37,7 +37,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putInt(null, size))
+                if (!commState.putInt("size", size))
                     return false;
 
                 commState.idx++;
@@ -49,7 +49,20 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        throw new UnsupportedOperationException();
+        commState.setBuffer(buf);
+
+        switch (commState.idx) {
+            case 0:
+                if (buf.remaining() < 4)
+                    return false;
+
+                size = commState.getInt("size");
+
+                commState.idx++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

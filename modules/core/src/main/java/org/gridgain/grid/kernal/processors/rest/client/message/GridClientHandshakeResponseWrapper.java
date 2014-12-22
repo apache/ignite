@@ -49,12 +49,32 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
             commState.typeWritten = true;
         }
 
+        switch (commState.idx) {
+            case 0:
+                if (!commState.putByte("code", code))
+                    return false;
+
+                commState.idx++;
+
+        }
+
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
+
+        switch (commState.idx) {
+            case 0:
+                if (buf.remaining() < 1)
+                    return false;
+
+                code = commState.getByte("code");
+
+                commState.idx++;
+
+        }
 
         return true;
     }

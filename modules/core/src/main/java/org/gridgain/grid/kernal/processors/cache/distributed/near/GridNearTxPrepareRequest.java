@@ -219,6 +219,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         _clone.futId = futId;
         _clone.miniId = miniId;
+        _clone.near = near;
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
@@ -243,13 +244,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         switch (commState.idx) {
             case 21:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 22:
-                if (!commState.putBoolean(null, last))
+                if (!commState.putBoolean("last", last))
                     return false;
 
                 commState.idx++;
@@ -282,31 +283,31 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 24:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 25:
-                if (!commState.putBoolean(null, near))
+                if (!commState.putBoolean("near", near))
                     return false;
 
                 commState.idx++;
 
             case 26:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 27:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -326,7 +327,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         switch (commState.idx) {
             case 21:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -339,7 +340,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 1)
                     return false;
 
-                last = commState.getBoolean(null);
+                last = commState.getBoolean("last");
 
                 commState.idx++;
 
@@ -373,7 +374,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 commState.idx++;
 
             case 24:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -386,7 +387,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 1)
                     return false;
 
-                near = commState.getBoolean(null);
+                near = commState.getBoolean("near");
 
                 commState.idx++;
 
@@ -394,12 +395,12 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 27:
-                UUID subjId0 = commState.getUuid(null);
+                UUID subjId0 = commState.getUuid("subjId");
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -412,7 +413,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
                 commState.idx++;
 

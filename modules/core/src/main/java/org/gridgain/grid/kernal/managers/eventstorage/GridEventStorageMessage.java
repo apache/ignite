@@ -294,37 +294,37 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(null, clsLdrId))
+                if (!commState.putGridUuid("clsLdrId", clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putEnum(null, depMode))
+                if (!commState.putEnum("depMode", depMode))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putByteArray(null, evtsBytes))
+                if (!commState.putByteArray("evtsBytes", evtsBytes))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putByteArray(null, exBytes))
+                if (!commState.putByteArray("exBytes", exBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, filter))
+                if (!commState.putByteArray("filter", filter))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putString(null, filterClsName))
+                if (!commState.putString("filterClsName", filterClsName))
                     return false;
 
                 commState.idx++;
@@ -368,13 +368,13 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 7:
-                if (!commState.putByteArray(null, resTopicBytes))
+                if (!commState.putByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putString(null, userVer))
+                if (!commState.putString("userVer", userVer))
                     return false;
 
                 commState.idx++;
@@ -391,7 +391,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
+                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -404,14 +404,14 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte(null);
+                byte depMode0 = commState.getByte("depMode");
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
             case 2:
-                byte[] evtsBytes0 = commState.getByteArray(null);
+                byte[] evtsBytes0 = commState.getByteArray("evtsBytes");
 
                 if (evtsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -421,7 +421,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 3:
-                byte[] exBytes0 = commState.getByteArray(null);
+                byte[] exBytes0 = commState.getByteArray("exBytes");
 
                 if (exBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -431,7 +431,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 4:
-                byte[] filter0 = commState.getByteArray(null);
+                byte[] filter0 = commState.getByteArray("filter");
 
                 if (filter0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -441,7 +441,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 5:
-                String filterClsName0 = commState.getString(null);
+                String filterClsName0 = commState.getString("filterClsName");
 
                 if (filterClsName0 == STR_NOT_READ)
                     return false;
@@ -460,7 +460,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
                 if (commState.readSize >= 0) {
                     if (ldrParties == null)
-                        ldrParties = U.newHashMap(commState.readSize);
+                        ldrParties = new HashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -493,7 +493,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 7:
-                byte[] resTopicBytes0 = commState.getByteArray(null);
+                byte[] resTopicBytes0 = commState.getByteArray("resTopicBytes");
 
                 if (resTopicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -503,7 +503,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 commState.idx++;
 
             case 8:
-                String userVer0 = commState.getString(null);
+                String userVer0 = commState.getString("userVer");
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

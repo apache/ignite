@@ -652,13 +652,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putLongList(null, drExpireTimes))
+                if (!commState.putLongList("drExpireTimes", drExpireTimes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLongList(null, drTtls))
+                if (!commState.putLongList("drTtls", drTtls))
                     return false;
 
                 commState.idx++;
@@ -691,7 +691,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 6:
-                if (!commState.putCacheVersion(null, futVer))
+                if (!commState.putCacheVersion("futVer", futVer))
                     return false;
 
                 commState.idx++;
@@ -724,25 +724,25 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 8:
-                if (!commState.putUuid(null, nodeId))
+                if (!commState.putUuid("nodeId", nodeId))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putEnum(null, syncMode))
+                if (!commState.putEnum("syncMode", syncMode))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putLong(null, ttl))
+                if (!commState.putLong("ttl", ttl))
                     return false;
 
                 commState.idx++;
@@ -775,7 +775,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 13:
-                if (!commState.putCacheVersion(null, writeVer))
+                if (!commState.putCacheVersion("writeVer", writeVer))
                     return false;
 
                 commState.idx++;
@@ -835,7 +835,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 16:
-                if (!commState.putBoolean(null, forceTransformBackups))
+                if (!commState.putBoolean("forceTransformBackups", forceTransformBackups))
                     return false;
 
                 commState.idx++;
@@ -895,13 +895,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 19:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 20:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -921,7 +921,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (commState.idx) {
             case 3:
-                GridLongList drExpireTimes0 = commState.getLongList(null);
+                GridLongList drExpireTimes0 = commState.getLongList("drExpireTimes");
 
                 if (drExpireTimes0 == LONG_LIST_NOT_READ)
                     return false;
@@ -931,7 +931,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 4:
-                GridLongList drTtls0 = commState.getLongList(null);
+                GridLongList drTtls0 = commState.getLongList("drTtls");
 
                 if (drTtls0 == LONG_LIST_NOT_READ)
                     return false;
@@ -970,7 +970,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 6:
-                GridCacheVersion futVer0 = commState.getCacheVersion(null);
+                GridCacheVersion futVer0 = commState.getCacheVersion("futVer");
 
                 if (futVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -1009,7 +1009,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 8:
-                UUID nodeId0 = commState.getUuid(null);
+                UUID nodeId0 = commState.getUuid("nodeId");
 
                 if (nodeId0 == UUID_NOT_READ)
                     return false;
@@ -1022,7 +1022,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 1)
                     return false;
 
-                byte syncMode0 = commState.getByte(null);
+                byte syncMode0 = commState.getByte("syncMode");
 
                 syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
@@ -1032,7 +1032,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
@@ -1040,7 +1040,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 8)
                     return false;
 
-                ttl = commState.getLong(null);
+                ttl = commState.getLong("ttl");
 
                 commState.idx++;
 
@@ -1074,7 +1074,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 13:
-                GridCacheVersion writeVer0 = commState.getCacheVersion(null);
+                GridCacheVersion writeVer0 = commState.getCacheVersion("writeVer");
 
                 if (writeVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -1145,7 +1145,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 1)
                     return false;
 
-                forceTransformBackups = commState.getBoolean(null);
+                forceTransformBackups = commState.getBoolean("forceTransformBackups");
 
                 commState.idx++;
 
@@ -1208,7 +1208,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 19:
-                UUID subjId0 = commState.getUuid(null);
+                UUID subjId0 = commState.getUuid("subjId");
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -1221,7 +1221,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
                 commState.idx++;
 

@@ -114,19 +114,19 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putBoolean(null, success))
+                if (!commState.putBoolean("success", success))
                     return false;
 
                 commState.idx++;
@@ -146,7 +146,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
 
         switch (commState.idx) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -156,7 +156,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 commState.idx++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -169,7 +169,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse<K, V> extends GridDistri
                 if (buf.remaining() < 1)
                     return false;
 
-                success = commState.getBoolean(null);
+                success = commState.getBoolean("success");
 
                 commState.idx++;
 

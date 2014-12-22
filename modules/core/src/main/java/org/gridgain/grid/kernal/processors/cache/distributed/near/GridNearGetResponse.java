@@ -234,19 +234,19 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(null, entriesBytes))
+                if (!commState.putByteArray("entriesBytes", entriesBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -279,19 +279,19 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 commState.idx++;
 
             case 7:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putCacheVersion(null, ver))
+                if (!commState.putCacheVersion("ver", ver))
                     return false;
 
                 commState.idx++;
@@ -311,7 +311,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         switch (commState.idx) {
             case 3:
-                byte[] entriesBytes0 = commState.getByteArray(null);
+                byte[] entriesBytes0 = commState.getByteArray("entriesBytes");
 
                 if (entriesBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -321,7 +321,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 commState.idx++;
 
             case 4:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -331,7 +331,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 commState.idx++;
 
             case 5:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -370,7 +370,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 commState.idx++;
 
             case 7:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -383,12 +383,12 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 9:
-                GridCacheVersion ver0 = commState.getCacheVersion(null);
+                GridCacheVersion ver0 = commState.getCacheVersion("ver");
 
                 if (ver0 == CACHE_VER_NOT_READ)
                     return false;

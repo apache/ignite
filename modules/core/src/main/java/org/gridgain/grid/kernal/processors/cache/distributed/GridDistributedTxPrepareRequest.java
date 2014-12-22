@@ -434,43 +434,43 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putCacheVersion(null, commitVer))
+                if (!commState.putCacheVersion("commitVer", commitVer))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putEnum(null, concurrency))
+                if (!commState.putEnum("concurrency", concurrency))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putByteArray(null, dhtVersBytes))
+                if (!commState.putByteArray("dhtVersBytes", dhtVersBytes))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putByteArray(null, grpLockKeyBytes))
+                if (!commState.putByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putBoolean(null, invalidate))
+                if (!commState.putBoolean("invalidate", invalidate))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putEnum(null, isolation))
+                if (!commState.putEnum("isolation", isolation))
                     return false;
 
                 commState.idx++;
 
             case 14:
-                if (!commState.putBoolean(null, partLock))
+                if (!commState.putBoolean("partLock", partLock))
                     return false;
 
                 commState.idx++;
@@ -503,25 +503,25 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 commState.idx++;
 
             case 16:
-                if (!commState.putLong(null, threadId))
+                if (!commState.putLong("threadId", threadId))
                     return false;
 
                 commState.idx++;
 
             case 17:
-                if (!commState.putLong(null, timeout))
+                if (!commState.putLong("timeout", timeout))
                     return false;
 
                 commState.idx++;
 
             case 18:
-                if (!commState.putByteArray(null, txNodesBytes))
+                if (!commState.putByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
                 commState.idx++;
 
             case 19:
-                if (!commState.putInt(null, txSize))
+                if (!commState.putInt("txSize", txSize))
                     return false;
 
                 commState.idx++;
@@ -568,7 +568,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (commState.idx) {
             case 8:
-                GridCacheVersion commitVer0 = commState.getCacheVersion(null);
+                GridCacheVersion commitVer0 = commState.getCacheVersion("commitVer");
 
                 if (commitVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -581,14 +581,14 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 1)
                     return false;
 
-                byte concurrency0 = commState.getByte(null);
+                byte concurrency0 = commState.getByte("concurrency");
 
                 concurrency = GridCacheTxConcurrency.fromOrdinal(concurrency0);
 
                 commState.idx++;
 
             case 10:
-                byte[] dhtVersBytes0 = commState.getByteArray(null);
+                byte[] dhtVersBytes0 = commState.getByteArray("dhtVersBytes");
 
                 if (dhtVersBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -598,7 +598,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 commState.idx++;
 
             case 11:
-                byte[] grpLockKeyBytes0 = commState.getByteArray(null);
+                byte[] grpLockKeyBytes0 = commState.getByteArray("grpLockKeyBytes");
 
                 if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -611,7 +611,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 1)
                     return false;
 
-                invalidate = commState.getBoolean(null);
+                invalidate = commState.getBoolean("invalidate");
 
                 commState.idx++;
 
@@ -619,7 +619,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 1)
                     return false;
 
-                byte isolation0 = commState.getByte(null);
+                byte isolation0 = commState.getByte("isolation");
 
                 isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
 
@@ -629,7 +629,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 1)
                     return false;
 
-                partLock = commState.getBoolean(null);
+                partLock = commState.getBoolean("partLock");
 
                 commState.idx++;
 
@@ -666,7 +666,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 8)
                     return false;
 
-                threadId = commState.getLong(null);
+                threadId = commState.getLong("threadId");
 
                 commState.idx++;
 
@@ -674,12 +674,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 8)
                     return false;
 
-                timeout = commState.getLong(null);
+                timeout = commState.getLong("timeout");
 
                 commState.idx++;
 
             case 18:
-                byte[] txNodesBytes0 = commState.getByteArray(null);
+                byte[] txNodesBytes0 = commState.getByteArray("txNodesBytes");
 
                 if (txNodesBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -692,7 +692,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 4)
                     return false;
 
-                txSize = commState.getInt(null);
+                txSize = commState.getInt("txSize");
 
                 commState.idx++;
 

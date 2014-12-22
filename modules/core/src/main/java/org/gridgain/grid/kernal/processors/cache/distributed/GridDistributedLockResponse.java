@@ -295,13 +295,13 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -348,7 +348,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
         switch (commState.idx) {
             case 8:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -358,7 +358,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;

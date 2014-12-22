@@ -108,13 +108,13 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(null, sesId))
+                if (!commState.putGridUuid("sesId", sesId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putByteArray(null, topicBytes))
+                if (!commState.putByteArray("topicBytes", topicBytes))
                     return false;
 
                 commState.idx++;
@@ -131,7 +131,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid sesId0 = commState.getGridUuid(null);
+                IgniteUuid sesId0 = commState.getGridUuid("sesId");
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -141,7 +141,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                byte[] topicBytes0 = commState.getByteArray(null);
+                byte[] topicBytes0 = commState.getByteArray("topicBytes");
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
                     return false;

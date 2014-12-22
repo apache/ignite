@@ -152,13 +152,13 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, fileId))
+                if (!commState.putGridUuid("fileId", fileId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(null, id))
+                if (!commState.putLong("id", id))
                     return false;
 
                 commState.idx++;
@@ -187,7 +187,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                 if (commState.readSize >= 0) {
                     if (blocks == null)
-                        blocks = U.newHashMap(commState.readSize);
+                        blocks = new HashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -220,7 +220,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid(null);
+                IgniteUuid fileId0 = commState.getGridUuid("fileId");
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -233,7 +233,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 8)
                     return false;
 
-                id = commState.getLong(null);
+                id = commState.getLong("id");
 
                 commState.idx++;
 

@@ -66,7 +66,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, bytes))
+                if (!commState.putByteArray("bytes", bytes))
                     return false;
 
                 commState.idx++;
@@ -78,7 +78,22 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        throw new UnsupportedOperationException();
+        commState.setBuffer(buf);
+
+        switch (commState.idx) {
+            case 0:
+                byte[] bytes0 = commState.getByteArray("bytes");
+
+                if (bytes0 == BYTE_ARR_NOT_READ)
+                    return false;
+
+                bytes = bytes0;
+
+                commState.idx++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

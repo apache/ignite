@@ -237,7 +237,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 12:
-                if (!commState.putBooleanArray(null, filterRes))
+                if (!commState.putBooleanArray("filterRes", filterRes))
                     return false;
 
                 commState.idx++;
@@ -270,7 +270,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 14:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -346,7 +346,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 12:
-                boolean[] filterRes0 = commState.getBooleanArray(null);
+                boolean[] filterRes0 = commState.getBooleanArray("filterRes");
 
                 if (filterRes0 == BOOLEAN_ARR_NOT_READ)
                     return false;
@@ -385,7 +385,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 14:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

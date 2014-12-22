@@ -183,13 +183,13 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putBoolean(null, isUndeploy))
+                if (!commState.putBoolean("isUndeploy", isUndeploy))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, ldrId))
+                if (!commState.putGridUuid("ldrId", ldrId))
                     return false;
 
                 commState.idx++;
@@ -222,13 +222,13 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 3:
-                if (!commState.putByteArray(null, resTopicBytes))
+                if (!commState.putByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putString(null, rsrcName))
+                if (!commState.putString("rsrcName", rsrcName))
                     return false;
 
                 commState.idx++;
@@ -248,12 +248,12 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                isUndeploy = commState.getBoolean(null);
+                isUndeploy = commState.getBoolean("isUndeploy");
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid ldrId0 = commState.getGridUuid(null);
+                IgniteUuid ldrId0 = commState.getGridUuid("ldrId");
 
                 if (ldrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -292,7 +292,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 3:
-                byte[] resTopicBytes0 = commState.getByteArray(null);
+                byte[] resTopicBytes0 = commState.getByteArray("resTopicBytes");
 
                 if (resTopicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -302,7 +302,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 4:
-                String rsrcName0 = commState.getString(null);
+                String rsrcName0 = commState.getString("rsrcName");
 
                 if (rsrcName0 == STR_NOT_READ)
                     return false;

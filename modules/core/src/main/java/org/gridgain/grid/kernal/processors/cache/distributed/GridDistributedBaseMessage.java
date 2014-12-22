@@ -263,13 +263,13 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(null, candsByIdxBytes))
+                if (!commState.putByteArray("candsByIdxBytes", candsByIdxBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, candsByKeyBytes))
+                if (!commState.putByteArray("candsByKeyBytes", candsByKeyBytes))
                     return false;
 
                 commState.idx++;
@@ -329,7 +329,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 commState.idx++;
 
             case 7:
-                if (!commState.putCacheVersion(null, ver))
+                if (!commState.putCacheVersion("ver", ver))
                     return false;
 
                 commState.idx++;
@@ -349,7 +349,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         switch (commState.idx) {
             case 3:
-                byte[] candsByIdxBytes0 = commState.getByteArray(null);
+                byte[] candsByIdxBytes0 = commState.getByteArray("candsByIdxBytes");
 
                 if (candsByIdxBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -359,7 +359,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 commState.idx++;
 
             case 4:
-                byte[] candsByKeyBytes0 = commState.getByteArray(null);
+                byte[] candsByKeyBytes0 = commState.getByteArray("candsByKeyBytes");
 
                 if (candsByKeyBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -427,7 +427,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 commState.idx++;
 
             case 7:
-                GridCacheVersion ver0 = commState.getCacheVersion(null);
+                GridCacheVersion ver0 = commState.getCacheVersion("ver");
 
                 if (ver0 == CACHE_VER_NOT_READ)
                     return false;

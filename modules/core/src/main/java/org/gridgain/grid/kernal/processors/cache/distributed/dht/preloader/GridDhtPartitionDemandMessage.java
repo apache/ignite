@@ -250,31 +250,31 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLong(null, timeout))
+                if (!commState.putLong("timeout", timeout))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putByteArray(null, topicBytes))
+                if (!commState.putByteArray("topicBytes", topicBytes))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(null, updateSeq))
+                if (!commState.putLong("updateSeq", updateSeq))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putInt(null, workerId))
+                if (!commState.putInt("workerId", workerId))
                     return false;
 
                 commState.idx++;
@@ -326,7 +326,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 8)
                     return false;
 
-                timeout = commState.getLong(null);
+                timeout = commState.getLong("timeout");
 
                 commState.idx++;
 
@@ -334,12 +334,12 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 6:
-                byte[] topicBytes0 = commState.getByteArray(null);
+                byte[] topicBytes0 = commState.getByteArray("topicBytes");
 
                 if (topicBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -352,7 +352,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 8)
                     return false;
 
-                updateSeq = commState.getLong(null);
+                updateSeq = commState.getLong("updateSeq");
 
                 commState.idx++;
 
@@ -360,7 +360,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 if (buf.remaining() < 4)
                     return false;
 
-                workerId = commState.getInt(null);
+                workerId = commState.getInt("workerId");
 
                 commState.idx++;
 

@@ -145,19 +145,19 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putByteArray(null, committedTxInfoBytes))
+                if (!commState.putByteArray("committedTxInfoBytes", committedTxInfoBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -177,7 +177,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (commState.idx) {
             case 8:
-                byte[] committedTxInfoBytes0 = commState.getByteArray(null);
+                byte[] committedTxInfoBytes0 = commState.getByteArray("committedTxInfoBytes");
 
                 if (committedTxInfoBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -187,7 +187,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -197,7 +197,7 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
                 commState.idx++;
 
             case 10:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

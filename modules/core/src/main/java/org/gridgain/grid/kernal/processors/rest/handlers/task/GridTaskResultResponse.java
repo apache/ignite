@@ -143,25 +143,25 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putString(null, err))
+                if (!commState.putString("err", err))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putBoolean(null, finished))
+                if (!commState.putBoolean("finished", finished))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(null, found))
+                if (!commState.putBoolean("found", found))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putByteArray(null, resBytes))
+                if (!commState.putByteArray("resBytes", resBytes))
                     return false;
 
                 commState.idx++;
@@ -178,7 +178,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                String err0 = commState.getString(null);
+                String err0 = commState.getString("err");
 
                 if (err0 == STR_NOT_READ)
                     return false;
@@ -191,7 +191,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                finished = commState.getBoolean(null);
+                finished = commState.getBoolean("finished");
 
                 commState.idx++;
 
@@ -199,12 +199,12 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                found = commState.getBoolean(null);
+                found = commState.getBoolean("found");
 
                 commState.idx++;
 
             case 3:
-                byte[] resBytes0 = commState.getByteArray(null);
+                byte[] resBytes0 = commState.getByteArray("resBytes");
 
                 if (resBytes0 == BYTE_ARR_NOT_READ)
                     return false;

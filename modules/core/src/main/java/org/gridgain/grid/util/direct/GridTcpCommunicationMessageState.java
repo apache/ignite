@@ -265,6 +265,9 @@ public class GridTcpCommunicationMessageState {
 
             writer.writeByteArray(name, arr);
 
+            if (arr == null)
+                return true;
+
             hdrDone = true;
         }
         else
@@ -310,6 +313,9 @@ public class GridTcpCommunicationMessageState {
                 return false;
 
             writer.writeShortArray(name, arr);
+
+            if (arr == null)
+                return true;
 
             hdrDone = true;
         }
@@ -357,6 +363,9 @@ public class GridTcpCommunicationMessageState {
 
             writer.writeIntArray(name, arr);
 
+            if (arr == null)
+                return true;
+
             hdrDone = true;
         }
         else
@@ -402,6 +411,9 @@ public class GridTcpCommunicationMessageState {
                 return false;
 
             writer.writeLongArray(name, arr);
+
+            if (arr == null)
+                return true;
 
             hdrDone = true;
         }
@@ -449,6 +461,9 @@ public class GridTcpCommunicationMessageState {
 
             writer.writeFloatArray(name, arr);
 
+            if (arr == null)
+                return true;
+
             hdrDone = true;
         }
         else
@@ -494,6 +509,9 @@ public class GridTcpCommunicationMessageState {
                 return false;
 
             writer.writeDoubleArray(name, arr);
+
+            if (arr == null)
+                return true;
 
             hdrDone = true;
         }
@@ -541,6 +559,9 @@ public class GridTcpCommunicationMessageState {
 
             writer.writeCharArray(name, arr);
 
+            if (arr == null)
+                return true;
+
             hdrDone = true;
         }
         else
@@ -586,6 +607,9 @@ public class GridTcpCommunicationMessageState {
                 return false;
 
             writer.writeBooleanArray(name, arr);
+
+            if (arr == null)
+                return true;
 
             hdrDone = true;
         }
@@ -1054,6 +1078,9 @@ public class GridTcpCommunicationMessageState {
                 return false;
 
             writer.writeObject(name, msg);
+
+            if (msg == null)
+                return true;
 
             hdrDone = true;
         }

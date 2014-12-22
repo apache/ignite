@@ -133,19 +133,19 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, fileId))
+                if (!commState.putGridUuid("fileId", fileId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(null, id))
+                if (!commState.putLong("id", id))
                     return false;
 
                 commState.idx++;
@@ -165,7 +165,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -175,7 +175,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid(null);
+                IgniteUuid fileId0 = commState.getGridUuid("fileId");
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -188,7 +188,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
                 if (buf.remaining() < 8)
                     return false;
 
-                id = commState.getLong(null);
+                id = commState.getLong("id");
 
                 commState.idx++;
 

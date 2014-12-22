@@ -498,37 +498,37 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putByteArray(null, grpLockKeyBytes))
+                if (!commState.putByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putBoolean(null, isInTx))
+                if (!commState.putBoolean("isInTx", isInTx))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putBoolean(null, isInvalidate))
+                if (!commState.putBoolean("isInvalidate", isInvalidate))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putBoolean(null, isRead))
+                if (!commState.putBoolean("isRead", isRead))
                     return false;
 
                 commState.idx++;
 
             case 14:
-                if (!commState.putEnum(null, isolation))
+                if (!commState.putEnum("isolation", isolation))
                     return false;
 
                 commState.idx++;
@@ -561,49 +561,49 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 16:
-                if (!commState.putCacheVersion(null, nearXidVer))
+                if (!commState.putCacheVersion("nearXidVer", nearXidVer))
                     return false;
 
                 commState.idx++;
 
             case 17:
-                if (!commState.putUuid(null, nodeId))
+                if (!commState.putUuid("nodeId", nodeId))
                     return false;
 
                 commState.idx++;
 
             case 18:
-                if (!commState.putBoolean(null, partLock))
+                if (!commState.putBoolean("partLock", partLock))
                     return false;
 
                 commState.idx++;
 
             case 19:
-                if (!commState.putBooleanArray(null, retVals))
+                if (!commState.putBooleanArray("retVals", retVals))
                     return false;
 
                 commState.idx++;
 
             case 20:
-                if (!commState.putLong(null, threadId))
+                if (!commState.putLong("threadId", threadId))
                     return false;
 
                 commState.idx++;
 
             case 21:
-                if (!commState.putLong(null, timeout))
+                if (!commState.putLong("timeout", timeout))
                     return false;
 
                 commState.idx++;
 
             case 22:
-                if (!commState.putInt(null, txSize))
+                if (!commState.putInt("txSize", txSize))
                     return false;
 
                 commState.idx++;
 
             case 23:
-                if (!commState.putByteArray(null, writeEntriesBytes))
+                if (!commState.putByteArray("writeEntriesBytes", writeEntriesBytes))
                     return false;
 
                 commState.idx++;
@@ -652,7 +652,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -662,7 +662,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 10:
-                byte[] grpLockKeyBytes0 = commState.getByteArray(null);
+                byte[] grpLockKeyBytes0 = commState.getByteArray("grpLockKeyBytes");
 
                 if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -675,7 +675,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 1)
                     return false;
 
-                isInTx = commState.getBoolean(null);
+                isInTx = commState.getBoolean("isInTx");
 
                 commState.idx++;
 
@@ -683,7 +683,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 1)
                     return false;
 
-                isInvalidate = commState.getBoolean(null);
+                isInvalidate = commState.getBoolean("isInvalidate");
 
                 commState.idx++;
 
@@ -691,7 +691,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 1)
                     return false;
 
-                isRead = commState.getBoolean(null);
+                isRead = commState.getBoolean("isRead");
 
                 commState.idx++;
 
@@ -699,7 +699,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 1)
                     return false;
 
-                byte isolation0 = commState.getByte(null);
+                byte isolation0 = commState.getByte("isolation");
 
                 isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
 
@@ -735,7 +735,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 16:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion(null);
+                GridCacheVersion nearXidVer0 = commState.getCacheVersion("nearXidVer");
 
                 if (nearXidVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -745,7 +745,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 17:
-                UUID nodeId0 = commState.getUuid(null);
+                UUID nodeId0 = commState.getUuid("nodeId");
 
                 if (nodeId0 == UUID_NOT_READ)
                     return false;
@@ -758,12 +758,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 1)
                     return false;
 
-                partLock = commState.getBoolean(null);
+                partLock = commState.getBoolean("partLock");
 
                 commState.idx++;
 
             case 19:
-                boolean[] retVals0 = commState.getBooleanArray(null);
+                boolean[] retVals0 = commState.getBooleanArray("retVals");
 
                 if (retVals0 == BOOLEAN_ARR_NOT_READ)
                     return false;
@@ -776,7 +776,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 8)
                     return false;
 
-                threadId = commState.getLong(null);
+                threadId = commState.getLong("threadId");
 
                 commState.idx++;
 
@@ -784,7 +784,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 8)
                     return false;
 
-                timeout = commState.getLong(null);
+                timeout = commState.getLong("timeout");
 
                 commState.idx++;
 
@@ -792,12 +792,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 if (buf.remaining() < 4)
                     return false;
 
-                txSize = commState.getInt(null);
+                txSize = commState.getInt("txSize");
 
                 commState.idx++;
 
             case 23:
-                byte[] writeEntriesBytes0 = commState.getByteArray(null);
+                byte[] writeEntriesBytes0 = commState.getByteArray("writeEntriesBytes");
 
                 if (writeEntriesBytes0 == BYTE_ARR_NOT_READ)
                     return false;

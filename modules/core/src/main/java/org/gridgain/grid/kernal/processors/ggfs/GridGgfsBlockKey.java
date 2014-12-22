@@ -184,25 +184,25 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putGridUuid(null, affKey))
+                if (!commState.putGridUuid("affKey", affKey))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong(null, blockId))
+                if (!commState.putLong("blockId", blockId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putBoolean(null, evictExclude))
+                if (!commState.putBoolean("evictExclude", evictExclude))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putGridUuid(null, fileId))
+                if (!commState.putGridUuid("fileId", fileId))
                     return false;
 
                 commState.idx++;
@@ -219,7 +219,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid(null);
+                IgniteUuid affKey0 = commState.getGridUuid("affKey");
 
                 if (affKey0 == GRID_UUID_NOT_READ)
                     return false;
@@ -232,7 +232,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 8)
                     return false;
 
-                blockId = commState.getLong(null);
+                blockId = commState.getLong("blockId");
 
                 commState.idx++;
 
@@ -240,12 +240,12 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
                 if (buf.remaining() < 1)
                     return false;
 
-                evictExclude = commState.getBoolean(null);
+                evictExclude = commState.getBoolean("evictExclude");
 
                 commState.idx++;
 
             case 3:
-                IgniteUuid fileId0 = commState.getGridUuid(null);
+                IgniteUuid fileId0 = commState.getGridUuid("fileId");
 
                 if (fileId0 == GRID_UUID_NOT_READ)
                     return false;

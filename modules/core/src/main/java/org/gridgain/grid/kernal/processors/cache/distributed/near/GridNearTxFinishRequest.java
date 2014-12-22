@@ -176,31 +176,31 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         switch (commState.idx) {
             case 20:
-                if (!commState.putBoolean(null, explicitLock))
+                if (!commState.putBoolean("explicitLock", explicitLock))
                     return false;
 
                 commState.idx++;
 
             case 21:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 22:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 23:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 24:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -223,12 +223,12 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (buf.remaining() < 1)
                     return false;
 
-                explicitLock = commState.getBoolean(null);
+                explicitLock = commState.getBoolean("explicitLock");
 
                 commState.idx++;
 
             case 21:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -241,12 +241,12 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 23:
-                UUID subjId0 = commState.getUuid(null);
+                UUID subjId0 = commState.getUuid("subjId");
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -259,7 +259,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
                 commState.idx++;
 

@@ -106,11 +106,11 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridContinuousMessage clone = new GridContinuousMessage();
+        GridContinuousMessage _clone = new GridContinuousMessage();
 
-        clone0(clone);
+        clone0(_clone);
 
-        return clone;
+        return _clone;
     }
 
     /** {@inheritDoc} */
@@ -137,19 +137,19 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, dataBytes))
+                if (!commState.putByteArray("dataBytes", dataBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putUuid(null, routineId))
+                if (!commState.putUuid("routineId", routineId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putEnum(null, type))
+                if (!commState.putEnum("type", type))
                     return false;
 
                 commState.idx++;
@@ -166,7 +166,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] dataBytes0 = commState.getByteArray(null);
+                byte[] dataBytes0 = commState.getByteArray("dataBytes");
 
                 if (dataBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -176,7 +176,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                UUID routineId0 = commState.getUuid(null);
+                UUID routineId0 = commState.getUuid("routineId");
 
                 if (routineId0 == UUID_NOT_READ)
                     return false;
@@ -189,7 +189,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 1)
                     return false;
 
-                byte type0 = commState.getByte(null);
+                byte type0 = commState.getByte("type");
 
                 type = GridContinuousMessageType.fromOrdinal(type0);
 

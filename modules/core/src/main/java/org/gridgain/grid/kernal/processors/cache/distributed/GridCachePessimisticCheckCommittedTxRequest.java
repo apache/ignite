@@ -161,37 +161,37 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putCacheVersion(null, nearXidVer))
+                if (!commState.putCacheVersion("nearXidVer", nearXidVer))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putUuid(null, originatingNodeId))
+                if (!commState.putUuid("originatingNodeId", originatingNodeId))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putLong(null, originatingThreadId))
+                if (!commState.putLong("originatingThreadId", originatingThreadId))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putBoolean(null, nearOnlyCheck))
+                if (!commState.putBoolean("nearOnlyCheck", nearOnlyCheck))
                     return false;
 
                 commState.idx++;
@@ -211,7 +211,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         switch (commState.idx) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -221,7 +221,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 commState.idx++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -231,7 +231,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 commState.idx++;
 
             case 10:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion(null);
+                GridCacheVersion nearXidVer0 = commState.getCacheVersion("nearXidVer");
 
                 if (nearXidVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -241,7 +241,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 commState.idx++;
 
             case 11:
-                UUID originatingNodeId0 = commState.getUuid(null);
+                UUID originatingNodeId0 = commState.getUuid("originatingNodeId");
 
                 if (originatingNodeId0 == UUID_NOT_READ)
                     return false;
@@ -254,7 +254,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 if (buf.remaining() < 8)
                     return false;
 
-                originatingThreadId = commState.getLong(null);
+                originatingThreadId = commState.getLong("originatingThreadId");
 
                 commState.idx++;
 
@@ -262,7 +262,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 if (buf.remaining() < 1)
                     return false;
 
-                nearOnlyCheck = commState.getBoolean(null);
+                nearOnlyCheck = commState.getBoolean("nearOnlyCheck");
 
                 commState.idx++;
 

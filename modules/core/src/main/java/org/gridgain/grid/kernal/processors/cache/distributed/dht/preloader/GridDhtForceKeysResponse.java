@@ -197,19 +197,19 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, infosBytes))
+                if (!commState.putByteArray("infosBytes", infosBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -256,7 +256,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -266,7 +266,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 commState.idx++;
 
             case 4:
-                byte[] infosBytes0 = commState.getByteArray(null);
+                byte[] infosBytes0 = commState.getByteArray("infosBytes");
 
                 if (infosBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -276,7 +276,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 commState.idx++;
 
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

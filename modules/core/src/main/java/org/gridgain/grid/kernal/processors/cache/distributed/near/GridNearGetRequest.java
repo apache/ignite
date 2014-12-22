@@ -285,7 +285,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 4:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -329,37 +329,37 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 6:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putBoolean(null, reload))
+                if (!commState.putBoolean("reload", reload))
                     return false;
 
                 commState.idx++;
 
             case 8:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putCacheVersion(null, ver))
+                if (!commState.putCacheVersion("ver", ver))
                     return false;
 
                 commState.idx++;
 
             case 10:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -408,7 +408,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 4:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -460,7 +460,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 6:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -473,7 +473,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (buf.remaining() < 1)
                     return false;
 
-                reload = commState.getBoolean(null);
+                reload = commState.getBoolean("reload");
 
                 commState.idx++;
 
@@ -481,12 +481,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 9:
-                GridCacheVersion ver0 = commState.getCacheVersion(null);
+                GridCacheVersion ver0 = commState.getCacheVersion("ver");
 
                 if (ver0 == CACHE_VER_NOT_READ)
                     return false;
@@ -496,7 +496,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 commState.idx++;
 
             case 10:
-                UUID subjId0 = commState.getUuid(null);
+                UUID subjId0 = commState.getUuid("subjId");
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -509,7 +509,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
                 commState.idx++;
 

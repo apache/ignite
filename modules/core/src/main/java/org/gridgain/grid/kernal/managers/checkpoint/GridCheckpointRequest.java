@@ -108,19 +108,19 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putString(null, cpSpi))
+                if (!commState.putString("cpSpi", cpSpi))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putString(null, key))
+                if (!commState.putString("key", key))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putGridUuid(null, sesId))
+                if (!commState.putGridUuid("sesId", sesId))
                     return false;
 
                 commState.idx++;
@@ -137,7 +137,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                String cpSpi0 = commState.getString(null);
+                String cpSpi0 = commState.getString("cpSpi");
 
                 if (cpSpi0 == STR_NOT_READ)
                     return false;
@@ -147,7 +147,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                String key0 = commState.getString(null);
+                String key0 = commState.getString("key");
 
                 if (key0 == STR_NOT_READ)
                     return false;
@@ -157,7 +157,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 2:
-                IgniteUuid sesId0 = commState.getGridUuid(null);
+                IgniteUuid sesId0 = commState.getGridUuid("sesId");
 
                 if (sesId0 == GRID_UUID_NOT_READ)
                     return false;

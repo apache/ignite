@@ -178,25 +178,25 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, batchBytes))
+                if (!commState.putByteArray("batchBytes", batchBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, clsLdrId))
+                if (!commState.putGridUuid("clsLdrId", clsLdrId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putEnum(null, depMode))
+                if (!commState.putEnum("depMode", depMode))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putBoolean(null, forceLocDep))
+                if (!commState.putBoolean("forceLocDep", forceLocDep))
                     return false;
 
                 commState.idx++;
@@ -240,13 +240,13 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 5:
-                if (!commState.putString(null, sampleClsName))
+                if (!commState.putString("sampleClsName", sampleClsName))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putString(null, userVer))
+                if (!commState.putString("userVer", userVer))
                     return false;
 
                 commState.idx++;
@@ -263,7 +263,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
         switch (commState.idx) {
             case 0:
-                byte[] batchBytes0 = commState.getByteArray(null);
+                byte[] batchBytes0 = commState.getByteArray("batchBytes");
 
                 if (batchBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -273,7 +273,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid(null);
+                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
 
                 if (clsLdrId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -286,7 +286,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 if (buf.remaining() < 1)
                     return false;
 
-                byte depMode0 = commState.getByte(null);
+                byte depMode0 = commState.getByte("depMode");
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
@@ -296,7 +296,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 if (buf.remaining() < 1)
                     return false;
 
-                forceLocDep = commState.getBoolean(null);
+                forceLocDep = commState.getBoolean("forceLocDep");
 
                 commState.idx++;
 
@@ -310,7 +310,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
                 if (commState.readSize >= 0) {
                     if (ldrParticipants == null)
-                        ldrParticipants = U.newHashMap(commState.readSize);
+                        ldrParticipants = new HashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -343,7 +343,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 5:
-                String sampleClsName0 = commState.getString(null);
+                String sampleClsName0 = commState.getString("sampleClsName");
 
                 if (sampleClsName0 == STR_NOT_READ)
                     return false;
@@ -353,7 +353,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 6:
-                String userVer0 = commState.getString(null);
+                String userVer0 = commState.getString("userVer");
 
                 if (userVer0 == STR_NOT_READ)
                     return false;

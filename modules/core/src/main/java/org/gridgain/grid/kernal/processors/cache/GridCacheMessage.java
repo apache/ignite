@@ -594,19 +594,19 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putInt(null, cacheId))
+                if (!commState.putInt("cacheId", cacheId))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putMessage(null, depInfo))
+                if (!commState.putMessage("depInfo", depInfo))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(null, msgId))
+                if (!commState.putLong("msgId", msgId))
                     return false;
 
                 commState.idx++;
@@ -626,12 +626,12 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
                 if (buf.remaining() < 4)
                     return false;
 
-                cacheId = commState.getInt(null);
+                cacheId = commState.getInt("cacheId");
 
                 commState.idx++;
 
             case 1:
-                Object depInfo0 = commState.getMessage(null);
+                Object depInfo0 = commState.getMessage("depInfo");
 
                 if (depInfo0 == MSG_NOT_READ)
                     return false;
@@ -644,7 +644,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
                 if (buf.remaining() < 8)
                     return false;
 
-                msgId = commState.getLong(null);
+                msgId = commState.getLong("msgId");
 
                 commState.idx++;
 

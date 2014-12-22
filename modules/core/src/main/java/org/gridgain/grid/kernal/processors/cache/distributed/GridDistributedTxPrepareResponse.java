@@ -179,13 +179,13 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putByteArray(null, candsBytes))
+                if (!commState.putByteArray("candsBytes", candsBytes))
                     return false;
 
                 commState.idx++;
 
             case 9:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
@@ -205,7 +205,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
         switch (commState.idx) {
             case 8:
-                byte[] candsBytes0 = commState.getByteArray(null);
+                byte[] candsBytes0 = commState.getByteArray("candsBytes");
 
                 if (candsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -215,7 +215,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
                 commState.idx++;
 
             case 9:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;

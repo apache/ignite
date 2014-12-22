@@ -69,15 +69,15 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
         commState.setBuffer(buf);
 
         if (!commState.typeWritten) {
-//            if (!commState.writeByte(directType()))
-//                return false;
-//
-//            commState.typeWritten = true;
+            if (!commState.putByte(null, directType()))
+                return false;
+
+            commState.typeWritten = true;
         }
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putInt(null, delta))
+                if (!commState.putInt("delta", delta))
                     return false;
 
                 commState.idx++;
@@ -97,7 +97,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
                 if (buf.remaining() < 4)
                     return false;
 
-                delta = commState.getInt(null);
+                delta = commState.getInt("delta");
 
                 commState.idx++;
 

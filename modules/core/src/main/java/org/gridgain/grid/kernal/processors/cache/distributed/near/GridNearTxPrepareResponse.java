@@ -255,13 +255,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (commState.idx) {
             case 10:
-                if (!commState.putCacheVersion(null, dhtVer))
+                if (!commState.putCacheVersion("dhtVer", dhtVer))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -294,7 +294,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 13:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -368,7 +368,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (commState.idx) {
             case 10:
-                GridCacheVersion dhtVer0 = commState.getCacheVersion(null);
+                GridCacheVersion dhtVer0 = commState.getCacheVersion("dhtVer");
 
                 if (dhtVer0 == CACHE_VER_NOT_READ)
                     return false;
@@ -378,7 +378,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 11:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -417,7 +417,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 13:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

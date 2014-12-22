@@ -348,13 +348,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         switch (commState.idx) {
             case 24:
-                if (!commState.putBitSet(null, invalidateEntries))
+                if (!commState.putBitSet("invalidateEntries", invalidateEntries))
                     return false;
 
                 commState.idx++;
 
             case 25:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -387,31 +387,31 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 27:
-                if (!commState.putByteArray(null, ownedBytes))
+                if (!commState.putByteArray("ownedBytes", ownedBytes))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 29:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 30:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
 
             case 31:
-                if (!commState.putBitSet(null, preloadKeys))
+                if (!commState.putBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 commState.idx++;
@@ -431,7 +431,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         switch (commState.idx) {
             case 24:
-                BitSet invalidateEntries0 = commState.getBitSet(null);
+                BitSet invalidateEntries0 = commState.getBitSet("invalidateEntries");
 
                 if (invalidateEntries0 == BIT_SET_NOT_READ)
                     return false;
@@ -441,7 +441,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 25:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -480,7 +480,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 27:
-                byte[] ownedBytes0 = commState.getByteArray(null);
+                byte[] ownedBytes0 = commState.getByteArray("ownedBytes");
 
                 if (ownedBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -493,12 +493,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 
             case 29:
-                UUID subjId0 = commState.getUuid(null);
+                UUID subjId0 = commState.getUuid("subjId");
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -511,12 +511,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
                 commState.idx++;
 
             case 31:
-                BitSet preloadKeys0 = commState.getBitSet(null);
+                BitSet preloadKeys0 = commState.getBitSet("preloadKeys");
 
                 if (preloadKeys0 == BIT_SET_NOT_READ)
                     return false;

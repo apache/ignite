@@ -193,7 +193,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -226,13 +226,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 commState.idx++;
 
             case 5:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
@@ -252,7 +252,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
 
         switch (commState.idx) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -291,7 +291,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 commState.idx++;
 
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -304,7 +304,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 

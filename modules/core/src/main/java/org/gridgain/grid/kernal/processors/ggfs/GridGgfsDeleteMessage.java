@@ -136,13 +136,13 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, id))
+                if (!commState.putGridUuid("id", id))
                     return false;
 
                 commState.idx++;
@@ -162,7 +162,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -172,7 +172,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid id0 = commState.getGridUuid(null);
+                IgniteUuid id0 = commState.getGridUuid("id");
 
                 if (id0 == GRID_UUID_NOT_READ)
                     return false;

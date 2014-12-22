@@ -134,13 +134,13 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putByteArray(null, affAssignmentBytes))
+                if (!commState.putByteArray("affAssignmentBytes", affAssignmentBytes))
                     return false;
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
@@ -159,7 +159,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
         switch (commState.idx) {
             case 3:
-                byte[] affAssignmentBytes0 = commState.getByteArray(null);
+                byte[] affAssignmentBytes0 = commState.getByteArray("affAssignmentBytes");
 
                 if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -172,7 +172,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
                 if (buf.remaining() < 8)
                     return false;
 
-                topVer = commState.getLong(null);
+                topVer = commState.getLong("topVer");
 
                 commState.idx++;
 

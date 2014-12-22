@@ -237,7 +237,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (commState.idx) {
             case 10:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
@@ -270,7 +270,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 commState.idx++;
 
             case 12:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -344,7 +344,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
         switch (commState.idx) {
             case 10:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                IgniteUuid futId0 = commState.getGridUuid("futId");
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -383,7 +383,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
                 commState.idx++;
 
             case 12:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;

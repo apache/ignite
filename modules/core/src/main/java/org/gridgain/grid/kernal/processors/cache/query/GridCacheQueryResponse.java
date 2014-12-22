@@ -264,19 +264,19 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteArray(null, errBytes))
+                if (!commState.putByteArray("errBytes", errBytes))
                     return false;
 
                 commState.idx++;
 
             case 5:
-                if (!commState.putBoolean(null, fields))
+                if (!commState.putBoolean("fields", fields))
                     return false;
 
                 commState.idx++;
 
             case 6:
-                if (!commState.putBoolean(null, finished))
+                if (!commState.putBoolean("finished", finished))
                     return false;
 
                 commState.idx++;
@@ -309,7 +309,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 8:
-                if (!commState.putLong(null, reqId))
+                if (!commState.putLong("reqId", reqId))
                     return false;
 
                 commState.idx++;
@@ -358,7 +358,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 commState.idx++;
 
             case 4:
-                byte[] errBytes0 = commState.getByteArray(null);
+                byte[] errBytes0 = commState.getByteArray("errBytes");
 
                 if (errBytes0 == BYTE_ARR_NOT_READ)
                     return false;
@@ -371,7 +371,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 1)
                     return false;
 
-                fields = commState.getBoolean(null);
+                fields = commState.getBoolean("fields");
 
                 commState.idx++;
 
@@ -379,7 +379,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 1)
                     return false;
 
-                finished = commState.getBoolean(null);
+                finished = commState.getBoolean("finished");
 
                 commState.idx++;
 
@@ -416,7 +416,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
                 if (buf.remaining() < 8)
                     return false;
 
-                reqId = commState.getLong(null);
+                reqId = commState.getLong("reqId");
 
                 commState.idx++;
 

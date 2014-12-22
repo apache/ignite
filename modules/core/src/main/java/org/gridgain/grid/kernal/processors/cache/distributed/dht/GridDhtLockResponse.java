@@ -257,7 +257,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 commState.idx++;
 
             case 12:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
@@ -360,7 +360,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 commState.idx++;
 
             case 12:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                IgniteUuid miniId0 = commState.getGridUuid("miniId");
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
