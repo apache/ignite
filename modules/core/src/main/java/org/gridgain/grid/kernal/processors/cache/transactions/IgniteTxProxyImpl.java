@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -37,6 +38,12 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     @GridToStringExclude
     private GridCacheSharedContext<K, V> cctx;
 
+    /** Async flag. */
+    private boolean async;
+
+    /** Async call result. */
+    private IgniteFuture asyncRes;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -46,13 +53,16 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /**
      * @param tx Transaction.
+     * @param cctx Shared context.
+     * @param async Async flag.
      */
-    public IgniteTxProxyImpl(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx) {
+    public IgniteTxProxyImpl(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
         assert tx != null;
         assert cctx != null;
 
         this.tx = tx;
         this.cctx = cctx;
+        this.async = async;
     }
 
     /**
@@ -94,52 +104,95 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @Override public UUID nodeId() {
+        if (async)
+            save(tx.nodeId());
+
         return tx.nodeId();
     }
 
     /** {@inheritDoc} */
     @Override public long threadId() {
+        if (async)
+            save(tx.threadId());
+
         return tx.threadId();
     }
 
     /** {@inheritDoc} */
     @Override public long startTime() {
+        if (async)
+            save(tx.startTime());
+
         return tx.startTime();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTxIsolation isolation() {
+        if (async)
+            save(tx.isolation());
+
         return tx.isolation();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTxConcurrency concurrency() {
+        if (async)
+            save(tx.concurrency());
+
         return tx.concurrency();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInvalidate() {
+        if (async)
+            save(tx.isInvalidate());
+
         return tx.isInvalidate();
     }
 
     /** {@inheritDoc} */
     @Override public boolean implicit() {
+        if (async)
+            save(tx.implicit());
+
         return tx.implicit();
     }
 
     /** {@inheritDoc} */
     @Override public long timeout() {
+        if (async)
+            save(tx.timeout());
+
         return tx.timeout();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTxState state() {
+        if (async)
+            save(tx.state());
+
         return tx.state();
     }
 
     /** {@inheritDoc} */
     @Override public long timeout(long timeout) {
         return tx.timeout(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAsyncSupport enableAsync() {
+        return new IgniteTxProxyImpl<>(tx, cctx, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return async;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <R> IgniteFuture<R> future() {
+        return asyncRes;
     }
 
     /** {@inheritDoc} */
@@ -159,6 +212,9 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         enter();
 
         try {
+            if (async)
+                save(tx.isRollbackOnly());
+
             return tx.isRollbackOnly();
         }
         finally {
@@ -171,7 +227,12 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         enter();
 
         try {
-            cctx.commitTxAsync(tx).get();
+            IgniteFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
+
+            if (async)
+                asyncRes = commitFut;
+            else
+                commitFut.get();
         }
         finally {
             leave();
@@ -191,28 +252,27 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> commitAsync() {
+    @Override public void rollback() throws IgniteCheckedException {
         enter();
 
         try {
+            IgniteFuture rollbackFut = cctx.rollbackTxAsync(tx);
 
-            return cctx.commitTxAsync(tx);
+            if (async)
+                asyncRes = rollbackFut;
+            else
+                rollbackFut.get();
         }
         finally {
             leave();
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void rollback() throws IgniteCheckedException {
-        enter();
-
-        try {
-            cctx.rollbackTx(tx);
-        }
-        finally {
-            leave();
-        }
+    /**
+     * @param res Result to convert to finished future.
+     */
+    private void save(Object res) {
+        asyncRes = new GridFinishedFutureEx<>(res);
     }
 
     /** {@inheritDoc} */
@@ -294,7 +354,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (IgniteTxAdapter<K, V>)in.readObject();
+        tx = (IgniteTxEx<K, V>)in.readObject();
     }
 
     /** {@inheritDoc} */

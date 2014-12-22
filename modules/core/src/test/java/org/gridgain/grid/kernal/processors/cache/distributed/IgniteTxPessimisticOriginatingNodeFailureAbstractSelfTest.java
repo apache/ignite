@@ -178,7 +178,11 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     info("Before commitAsync");
 
-                    IgniteFuture<IgniteTx> fut = tx.commitAsync();
+                    tx = (IgniteTx)tx.enableAsync();
+
+                    tx.commit();
+
+                    IgniteFuture<IgniteTx> fut = tx.future();
 
                     info("Got future for commitAsync().");
 

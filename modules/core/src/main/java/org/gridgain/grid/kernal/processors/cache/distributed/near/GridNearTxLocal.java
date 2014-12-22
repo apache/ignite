@@ -517,13 +517,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /**
-     * @return Commit fut.
-     */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> future() {
-        return prepFut.get();
-    }
-
-    /**
      * @param mapping Mapping to order.
      * @param pendingVers Pending versions.
      * @param committedVers Committed versions.

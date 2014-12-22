@@ -536,6 +536,21 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         return finalizing.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteAsyncSupport enableAsync() {
+        throw new UnsupportedOperationException("enableAsync() should not be called on IgniteTxAdapter directly.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteFuture<R> future() {
+        throw new UnsupportedOperationException("future() should not be called on IgniteTxAdapter directly.");
+    }
+
     /**
      * @return {@code True} if transaction has at least one key enlisted.
      */
@@ -1476,6 +1491,21 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteAsyncSupport enableAsync() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> IgniteFuture<R> future() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout(long timeout) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
@@ -1492,11 +1522,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public void close() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<IgniteTx> commitAsync() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -29,7 +30,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link GridCacheConfiguration}.
+ * Test for {@link LifecycleAware} support in {@link GridCacheConfiguration}.
  */
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
