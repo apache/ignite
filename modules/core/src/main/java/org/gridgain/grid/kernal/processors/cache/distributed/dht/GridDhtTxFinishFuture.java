@@ -15,6 +15,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -325,13 +326,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             if (!tx.pessimistic()) {
                 int idx = 0;
 
-                for (GridCacheTxEntry<K, V> e : dhtMapping.writes())
+                for (IgniteTxEntry<K, V> e : dhtMapping.writes())
                     req.ttl(idx++, e.ttl());
 
                 if (nearMapping != null) {
                     idx = 0;
 
-                    for (GridCacheTxEntry<K, V> e : nearMapping.writes())
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
                         req.nearTtl(idx++, e.ttl());
                 }
             }
@@ -397,7 +398,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (!tx.pessimistic()) {
                     int idx = 0;
 
-                    for (GridCacheTxEntry<K, V> e : nearMapping.writes())
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
                         req.nearTtl(idx++, e.ttl());
                 }
 

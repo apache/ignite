@@ -836,7 +836,7 @@ public class IgniteTxHandler<K, V> {
                     else if (tx.concurrency() == OPTIMISTIC && ttls != null) {
                         int idx = 0;
 
-                        for (GridCacheTxEntry<K, V> e : tx.writeEntries())
+                        for (IgniteTxEntry<K, V> e : tx.writeEntries())
                             e.ttl(ttls.get(idx));
                     }
 

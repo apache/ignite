@@ -865,7 +865,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 }
 
                 if (!near()) {
-                    for (GridCacheTxEntry<K, V> txEntry : readEntries()) {
+                    for (IgniteTxEntry<K, V> txEntry : readEntries()) {
                         Duration duration = expiryForAccess(txEntry);
 
                         if (duration != null)
@@ -878,7 +878,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
         }
         else {
-            for (GridCacheTxEntry<K, V> txEntry : readEntries()) {
+            for (IgniteTxEntry<K, V> txEntry : readEntries()) {
                 Duration duration = expiryForAccess(txEntry);
 
                 if (duration != null)
@@ -922,7 +922,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param txEntry Tx entry.
      * @return New duration.
      */
-    @Nullable private Duration expiryForAccess(GridCacheTxEntry<K, V> txEntry) {
+    @Nullable private Duration expiryForAccess(IgniteTxEntry<K, V> txEntry) {
         ExpiryPolicy expiry = txEntry.expiry();
 
         if (expiry == null)
@@ -2919,10 +2919,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param key Key.
      * @param expiryPlc Expiry policy.
      */
-    void entryExpiry(GridCacheTxKey<K> key, @Nullable ExpiryPolicy expiryPlc) {
+    void entryExpiry(IgniteTxKey<K> key, @Nullable ExpiryPolicy expiryPlc) {
         assert key != null;
 
-        GridCacheTxEntry<K, V> e = entry(key);
+        IgniteTxEntry<K, V> e = entry(key);
 
         if (e != null)
             e.expiry(expiryPlc);
