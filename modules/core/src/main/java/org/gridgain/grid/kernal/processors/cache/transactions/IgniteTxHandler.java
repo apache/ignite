@@ -1149,8 +1149,15 @@ public class IgniteTxHandler<K, V> {
                                     "(transaction has been completed): " + req.version());
                         }
 
-                        tx.addWrite(cacheCtx, txEntry.op(), txEntry.txKey(), txEntry.keyBytes(), txEntry.value(),
-                            txEntry.valueBytes(), txEntry.transformClosures(), txEntry.drVersion());
+                        tx.addWrite(cacheCtx,
+                            txEntry.op(),
+                            txEntry.txKey(),
+                            txEntry.keyBytes(),
+                            txEntry.value(),
+                            txEntry.valueBytes(),
+                            txEntry.transformClosures(),
+                            txEntry.drVersion(),
+                            txEntry.ttl());
 
                         if (!marked) {
                             if (tx.markFinalizing(USER_FINISH))

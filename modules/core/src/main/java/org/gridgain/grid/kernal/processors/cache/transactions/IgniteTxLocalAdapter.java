@@ -410,6 +410,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     /**
      * Gets cache entry for given key.
      *
+     * @param cacheCtx Cache context.
      * @param key Key.
      * @return Cache entry.
      */
@@ -420,6 +421,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     /**
      * Gets cache entry for given key and topology version.
      *
+     * @param cacheCtx Cache context.
      * @param key Key.
      * @param topVer Topology version.
      * @return Cache entry.
@@ -996,6 +998,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         }
     }
 
+    protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
+        IgniteTxKey key,
+        @Nullable ExpiryPolicy expiryPlc) {
+        return null;
+    }
+
     /**
      * Checks if there is a cached or swapped value for
      * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, IgnitePredicate[])} method.
@@ -1156,6 +1164,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         V val = null;
 
                         if (!pessimistic() || readCommitted() || groupLock()) {
+                            IgniteCacheExpiryPolicy accessPlc =
+                                optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
+
                             // This call will check for filter.
                             val = entry.innerGet(this,
                                 /*swap*/true,
@@ -1169,7 +1180,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 null,
                                 resolveTaskName(),
                                 filter,
-                                null);
+                                accessPlc);
 
                             if (val != null) {
                                 V val0 = val;
@@ -1269,6 +1280,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * Loads all missed keys for
      * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, IgnitePredicate[])} method.
      *
+     * @param cacheCtx Cache context.
      * @param map Return map.
      * @param missedMap Missed keys.
      * @param redos Keys to retry.
@@ -1466,7 +1478,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     @Override public IgniteFuture<Map<K, V>> getAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx<K, V> cached, final boolean deserializePortable,
+        @Nullable GridCacheEntryEx<K, V> cached,
+        final boolean deserializePortable,
         final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
@@ -1486,10 +1499,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
 
+            ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+
             final Collection<K> lockKeys = enlistRead(cacheCtx,
                 keys,
                 cached,
-                prj != null ? prj.expiry() : null,
+                expiryPlc,
                 retMap,
                 missed,
                 keysCnt,
@@ -1501,8 +1516,20 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             // Handle locks.
             if (pessimistic() && !readCommitted() && !groupLock()) {
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys, lockTimeout(), this, true, true,
-                    isolation, isInvalidate(), CU.<K, V>empty());
+                if (expiryPlc == null)
+                    expiryPlc = cacheCtx.expiry();
+
+                long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : -1L;
+
+                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
+                    lockTimeout(),
+                    this,
+                    true,
+                    true,
+                    isolation,
+                    isInvalidate(),
+                    accessTtl,
+                    CU.<K, V>empty());
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteFuture<Map<K, V>> postLock() throws IgniteCheckedException {
@@ -2053,6 +2080,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param rmv {@code True} if remove.
      * @param retval Flag to return value or not.
      * @param read {@code True} if read.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter to check entries.
      * @return Failed keys.
      * @throws IgniteCheckedException If error.
@@ -2067,6 +2095,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean rmv,
         boolean retval,
         boolean read,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) throws IgniteCheckedException {
         for (K k : keys) {
@@ -2158,10 +2187,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     }
 
                     if (updateTtl) {
-                        ExpiryPolicy expiryPlc = txEntry.expiry() != null ? txEntry.expiry() : cacheCtx.expiry();
+                        if (!read) {
+                            ExpiryPolicy expiryPlc = txEntry.expiry() != null ? txEntry.expiry() : cacheCtx.expiry();
 
-                        if (expiryPlc != null)
-                            txEntry.ttl(CU.toTtl(expiryPlc.getExpiryForAccess()));
+                            if (expiryPlc != null)
+                                txEntry.ttl(CU.toTtl(expiryPlc.getExpiryForAccess()));
+                        }
+                        else
+                            txEntry.ttl(accessTtl);
                     }
 
                     break; // While.
@@ -2336,8 +2369,15 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + keys);
 
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(keys, lockTimeout(), this, false,
-                    retval, isolation, isInvalidate(), CU.<K, V>empty());
+                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(keys,
+                    lockTimeout(),
+                    this,
+                    false,
+                    retval,
+                    isolation,
+                    isInvalidate(),
+                    -1L,
+                    CU.<K, V>empty());
 
                 PLC1<GridCacheReturn<V>> plc1 = new PLC1<GridCacheReturn<V>>(ret) {
                     @Override public GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
@@ -2355,6 +2395,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             /*remove*/false,
                             retval,
                             /*read*/false,
+                            -1L,
                             filter);
 
                         return ret;
@@ -2530,8 +2571,15 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for remove on keys: " + passedKeys);
 
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(passedKeys, lockTimeout(), this, false, retval,
-                    isolation, isInvalidate(), CU.<K, V>empty());
+                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(passedKeys,
+                    lockTimeout(),
+                    this,
+                    false,
+                    retval,
+                    isolation,
+                    isInvalidate(),
+                    -1L,
+                    CU.<K, V>empty());
 
                 PLC1<GridCacheReturn<V>> plc1 = new PLC1<GridCacheReturn<V>>(ret) {
                     @Override protected GridCacheReturn<V> postLock(GridCacheReturn<V> ret) throws IgniteCheckedException {
@@ -2547,6 +2595,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             /*remove*/true,
                             retval,
                             /*read*/false,
+                            -1L,
                             filter);
 
                         return ret;
@@ -2681,7 +2730,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             // Lock group key in pessimistic mode only.
             return pessimistic() ?
-                cacheCtx.cache().txLockAsync(enlisted, lockTimeout(), this, false, false, isolation, isInvalidate(),
+                cacheCtx.cache().txLockAsync(enlisted,
+                    lockTimeout(),
+                    this,
+                    false,
+                    false,
+                    isolation,
+                    isInvalidate(),
+                    -1L,
                     CU.<K, V>empty()) :
                 new GridFinishedFuture<>(cctx.kernalContext());
         }

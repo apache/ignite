@@ -461,12 +461,15 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param entries Entries to lock.
      * @param writeEntries Write entries for implicit transactions mapped to one node.
+     * @param onePhaseCommit One phase commit flag.
      * @param drVers DR versions.
      * @param msgId Message ID.
      * @param implicit Implicit flag.
      * @param read Read flag.
+     * @param accessTtl TTL for read operation.
      * @return Lock future.
      */
     IgniteFuture<GridCacheReturn<V>> lockAllAsync(
@@ -477,7 +480,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         GridCacheVersion[] drVers,
         long msgId,
         boolean implicit,
-        final boolean read
+        final boolean read,
+        long accessTtl
     ) {
         try {
             checkValid();
@@ -547,6 +551,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                         txEntry.drExpireTime(w.drExpireTime());
                         txEntry.expiry(w.expiry());
                     }
+                    else if (read)
+                        txEntry.ttl(accessTtl);
 
                     txEntry.cached(cached, txEntry.keyBytes());
 
@@ -573,7 +579,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
 
-            return obtainLockAsync(cacheCtx, ret, passedKeys, read, skipped, null);
+            return obtainLockAsync(cacheCtx, ret, passedKeys, read, skipped, accessTtl, null);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -588,6 +594,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
      * @param skipped Skipped keys.
+     * @param accessTtl TTL for read operation.
      * @param filter Entry write filter.
      * @return Future for lock acquisition.
      */
@@ -597,6 +604,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         final Collection<? extends K> passedKeys,
         final boolean read,
         final Set<K> skipped,
+        final long accessTtl,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
@@ -614,6 +622,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             read,
             /*retval*/false,
             isolation,
+            accessTtl,
             CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(
@@ -631,7 +640,8 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                         ret,
                         /*remove*/false,
                         /*retval*/false,
-                        /*read*/true,
+                        /*read*/read,
+                        accessTtl,
                         filter == null ? CU.<K, V>empty() : filter);
 
                     return ret;

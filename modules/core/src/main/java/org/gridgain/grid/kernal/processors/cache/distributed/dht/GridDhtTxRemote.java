@@ -281,6 +281,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
      * @param clos Transform closures.
+     * @param ttl TTL.
      */
     public void addWrite(GridCacheContext<K, V> cacheCtx,
         GridCacheOperation op,
@@ -289,7 +290,8 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         @Nullable V val,
         @Nullable byte[] valBytes,
         @Nullable Collection<IgniteClosure<V, V>> clos,
-        @Nullable GridCacheVersion drVer) {
+        @Nullable GridCacheVersion drVer,
+        long ttl) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -301,7 +303,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
             this,
             op,
             val,
-            -1L,
+            ttl,
             -1L,
             cached,
             drVer);

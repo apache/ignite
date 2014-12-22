@@ -576,6 +576,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean isRead,
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
             "GridCacheAtomicityMode.ATOMIC mode (use GridCacheAtomicityMode.TRANSACTIONAL instead)"));
@@ -734,8 +735,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final GetExpiryPolicy expiry =
-            GetExpiryPolicy.forPolicy(expiryPlc != null ? expiryPlc : ctx.expiry());
+        final GetExpiryPolicy expiry = accessExpiryPolicy(expiryPlc);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {
@@ -2741,9 +2741,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         /** {@inheritDoc} */
         @Override public void ttlUpdated(Object key,
-                                         byte[] keyBytes,
-                                         GridCacheVersion ver,
-                                         @Nullable Collection<UUID> rdrs) {
+            byte[] keyBytes,
+            GridCacheVersion ver,
+            @Nullable Collection<UUID> rdrs) {
             if (entries == null)
                 entries = new HashMap<>();
 
@@ -2764,6 +2764,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     col.add(t);
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            if (entries != null)
+                entries.clear();
+
+            if (rdrsMap != null)
+                rdrsMap.clear();
         }
 
         /** {@inheritDoc} */

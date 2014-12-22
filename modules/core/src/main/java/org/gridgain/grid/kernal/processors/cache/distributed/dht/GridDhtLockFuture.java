@@ -121,6 +121,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** Pending locks. */
     private final Collection<K> pendingLocks = new GridConcurrentHashSet<>();
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -138,6 +141,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param timeout Lock acquisition timeout.
      * @param tx Transaction.
      * @param threadId Thread ID.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter.
      */
     public GridDhtLockFuture(
@@ -150,10 +154,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         long timeout,
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
-        assert cctx != null;
         assert nearNodeId != null;
         assert nearLockVer != null;
         assert topVer > 0;
@@ -166,6 +170,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
+        this.accessTtl = accessTtl;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -202,6 +207,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param invalidPart Partition to retry.
      */
     void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int invalidPart) {
@@ -827,7 +833,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
-                        inTx() ? tx.taskNameHash() : 0);
+                        inTx() ? tx.taskNameHash() : 0,
+                        read ? accessTtl : -1L);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = dhtMapping.listIterator(); it.hasNext();) {
@@ -838,11 +845,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             boolean invalidateRdr = e.readerId(n.id()) != null;
 
+                            IgniteTxEntry<K, V> entry = tx != null ? tx.entry(e.txKey()) : null;
+
                             req.addDhtKey(
                                 e.key(),
                                 e.getOrMarshalKeyBytes(),
                                 tx != null ? tx.writeMap().get(e.txKey()) : null,
-                                tx != null ? tx.entry(e.txKey()).drVersion() : null,
+                                entry != null ? entry.drVersion() : null,
                                 invalidateRdr,
                                 cctx);
 
@@ -906,7 +915,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
-                        inTx() ? tx.taskNameHash() : 0);
+                        inTx() ? tx.taskNameHash() : 0,
+                        read ? accessTtl : -1L);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = nearMapping.listIterator(); it.hasNext();) {

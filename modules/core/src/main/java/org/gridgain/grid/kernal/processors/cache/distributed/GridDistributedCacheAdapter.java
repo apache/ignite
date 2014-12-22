@@ -59,11 +59,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         IgniteTxIsolation isolation,
         boolean isInvalidate,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, filter);
+        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl, filter);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +73,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
-        return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, filter);
+        return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, -1L, filter);
     }
 
     /**
@@ -83,12 +84,19 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param isRead Indicates whether value is read or written.
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
+     * @param accessTtl TTL for read operation.
      * @param filter Optional filter.
      * @return Future for locks.
      */
-    protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        @Nullable IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter);
+    protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        @Nullable IgniteTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        @Nullable IgniteTxIsolation isolation,
+        long accessTtl,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
      * @param key Key to remove.

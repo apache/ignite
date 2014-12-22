@@ -533,6 +533,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
+     * @param filter TTL for read operation.
      * @param filter Optional filter.
      * @return Locks future.
      */
@@ -544,6 +545,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean retval,
         IgniteTxIsolation isolation,
         boolean invalidate,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
@@ -1743,11 +1745,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
-        ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
-
-        if (expiryPlc == null)
-            expiryPlc = ctx.expiry();
-
         return getAllAsync(keys,
             entry,
             !skipTx,
@@ -1755,7 +1752,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             taskName,
             deserializePortable,
             forcePrimary,
-            GetExpiryPolicy.forPolicy(expiryPlc),
+            accessExpiryPolicy(prj != null ? prj.expiry() : null),
             filter);
     }
 
@@ -4552,6 +4549,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /**
+     * @param plc Explicitly specified expiry policy for cache operation.
+     * @return Expiry policy wrapper.
+     */
+    @Nullable public GetExpiryPolicy accessExpiryPolicy(@Nullable ExpiryPolicy plc) {
+        if (plc == null)
+            plc = ctx.expiry();
+
+        return GetExpiryPolicy.forPolicy(plc);
+    }
+
+    /**
      * Cache operation.
      */
     private abstract class SyncOp<T> {
@@ -4901,10 +4909,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             return -1L;
         }
 
-        /**
-         *
-         */
-        public synchronized void reset() {
+        /** {@inheritDoc} */
+        @Override public synchronized void reset() {
             if (entries != null)
                 entries.clear();
 

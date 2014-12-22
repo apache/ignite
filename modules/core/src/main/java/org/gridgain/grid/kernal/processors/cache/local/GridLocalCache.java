@@ -86,9 +86,14 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys, long timeout,
-        IgniteTxLocalEx<K, V> tx, boolean isRead,
-        boolean retval, IgniteTxIsolation isolation, boolean invalidate,
+    @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys,
+        long timeout,
+        IgniteTxLocalEx<K, V> tx,
+        boolean isRead,
+        boolean retval,
+        IgniteTxIsolation isolation,
+        boolean invalidate,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return lockAllAsync(keys, timeout, tx, filter);
     }

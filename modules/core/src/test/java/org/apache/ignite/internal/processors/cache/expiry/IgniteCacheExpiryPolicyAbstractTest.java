@@ -163,40 +163,58 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         if (atomicityMode() == TRANSACTIONAL) {
-            for (final Integer key : keys()) {
-                log.info("Test txGet [key=" + key + ']');
+            IgniteTxConcurrency[] txModes = {PESSIMISTIC};
 
-                txGet(key);
+            for (IgniteTxConcurrency txMode : txModes) {
+                for (final Integer key : keys()) {
+                    log.info("Test txGet [key=" + key + ", txMode=" + txMode + ']');
+
+                    txGet(key, txMode);
+                }
             }
 
-            txGetAll();
+            for (IgniteTxConcurrency txMode : txModes) {
+                log.info("Test txGetAll [txMode=" + txMode + ']');
+
+                txGetAll(txMode);
+            }
         }
     }
 
     /**
      * @param key Key.
+     * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGet(Integer key) throws Exception {
+    private void txGet(Integer key, IgniteTxConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         cache.put(key, 1);
 
         checkTtl(key, 60_000L);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart()) {
+        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals((Integer)1, cache.get(key));
 
             tx.commit();
         }
 
         checkTtl(key, 62_000L, true);
+
+        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+            assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).get(key));
+
+            tx.commit();
+        }
+
+        checkTtl(key, 1000L, true);
     }
 
     /**
+     * @param txMode Transaction concurrency mode.
      * @throws Exception If failed.
      */
-    private void txGetAll() throws Exception {
+    private void txGetAll(IgniteTxConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         Map<Integer, Integer> vals = new HashMap<>();
@@ -206,7 +224,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.putAll(vals);
 
-        try (IgniteTx tx = ignite(0).transactions().txStart()) {
+        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
             assertEquals(vals, cache.getAll(vals.keySet()));
 
             tx.commit();
@@ -214,6 +232,15 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         for (Integer key : vals.keySet())
             checkTtl(key, 62_000L);
+
+        try (IgniteTx tx = ignite(0).transactions().txStart(txMode, REPEATABLE_READ)) {
+            assertEquals(vals, cache.withExpiryPolicy(new TestPolicy(100L, 200L, 1000L)).getAll(vals.keySet()));
+
+            tx.commit();
+        }
+
+        for (Integer key : vals.keySet())
+            checkTtl(key, 1000L);
     }
 
     /**

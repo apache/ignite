@@ -36,7 +36,7 @@ public interface IgniteCacheExpiryPolicy {
     public long forAccess();
 
     /**
-     * Callback when entry's ttl is updated on access.
+     * Callback for ttl update on entry access.
      *
      * @param key Entry key.
      * @param keyBytes Entry key bytes.
@@ -47,6 +47,11 @@ public interface IgniteCacheExpiryPolicy {
        byte[] keyBytes,
        GridCacheVersion ver,
        @Nullable Collection<UUID> rdrs);
+
+    /**
+     * Clears information about updated entries.
+     */
+    public void reset();
 
     /**
      * @return Entries with TTL updated on access.
