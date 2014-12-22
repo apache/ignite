@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -445,48 +446,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
     /**
      *
-     * @param cand Candidate to acquire lock for.
-     * @return Owner.
-     * @throws GridCacheEntryRemovedException If entry is removed.
-     */
-    @Nullable public GridCacheMvccCandidate<K> readyLock(
-        GridCacheMvccCandidate<K> cand) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
-
-        V val;
-
-        synchronized (this) {
-            checkObsolete();
-
-            GridCacheMvcc<K> mvcc = mvccExtras();
-
-            if (mvcc != null) {
-                prev = mvcc.anyOwner();
-
-                boolean emptyBefore = mvcc.isEmpty();
-
-                owner = mvcc.readyLocal(cand);
-
-                boolean emptyAfter = mvcc.isEmpty();
-
-                checkCallbacks(emptyBefore, emptyAfter);
-
-                if (emptyAfter)
-                    mvccExtras(null);
-            }
-
-            val = this.val;
-        }
-
-        // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
-
-        return owner;
-    }
-
-    /**
-     *
      * @param ver Version of candidate to acquire lock for.
      * @return Owner.
      * @throws GridCacheEntryRemovedException If entry is removed.
@@ -753,7 +712,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
@@ -788,7 +747,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 

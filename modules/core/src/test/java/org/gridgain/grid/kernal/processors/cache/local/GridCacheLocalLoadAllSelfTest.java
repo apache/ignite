@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -73,7 +73,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
     private static class TestStore extends GridCacheStoreAdapter<Integer, Integer> {
         /** {@inheritDoc} */
         @SuppressWarnings({"TypeParameterExtendsFinalClass"})
-        @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
+        @Override public void loadAll(IgniteTx tx, Collection<? extends Integer> keys,
             IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
             assert keys != null;
 
@@ -83,19 +83,19 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public Integer load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, Integer val) throws IgniteCheckedException {
+        @Override public void put(IgniteTx tx, Integer key, Integer val) throws IgniteCheckedException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op.
         }
     }

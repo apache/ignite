@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -33,7 +34,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
 
     /** Entries. */
     @GridToStringInclude
-    private Collection<GridCacheTxEntry<K, V>> entries;
+    private Collection<IgniteTxEntry<K, V>> entries;
 
     /** Explicit lock flag. */
     private boolean explicitLock;
@@ -121,7 +122,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @return Entries.
      */
-    public Collection<GridCacheTxEntry<K, V>> entries() {
+    public Collection<IgniteTxEntry<K, V>> entries() {
         return entries;
     }
 
@@ -129,7 +130,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param entries Mapped entries.
      * @param readOnly Flag indicating that passed in collection is read-only.
      */
-    public void entries(Collection<GridCacheTxEntry<K, V>> entries, boolean readOnly) {
+    public void entries(Collection<IgniteTxEntry<K, V>> entries, boolean readOnly) {
         this.entries = entries;
 
         // Set copy on remove flag as passed in collection is unmodifiable.
@@ -163,28 +164,28 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     public void dhtVersion(GridCacheVersion dhtVer) {
         this.dhtVer = dhtVer;
 
-        for (GridCacheTxEntry<K, V> e : entries)
+        for (IgniteTxEntry<K, V> e : entries)
             e.dhtVersion(dhtVer);
     }
 
     /**
      * @return Reads.
      */
-    public Collection<GridCacheTxEntry<K, V>> reads() {
+    public Collection<IgniteTxEntry<K, V>> reads() {
         return F.view(entries, CU.<K, V>reads());
     }
 
     /**
      * @return Writes.
      */
-    public Collection<GridCacheTxEntry<K, V>> writes() {
+    public Collection<IgniteTxEntry<K, V>> writes() {
         return F.view(entries, CU.<K, V>writes());
     }
 
     /**
      * @param entry Adds entry.
      */
-    public void add(GridCacheTxEntry<K, V> entry) {
+    public void add(IgniteTxEntry<K, V> entry) {
         ensureModifiable();
 
         entries.add(entry);
@@ -194,7 +195,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param entry Entry to remove.
      * @return {@code True} if entry was removed.
      */
-    public boolean removeEntry(GridCacheTxEntry<K, V> entry) {
+    public boolean removeEntry(IgniteTxEntry<K, V> entry) {
         ensureModifiable();
 
         return entries.remove(entry);
@@ -215,11 +216,11 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param parts Partitions.
      * @param c Collection.
      */
-    private void evictPartitions(int[] parts, Collection<GridCacheTxEntry<K, V>> c) {
+    private void evictPartitions(int[] parts, Collection<IgniteTxEntry<K, V>> c) {
         assert parts != null;
 
-        for (Iterator<GridCacheTxEntry<K, V>> it = c.iterator(); it.hasNext();) {
-            GridCacheTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry<K, V>> it = c.iterator(); it.hasNext();) {
+            IgniteTxEntry<K, V> e = it.next();
 
             GridCacheEntryEx<K,V> cached = e.cached();
 
@@ -231,7 +232,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     /**
      * @param keys Keys to evict readers for.
      */
-    public void evictReaders(@Nullable Collection<GridCacheTxKey<K>> keys) {
+    public void evictReaders(@Nullable Collection<IgniteTxKey<K>> keys) {
         if (keys == null || keys.isEmpty())
             return;
 
@@ -244,12 +245,12 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      * @param keys Keys to evict readers for.
      * @param entries Entries to check.
      */
-    private void evictReaders(Collection<GridCacheTxKey<K>> keys, @Nullable Collection<GridCacheTxEntry<K, V>> entries) {
+    private void evictReaders(Collection<IgniteTxKey<K>> keys, @Nullable Collection<IgniteTxEntry<K, V>> entries) {
         if (entries == null || entries.isEmpty())
             return;
 
-        for (Iterator<GridCacheTxEntry<K, V>> it = entries.iterator(); it.hasNext();) {
-            GridCacheTxEntry<K, V> entry = it.next();
+        for (Iterator<IgniteTxEntry<K, V>> it = entries.iterator(); it.hasNext();) {
+            IgniteTxEntry<K, V> entry = it.next();
 
             if (keys.contains(entry.txKey()))
                 it.remove();

@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -292,7 +293,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             }
                         }
                         try {
-                            GridCacheTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
+                            IgniteTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
 
                             try {
                                 cache.putAll(putMap);

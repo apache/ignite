@@ -10,7 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -183,7 +185,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         int size = 10;
 
         if (atomicityMode() == TRANSACTIONAL) {
-            GridCacheTx tx = prj.txStart();
+            IgniteTx tx = prj.txStart();
 
             for (int i = 0; i < size; i++)
                 prj.put("key" + i, i);
@@ -733,7 +735,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         if (atomicityMode() == ATOMIC)
             return;
 
-        GridCacheTx tx = cache().txStart();
+        IgniteTx tx = cache().txStart();
 
         GridCacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);
 
@@ -770,7 +772,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         tx.commit();
 
-        GridTransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
+        TransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
 
         tx = cache().txStart(
             tCfg.getDefaultTxConcurrency(),

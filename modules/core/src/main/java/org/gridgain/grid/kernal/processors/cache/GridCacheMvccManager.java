@@ -17,6 +17,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -60,11 +61,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
     /** Locked keys. */
     @GridToStringExclude
-    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
+    private final ConcurrentMap<IgniteTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
 
     /** Near locked keys. Need separate map because mvcc manager is shared between caches. */
     @GridToStringExclude
-    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> nearLocked = newMap();
+    private final ConcurrentMap<IgniteTxKey<K>, GridDistributedCacheEntry<K, V>> nearLocked = newMap();
 
     /** Active futures mapped by version ID. */
     @GridToStringExclude
@@ -1023,7 +1024,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         /** */
         @GridToStringInclude
-        private final Map<GridCacheTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
+        private final Map<IgniteTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
             new ConcurrentHashMap8<>();
 
         /**
@@ -1092,8 +1093,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
          *
          */
         void recheck() {
-            for (Iterator<GridCacheTxKey<K>> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
-                GridCacheTxKey<K> key = it.next();
+            for (Iterator<IgniteTxKey<K>> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
+                IgniteTxKey<K> key = it.next();
 
                 GridCacheContext<K, V> cacheCtx = cctx.cacheContext(key.cacheId());
 
@@ -1155,11 +1156,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         /** {@inheritDoc} */
         @Override public String toString() {
             if (!pendingLocks.isEmpty()) {
-                Map<GridCacheVersion, GridCacheTxEx> txs = new HashMap<>(1, 1.0f);
+                Map<GridCacheVersion, IgniteTxEx> txs = new HashMap<>(1, 1.0f);
 
                 for (Collection<GridCacheMvccCandidate<K>> cands : pendingLocks.values())
                     for (GridCacheMvccCandidate<K> c : cands)
-                        txs.put(c.version(), cctx.tm().<GridCacheTxEx>tx(c.version()));
+                        txs.put(c.version(), cctx.tm().<IgniteTxEx>tx(c.version()));
 
                 return S.toString(FinishLockFuture.class, this, "txs=" + txs + ", super=" + super.toString());
             }

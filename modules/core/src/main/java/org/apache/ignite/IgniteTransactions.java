@@ -10,6 +10,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -25,7 +26,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart() throws IllegalStateException;
+    public IgniteTx txStart() throws IllegalStateException;
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -36,7 +37,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation);
+    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
@@ -50,7 +51,7 @@ public interface IgniteTransactions {
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, long timeout,
+    public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
         int txSize);
 
     /**
@@ -86,8 +87,8 @@ public interface IgniteTransactions {
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartAffinity(String cacheName, Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+    public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
@@ -122,8 +123,8 @@ public interface IgniteTransactions {
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
      */
-    public GridCacheTx txStartPartition(String cacheName, int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+    public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does
@@ -132,7 +133,7 @@ public interface IgniteTransactions {
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    @Nullable public GridCacheTx tx();
+    @Nullable public IgniteTx tx();
 
     /**
      * @return Transaction metrics.

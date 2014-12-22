@@ -14,12 +14,14 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -40,7 +42,7 @@ public class GridCacheSharedContext<K, V> {
     private List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
     /** Cache transaction manager. */
-    private GridCacheTxManager<K, V> txMgr;
+    private IgniteTxManager<K, V> txMgr;
 
     /** Partition exchange manager. */
     private GridCachePartitionExchangeManager<K, V> exchMgr;
@@ -73,7 +75,7 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
-        GridCacheTxManager<K, V> txMgr,
+        IgniteTxManager<K, V> txMgr,
         GridCacheVersionManager<K, V> verMgr,
         GridCacheMvccManager<K, V> mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -149,7 +151,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @return Transactions configuration.
      */
-    public GridTransactionsConfiguration txConfig() {
+    public TransactionsConfiguration txConfig() {
         return kernalCtx.config().getTransactionsConfiguration();
     }
 
@@ -230,7 +232,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Cache transaction manager.
      */
-    public GridCacheTxManager<K, V> tm() {
+    public IgniteTxManager<K, V> tm() {
         return txMgr;
     }
 
@@ -390,7 +392,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
-    public boolean txCompatible(GridCacheTxEx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
+    public boolean txCompatible(IgniteTxEx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.system() ^ tx.system())
             return false;
 
@@ -410,7 +412,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws GridCacheFlagException If given flags are conflicting with given transaction.
      */
     public void checkTxFlags(@Nullable Collection<GridCacheFlag> flags) throws GridCacheFlagException {
-        GridCacheTxEx tx = tm().userTxx();
+        IgniteTxEx tx = tm().userTxx();
 
         if (tx == null || F.isEmpty(flags))
             return;
@@ -437,7 +439,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to close.
      * @throws IgniteCheckedException If failed.
      */
-    public void endTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+    public void endTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
@@ -452,7 +454,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    public IgniteFuture<GridCacheTx> commitTxAsync(GridCacheTxEx<K, V> tx) {
+    public IgniteFuture<IgniteTx> commitTxAsync(IgniteTxEx<K, V> tx) {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())
@@ -474,7 +476,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to rollback.
      * @throws IgniteCheckedException If failed.
      */
-    public void rollbackTx(GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+    public void rollbackTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {

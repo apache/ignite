@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -21,7 +22,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Grid transactions implementation.
@@ -38,8 +39,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart() throws IllegalStateException {
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+    @Override public IgniteTx txStart() throws IllegalStateException {
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -51,11 +52,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         return txStart0(
             concurrency,
@@ -67,7 +68,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -83,7 +84,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         );
     }
 
-    @Override public GridCacheTx txStartSystem(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
@@ -107,15 +108,15 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sys System flag.
      * @return Transaction.
      */
-    private GridCacheTx txStart0(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    private IgniteTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
-        GridTransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        GridCacheTxEx<K, V> tx = (GridCacheTxEx<K, V>)cctx.tm().userTx();
+        IgniteTxEx<K, V> tx = (IgniteTxEx<K, V>)cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -138,13 +139,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         assert tx != null;
 
         // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx, cctx);
+        return new IgniteTxProxyImpl<>(tx, cctx);
 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartAffinity(String cacheName, Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
@@ -155,8 +156,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartPartition(String cacheName, int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
@@ -184,16 +185,16 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private GridCacheTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
+    private IgniteTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
         throws IllegalStateException, IgniteCheckedException {
-        GridCacheTx tx = cctx.tm().userTx();
+        IgniteTx tx = cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
                 "(current thread already has a transaction): " + tx);
 
-        GridCacheTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
+        IgniteTxLocalAdapter<K, V> tx0 = cctx.tm().newTx(
             false,
             false,
             sys,
@@ -224,11 +225,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         }
 
         // Wrap into proxy.
-        return new GridCacheTxProxyImpl<>(tx0, cctx);
+        return new IgniteTxProxyImpl<>(tx0, cctx);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheTx tx() {
+    @Nullable @Override public IgniteTx tx() {
         return cctx.tm().userTx();
     }
 

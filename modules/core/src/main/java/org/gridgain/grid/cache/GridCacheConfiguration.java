@@ -13,6 +13,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
@@ -1252,8 +1253,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Maximum batch size for write-behind cache store operations. Store operations (get or remove)
      * are combined in a batch of this size to be passed to
-     * {@link GridCacheStore#putAll(GridCacheTx, Map)} or
-     * {@link GridCacheStore#removeAll(GridCacheTx, Collection)} methods.
+     * {@link GridCacheStore#putAll(IgniteTx, Map)} or
+     * {@link GridCacheStore#removeAll(IgniteTx, Collection)} methods.
      * <p/>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_BATCH_SIZE}.
      *

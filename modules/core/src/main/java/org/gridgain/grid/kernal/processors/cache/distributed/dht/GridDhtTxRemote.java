@@ -11,9 +11,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -80,12 +81,12 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
@@ -140,12 +141,12 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -230,8 +231,8 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        for (Iterator<GridCacheTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
-            GridCacheTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
+            IgniteTxEntry<K, V> e = it.next();
 
             GridCacheEntryEx<K, V> cached = e.cached();
 
@@ -249,7 +250,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
+    public void addWrite(IgniteTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -282,7 +283,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      */
     public void addWrite(GridCacheContext<K, V> cacheCtx,
         GridCacheOperation op,
-        GridCacheTxKey<K> key,
+        IgniteTxKey<K> key,
         byte[] keyBytes,
         @Nullable V val,
         @Nullable byte[] valBytes,
@@ -295,7 +296,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx,
+        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
             this,
             op,
             val,

@@ -19,6 +19,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
@@ -1568,19 +1569,19 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable GridCacheTx tx, Object key)
+        @Override public Object load(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key)
+        @Override public void remove(@Nullable IgniteTx tx, Object key)
             throws IgniteCheckedException {
             map.remove(key);
         }

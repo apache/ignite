@@ -13,10 +13,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -26,7 +28,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Near cache for transactional cache.
@@ -98,11 +100,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
@@ -234,7 +236,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ClassLoader ldr = ctx.deploy().globalLoader();
 
         if (ldr != null) {
-            Collection<GridCacheTxKey<K>> evicted = null;
+            Collection<IgniteTxKey<K>> evicted = null;
 
             for (int i = 0; i < nearKeys.size(); i++) {
                 K key = nearKeys.get(i);
@@ -242,7 +244,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 if (key == null)
                     continue;
 
-                GridCacheTxKey<K> txKey = ctx.txKey(key);
+                IgniteTxKey<K> txKey = ctx.txKey(key);
 
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
@@ -291,7 +293,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     tx = ctx.tm().onCreated(tx);
 
                                     if (tx == null || !ctx.tm().onStarted(tx))
-                                        throw new GridCacheTxRollbackException("Failed to acquire lock " +
+                                        throw new IgniteTxRollbackException("Failed to acquire lock " +
                                             "(transaction has been completed): " + req.version());
                                 }
 
@@ -359,7 +361,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (tx != null && evicted != null) {
                 assert !evicted.isEmpty();
 
-                for (GridCacheTxKey<K> evict : evicted)
+                for (IgniteTxKey<K> evict : evicted)
                     tx.addEvicted(evict);
             }
         }
@@ -391,8 +393,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgniteTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
+        IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
             retval, timeout, filter);
 

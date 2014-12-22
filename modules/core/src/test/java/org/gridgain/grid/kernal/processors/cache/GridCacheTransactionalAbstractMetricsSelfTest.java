@@ -9,10 +9,11 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Transactional cache metrics test.
@@ -195,12 +196,12 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      * @param put Put some data if {@code true}.
      * @throws Exception If failed.
      */
-    private void testCommits(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, boolean put)
+    private void testCommits(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            GridCacheTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = cache.txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)
@@ -235,12 +236,12 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      * @param put Put some data if {@code true}.
      * @throws Exception If failed.
      */
-    private void testRollbacks(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    private void testRollbacks(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         boolean put) throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
-            GridCacheTx tx = cache.txStart(concurrency, isolation);
+            IgniteTx tx = cache.txStart(concurrency, isolation);
 
             if (put)
                 for (int j = 0; j < keyCount(); j++)

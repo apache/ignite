@@ -13,6 +13,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -81,10 +82,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
         long topVer,
-        GridCacheTxEx<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> reads,
-        Collection<GridCacheTxEntry<K, V>> writes,
-        GridCacheTxKey grpLockKey,
+        IgniteTxEx<K, V> tx,
+        Collection<IgniteTxEntry<K, V>> reads,
+        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteTxKey grpLockKey,
         boolean partLock,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
@@ -184,13 +185,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<GridCacheTxEntry<K, V>> cloneEntries(Collection<GridCacheTxEntry<K, V>> c) {
+    private Collection<IgniteTxEntry<K, V>> cloneEntries(Collection<IgniteTxEntry<K, V>> c) {
         if (F.isEmpty(c))
             return c;
 
-        Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
+        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
-        for (GridCacheTxEntry<K, V> e : c) {
+        for (IgniteTxEntry<K, V> e : c) {
             GridCacheContext<K, V> cacheCtx = e.context();
 
             // Clone only if it is a near cache.

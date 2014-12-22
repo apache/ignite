@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -421,7 +422,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    GridCacheTx tx = cache.txStart();
+                    IgniteTx tx = cache.txStart();
 
                     TestValue val = new TestValue(0);
 
@@ -458,7 +459,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    GridCacheTx tx = cache.txStart();
+                    IgniteTx tx = cache.txStart();
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);

@@ -32,6 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
@@ -546,8 +547,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key to construct tx key for.
      * @return Transaction key.
      */
-    public GridCacheTxKey<K> txKey(K key) {
-        return new GridCacheTxKey<>(key, cacheId);
+    public IgniteTxKey<K> txKey(K key) {
+        return new IgniteTxKey<>(key, cacheId);
     }
 
     /**
@@ -781,7 +782,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache transaction manager.
      */
-    public GridCacheTxManager<K, V> tm() {
+    public IgniteTxManager<K, V> tm() {
          return sharedCtx.tm();
     }
 

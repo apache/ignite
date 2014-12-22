@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.clock.*;
@@ -28,8 +28,8 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -140,20 +140,20 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
      * @param isolation Isolation.
      * @throws Throwable If check failed.
      */
-    private void checkCommit(GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Throwable {
+    private void checkCommit(IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         GridCache<Integer, String> cache = cache(idx);
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
         try {
             cache.put(KEY, VAL);
 
             tx.commit();
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             log.warning("Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             tx.rollback();

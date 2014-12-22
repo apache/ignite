@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -196,7 +197,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -221,7 +222,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -243,7 +244,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -267,7 +268,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

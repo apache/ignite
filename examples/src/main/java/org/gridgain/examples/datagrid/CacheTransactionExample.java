@@ -10,14 +10,14 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 
 import java.io.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Demonstrates how to use cache transactions.
@@ -81,7 +81,7 @@ public class CacheTransactionExample {
         // Clone every object we get from cache, so we can freely update it.
         GridCacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
-        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct = cache.get(acctId);
 
             assert acct != null;

@@ -163,8 +163,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_PORT = 47100;
 
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    // FIXME IGNITE-41.
-    public static final int DFLT_SHMEM_PORT = -1;
+    public static final int DFLT_SHMEM_PORT = 48100;
 
     /** Default idle connection timeout (value is <tt>30000</tt>ms). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;

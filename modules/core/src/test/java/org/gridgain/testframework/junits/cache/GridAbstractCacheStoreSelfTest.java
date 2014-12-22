@@ -11,7 +11,7 @@ package org.gridgain.testframework.junits.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -48,7 +48,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      */
     public void testStore() throws Exception {
         // Create dummy transaction
-        GridCacheTx tx = new DummyTx();
+        IgniteTx tx = new DummyTx();
 
         store.put(tx, "k1", "v1");
         store.put(tx, "k2", "v2");
@@ -72,7 +72,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      * @throws IgniteCheckedException if failed.
      */
     public void testRollback() throws IgniteCheckedException {
-        GridCacheTx tx = new DummyTx();
+        IgniteTx tx = new DummyTx();
 
         // Put.
         store.put(tx, "k1", "v1");
@@ -157,7 +157,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      * @param commit Commit.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestAllOps(@Nullable GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) throws IgniteCheckedException {
         try {
             store.put(tx, "key1", "val1");
 
@@ -251,7 +251,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
             @Override
             public Object call() throws Exception {
                 for (int i = 0; i < 1000; i++) {
-                    GridCacheTx tx = rnd.nextBoolean() ? new DummyTx() : null;
+                    IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
 
                     int op = rnd.nextInt(10);
 
@@ -403,7 +403,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
     /**
      * Dummy transaction for test purposes.
      */
-    public static class DummyTx extends GridMetadataAwareAdapter implements GridCacheTx {
+    public static class DummyTx extends GridMetadataAwareAdapter implements IgniteTx {
         /** */
         private final IgniteUuid xid = IgniteUuid.randomUuid();
 
@@ -428,12 +428,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxIsolation isolation() {
+        @Nullable @Override public IgniteTxIsolation isolation() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxConcurrency concurrency() {
+        @Nullable @Override public IgniteTxConcurrency concurrency() {
             return null;
         }
 
@@ -448,7 +448,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public GridCacheTxState state() {
+        @Nullable @Override public IgniteTxState state() {
             return null;
         }
 
@@ -483,7 +483,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFuture<GridCacheTx> commitAsync() {
+        @Nullable @Override public IgniteFuture<IgniteTx> commitAsync() {
             return null;
         }
 

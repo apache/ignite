@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -47,18 +48,18 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /** No-op cache store. */
     private static final GridCacheStore store = new GridCacheStoreAdapter() {
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable GridCacheTx tx, Object key) {
+        @Override public Object load(@Nullable IgniteTx tx, Object key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key) {
+        @Override public void remove(@Nullable IgniteTx tx, Object key) {
             // No-op.
         }
     };

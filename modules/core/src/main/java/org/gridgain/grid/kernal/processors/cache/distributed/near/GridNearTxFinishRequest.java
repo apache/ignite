@@ -13,6 +13,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -33,6 +34,9 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** Explicit lock flag. */
     private boolean explicitLock;
+
+    /** Store enabled flag. */
+    private boolean storeEnabled;
 
     /** Topology version. */
     private long topVer;
@@ -60,6 +64,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param invalidate Invalidate flag.
      * @param sys System flag.
      * @param explicitLock Explicit lock flag.
+     * @param storeEnabled Store enabled flag.
      * @param topVer Topology version.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
@@ -78,19 +83,21 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         boolean syncCommit,
         boolean syncRollback,
         boolean explicitLock,
+        boolean storeEnabled,
         long topVer,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<GridCacheTxEntry<K, V>> writeEntries,
-        Collection<GridCacheTxEntry<K, V>> recoverEntries,
+        Collection<IgniteTxEntry<K, V>> writeEntries,
+        Collection<IgniteTxEntry<K, V>> recoverEntries,
         @Nullable UUID subjId,
         int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
             rolledbackVers, txSize, writeEntries, recoverEntries, null);
 
         this.explicitLock = explicitLock;
+        this.storeEnabled = storeEnabled;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -101,6 +108,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      */
     public boolean explicitLock() {
         return explicitLock;
+    }
+
+    /**
+     * @return Store enabled flag.
+     */
+    public boolean storeEnabled() {
+        return storeEnabled;
     }
 
     /**
@@ -156,6 +170,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         _clone.miniId = miniId;
         _clone.explicitLock = explicitLock;
+        _clone.storeEnabled = storeEnabled;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
@@ -207,6 +222,11 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
+            case 26:
+                if (!commState.putBoolean(storeEnabled))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -265,6 +285,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
+            case 26:
+                if (buf.remaining() < 1)
+                    return false;
+
+                storeEnabled = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

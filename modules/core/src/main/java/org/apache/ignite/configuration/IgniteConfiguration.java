@@ -379,7 +379,7 @@ public class IgniteConfiguration {
     private GridCacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private GridTransactionsConfiguration txCfg = new GridTransactionsConfiguration();
+    private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
     /** Configuration for .Net nodes. */
     private GridDotNetConfiguration dotNetCfg;
@@ -3130,7 +3130,7 @@ public class IgniteConfiguration {
      *
      * @return Transactions configuration.
      */
-    public GridTransactionsConfiguration getTransactionsConfiguration() {
+    public TransactionsConfiguration getTransactionsConfiguration() {
         return txCfg;
     }
 
@@ -3139,7 +3139,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(GridTransactionsConfiguration txCfg) {
+    public void setTransactionsConfiguration(TransactionsConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 

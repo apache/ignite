@@ -12,11 +12,12 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Check for specific support issue.
@@ -57,13 +58,13 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Object> locCache = grid(1).cache(null);
 
-            try (GridCacheTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putxIfAbsent(key, 0);
 
                 tx.commit();
             }
 
-            try (GridCacheTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(0, rmtCache.get(key));
 
                 rmtCache.putx(key, 1);
@@ -71,7 +72,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            try (GridCacheTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = rmtCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, rmtCache.get(key));
 
                 rmtCache.putx(key, 2);
@@ -115,11 +116,11 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             assertEquals(10, cache.get(key));
 
-            try (GridCacheTx ignored = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx ignored = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 assertEquals(10, cache.get(key));
             }
 
-            try (GridCacheTx ignored = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
+            try (IgniteTx ignored = cache.txStart(PESSIMISTIC, READ_COMMITTED)) {
                 assertEquals(10, cache.get(key));
             }
         }

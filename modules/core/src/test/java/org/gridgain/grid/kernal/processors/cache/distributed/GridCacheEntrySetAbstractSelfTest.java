@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.*;
@@ -18,8 +19,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -81,7 +82,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void putAndCheckEntrySet(GridCache<Object, Object> cache) throws Exception {
-        try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 
             if (total == null)

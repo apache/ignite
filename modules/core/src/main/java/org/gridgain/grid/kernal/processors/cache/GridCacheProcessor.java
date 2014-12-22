@@ -53,7 +53,7 @@ import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.GridComponentType.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
@@ -422,7 +422,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries());
+            return F.asList((GridCacheManager)ctx.queries(), ctx.continuousQueries(), ctx.store());
     }
 
     /**
@@ -568,8 +568,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
-            GridCacheStore nearStore = cacheStore(ctx.gridName(), cfg, isNearEnabled(cfg));
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(nearStore);
+            GridCacheStore store = cacheStore(ctx.gridName(), cfg);
+
+            GridCacheStoreManager storeMgr = new GridCacheStoreManager(store);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
@@ -707,10 +708,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
                 drMgr = ctx.createComponent(GridCacheDrManager.class);
-
-                GridCacheStore dhtStore = cacheStore(ctx.gridName(), cfg, false);
-
-                storeMgr = new GridCacheStoreManager(dhtStore);
 
                 cacheCtx = new GridCacheContext(
                     ctx,
@@ -858,7 +855,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx) {
-        GridCacheTxManager tm = new GridCacheTxManager();
+        IgniteTxManager tm = new IgniteTxManager();
         GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
@@ -901,6 +898,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         attrs.put(ATTR_CACHE, attrVals);
 
         attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
+
+        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
@@ -1004,6 +1003,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkCache(ClusterNode rmt) throws IgniteCheckedException {
+        checkTransactionConfiguration(rmt);
+
         GridCacheAttributes[] rmtAttrs = U.cacheAttributes(rmt);
         GridCacheAttributes[] locAttrs = U.cacheAttributes(ctx.discovery().localNode());
 
@@ -1013,8 +1014,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
         IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
-
-        // TODO GG-9141 Check tx configuration consistency.
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
@@ -1167,6 +1166,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "deploymentMode", "Deployment mode",
                     locDepMode, rmtDepMode, true);
             }
+        }
+    }
+
+    /**
+     * @param rmt Remote node to check.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
+        TransactionsConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
+
+        if (txCfg != null) {
+            TransactionsConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
+
+            if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
+                throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
+                    "(fix txSerializableEnabled property or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [rmtNodeId=" + rmt.id() +
+                    ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
+                    ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
         }
     }
 
@@ -1740,29 +1758,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param gridName Grid name.
      * @param cfg Cache configuration.
-     * @param near Whether or not store retrieved for near cache.
      * @return Instance if {@link GridCacheWriteBehindStore} if write-behind store is configured,
      *         or user-defined cache store.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCacheStore cacheStore(String gridName, GridCacheConfiguration cfg, boolean near) {
+    private GridCacheStore cacheStore(String gridName, GridCacheConfiguration cfg) {
         if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
             return cfg.getStore();
 
-        // Write-behind store is used in DHT cache only.
-        if (!near) {
-            GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
-                cfg.getStore());
+        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
+            cfg.getStore());
 
-            store.setFlushSize(cfg.getWriteBehindFlushSize());
-            store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
-            store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
-            store.setBatchSize(cfg.getWriteBehindBatchSize());
+        store.setFlushSize(cfg.getWriteBehindFlushSize());
+        store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
+        store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
+        store.setBatchSize(cfg.getWriteBehindBatchSize());
 
-            return store;
-        }
-        else
-            return cfg.getStore();
+        return store;
     }
 
     /**

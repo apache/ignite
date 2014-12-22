@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.lang.*;
@@ -122,7 +122,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable public V loadFromStore(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Nullable public V loadFromStore(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         if (store != null) {
             if (key instanceof GridCacheInternal)
                 // Never load internal keys from store as they are never persisted.
@@ -180,7 +180,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"unchecked"})
-    public boolean loadAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys,
+    public boolean loadAllFromStore(@Nullable IgniteTx tx, Collection<? extends K> keys,
         final IgniteBiInClosure<K, V> vis) throws IgniteCheckedException {
         if (store != null) {
             if (!keys.isEmpty()) {
@@ -296,7 +296,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putToStore(@Nullable GridCacheTx tx, K key, V val, GridCacheVersion ver)
+    public boolean putToStore(@Nullable IgniteTx tx, K key, V val, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
@@ -335,7 +335,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putAllToStore(@Nullable GridCacheTx tx, Map<K, IgniteBiTuple<V, GridCacheVersion>> map)
+    public boolean putAllToStore(@Nullable IgniteTx tx, Map<K, IgniteBiTuple<V, GridCacheVersion>> map)
         throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
@@ -393,7 +393,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeFromStore(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    public boolean removeFromStore(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         if (store != null) {
             // Never remove internal key from store as it is never persisted.
             if (key instanceof GridCacheInternal)
@@ -429,7 +429,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeAllFromStore(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
+    public boolean removeAllFromStore(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
@@ -487,7 +487,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param commit Commit.
      * @throws IgniteCheckedException If failed.
      */
-    public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         store.txEnd(tx, commit);
     }
 

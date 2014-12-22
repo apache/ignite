@@ -12,7 +12,7 @@ package org.gridgain.grid.cache.store;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -30,7 +30,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     private String cacheName;
 
     /** {@inheritDoc} */
-    @Override public String load(@Nullable GridCacheTx tx, String key)
+    @Override public String load(@Nullable IgniteTx tx, String key)
         throws IgniteCheckedException {
         return null;
     }
@@ -59,38 +59,38 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable GridCacheTx tx,
+    @Override public void loadAll(@Nullable IgniteTx tx,
         @Nullable Collection<? extends String> keys, IgniteBiInClosure<String, String> c) throws IgniteCheckedException {
         for (String key : keys)
             c.apply(key, "val" + key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, String key, @Nullable String val)
+    @Override public void put(@Nullable IgniteTx tx, String key, @Nullable String val)
         throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable GridCacheTx tx,
+    @Override public void putAll(@Nullable IgniteTx tx,
         @Nullable Map<? extends String, ? extends String> map) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, String key)
+    @Override public void remove(@Nullable IgniteTx tx, String key)
         throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable GridCacheTx tx,
+    @Override public void removeAll(@Nullable IgniteTx tx,
         @Nullable Collection<? extends String> keys) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 }

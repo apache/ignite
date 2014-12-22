@@ -23,7 +23,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Tests for partitioned cache transactions.
  */
-public class GridCachePartitionedTxMultiThreadedSelfTest extends GridCacheTxMultiThreadedAbstractTest {
+public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiThreadedAbstractTest {
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

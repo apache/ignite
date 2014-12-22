@@ -22,7 +22,7 @@ import java.util.*;
  * Tests transaction consistency when originating node fails.
  */
 public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
-    GridCacheTxOriginatingNodeFailureAbstractSelfTest {
+    IgniteTxOriginatingNodeFailureAbstractSelfTest {
     /** */
     private static final int BACKUP_CNT = 2;
 

@@ -15,6 +15,7 @@ import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -325,14 +326,14 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, GridCacheSharedContext<K, V> ctx)
+    protected final void marshalTx(Iterable<IgniteTxEntry<K, V>> txEntries, GridCacheSharedContext<K, V> ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
         if (txEntries != null) {
             boolean transferExpiry = transferExpiryPolicy();
 
-            for (GridCacheTxEntry<K, V> e : txEntries) {
+            for (IgniteTxEntry<K, V> e : txEntries) {
                 if (transferExpiry)
                     e.transferExpiryPolicyIfNeeded();
 
@@ -357,13 +358,13 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void unmarshalTx(Iterable<GridCacheTxEntry<K, V>> txEntries, boolean near,
+    protected final void unmarshalTx(Iterable<IgniteTxEntry<K, V>> txEntries, boolean near,
         GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
         if (txEntries != null) {
-            for (GridCacheTxEntry<K, V> e : txEntries)
+            for (IgniteTxEntry<K, V> e : txEntries)
                 e.unmarshal(ctx, near, ldr);
         }
     }

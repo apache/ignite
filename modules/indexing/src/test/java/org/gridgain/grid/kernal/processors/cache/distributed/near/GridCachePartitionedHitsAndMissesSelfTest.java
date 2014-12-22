@@ -15,7 +15,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
@@ -51,10 +51,10 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        GridTransactionsConfiguration tCfg = new GridTransactionsConfiguration();
+        TransactionsConfiguration tCfg = new TransactionsConfiguration();
 
-        tCfg.setDefaultTxConcurrency(GridCacheTxConcurrency.PESSIMISTIC);
-        tCfg.setDefaultTxIsolation(GridCacheTxIsolation.REPEATABLE_READ);
+        tCfg.setDefaultTxConcurrency(IgniteTxConcurrency.PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(IgniteTxIsolation.REPEATABLE_READ);
 
         cfg.setTransactionsConfiguration(tCfg);
 

@@ -10,7 +10,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -64,7 +64,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         initStore(2);
 
         try {
-            GridCacheTx tx = null;
+            IgniteTx tx = null;
 
             store.put(tx, 1, "v1");
             store.put(tx, 2, "v2");

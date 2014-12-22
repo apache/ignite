@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -268,7 +269,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -340,7 +341,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -474,7 +475,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         this.ttl = ttl;
 
         // Make sure to update only user transaction.
-        GridCacheTxLocalAdapter<K, V> tx;
+        IgniteTxLocalAdapter<K, V> tx;
 
         if (ctx.isDht())
             tx = ctx.dht().near().context().tm().localTx();

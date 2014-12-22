@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -24,8 +25,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  *
@@ -222,10 +223,10 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, Integer> c = grid(0).cache(null);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.put(key, key));
 
@@ -247,10 +248,10 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveTxByteArray(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveTxByteArray(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, byte[]> c = grid(0).cache(null);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         byte[] val = new byte[] {key.byteValue()};
 
@@ -357,7 +358,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutAllGetAllRemoveAllTx(GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutAllGetAllRemoveAllTx(IgniteTxConcurrency txConcurrency) throws Exception {
         Map<Integer, Integer> map = new HashMap<>();
 
         for (int i = 0; i < 100; i++)
@@ -369,7 +370,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         assertTrue(map0.isEmpty());
 
-        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+        try (IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
             c.putAll(map);
 
             tx.commit();
@@ -382,7 +383,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (Map.Entry<Integer, Integer> e : map.entrySet())
             checkValue(e.getKey(), e.getValue());
 
-        try (GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
+        try (IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ)) {
             c.removeAll(map.keySet());
 
             tx.commit();
@@ -452,12 +453,12 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void checkPutGetRemoveObjectTx(Integer key, GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void checkPutGetRemoveObjectTx(Integer key, IgniteTxConcurrency txConcurrency) throws Exception {
         GridCache<Integer, TestValue> c = grid(0).cache(null);
 
         TestValue val = new TestValue(new byte[10]);
 
-        GridCacheTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
+        IgniteTx tx = c.txStart(txConcurrency, REPEATABLE_READ);
 
         assertNull(c.put(key, val));
 

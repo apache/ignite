@@ -10,6 +10,7 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -20,8 +21,8 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Checks basic node start/stop operations.
@@ -94,7 +95,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         Thread stopper = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    try (GridCacheTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx ignored = g0.cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         g0.cache(null).get(1);
 
                         latch.countDown();
