@@ -7194,6 +7194,25 @@ public abstract class GridUtils {
     }
 
     /**
+     * Gets cache distribution mode on given node or {@code null} if cache is not
+     * present on given node.
+     *
+     * @param n Node to check.
+     * @param cacheName Cache to check.
+     * @return Cache distribution mode or {@code null} if cache is not found.
+     */
+    @Nullable public static GridCacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
+        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
+
+        if (caches != null)
+            for (GridCacheAttributes attrs : caches)
+                if (F.eq(cacheName, attrs.cacheName()))
+                    return attrs.partitionedTaxonomy();
+
+        return null;
+    }
+
+    /**
      * Checks if given node has near cache enabled for the specified
      * partitioned cache.
      *
