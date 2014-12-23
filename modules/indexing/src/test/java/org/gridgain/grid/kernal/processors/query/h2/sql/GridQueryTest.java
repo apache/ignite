@@ -137,7 +137,7 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        GridSqlSelect gridSelect = ses.toGridSelect(select);
+        GridSqlSelect gridSelect = ses.parse(select);
 
         //System.out.println(select.getPlanSQL());
         System.out.println(gridSelect.getSQL());
@@ -154,17 +154,6 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
         GridH2Indexing idx = U.field(qryProcessor, "idx");
 
         return (JdbcConnection)idx.connectionForSpace(null);
-    }
-
-    /**
-     * @param sql Sql.
-     */
-    private GridSqlSelect toGridSelect(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
-
-        Select select = (Select)ses.prepare(sql);
-
-        return new GridSqlQueryParser().toGridSelect(select);
     }
 
     /**
@@ -208,7 +197,7 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
         String res;
 
         if (prepared instanceof Select)
-            res = ses.toGridSelect((Select)prepared).getSQL();
+            res = ses.parse((Select) prepared).getSQL();
         else
             throw new UnsupportedOperationException();
 

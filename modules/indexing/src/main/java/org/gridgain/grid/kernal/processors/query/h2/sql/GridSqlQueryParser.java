@@ -11,12 +11,15 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.h2.command.dml.*;
+import org.h2.engine.*;
 import org.h2.expression.*;
+import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
+import java.sql.*;
 import java.util.*;
 import java.util.Set;
 
@@ -130,9 +133,20 @@ public class GridSqlQueryParser {
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
+     * @param conn Connection.
+     * @param select Select query.
+     * @return Parsed select query.
+     */
+    public static GridSqlSelect parse(Connection conn, String select) {
+        Session ses = (Session)((JdbcConnection)conn).getSession();
+
+        return new GridSqlQueryParser().parse((Select)ses.prepare(select));
+    }
+
+    /**
      * @param filter Filter.
      */
-    private GridSqlElement toGridTableFilter(TableFilter filter) {
+    private GridSqlElement parse(TableFilter filter) {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
@@ -145,7 +159,7 @@ public class GridSqlQueryParser {
 
                 assert0(qry instanceof Select, qry);
 
-                res = new GridSqlSubquery(toGridSelect((Select)qry));
+                res = new GridSqlSubquery(parse((Select)qry));
             }
             else
                 throw new IgniteException("Unsupported query: " + filter);
@@ -164,7 +178,7 @@ public class GridSqlQueryParser {
     /**
      * @param select Select.
      */
-    public GridSqlSelect toGridSelect(Select select) {
+    public GridSqlSelect parse(Select select) {
         GridSqlSelect res = (GridSqlSelect)h2ObjToGridObj.get(select);
 
         if (res != null)
@@ -177,7 +191,7 @@ public class GridSqlQueryParser {
         res.distinct(select.isDistinct());
 
         Expression where = CONDITION.get(select);
-        res.where(toGridExpression(where));
+        res.where(parseExpression(where));
 
         Set<TableFilter> allFilers = new HashSet<>(select.getTopFilters());
 
@@ -191,7 +205,7 @@ public class GridSqlQueryParser {
             assert0(filter.getJoinCondition() == null, select);
             assert0(filter.getFilterCondition() == null, select);
 
-            GridSqlElement gridFilter = toGridTableFilter(filter);
+            GridSqlElement gridFilter = parse(filter);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter);
 
@@ -211,7 +225,7 @@ public class GridSqlQueryParser {
 
         if (grpIdx != null) {
             for (int idx : grpIdx)
-                res.addGroupExpression(toGridExpression(expressions.get(idx)));
+                res.addGroupExpression(parseExpression(expressions.get(idx)));
         }
 
         assert0(select.getHaving() == null, select);
@@ -219,10 +233,10 @@ public class GridSqlQueryParser {
         int havingIdx = HAVING_INDEX.get(select);
 
         if (havingIdx >= 0)
-            res.having(toGridExpression(expressions.get(havingIdx)));
+            res.having(parseExpression(expressions.get(havingIdx)));
 
         for (int i = 0; i < select.getColumnCount(); i++)
-            res.addSelectExpression(toGridExpression(expressions.get(i)));
+            res.addSelectExpression(parseExpression(expressions.get(i)));
 
         SortOrder sortOrder = select.getSortOrder();
 
@@ -231,7 +245,7 @@ public class GridSqlQueryParser {
             int[] sortTypes = sortOrder.getSortTypes();
 
             for (int i = 0; i < indexes.length; i++)
-                res.addSort(toGridExpression(expressions.get(indexes[i])), sortTypes[i]);
+                res.addSort(parseExpression(expressions.get(indexes[i])), sortTypes[i]);
         }
 
         return res;
@@ -240,14 +254,14 @@ public class GridSqlQueryParser {
     /**
      * @param expression Expression.
      */
-    private GridSqlElement toGridExpression(@Nullable Expression expression) {
+    private GridSqlElement parseExpression(@Nullable Expression expression) {
         if (expression == null)
             return null;
 
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(expression);
 
         if (res == null) {
-            res = toGridExpression0(expression);
+            res = parseExpression0(expression);
 
             h2ObjToGridObj.put(expression, res);
         }
@@ -258,17 +272,17 @@ public class GridSqlQueryParser {
     /**
      * @param expression Expression.
      */
-    @NotNull private GridSqlElement toGridExpression0(@NotNull Expression expression) {
+    private GridSqlElement parseExpression0(Expression expression) {
         if (expression instanceof ExpressionColumn) {
             TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
 
-            GridSqlElement gridTblFilter = toGridTableFilter(tblFilter);
+            GridSqlElement gridTblFilter = parse(tblFilter);
 
             return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
         }
 
         if (expression instanceof Alias)
-            return new GridSqlAlias(expression.getAlias(), toGridExpression(expression.getNonAliasExpression()), true);
+            return new GridSqlAlias(expression.getAlias(), parseExpression(expression.getNonAliasExpression()), true);
 
         if (expression instanceof ValueExpression)
             return new GridSqlConst(expression.getValue(null));
@@ -281,12 +295,12 @@ public class GridSqlQueryParser {
             if (type == Operation.NEGATE) {
                 assert OPERATION_RIGHT.get(operation) == null;
 
-                return new GridSqlOperation(GridSqlOperationType.NEGATE, toGridExpression(OPERATION_LEFT.get(operation)));
+                return new GridSqlOperation(GridSqlOperationType.NEGATE, parseExpression(OPERATION_LEFT.get(operation)));
             }
 
             return new GridSqlOperation(OPERATION_OP_TYPES[type],
-                toGridExpression(OPERATION_LEFT.get(operation)),
-                toGridExpression(OPERATION_RIGHT.get(operation)));
+                parseExpression(OPERATION_LEFT.get(operation)),
+                parseExpression(OPERATION_RIGHT.get(operation)));
         }
 
         if (expression instanceof Comparison) {
@@ -296,18 +310,18 @@ public class GridSqlQueryParser {
 
             assert opType != null : COMPARISON_TYPE.get(cmp);
 
-            GridSqlElement left = toGridExpression(COMPARISON_LEFT.get(cmp));
+            GridSqlElement left = parseExpression(COMPARISON_LEFT.get(cmp));
 
             if (opType.childrenCount() == 1)
                 return new GridSqlOperation(opType, left);
 
-            GridSqlElement right = toGridExpression(COMPARISON_RIGHT.get(cmp));
+            GridSqlElement right = parseExpression(COMPARISON_RIGHT.get(cmp));
 
             return new GridSqlOperation(opType, left, right);
         }
 
         if (expression instanceof ConditionNot)
-            return new GridSqlOperation(NOT, toGridExpression(expression.getNotIfPossible(null)));
+            return new GridSqlOperation(NOT, parseExpression(expression.getNotIfPossible(null)));
 
         if (expression instanceof ConditionAndOr) {
             ConditionAndOr andOr = (ConditionAndOr)expression;
@@ -317,7 +331,7 @@ public class GridSqlQueryParser {
             assert type == ConditionAndOr.AND || type == ConditionAndOr.OR;
 
             return new GridSqlOperation(type == ConditionAndOr.AND ? AND : OR,
-                toGridExpression(ANDOR_LEFT.get(andOr)), toGridExpression(ANDOR_RIGHT.get(andOr)));
+                parseExpression(ANDOR_LEFT.get(andOr)), parseExpression(ANDOR_RIGHT.get(andOr)));
         }
 
         if (expression instanceof Subquery) {
@@ -325,18 +339,18 @@ public class GridSqlQueryParser {
 
             assert0(qry instanceof Select, expression);
 
-            return new GridSqlSubquery(toGridSelect((Select)qry));
+            return new GridSqlSubquery(parse((Select) qry));
         }
 
         if (expression instanceof ConditionIn) {
             GridSqlOperation res = new GridSqlOperation(IN);
 
-            res.addChild(toGridExpression(LEFT_CI.get((ConditionIn)expression)));
+            res.addChild(parseExpression(LEFT_CI.get((ConditionIn) expression)));
 
             List<Expression> vals = VALUE_LIST_CI.get((ConditionIn)expression);
 
             for (Expression val : vals)
-                res.addChild(toGridExpression(val));
+                res.addChild(parseExpression(val));
 
             return res;
         }
@@ -344,12 +358,12 @@ public class GridSqlQueryParser {
         if (expression instanceof ConditionInConstantSet) {
             GridSqlOperation res = new GridSqlOperation(IN);
 
-            res.addChild(toGridExpression(LEFT_CICS.get((ConditionInConstantSet)expression)));
+            res.addChild(parseExpression(LEFT_CICS.get((ConditionInConstantSet) expression)));
 
             List<Expression> vals = VALUE_LIST_CICS.get((ConditionInConstantSet)expression);
 
             for (Expression val : vals)
-                res.addChild(toGridExpression(val));
+                res.addChild(parseExpression(val));
 
             return res;
         }
@@ -363,13 +377,13 @@ public class GridSqlQueryParser {
             assert0(!all, expression);
             assert0(compareType == Comparison.EQUAL, expression);
 
-            res.addChild(toGridExpression(LEFT_CIS.get((ConditionInSelect)expression)));
+            res.addChild(parseExpression(LEFT_CIS.get((ConditionInSelect) expression)));
 
             Query qry = QUERY.get((ConditionInSelect)expression);
 
             assert0(qry instanceof Select, qry);
 
-            res.addChild(new GridSqlSubquery(toGridSelect((Select)qry)));
+            res.addChild(new GridSqlSubquery(parse((Select) qry)));
 
             return res;
         }
@@ -379,8 +393,8 @@ public class GridSqlQueryParser {
 
             boolean regexp = REGEXP_CL.get((CompareLike)expression);
 
-            return new GridSqlOperation(regexp ? REGEXP : LIKE, toGridExpression(LEFT.get((CompareLike)expression)),
-                toGridExpression(RIGHT.get((CompareLike)expression)));
+            return new GridSqlOperation(regexp ? REGEXP : LIKE, parseExpression(LEFT.get((CompareLike) expression)),
+                parseExpression(RIGHT.get((CompareLike) expression)));
         }
 
         if (expression instanceof Function) {
@@ -389,7 +403,7 @@ public class GridSqlQueryParser {
             GridSqlFunction res = new GridSqlFunction(f.getName());
 
             for (Expression arg : f.getArgs())
-                res.addChild(toGridExpression(arg));
+                res.addChild(parseExpression(arg));
 
             if (f.getFunctionType() == Function.CAST)
                 res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
@@ -408,7 +422,7 @@ public class GridSqlQueryParser {
             Expression on = ON.get((Aggregate)expression);
 
             if (on != null)
-                res.addChild(toGridExpression(on));
+                res.addChild(parseExpression(on));
 
             return res;
         }
