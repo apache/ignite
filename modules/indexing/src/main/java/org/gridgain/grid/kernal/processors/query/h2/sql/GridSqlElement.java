@@ -9,8 +9,6 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
-import org.jetbrains.annotations.*;
-
 import java.util.*;
 
 /**
@@ -34,22 +32,24 @@ public abstract class GridSqlElement implements Cloneable {
      * @param expr Expr.
      */
     public void addChild(GridSqlElement expr) {
-        assert expr != null;
+        if (expr == null)
+            throw new NullPointerException();
 
         children.add(expr);
     }
 
     /**
-     *
+     * @return First child.
      */
-    @NotNull public GridSqlElement child() {
+    public GridSqlElement child() {
         return children.get(0);
     }
 
     /**
-     *
+     * @param idx Index.
+     * @return Child.
      */
-    @NotNull public GridSqlElement child(int idx) {
+    public GridSqlElement child(int idx) {
         return children.get(idx);
     }
 

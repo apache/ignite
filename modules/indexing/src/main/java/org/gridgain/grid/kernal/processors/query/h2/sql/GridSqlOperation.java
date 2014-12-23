@@ -9,19 +9,17 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
-import org.jetbrains.annotations.*;
-
 /**
- *
+ * Unary or binary operation.
  */
-public class GridOperation extends GridSqlElement {
+public class GridSqlOperation extends GridSqlElement {
     /** */
-    private final GridOperationType opType;
+    private final GridSqlOperationType opType;
 
     /**
      * @param opType Operation type.
      */
-    public GridOperation(@NotNull GridOperationType opType) {
+    public GridSqlOperation(GridSqlOperationType opType) {
         this.opType = opType;
     }
 
@@ -29,7 +27,7 @@ public class GridOperation extends GridSqlElement {
      * @param opType Op type.
      * @param arg argument.
      */
-    public GridOperation(GridOperationType opType, GridSqlElement arg) {
+    public GridSqlOperation(GridSqlOperationType opType, GridSqlElement arg) {
         this(opType);
 
         addChild(arg);
@@ -40,7 +38,7 @@ public class GridOperation extends GridSqlElement {
      * @param left Left.
      * @param right Right.
      */
-    public GridOperation(GridOperationType opType, GridSqlElement left, GridSqlElement right) {
+    public GridSqlOperation(GridSqlOperationType opType, GridSqlElement left, GridSqlElement right) {
         this(opType);
 
         addChild(left);
@@ -64,7 +62,7 @@ public class GridOperation extends GridSqlElement {
     /**
      * @return Operation type.
      */
-    public GridOperationType opType() {
+    public GridSqlOperationType opType() {
         return opType;
     }
 

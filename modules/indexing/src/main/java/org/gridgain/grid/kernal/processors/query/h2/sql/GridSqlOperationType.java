@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 import org.h2.util.*;
 
 /**
- *
+ * Operation type.
  */
-public enum GridOperationType {
+public enum GridSqlOperationType {
     // from org.h2.expression.Operation
     CONCAT(2, new BiExpressionSqlGenerator("||")),
     PLUS(2, new BiExpressionSqlGenerator("+")),
@@ -61,7 +61,7 @@ public enum GridOperationType {
      * @param childrenCnt Children count.
      * @param sqlGenerator sqlGenerator.
      */
-    GridOperationType(int childrenCnt, SqlGenerator sqlGenerator) {
+    GridSqlOperationType(int childrenCnt, SqlGenerator sqlGenerator) {
         this.childrenCnt = childrenCnt;
         this.sqlGenerator = sqlGenerator;
     }
@@ -69,7 +69,7 @@ public enum GridOperationType {
     /**
      * @param operation Operation.
      */
-    public String toSql(GridOperation operation) {
+    public String toSql(GridSqlOperation operation) {
         return sqlGenerator.getSql(operation);
     }
 
@@ -88,7 +88,7 @@ public enum GridOperationType {
         /**
          * @param operation Operation expression.
          */
-        public String getSql(GridOperation operation);
+        public String getSql(GridSqlOperation operation);
     }
 
     /**
@@ -107,7 +107,7 @@ public enum GridOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridOperation operation) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 2;
 
             return '(' + operation.child(0).getSQL() + " " + delim + " " + operation.child(1).getSQL() + ')';
@@ -120,7 +120,7 @@ public enum GridOperationType {
     private static class IntersectsSqlGenerator implements SqlGenerator {
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridOperation operation) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 2;
 
             return "(INTERSECTS(" + operation.child(0) + ", " + operation.child(1) + "))";
@@ -142,7 +142,7 @@ public enum GridOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridOperation operation) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 1;
 
             return '(' + text + ' ' + operation.child().getSQL() + ')';
@@ -164,7 +164,7 @@ public enum GridOperationType {
         }
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridOperation operation) {
+        @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 1;
 
             return '(' + operation.child().getSQL() + ' ' + text + ')';
@@ -177,7 +177,7 @@ public enum GridOperationType {
     private static class ConditionInSqlGenerator implements SqlGenerator {
 
         /** {@inheritDoc} */
-        @Override public String getSql(GridOperation operation) {
+        @Override public String getSql(GridSqlOperation operation) {
             StatementBuilder buff = new StatementBuilder("(");
 
             buff.append(operation.child(0).getSQL()).append(" IN(");

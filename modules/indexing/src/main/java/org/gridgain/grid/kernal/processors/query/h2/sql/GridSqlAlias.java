@@ -10,13 +10,11 @@
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.h2.command.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Alias for column or table.
  */
-public class GridAlias extends GridSqlElement {
-
+public class GridSqlAlias extends GridSqlElement {
     /** */
     private final String alias;
 
@@ -27,7 +25,7 @@ public class GridAlias extends GridSqlElement {
      * @param alias Alias.
      * @param expr Expr.
      */
-    public GridAlias(@NotNull String alias, @NotNull GridSqlElement expr) {
+    public GridSqlAlias(String alias, GridSqlElement expr) {
         this(alias, expr, false);
     }
 
@@ -36,7 +34,7 @@ public class GridAlias extends GridSqlElement {
      * @param expr Expr.
      * @param useAs Use 'AS' keyword.
      */
-    public GridAlias(@NotNull String alias, @NotNull GridSqlElement expr, boolean useAs) {
+    public GridSqlAlias(String alias, GridSqlElement expr, boolean useAs) {
         addChild(expr);
 
         this.useAs = useAs;
@@ -51,13 +49,7 @@ public class GridAlias extends GridSqlElement {
     /**
      * @return Alias.
      */
-    @NotNull
     public String alias() {
         return alias;
-    }
-
-    /** {@inheritDoc} */
-    public GridSqlElement getNonAliasExpression() {
-        return child();
     }
 }

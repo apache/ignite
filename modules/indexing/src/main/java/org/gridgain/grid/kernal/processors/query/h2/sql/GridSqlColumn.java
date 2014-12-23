@@ -10,10 +10,9 @@
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 /**
- *
+ * Column.
  */
 public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
-
     /** */
     private final GridSqlElement expressionInFrom;
 

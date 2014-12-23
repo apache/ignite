@@ -15,7 +15,7 @@ import org.jetbrains.annotations.*;
 /**
  * Table with optional schema.
  */
-public class GridTable extends GridSqlElement {
+public class GridSqlTable extends GridSqlElement {
     /** */
     private final String schema;
 
@@ -26,7 +26,7 @@ public class GridTable extends GridSqlElement {
      * @param schema Schema.
      * @param tblName Table name.
      */
-    public GridTable(@Nullable String schema, String tblName) {
+    public GridSqlTable(@Nullable String schema, String tblName) {
         this.schema = schema;
         this.tblName = tblName;
     }

@@ -12,14 +12,14 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 /**
  * Subquery.
  */
-public class GridSubquery extends GridSqlElement {
+public class GridSqlSubquery extends GridSqlElement {
     /** */
-    private GridSelect select;
+    private GridSqlSelect select;
 
     /**
      * @param select Select.
      */
-    public GridSubquery(GridSelect select) {
+    public GridSqlSubquery(GridSqlSelect select) {
         this.select = select;
     }
 
@@ -31,14 +31,14 @@ public class GridSubquery extends GridSqlElement {
     /**
      * @return Select.
      */
-    public GridSelect select() {
+    public GridSqlSelect select() {
         return select;
     }
 
     /**
      * @param select New select.
      */
-    public void select(GridSelect select) {
+    public void select(GridSqlSelect select) {
         this.select = select;
     }
 }

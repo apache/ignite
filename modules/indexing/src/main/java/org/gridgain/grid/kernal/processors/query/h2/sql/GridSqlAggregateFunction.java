@@ -11,15 +11,14 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.h2.util.*;
 
-import static org.gridgain.grid.kernal.processors.query.h2.sql.GridFunctionType.*;
+import static org.gridgain.grid.kernal.processors.query.h2.sql.GridSqlFunctionType.*;
 
 /**
  * Aggregate function.
  */
-public class GridAggregateFunction extends GridSqlFunction {
-
+public class GridSqlAggregateFunction extends GridSqlFunction {
     /** */
-    private static final GridFunctionType[] TYPE_INDEX = new GridFunctionType[]{
+    private static final GridSqlFunctionType[] TYPE_INDEX = new GridSqlFunctionType[]{
         COUNT_ALL, COUNT, GROUP_CONCAT, SUM, MIN, MAX, AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, BOOL_OR,
         BOOL_AND, SELECTIVITY, HISTOGRAM,
     };
@@ -31,7 +30,7 @@ public class GridAggregateFunction extends GridSqlFunction {
      * @param distinct Distinct.
      * @param type Type.
      */
-    public GridAggregateFunction(boolean distinct, GridFunctionType type) {
+    public GridSqlAggregateFunction(boolean distinct, GridSqlFunctionType type) {
         super(type);
 
         this.distinct = distinct;
@@ -41,7 +40,7 @@ public class GridAggregateFunction extends GridSqlFunction {
      * @param distinct Distinct.
      * @param typeId Type.
      */
-    public GridAggregateFunction(boolean distinct, int typeId) {
+    public GridSqlAggregateFunction(boolean distinct, int typeId) {
         this(distinct, TYPE_INDEX[typeId]);
     }
 

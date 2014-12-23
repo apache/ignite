@@ -15,9 +15,9 @@ import org.h2.util.*;
 import java.util.*;
 
 /**
- *
+ * Select query.
  */
-public class GridSelect implements Cloneable {
+public class GridSqlSelect implements Cloneable {
     /** */
     private boolean distinct;
 
@@ -81,8 +81,8 @@ public class GridSelect implements Cloneable {
             for (GridSqlElement expression : groups) {
                 buff.appendExceptFirst(", ");
 
-                if (expression instanceof GridAlias)
-                    buff.append(StringUtils.unEnclose(((GridAlias)expression).getNonAliasExpression().getSQL()));
+                if (expression instanceof GridSqlAlias)
+                    buff.append(StringUtils.unEnclose((expression.child().getSQL())));
                 else
                     buff.append(StringUtils.unEnclose(expression.getSQL()));
             }
@@ -224,9 +224,9 @@ public class GridSelect implements Cloneable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSelect clone() {
+    @Override public GridSqlSelect clone() {
         try {
-            GridSelect res = (GridSelect)super.clone();
+            GridSqlSelect res = (GridSqlSelect)super.clone();
 
             res.select = new ArrayList<>(select);
             res.groups = new ArrayList<>(groups);

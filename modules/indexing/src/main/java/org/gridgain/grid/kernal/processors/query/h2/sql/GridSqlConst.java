@@ -14,14 +14,14 @@ import org.h2.value.*;
 /**
  * Constant value.
  */
-public class GridValueExpression extends GridSqlElement implements GridSqlValue {
+public class GridSqlConst extends GridSqlElement implements GridSqlValue {
     /** */
     private final Value val;
 
     /**
      * @param val Value.
      */
-    public GridValueExpression(Value val) {
+    public GridSqlConst(Value val) {
         this.val = val;
     }
 

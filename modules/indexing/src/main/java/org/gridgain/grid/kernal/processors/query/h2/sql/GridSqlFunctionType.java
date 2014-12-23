@@ -14,7 +14,7 @@ import org.h2.expression.*;
 /**
  * Full list of available functions see at {@link Function}
  */
-public enum GridFunctionType {
+public enum GridSqlFunctionType {
     ABS(1), CEIL(1), FLOOR(1), COS(1), PI(0), POWER(2), RAND(-1), ROUND(1),
     CASE(-1), CAST(1), CONVERT(1), EXTRACT(2),
     DAY_OF_MONTH(1), DAY_OF_WEEK(1), DAY_OF_YEAR(1),
@@ -32,7 +32,7 @@ public enum GridFunctionType {
     /**
      * @param argCnt Count.
      */
-    GridFunctionType(int argCnt) {
+    GridSqlFunctionType(int argCnt) {
         name = name();
         this.argCnt = argCnt;
     }
@@ -41,7 +41,7 @@ public enum GridFunctionType {
      * @param name Name.
      * @param argCnt Count.
      */
-    GridFunctionType(String name, int argCnt) {
+    GridSqlFunctionType(String name, int argCnt) {
         this.name = name;
         this.argCnt = argCnt;
     }

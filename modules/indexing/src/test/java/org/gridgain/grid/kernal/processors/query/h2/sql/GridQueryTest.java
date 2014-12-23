@@ -135,9 +135,9 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
     public void testExample1() throws Exception {
         Select select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
 
-        GridQueryParser ses = new GridQueryParser();
+        GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        GridSelect gridSelect = ses.toGridSelect(select);
+        GridSqlSelect gridSelect = ses.toGridSelect(select);
 
         //System.out.println(select.getPlanSQL());
         System.out.println(gridSelect.getSQL());
@@ -159,12 +159,12 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
     /**
      * @param sql Sql.
      */
-    private GridSelect toGridSelect(String sql) throws Exception {
+    private GridSqlSelect toGridSelect(String sql) throws Exception {
         Session ses = (Session)connection().getSession();
 
         Select select = (Select)ses.prepare(sql);
 
-        return new GridQueryParser().toGridSelect(select);
+        return new GridSqlQueryParser().toGridSelect(select);
     }
 
     /**
@@ -203,7 +203,7 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridQueryParser ses = new GridQueryParser();
+        GridSqlQueryParser ses = new GridSqlQueryParser();
 
         String res;
 
