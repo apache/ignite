@@ -24,7 +24,7 @@ import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 /**
  * Tests for partitioned cache transactions.
  */
-public class GridCachePartitionedTxSingleThreadedSelfTest extends GridCacheTxSingleThreadedAbstractTest {
+public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

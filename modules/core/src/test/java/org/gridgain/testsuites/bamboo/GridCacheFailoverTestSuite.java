@@ -26,10 +26,6 @@ public class GridCacheFailoverTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Failover Test Suite");
 
-        // TODO GG-9141
-        if (true)
-            return suite;
-
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
         // Group lock failover.

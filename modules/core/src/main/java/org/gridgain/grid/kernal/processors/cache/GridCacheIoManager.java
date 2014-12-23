@@ -65,9 +65,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /** Deployment enabled. */
     private boolean depEnabled;
 
-    /** IO policy. */
-    private GridIoPolicy plc;
-
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
         @SuppressWarnings("unchecked")
@@ -131,10 +128,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     @Override public void start0() throws IgniteCheckedException {
         retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
-
-        //String cacheName = cctx.name(); TODO GG-9141 how to determine policy?
-
-        plc = SYSTEM_POOL; // TODO GG-9141 CU.isDrSystemCache(cacheName) ? DR_POOL : SYSTEM_POOL;
 
         depEnabled = cctx.gridDeploy().enabled();
 
@@ -333,7 +326,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
+     * @throws ClusterTopologyException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
         send(node, msg, SYSTEM_POOL);
@@ -345,7 +338,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws org.apache.ignite.cluster.ClusterTopologyException If receiver left.
+     * @throws ClusterTopologyException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
@@ -444,7 +437,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                 else
                     msg0 = (GridCacheMessage<K, V>)msg.clone();
 
-                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, plc);
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, SYSTEM_POOL);
 
                 boolean added = false;
 
@@ -537,6 +530,23 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     }
 
     /**
+     * Sends communication message.
+     *
+     * @param nodeId ID of node to send the message to.
+     * @param msg Message to send.
+     * @throws IgniteCheckedException If sending failed.
+     */
+    public void send(UUID nodeId, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
+        ClusterNode n = cctx.discovery().node(nodeId);
+
+        if (n == null)
+            throw new ClusterTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
+                msg + ']');
+
+        send(n, msg, plc);
+    }
+
+    /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param msgId Ordered message ID.
@@ -554,7 +564,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             try {
                 cnt++;
 
-                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, plc, timeout, false);
+                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, SYSTEM_POOL, timeout, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +

@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -67,7 +67,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, GridCacheTx tx, @Nullable GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, IgniteTx tx, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
         String cloClsName, String taskName) {
         addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
@@ -89,7 +89,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, UUID nodeId, GridCacheTx tx, GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, UUID nodeId, IgniteTx tx, GridCacheMvccCandidate<K> owner,
         int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
@@ -113,7 +113,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
-        GridCacheTx tx = owner == null ? null : cctx.tm().tx(owner.version());
+        IgniteTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
             newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);

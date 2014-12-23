@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -76,7 +76,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx<K, V> tx;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -99,7 +99,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     GridLocalLockFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
-        GridCacheTxLocalEx<K, V> tx,
+        IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {

@@ -21,7 +21,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  *
  */
 public class GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest extends
-    GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTest {
+    IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> ignoreMessageClasses() {
         return Collections.<Class<?>>singletonList(GridDistributedTxFinishRequest.class);

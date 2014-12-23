@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -22,8 +23,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -145,7 +146,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param concurrency Tx concurrency.
      * @param isolation Tx isolation.
      */
-    private void doTestEviction(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void doTestEviction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         assert concurrency != null;
         assert isolation != null;
@@ -163,7 +164,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
             GridCacheProjection<String, Integer> c = cache(aff.mapKeyToNode(key));
 
-            try (GridCacheTx tx = c.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = c.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
                 c.put(key, kv);

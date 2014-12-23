@@ -11,8 +11,8 @@ package org.gridgain.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
@@ -56,7 +56,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         try (Connection conn = tx.removeMeta(ATTR_NAME)) {
             if (conn != null) {
                 if (commit)
@@ -73,7 +73,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Person load(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Nullable @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -101,7 +101,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Long key, Person val)
+    @Override public void put(@Nullable IgniteTx tx, Long key, Person val)
         throws IgniteCheckedException {
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -142,7 +142,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -205,7 +205,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable GridCacheTx tx) throws SQLException  {
+    private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
         if (tx != null) {
             Connection conn = tx.meta(ATTR_NAME);
 
@@ -230,7 +230,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      * @param tx Active transaction, if any.
      * @param conn Allocated connection.
      */
-    private void end(@Nullable GridCacheTx tx, @Nullable Connection conn) {
+    private void end(@Nullable IgniteTx tx, @Nullable Connection conn) {
         if (tx == null && conn != null) {
             // Close connection right away if there is no transaction.
             try {

@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -96,14 +95,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR + 60_000;
-    }
-
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setDgcFrequency(0);
-
-        return cfg;
     }
 
     /**

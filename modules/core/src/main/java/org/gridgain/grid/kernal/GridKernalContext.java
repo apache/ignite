@@ -483,7 +483,7 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
     /**
      * @param name Plugin name.
      * @return Plugin provider instance.
-     * @throws org.apache.ignite.plugin.PluginNotFoundException If plugin provider for the given name was not found.
+     * @throws PluginNotFoundException If plugin provider for the given name was not found.
      */
     public PluginProvider pluginProvider(String name) throws PluginNotFoundException;
 

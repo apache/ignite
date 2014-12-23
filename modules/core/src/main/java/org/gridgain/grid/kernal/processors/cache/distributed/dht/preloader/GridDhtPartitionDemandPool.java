@@ -412,11 +412,14 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** Counter. */
         private long cntr;
 
+        /** Hide worker logger and use cache logger instead. */
+        private IgniteLogger log = GridDhtPartitionDemandPool.this.log;
+
         /**
          * @param id Worker ID.
          */
         private DemandWorker(int id) {
-            super(cctx.gridName(), "preloader-demand-worker", log);
+            super(cctx.gridName(), "preloader-demand-worker", GridDhtPartitionDemandPool.this.log);
 
             assert id >= 0;
 
@@ -568,7 +571,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param exchFut Exchange future.
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
-         * @throws org.apache.ignite.cluster.ClusterTopologyException If node left.
+         * @throws ClusterTopologyException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,

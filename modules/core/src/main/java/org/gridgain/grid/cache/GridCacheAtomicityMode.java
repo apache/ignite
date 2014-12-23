@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -23,7 +24,7 @@ import org.jetbrains.annotations.*;
 public enum GridCacheAtomicityMode {
     /**
      * Specified fully {@code ACID}-compliant transactional cache behavior. See
-     * {@link GridCacheTx} for more information about transactions.
+     * {@link IgniteTx} for more information about transactions.
      * <p>
      * This mode is currently the default cache atomicity mode. However, cache
      * atomicity mode will be changed to {@link #ATOMIC} starting from version {@code 5.2},

@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -69,15 +68,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Preload batch size. */
     private int preloadBatchSize;
-
-    /** Distributed garbage collection frequency. */
-    private long dgcFreq;
-
-    /** Timeout after which DGC will consider remote locks as suspects. */
-    private long dgcSuspectLockTimeout;
-
-    /** Flag indicating whether DGC should remove locks. */
-    private boolean dgcRmvLocks;
 
     /** Synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSyncMode;
@@ -162,9 +152,6 @@ public class GridCacheAttributes implements Externalizable {
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
         dfltQryTimeout = cfg.getDefaultQueryTimeout();
-        dgcFreq = cfg.getDgcFrequency();
-        dgcRmvLocks = cfg.isDgcRemoveLocks();
-        dgcSuspectLockTimeout  = cfg.getDgcSuspectLockTimeout();
         evictMaxOverflowRatio = cfg.getEvictMaxOverflowRatio();
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
@@ -439,27 +426,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Distributed garbage collection frequency.
-     */
-    public long dgcFrequency() {
-        return dgcFreq;
-    }
-
-    /**
-     * @return Timeout after which DGC will consider remote locks as suspects.
-     */
-    public long dgcSuspectLockTimeout() {
-        return dgcSuspectLockTimeout;
-    }
-
-    /**
-     * @return Flag indicating whether DGC should remove locks.
-     */
-    public boolean dgcRemoveLocks() {
-        return dgcRmvLocks;
-    }
-
-    /**
      * @return Synchronization mode.
      */
     public GridCacheWriteSynchronizationMode writeSynchronization() {
@@ -535,9 +501,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeEnum0(out, cacheMode);
         out.writeLong(dfltLockTimeout);
         out.writeLong(dfltQryTimeout);
-        out.writeLong(dgcFreq);
-        out.writeBoolean(dgcRmvLocks);
-        out.writeLong(dgcSuspectLockTimeout);
         out.writeFloat(evictMaxOverflowRatio);
         out.writeBoolean(evictNearSync);
         out.writeBoolean(evictSync);
@@ -582,9 +545,6 @@ public class GridCacheAttributes implements Externalizable {
         cacheMode = GridCacheMode.fromOrdinal(U.readEnumOrdinal0(in));
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
-        dgcFreq = in.readLong();
-        dgcRmvLocks = in.readBoolean();
-        dgcSuspectLockTimeout = in.readLong();
         evictMaxOverflowRatio = in.readFloat();
         evictNearSync = in.readBoolean();
         evictSync  = in.readBoolean();

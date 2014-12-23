@@ -15,6 +15,7 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
@@ -126,7 +127,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         private Map<Integer, Integer> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public Integer load(@Nullable GridCacheTx tx, Integer key)
+        @Override public Integer load(@Nullable IgniteTx tx, Integer key)
             throws IgniteCheckedException {
             cnt.incrementAndGet();
 
@@ -134,13 +135,13 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, @Nullable Integer val)
+        @Override public void put(IgniteTx tx, Integer key, @Nullable Integer val)
             throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             // No-op
         }
 

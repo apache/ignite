@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -140,7 +139,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"BusyWait"})
-    public void _testIntegrity() throws Exception { // TODO GG-9141
+    public void testIntegrity() throws Exception {
         preloadMode = SYNC;
 
         try {
@@ -164,7 +163,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                     EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
 
                 if (evts.size() != 2) {
-                    info("Wrong events collection size (will retry in 1000 ms).");
+                    info("Wrong events collection size (will retry in 1000 ms): " + evts.size());
 
                     Thread.sleep(1000);
                 }

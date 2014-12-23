@@ -655,6 +655,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
+            U.onGridStart();
+
             // Set context into rich adapter.
             setKernalContext(ctx);
 
@@ -2096,6 +2098,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     }
                 }
             }
+
+            U.onGridStop();
         }
         else {
             // Proper notification.
@@ -2929,7 +2933,20 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
-        throw new UnsupportedOperationException();
+        guard();
+
+        try {
+            if (!dbUsageRegistered) {
+                GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
+
+                dbUsageRegistered = true;
+            }
+
+            return ctx.cache().publicJCache(name);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

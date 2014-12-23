@@ -118,7 +118,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     @SuppressWarnings("NullableProblems")
-    public void _testAppendPrepend() throws Exception { // TODO GG-9141
+    public void testAppendPrepend() throws Exception {
         assertEquals("as" + "df", testAppend("as", "df", true));
         assertEquals("df" + "as", testAppend("as", "df", false));
 

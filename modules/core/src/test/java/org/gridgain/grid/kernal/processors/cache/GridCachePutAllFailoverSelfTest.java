@@ -8,7 +8,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -606,8 +605,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setBackups(backups);
 
-            cacheCfg.setDgcSuspectLockTimeout(600000);
-            cacheCfg.setDgcFrequency(0);
             cacheCfg.setStoreValueBytes(true);
             cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
             cacheCfg.setQueryIndexEnabled(false);

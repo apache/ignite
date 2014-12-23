@@ -255,7 +255,7 @@ public abstract class GridUtils {
     private static InetAddress locHost;
 
     /** */
-    private static volatile long curTimeMillis = System.currentTimeMillis();
+    static volatile long curTimeMillis = System.currentTimeMillis();
 
     /** Primitive class map. */
     private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
@@ -283,6 +283,15 @@ public abstract class GridUtils {
 
     /** GridGain Work Directory. */
     public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
+
+    /** Clock timer. */
+    private static Thread timer;
+
+    /** Grid counter. */
+    private static int gridCnt;
+
+    /** Mutex. */
+    private static final Object mux = new Object();
 
     /**
      * Initializes enterprise check.
@@ -497,30 +506,6 @@ public abstract class GridUtils {
                 throw new IgniteException(e);
             }
         }
-
-        Thread timer = new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-            @Override public void run() {
-                while (true) {
-                    curTimeMillis = System.currentTimeMillis();
-
-                    try {
-                        Thread.sleep(10);
-                    }
-                    catch (InterruptedException ignored) {
-                        U.log(null, "Timer thread has been interrupted.");
-
-                        break;
-                    }
-                }
-            }
-        }, "gridgain-clock");
-
-        timer.setDaemon(true);
-
-        timer.setPriority(10);
-
-        timer.start();
 
         PORTABLE_CLS.add(Byte.class);
         PORTABLE_CLS.add(Short.class);
@@ -2041,6 +2026,58 @@ public abstract class GridUtils {
 
                     out.close();
                 }
+            }
+        }
+    }
+
+    /**
+     * Starts clock timer if grid is first.
+     */
+    public static void onGridStart() {
+        synchronized (mux) {
+            if (gridCnt == 0) {
+                timer = new Thread(new Runnable() {
+                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @Override public void run() {
+                        while (true) {
+                            curTimeMillis = System.currentTimeMillis();
+
+                            try {
+                                Thread.sleep(10);
+                            }
+                            catch (InterruptedException ignored) {
+                                U.log(null, "Timer thread has been interrupted.");
+
+                                break;
+                            }
+                        }
+                    }
+                }, "gridgain-clock");
+
+                timer.setDaemon(true);
+
+                timer.setPriority(10);
+
+                timer.start();
+            }
+
+            ++gridCnt;
+        }
+    }
+
+    /**
+     * Stops clock timer if all nodes into JVM were stopped.
+     */
+    public static void onGridStop(){
+        synchronized (mux) {
+            assert gridCnt > 0 : gridCnt;
+
+            --gridCnt;
+
+            if (gridCnt == 0 && timer != null) {
+                timer.interrupt();
+
+                timer = null;
             }
         }
     }
@@ -7189,6 +7226,25 @@ public abstract class GridUtils {
             for (GridCacheAttributes attrs : caches)
                 if (F.eq(cacheName, attrs.cacheName()))
                     return attrs.atomicityMode();
+
+        return null;
+    }
+
+    /**
+     * Gets cache distribution mode on given node or {@code null} if cache is not
+     * present on given node.
+     *
+     * @param n Node to check.
+     * @param cacheName Cache to check.
+     * @return Cache distribution mode or {@code null} if cache is not found.
+     */
+    @Nullable public static GridCacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
+        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
+
+        if (caches != null)
+            for (GridCacheAttributes attrs : caches)
+                if (F.eq(cacheName, attrs.cacheName()))
+                    return attrs.partitionedTaxonomy();
 
         return null;
     }

@@ -19,7 +19,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Test basic cache operations in transactions.
  */
-public class GridCachePartitionedTxMultiNodeSelfTest extends GridCacheTxMultiNodeAbstractTest {
+public class GridCachePartitionedTxMultiNodeSelfTest extends IgniteTxMultiNodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

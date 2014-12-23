@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -24,8 +24,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -252,7 +252,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            GridCacheTx tx = cache1.txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+            IgniteTx tx = cache1.txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
 
             try {
                 cache1.put("tx1", "val1");
@@ -317,7 +317,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         GridCache<String, String> cache2 = ignite2.cache(null);
         GridCache<String, String> cache3 = ignite3.cache(null);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         cache1.put("key", "val");
 

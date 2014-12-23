@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -23,8 +24,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test cache operations with daemon node.
@@ -120,7 +121,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(i, i);
 
                     tx.commit();
@@ -132,7 +133,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             for (int i = 30; i < 60; i++)
                 batch.put(i, i);
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.putAll(batch);
                 tx.commit();
             }

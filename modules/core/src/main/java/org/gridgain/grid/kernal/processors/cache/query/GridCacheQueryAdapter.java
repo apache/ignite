@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -23,6 +22,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
@@ -447,18 +447,48 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @return Nodes to execute on.
      */
     private Collection<ClusterNode> nodes() {
-        Collection<ClusterNode> nodes = CU.allNodes(cctx);
+        GridCacheMode cacheMode = cctx.config().getCacheMode();
 
-        if (prj == null) {
-            if (cctx.isReplicated())
+        switch (cacheMode) {
+            case LOCAL:
+                if (prj != null)
+                    U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
+                        "(only local node will be queried): " + this);
+
                 return Collections.singletonList(cctx.localNode());
 
-            return nodes;
-        }
+            case REPLICATED:
+                if (prj != null)
+                    return nodes(cctx, prj);
 
-        return F.view(nodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode e) {
-                return prj.node(e.id()) != null;
+                GridCacheDistributionMode mode = cctx.config().getDistributionMode();
+
+                return mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED ?
+                    Collections.singletonList(cctx.localNode()) :
+                    Collections.singletonList(F.rand(nodes(cctx, null)));
+
+            case PARTITIONED:
+                return nodes(cctx, prj);
+
+            default:
+                throw new IllegalStateException("Unknown cache distribution mode: " + cacheMode);
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param prj Projection (optional).
+     * @return Collection of data nodes in provided projection (if any).
+     */
+    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx, @Nullable final ClusterGroup prj) {
+        assert cctx != null;
+
+        return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode n) {
+                GridCacheDistributionMode mode = U.distributionMode(n, cctx.name());
+
+                return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
+                    (prj == null || prj.node(n.id()) != null);
             }
         });
     }

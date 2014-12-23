@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -107,7 +108,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
 
         GridCache<Object, Object> cache1 = g.cache(cacheName);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             cache1.put(1, 1);

@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -25,8 +26,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Basic store test.
@@ -99,7 +100,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
         try {
             for (int i = 1; i <= 10; i++) {
@@ -164,7 +165,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert map.isEmpty();
 
-        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i <= 10; i++)
                 cache.putx(i, Integer.toString(i));
 

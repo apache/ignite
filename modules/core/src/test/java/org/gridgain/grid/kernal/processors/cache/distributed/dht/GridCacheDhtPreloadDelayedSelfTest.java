@@ -170,7 +170,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void _testDelayedPreload() throws Exception { // TODO GG-9141
+    public void testDelayedPreload() throws Exception {
         delay = PRELOAD_DELAY;
 
         Ignite g0 = startGrid(0);

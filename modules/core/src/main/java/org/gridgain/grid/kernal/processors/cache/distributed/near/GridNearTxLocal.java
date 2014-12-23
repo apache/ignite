@@ -12,12 +12,13 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -31,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -50,7 +51,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         new ConcurrentHashMap8<>();
 
     /** Future. */
-    private final AtomicReference<IgniteFuture<GridCacheTxEx<K, V>>> prepFut =
+    private final AtomicReference<IgniteFuture<IgniteTxEx<K, V>>> prepFut =
         new AtomicReference<>();
 
     /** */
@@ -62,7 +63,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         new AtomicReference<>();
 
     /** Entries to lock on next step of prepare stage. */
-    private Collection<GridCacheTxEntry<K, V>> optimisticLockEntries = Collections.emptyList();
+    private Collection<IgniteTxEntry<K, V>> optimisticLockEntries = Collections.emptyList();
 
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
@@ -81,6 +82,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param ctx   Cache registry.
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit with one key flag.
+     * @param sys System flag.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -92,26 +94,29 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        boolean sys,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         boolean invalidate,
+        boolean storeEnabled,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(
+            ctx,
             ctx.versions().next(),
             implicit,
             implicitSingle,
-            ctx,
+            sys,
             concurrency,
             isolation,
             timeout,
             invalidate,
-            /*TODO explicit lock???*/false,
+            storeEnabled,
             txSize,
             grpLockKey,
             partLock,
@@ -160,7 +165,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected IgniteFuture<Boolean> addReader(long msgId, GridDhtCacheEntry<K, V> cached,
-        GridCacheTxEntry<K, V> entry, long topVer) {
+        IgniteTxEntry<K, V> entry, long topVer) {
         // We are in near transaction, do not add local node as reader.
         return null;
     }
@@ -191,6 +196,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @return {@code True} if transaction is fully synchronous.
      */
     private boolean sync() {
+        if (super.syncCommit())
+            return true;
+
         for (int cacheId : activeCacheIds()) {
             if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
                 return true;
@@ -238,7 +246,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxEntry<K, V>> optimisticLockEntries() {
+    @Override public Collection<IgniteTxEntry<K, V>> optimisticLockEntries() {
         if (groupLock())
             return super.optimisticLockEntries();
 
@@ -248,7 +256,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /**
      * @param optimisticLockEntries Optimistic lock entries.
      */
-    public void optimisticLockEntries(Collection<GridCacheTxEntry<K, V>> optimisticLockEntries) {
+    public void optimisticLockEntries(Collection<IgniteTxEntry<K, V>> optimisticLockEntries) {
         this.optimisticLockEntries = optimisticLockEntries;
     }
 
@@ -280,9 +288,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 }
             });
         }
-        else {
-            assert cacheCtx.isColocated();
-
+        else if (cacheCtx.isColocated()) {
             return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
                 CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
                 .chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
@@ -305,10 +311,15 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                     }
                 });
         }
+        else {
+            assert cacheCtx.isLocal();
+
+            return super.loadMissing(cacheCtx, async, keys, deserializePortable, c);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateExplicitVersion(GridCacheTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
+    @Override protected void updateExplicitVersion(IgniteTxEntry<K, V> txEntry, GridCacheEntryEx<K, V> entry)
         throws GridCacheEntryRemovedException {
         if (entry.detached()) {
             GridCacheMvccCandidate<K> cand = cctx.mvcc().explicitLock(threadId(), entry.key());
@@ -334,7 +345,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheTxEntry<K, V>> recoveryWrites() {
+    @Override public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
         return F.view(writeEntries(), CU.<K, V>transferRequired());
     }
 
@@ -371,7 +382,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<GridCacheTxKey<K>> keys) {
+    @Override protected void addGroupTxMapping(Collection<IgniteTxKey<K>> keys) {
         super.addGroupTxMapping(keys);
 
         addKeyMapping(cctx.localNode(), keys);
@@ -383,13 +394,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param key Key to add.
      * @param node Node this key mapped to.
      */
-    public void addKeyMapping(GridCacheTxKey<K> key, ClusterNode node) {
+    public void addKeyMapping(IgniteTxKey<K> key, ClusterNode node) {
         GridDistributedTxMapping<K, V> m = mappings.get(node.id());
 
         if (m == null)
             mappings.put(node.id(), m = new GridDistributedTxMapping<>(node));
 
-        GridCacheTxEntry<K, V> txEntry = txMap.get(key);
+        IgniteTxEntry<K, V> txEntry = txMap.get(key);
 
         assert txEntry != null;
 
@@ -408,14 +419,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param n Mapped node.
      * @param mappedKeys Mapped keys.
      */
-    private void addKeyMapping(ClusterNode n, Iterable<GridCacheTxKey<K>> mappedKeys) {
+    private void addKeyMapping(ClusterNode n, Iterable<IgniteTxKey<K>> mappedKeys) {
         GridDistributedTxMapping<K, V> m = mappings.get(n.id());
 
         if (m == null)
             mappings.put(n.id(), m = new GridDistributedTxMapping<>(n));
 
-        for (GridCacheTxKey<K> key : mappedKeys) {
-            GridCacheTxEntry<K, V> txEntry = txMap.get(key);
+        for (IgniteTxKey<K> key : mappedKeys) {
+            IgniteTxEntry<K, V> txEntry = txMap.get(key);
 
             assert txEntry != null;
 
@@ -440,7 +451,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                 assert m != null;
 
-                for (GridCacheTxEntry<K, V> entry : map.entries())
+                for (IgniteTxEntry<K, V> entry : map.entries())
                     m.add(entry);
             }
 
@@ -471,7 +482,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 GridDistributedTxMapping<K, V> mapping = mappings.get(nodeId);
 
                 if (mapping != null) {
-                    for (GridCacheTxEntry<K, V> entry : m.entries())
+                    for (IgniteTxEntry<K, V> entry : m.entries())
                         mapping.removeEntry(entry);
 
                     if (mapping.entries().isEmpty())
@@ -499,17 +510,10 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
-        GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> fut = (GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>>)prepFut
+        GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> fut = (GridCacheMvccFuture<K, V, IgniteTxEx<K, V>>)prepFut
             .get();
 
         return fut != null && fut.onOwnerChanged(entry, owner);
-    }
-
-    /**
-     * @return Commit fut.
-     */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
-        return prepFut.get();
     }
 
     /**
@@ -520,18 +524,18 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      */
     void readyNearLocks(GridDistributedTxMapping<K, V> mapping, Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
-        Collection<GridCacheTxEntry<K, V>> entries = groupLock() ?
+        Collection<IgniteTxEntry<K, V>> entries = groupLock() ?
             Collections.singletonList(groupLockEntry()) :
             F.concat(false, mapping.reads(), mapping.writes());
 
-        for (GridCacheTxEntry<K, V> txEntry : entries) {
+        for (IgniteTxEntry<K, V> txEntry : entries) {
             while (true) {
-                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
-
-                GridCacheContext<K, V> cacheCtx = entry.context();
+                GridCacheContext<K, V> cacheCtx = txEntry.cached().context();
 
                 if (!cacheCtx.isNear())
                     break;
+
+                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
 
                 try {
                     // Handle explicit locks.
@@ -580,7 +584,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         if (commit) {
             if (!state(COMMITTING)) {
-                GridCacheTxState state = state();
+                IgniteTxState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
                     throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
@@ -656,8 +660,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
-        IgniteFuture<GridCacheTxEx<K, V>> fut = prepFut.get();
+    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
+        IgniteFuture<IgniteTxEx<K, V>> fut = prepFut.get();
 
         if (fut == null) {
             // Future must be created before any exception can be thrown.
@@ -681,14 +685,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             if (!state(PREPARING)) {
                 if (setRollbackOnly()) {
                     if (timedOut())
-                        pessimisticFut.onError(new GridCacheTxTimeoutException("Transaction timed out and was " +
+                        pessimisticFut.onError(new IgniteTxTimeoutException("Transaction timed out and was " +
                             "rolled back: " + this));
                     else
                         pessimisticFut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" +
                             state() + ", tx=" + this + ']'));
                 }
                 else
-                    pessimisticFut.onError(new GridCacheTxRollbackException("Invalid transaction state for prepare " +
+                    pessimisticFut.onError(new IgniteTxRollbackException("Invalid transaction state for prepare " +
                         "[state=" + state() + ", tx=" + this + ']'));
 
                 return fut;
@@ -724,7 +728,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public IgniteFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<IgniteTx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
@@ -737,10 +741,10 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         cctx.mvcc().addFuture(fut);
 
-        IgniteFuture<GridCacheTxEx<K, V>> prepareFut = prepFut.get();
+        IgniteFuture<IgniteTxEx<K, V>> prepareFut = prepFut.get();
 
-        prepareFut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-            @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+        prepareFut.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+            @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                 GridNearTxFinishFuture<K, V> fut0 = commitFut.get();
 
                 try {
@@ -770,7 +774,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
+    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
@@ -784,7 +788,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         cctx.mvcc().addFuture(fut);
 
-        IgniteFuture<GridCacheTxEx<K, V>> prepFut = this.prepFut.get();
+        IgniteFuture<IgniteTxEx<K, V>> prepFut = this.prepFut.get();
 
         if (prepFut == null || prepFut.isDone()) {
             try {
@@ -808,8 +812,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         else {
-            prepFut.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                     try {
                         // Check for errors in prepare future.
                         f.get();
@@ -852,15 +856,15 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgniteFuture<GridCacheTxEx<K, V>> prepareAsyncLocal(@Nullable Collection<GridCacheTxEntry<K, V>> reads,
-        @Nullable Collection<GridCacheTxEntry<K, V>> writes, Map<UUID, Collection<UUID>> txNodes, boolean last,
+    public IgniteFuture<IgniteTxEx<K, V>> prepareAsyncLocal(@Nullable Collection<IgniteTxEntry<K, V>> reads,
+        @Nullable Collection<IgniteTxEntry<K, V>> writes, Map<UUID, Collection<UUID>> txNodes, boolean last,
         Collection<UUID> lastBackups) {
         assert optimistic();
 
         if (state() != PREPARING) {
             if (timedOut())
                 return new GridFinishedFuture<>(cctx.kernalContext(),
-                    new GridCacheTxTimeoutException("Transaction timed out: " + this));
+                    new IgniteTxTimeoutException("Transaction timed out: " + this));
 
             setRollbackOnly();
 
@@ -871,7 +875,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         init();
 
         GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(cctx, this, IgniteUuid.randomUuid(),
-            Collections.<GridCacheTxKey<K>, GridCacheVersion>emptyMap(), last, lastBackups);
+            Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), last, lastBackups);
 
         try {
             // At this point all the entries passed in must be enlisted in transaction because this is an
@@ -888,18 +892,18 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             else
                 fut.prepare(reads, writes, txNodes);
         }
-        catch (GridCacheTxTimeoutException | GridCacheTxOptimisticException e) {
+        catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            fut.onError(new GridCacheTxRollbackException("Failed to prepare transaction: " + this, e));
+            fut.onError(new IgniteTxRollbackException("Failed to prepare transaction: " + this, e));
 
             try {
                 rollback();
             }
-            catch (GridCacheTxOptimisticException e1) {
+            catch (IgniteTxOptimisticException e1) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e1 + ']');
 
@@ -918,7 +922,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    public IgniteFuture<GridCacheTx> commitAsyncLocal() {
+    public IgniteFuture<IgniteTx> commitAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Committing colocated tx locally: " + this);
 
@@ -926,14 +930,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (pessimistic())
             prepareAsync();
 
-        IgniteFuture<GridCacheTxEx<K, V>> prep = prepFut.get();
+        IgniteFuture<IgniteTxEx<K, V>> prep = prepFut.get();
 
         // Do not create finish future if there are no remote nodes.
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
             if (prep != null)
-                return (IgniteFuture<GridCacheTx>)(IgniteFuture)prep;
+                return (IgniteFuture<IgniteTx>)(IgniteFuture)prep;
 
-            return new GridFinishedFuture<GridCacheTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTx>(cctx.kernalContext(), this);
         }
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
@@ -949,7 +953,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
                 fut.finish();
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -962,14 +966,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             }
         }
         else
-            prep.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+            prep.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
 
                         fut.finish();
                     }
-                    catch (GridCacheTxOptimisticException e) {
+                    catch (IgniteTxOptimisticException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -991,7 +995,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    public IgniteFuture<GridCacheTx> rollbackAsyncLocal() {
+    public IgniteFuture<IgniteTx> rollbackAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Rolling back colocated tx locally: " + this);
 
@@ -999,7 +1003,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         cctx.mvcc().addFuture(fut);
 
-        IgniteFuture<GridCacheTxEx<K, V>> prep = prepFut.get();
+        IgniteFuture<IgniteTxEx<K, V>> prep = prepFut.get();
 
         if (prep == null || prep.isDone()) {
             try {
@@ -1015,8 +1019,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             fut.finish();
         }
         else
-            prep.listenAsync(new CI1<IgniteFuture<GridCacheTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<GridCacheTxEx<K, V>> f) {
+            prep.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }
@@ -1071,9 +1075,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key) {
+    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key) {
         if (cacheCtx.isColocated()) {
-            GridCacheTxEntry<K, V> txEntry = entry(key);
+            IgniteTxEntry<K, V> txEntry = entry(key);
 
             if (txEntry == null)
                 return cacheCtx.colocated().entryExx(key.key(), topologyVersion(), true);
@@ -1098,9 +1102,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, GridCacheTxKey<K> key, long topVer) {
+    @Override protected GridCacheEntryEx<K, V> entryEx(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, long topVer) {
         if (cacheCtx.isColocated()) {
-            GridCacheTxEntry<K, V> txEntry = entry(key);
+            IgniteTxEntry<K, V> txEntry = entry(key);
 
             if (txEntry == null)
                 return cacheCtx.colocated().entryExx(key.key(), topVer, true);
@@ -1132,13 +1136,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /**
      *
      */
-    private static class PessimisticPrepareFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V>> {
+    private static class PessimisticPrepareFuture<K, V> extends GridFutureAdapter<IgniteTxEx<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Transaction. */
         @GridToStringExclude
-        private GridCacheTxEx<K, V> tx;
+        private IgniteTxEx<K, V> tx;
 
         /**
          * Empty constructor required by {@link Externalizable}.
@@ -1151,7 +1155,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
          * @param ctx Kernal context.
          * @param tx Transaction.
          */
-        private PessimisticPrepareFuture(GridKernalContext ctx, GridCacheTxEx<K, V> tx) {
+        private PessimisticPrepareFuture(GridKernalContext ctx, IgniteTxEx<K, V> tx) {
             super(ctx);
             this.tx = tx;
         }
@@ -1162,7 +1166,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         void onError(Throwable e) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();

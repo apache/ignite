@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -19,8 +19,8 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * {@link GridCacheQueue} implementation using transactional cache.
@@ -47,7 +47,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try {
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, 1));
 
                         if (idx != null) {
@@ -97,7 +97,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             T retVal;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new PollClosure(id));
 
                     if (idx != null) {
@@ -146,7 +146,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, items.size()));
 
                     if (idx != null) {
@@ -199,7 +199,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
 
                     if (idx != null) {

@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -24,8 +25,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -124,7 +125,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -157,7 +158,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -190,7 +191,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -223,7 +224,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -256,7 +257,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -289,7 +290,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(1, store.getLoadCount());
         assertEquals(1, store.getPutCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -309,7 +310,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         assertEquals(1, store.getPutAllCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }
@@ -320,7 +321,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testMultipleOperations() throws Exception {
         GridCache<Integer, String> cache = cache(0);
 
-        try (GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
             cache.put(2, "val");
             cache.put(3, "val");
@@ -336,7 +337,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         assertEquals(0, store.getPutCount());
         assertEquals(1, store.getPutAllCount());
 
-        Collection<GridCacheTx> txs = store.transactions();
+        Collection<IgniteTx> txs = store.transactions();
 
         assertEquals(1, txs.size());
     }

@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -101,7 +102,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).cache(null).tx();
 
             if (tx != null)
                 tx.close();

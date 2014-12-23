@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -22,8 +23,8 @@ import org.gridgain.testframework.junits.common.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -108,7 +109,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      */
     public void testOptimisticTransaction() throws Exception {
         for (GridCache<Integer, String> cache : caches) {
-            GridCacheTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.put(KEY, VAL);

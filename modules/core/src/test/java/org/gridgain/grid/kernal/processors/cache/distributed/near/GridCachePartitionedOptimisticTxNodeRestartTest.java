@@ -10,12 +10,13 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -38,7 +39,6 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
         cc.setPreloadBatchSize(preloadBatchSize);
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, partitions));
         cc.setBackups(backups);
-        cc.setDgcFrequency(0);
 
         c.setCacheConfiguration(cc);
 
@@ -46,7 +46,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheTxConcurrency txConcurrency() {
+    @Override protected IgniteTxConcurrency txConcurrency() {
         return OPTIMISTIC;
     }
 

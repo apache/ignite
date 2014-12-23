@@ -23,12 +23,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.client.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
@@ -782,20 +782,20 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 
-            GridCacheTxManager<Object, Object> tm = cacheCtx.tm();
+            IgniteTxManager<Object, Object> tm = cacheCtx.tm();
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
-            GridCacheTxEx t = tm.tx(v);
+            IgniteTxEx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey("x1")))
-                assertFalse(t.syncCommit());
+                assertFalse("Invalid tx flags: " + t, t.syncCommit());
             else if (t.hasWriteKey(cacheCtx.txKey("x2")))
-                assertTrue(t.syncCommit());
+                assertTrue("Invalid tx flags: " + t, t.syncCommit());
             else if (t.hasWriteKey(cacheCtx.txKey("x3")))
-                assertFalse(t.syncCommit());
+                assertFalse("Invalid tx flags: " + t, t.syncCommit());
             else if (t.hasWriteKey(cacheCtx.txKey("x4")))
-                assertTrue(t.syncCommit());
+                assertTrue("Invalid tx flags: " + t, t.syncCommit());
         }
     }
 

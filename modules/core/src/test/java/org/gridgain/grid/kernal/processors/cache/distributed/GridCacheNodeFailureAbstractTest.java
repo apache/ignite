@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -26,8 +26,8 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -148,7 +148,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param isolation Isolation.
      * @throws Exception If check failed.
      */
-    private void checkTransaction(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Throwable {
+    private void checkTransaction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
         info("Grid will be stopped: " + idx);
@@ -157,7 +157,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         GridCache<Integer, String> cache = cache(idx);
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation);
+        IgniteTx tx = cache.txStart(concurrency, isolation);
 
         try {
             cache.put(KEY, VALUE);
@@ -200,7 +200,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 checkCache.unlockAll(F.asList(KEY));
             }
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             U.warn(log, "Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             if (G.state(g.name()) == IgniteState.STARTED)

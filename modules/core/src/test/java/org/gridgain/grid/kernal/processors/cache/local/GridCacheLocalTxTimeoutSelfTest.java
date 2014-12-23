@@ -11,15 +11,15 @@ package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  *
@@ -116,12 +116,12 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @throws IgniteCheckedException If test failed.
      */
-    private void checkTransactionTimeout(GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation) throws Exception {
+    private void checkTransactionTimeout(IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation) throws Exception {
 
         boolean wasEx = false;
 
-        GridCacheTx tx = null;
+        IgniteTx tx = null;
 
         try {
             GridCache<Integer, String> cache = ignite.cache(null);
@@ -136,14 +136,14 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             info("Received expected optimistic exception: " + e.getMessage());
 
             wasEx = true;
 
             tx.rollback();
         }
-        catch (GridCacheTxTimeoutException e) {
+        catch (IgniteTxTimeoutException e) {
             info("Received expected timeout exception: " + e.getMessage());
 
             wasEx = true;

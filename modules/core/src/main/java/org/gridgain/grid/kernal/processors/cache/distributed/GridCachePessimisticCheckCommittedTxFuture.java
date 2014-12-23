@@ -14,6 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -42,7 +43,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
-    private final GridCacheTxEx<K, V> tx;
+    private final IgniteTxEx<K, V> tx;
 
     /** All involved nodes. */
     private final Map<UUID, ClusterNode> nodes;
@@ -59,7 +60,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * @param failedNodeId ID of failed node started transaction.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCachePessimisticCheckCommittedTxFuture(GridCacheSharedContext<K, V> cctx, GridCacheTxEx<K, V> tx,
+    public GridCachePessimisticCheckCommittedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteTxEx<K, V> tx,
         UUID failedNodeId) {
         super(cctx.kernalContext(), new SingleReducer<K, V>());
 
@@ -83,8 +84,8 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
         // Check local node first (local node can be a backup node for some part of this transaction).
         long originatingThreadId = tx.threadId();
 
-        if (tx instanceof GridCacheTxRemoteEx)
-            originatingThreadId = ((GridCacheTxRemoteEx)tx).remoteThreadId();
+        if (tx instanceof IgniteTxRemoteEx)
+            originatingThreadId = ((IgniteTxRemoteEx)tx).remoteThreadId();
 
         GridCacheCommittedTxInfo<K, V> txInfo = cctx.tm().txCommitted(tx.nearXidVersion(), tx.eventNodeId(),
             originatingThreadId);
