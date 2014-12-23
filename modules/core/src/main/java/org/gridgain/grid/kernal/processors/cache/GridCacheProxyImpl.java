@@ -26,6 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -730,6 +731,34 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.transformAndCompute(key, transformer);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.invoke(key, entryProcessor, args);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.invokeAll(keys, entryProcessor, args);
         }
         finally {
             gate.leave(prev);

@@ -447,6 +447,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         GridCacheOperation op,
         @Nullable Object val,
         @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -464,7 +465,15 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
-        return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
+        return new GridCacheUpdateAtomicResult<>(true,
+            rawPut((V)val, 0),
+            (V)val,
+            null,
+            0L,
+            0L,
+            null,
+            null,
+            true);
     }
 
     /** @inheritDoc */

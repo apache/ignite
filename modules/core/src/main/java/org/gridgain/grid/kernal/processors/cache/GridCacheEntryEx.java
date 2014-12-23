@@ -392,6 +392,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param op Update operation.
      * @param val Value. Type depends on operation.
      * @param valBytes Value bytes. Can be non-null only if operation is UPDATE.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy.
@@ -424,6 +425,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         GridCacheOperation op,
         @Nullable Object val,
         @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,

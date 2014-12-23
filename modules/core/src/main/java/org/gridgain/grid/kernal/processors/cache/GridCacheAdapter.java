@@ -43,6 +43,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -2190,6 +2191,21 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "putAllDrAsync [drMap=" + drMap + ']';
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
+        throws EntryProcessorException {
+        // TODO IGNITE-44.
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        // TODO IGNITE-44.
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -4516,7 +4532,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param key Cache key.
      * @throws IllegalArgumentException If validation fails.
      */
-    private void validateCacheKey(Object key) {
+    protected void validateCacheKey(Object key) {
         if (keyCheck) {
             CU.validateCacheKey(log, key);
 

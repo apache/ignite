@@ -25,6 +25,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -213,6 +214,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         op,
                         val,
                         valBytes,
+                        null,
                         /*write-through*/false,
                         /*retval*/false,
                         /**expiry policy*/null,
@@ -295,9 +297,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                         V val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
-                        IgniteClosure<V, V> transform = req.nearTransformClosure(i);
+                        EntryProcessor<K, V, ?> entryProcessor = req.nearEntryProcessor(i);
 
-                        GridCacheOperation op = transform != null ? TRANSFORM :
+                        GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                             (val != null || valBytes != null) ?
                                 UPDATE :
                                 DELETE;
@@ -313,8 +315,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             nodeId,
                             op,
-                            op == TRANSFORM ? transform : val,
+                            op == TRANSFORM ? entryProcessor : val,
                             valBytes,
+                            op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,
                             null,

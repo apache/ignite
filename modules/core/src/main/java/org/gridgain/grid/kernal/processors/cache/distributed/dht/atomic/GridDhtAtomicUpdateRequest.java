@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -20,6 +19,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -111,23 +111,30 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(2)
     private boolean forceTransformBackups;
 
-    /** Transform closures. */
+    /** Entry processors. */
     @GridDirectTransient
-    private List<IgniteClosure<V, V>> transformClos;
+    private List<EntryProcessor<K, V, ?>> entryProcessors;
 
-    /** Transform closure bytes. */
+    /** Entry processors bytes. */
     @GridDirectCollection(byte[].class)
     @GridDirectVersion(2)
-    private List<byte[]> transformClosBytes;
+    private List<byte[]> entryProcessorsBytes;
 
     /** Near transform closures. */
     @GridDirectTransient
-    private List<IgniteClosure<V, V>> nearTransformClos;
+    private List<EntryProcessor<K, V, ?>> nearEntryProcessors;
 
     /** Near transform closures bytes. */
     @GridDirectCollection(byte[].class)
     @GridDirectVersion(2)
-    private List<byte[]> nearTransformClosBytes;
+    private List<byte[]> nearEntryProcessorsBytes;
+
+    /** Optional arguments for entry processor. */
+    @GridDirectTransient
+    private Object[] invokeArgs;
+
+    /** Filter bytes. */
+    private byte[][] invokeArgsBytes;
 
     /** Subject ID. */
     @GridDirectVersion(3)
@@ -151,6 +158,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param nodeId Node ID.
      * @param futVer Future version.
      * @param writeVer Write version for cache values.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
      * @param forceTransformBackups Force transform backups flag.
@@ -166,8 +174,11 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         long topVer,
         boolean forceTransformBackups,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        Object[] invokeArgs
     ) {
+        assert invokeArgs == null || forceTransformBackups;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -177,13 +188,14 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         this.forceTransformBackups = forceTransformBackups;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.invokeArgs = invokeArgs;
 
         keys = new ArrayList<>();
         keyBytes = new ArrayList<>();
 
         if (forceTransformBackups) {
-            transformClos = new ArrayList<>();
-            transformClosBytes = new ArrayList<>();
+            entryProcessors = new ArrayList<>();
+            entryProcessorsBytes = new ArrayList<>();
         }
         else {
             vals = new ArrayList<>();
@@ -203,7 +215,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param keyBytes Key bytes, if key was already serialized.
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
-     * @param transformC Transform closure.
+     * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
@@ -212,15 +224,15 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         @Nullable byte[] keyBytes,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC,
+        EntryProcessor<K, V, ?> entryProcessor,
         long ttl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer) {
         keys.add(key);
         this.keyBytes.add(keyBytes);
 
-        if (forceTransformBackups && transformC != null)
-            transformClos.add(transformC);
+        if (forceTransformBackups && entryProcessor != null)
+            entryProcessors.add(entryProcessor);
         else {
             vals.add(val);
             this.valBytes.add(valBytes != null ? GridCacheValueBytes.marshaled(valBytes) : null);
@@ -270,7 +282,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param keyBytes Key bytes, if key was already serialized.
      * @param val Value, {@code null} if should be removed.
      * @param valBytes Value bytes, {@code null} if should be removed.
-     * @param transformC Transform closure.
+     * @param entryProcessor Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
@@ -278,7 +290,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         @Nullable byte[] keyBytes,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC,
+        EntryProcessor<K, V, ?> entryProcessor,
         long ttl,
         long expireTime)
     {
@@ -287,8 +299,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
             nearKeyBytes = new ArrayList<>();
 
             if (forceTransformBackups) {
-                nearTransformClos = new ArrayList<>();
-                nearTransformClosBytes = new ArrayList<>();
+                nearEntryProcessors = new ArrayList<>();
+                nearEntryProcessorsBytes = new ArrayList<>();
             }
             else {
                 nearVals = new ArrayList<>();
@@ -300,9 +312,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         nearKeyBytes.add(keyBytes);
 
         if (forceTransformBackups) {
-            assert transformC != null;
+            assert entryProcessor != null;
 
-            nearTransformClos.add(transformC);
+            nearEntryProcessors.add(entryProcessor);
         }
         else {
             nearVals.add(val);
@@ -465,10 +477,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /**
      * @param idx Key index.
-     * @return Transform closure.
+     * @return Entry processor.
      */
-    @Nullable public IgniteClosure<V, V> transformClosure(int idx) {
-        return transformClos == null ? null : transformClos.get(idx);
+    @Nullable public EntryProcessor<K, V, ?> entryProcessor(int idx) {
+        return entryProcessors == null ? null : entryProcessors.get(idx);
     }
 
     /**
@@ -497,8 +509,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
      * @param idx Key index.
      * @return Transform closure.
      */
-    @Nullable public IgniteClosure<V, V> nearTransformClosure(int idx) {
-        return nearTransformClos == null ? null : nearTransformClos.get(idx);
+    @Nullable public EntryProcessor<K, V, ?> nearEntryProcessor(int idx) {
+        return nearEntryProcessors == null ? null : nearEntryProcessors.get(idx);
     }
 
     /**
@@ -615,6 +627,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         return -1L;
     }
 
+    /**
+     * @return Optional arguments for entry processor.
+     */
+    @Nullable public Object[] invokeArguments() {
+        return invokeArgs;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
@@ -623,14 +642,17 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         keyBytes = marshalCollection(keys, ctx);
         valBytes = marshalValuesCollection(vals, ctx);
 
-        if (forceTransformBackups)
-            transformClosBytes = marshalCollection(transformClos, ctx);
+        if (forceTransformBackups) {
+            invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
+
+            entryProcessorsBytes = marshalCollection(entryProcessors, ctx);
+        }
 
         nearKeyBytes = marshalCollection(nearKeys, ctx);
         nearValBytes = marshalValuesCollection(nearVals, ctx);
 
         if (forceTransformBackups)
-            nearTransformClosBytes = marshalCollection(nearTransformClos, ctx);
+            nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, ctx);
     }
 
     /** {@inheritDoc} */
@@ -640,14 +662,17 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         keys = unmarshalCollection(keyBytes, ctx, ldr);
         vals = unmarshalValueBytesCollection(valBytes, ctx, ldr);
 
-        if (forceTransformBackups)
-            transformClos = unmarshalCollection(transformClosBytes, ctx, ldr);
+        if (forceTransformBackups) {
+            entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+        }
 
         nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
         nearVals = unmarshalValueBytesCollection(nearValBytes, ctx, ldr);
 
         if (forceTransformBackups)
-            nearTransformClos = unmarshalCollection(nearTransformClosBytes, ctx, ldr);
+            nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -683,10 +708,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         _clone.nearVals = nearVals;
         _clone.nearValBytes = nearValBytes;
         _clone.forceTransformBackups = forceTransformBackups;
-        _clone.transformClos = transformClos;
-        _clone.transformClosBytes = transformClosBytes;
-        _clone.nearTransformClos = nearTransformClos;
-        _clone.nearTransformClosBytes = nearTransformClosBytes;
+        _clone.entryProcessors = entryProcessors;
+        _clone.entryProcessorsBytes = entryProcessorsBytes;
+        _clone.nearEntryProcessors = nearEntryProcessors;
+        _clone.nearEntryProcessorsBytes = nearEntryProcessorsBytes;
         _clone.nearExpireTimes = nearExpireTimes;
         _clone.nearTtls = nearTtls;
         _clone.subjId = subjId;
@@ -872,7 +897,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
+                        if (!commState.putValueBytes((GridCacheValueBytes) commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -893,12 +918,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 16:
-                if (nearTransformClosBytes != null) {
+                if (nearEntryProcessorsBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(nearTransformClosBytes.size()))
+                        if (!commState.putInt(nearEntryProcessorsBytes.size()))
                             return false;
 
-                        commState.it = nearTransformClosBytes.iterator();
+                        commState.it = nearEntryProcessorsBytes.iterator();
                     }
 
                     while (commState.it.hasNext() || commState.cur != NULL) {
@@ -920,12 +945,12 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 17:
-                if (transformClosBytes != null) {
+                if (entryProcessorsBytes != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(transformClosBytes.size()))
+                        if (!commState.putInt(entryProcessorsBytes.size()))
                             return false;
 
-                        commState.it = transformClosBytes.iterator();
+                        commState.it = entryProcessorsBytes.iterator();
                     }
 
                     while (commState.it.hasNext() || commState.cur != NULL) {
@@ -1213,8 +1238,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 }
 
                 if (commState.readSize >= 0) {
-                    if (nearTransformClosBytes == null)
-                        nearTransformClosBytes = new ArrayList<>(commState.readSize);
+                    if (nearEntryProcessorsBytes == null)
+                        nearEntryProcessorsBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray();
@@ -1222,7 +1247,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
 
-                        nearTransformClosBytes.add((byte[])_val);
+                        nearEntryProcessorsBytes.add((byte[]) _val);
 
                         commState.readItems++;
                     }
@@ -1242,8 +1267,8 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 }
 
                 if (commState.readSize >= 0) {
-                    if (transformClosBytes == null)
-                        transformClosBytes = new ArrayList<>(commState.readSize);
+                    if (entryProcessorsBytes == null)
+                        entryProcessorsBytes = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray();
@@ -1251,7 +1276,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                         if (_val == BYTE_ARR_NOT_READ)
                             return false;
 
-                        transformClosBytes.add((byte[])_val);
+                        entryProcessorsBytes.add((byte[])_val);
 
                         commState.readItems++;
                     }

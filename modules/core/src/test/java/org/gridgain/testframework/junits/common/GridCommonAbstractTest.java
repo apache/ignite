@@ -24,6 +24,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.jetbrains.annotations.*;
 
@@ -426,6 +427,48 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         throw new IgniteCheckedException("Unable to find " + cnt + " keys as backup for cache.");
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return primaryKeys(prj, cnt, startFrom);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return backupKeys(prj, cnt, startFrom);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return nearKeys(prj, cnt, startFrom);
     }
 
     /**

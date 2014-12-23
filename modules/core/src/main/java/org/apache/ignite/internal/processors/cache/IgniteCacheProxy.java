@@ -494,16 +494,40 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                EntryProcessorResult<T> res = delegate.invoke(key, entryProcessor, args).get();
+
+                return res.get();
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                return delegate.invokeAll(keys, entryProcessor, args).get();
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */

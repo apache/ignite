@@ -18,6 +18,7 @@ import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -393,4 +394,24 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return New projection based on this one, but with the specified expiry policy.
      */
     public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
 }

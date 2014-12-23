@@ -70,6 +70,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<?> vals;
 
+    /** Optional arguments for entry processor. */
+    private Object[] invokeArgs;
+
     /** DR put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheDrInfo<V>> drPutVals;
@@ -158,6 +161,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param syncMode Write synchronization mode.
      * @param keys Keys to update.
      * @param vals Values or transform closure.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param drPutVals DR put values (optional).
      * @param drRmvVals DR remove values (optional).
      * @param retval Return value require flag.
@@ -175,6 +179,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridCacheOperation op,
         Collection<? extends K> keys,
         @Nullable Collection<?> vals,
+        @Nullable Object[] invokeArgs,
         @Nullable Collection<GridCacheDrInfo<V>> drPutVals,
         @Nullable Collection<GridCacheVersion> drRmvVals,
         final boolean retval,
@@ -186,6 +191,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         int taskNameHash
     ) {
         super(cctx.kernalContext());
+
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
@@ -200,6 +206,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.op = op;
         this.keys = keys;
         this.vals = vals;
+        this.invokeArgs = invokeArgs;
         this.drPutVals = drPutVals;
         this.drRmvVals = drRmvVals;
         this.retval = retval;
@@ -366,7 +373,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (res.error() != null)
                     addFailedKeys(req.keys(), res.error());
                 else {
-                    if (req.fastMap() && req.hasPrimary())
+                    if (op == TRANSFORM) {
+                        assert !req.fastMap();
+
+                        addInvokeResults(res.returnValue());
+                    }
+                    else if (req.fastMap() && req.hasPrimary())
                         opRes = res.returnValue();
                 }
 
@@ -464,7 +476,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param remap Flag indicating if this is partial remap for this future.
      * @param oldNodeId Old node ID if was remap.
      */
-    private void map0(GridDiscoveryTopologySnapshot topSnapshot, Collection<? extends K> keys, boolean remap,
+    private void map0(GridDiscoveryTopologySnapshot topSnapshot,
+        Collection<? extends K> keys,
+        boolean remap,
         @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
 
@@ -560,6 +574,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 retval,
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 expiryPlc,
+                invokeArgs,
                 filter,
                 subjId,
                 taskNameHash);
@@ -666,6 +681,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             retval,
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             expiryPlc,
+                            invokeArgs,
                             filter,
                             subjId,
                             taskNameHash);
@@ -817,6 +833,22 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      */
     private void removeMapping(UUID nodeId) {
         mappings.remove(nodeId);
+    }
+
+    /**
+     * @param ret Result from single node.
+     */
+    private synchronized void addInvokeResults(GridCacheReturn<Object> ret) {
+        assert op == TRANSFORM : op;
+        assert ret.value() instanceof Map : ret.value();
+
+        if (opRes != null) {
+            Map<Object, Object> map = (Map<Object, Object>)opRes.value();
+
+            map.putAll((Map<Object, Object>)ret.value());
+        }
+        else
+            opRes = ret;
     }
 
     /**

@@ -29,6 +29,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -1586,6 +1587,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheOperation op,
         @Nullable Object writeObj,
         @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -1614,6 +1616,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         GridCacheVersion enqueueVer = null;
 
         GridDrResolveResult<V> drRes = null;
+
+        EntryProcessorResult<?> invokeRes = null;
 
         long newTtl = -1L;
         long newExpireTime = 0L;
@@ -1644,7 +1648,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     if (drRes.isUseOld()) {
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, -1L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false,
+                            old,
+                            null,
+                            invokeRes,
+                            -1L,
+                            -1L,
+                            null,
+                            null,
+                            false);
                     }
 
                     newTtl = drRes.newTtl();
@@ -1692,7 +1704,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
-                        return new GridCacheUpdateAtomicResult<>(false, old, null, -1L, -1L, null, null, false);
+                        return new GridCacheUpdateAtomicResult<>(false,
+                            old,
+                            null,
+                            invokeRes,
+                            -1L,
+                            -1L,
+                            null,
+                            null,
+                            false);
                     }
                 }
                 else
@@ -1744,6 +1764,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     return new GridCacheUpdateAtomicResult<>(false,
                         retval ? old : null,
                         null,
+                        invokeRes,
                         -1L,
                         -1L,
                         null,
@@ -1760,11 +1781,26 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (op == GridCacheOperation.TRANSFORM) {
                 transformClo = writeObj;
 
-                IgniteClosure<V, V> transform = (IgniteClosure<V, V>)writeObj;
+                EntryProcessor<K, V, ?> entryProcessor = (EntryProcessor<K, V, ?>)writeObj;
 
-                updated = cctx.unwrapTemporary(transform.apply(old));
+                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(key, old);
 
-                valBytes = null;
+                try {
+                    Object computed = entryProcessor.process(entry, invokeArgs);
+
+                    updated = cctx.unwrapTemporary(entry.getValue());
+
+                    invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+
+                    valBytes = null;
+                }
+                catch (Exception e) {
+                    invokeRes = new CacheInvokeResult<>(e);
+
+                    updated = old;
+
+                    valBytes = oldBytes.getIfMarshaled();
+                }
             }
             else
                 updated = (V)writeObj;
@@ -1794,6 +1830,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         return new GridCacheUpdateAtomicResult<>(false,
                             retval ? old : null,
                             null,
+                            invokeRes,
                             -1L,
                             -1L,
                             null,
@@ -1899,6 +1936,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         return new GridCacheUpdateAtomicResult<>(false,
                             cctx.<V>unwrapTemporary(interceptRes.get2()),
                             null,
+                            invokeRes,
                             -1L,
                             -1L,
                             null,
@@ -2001,7 +2039,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + old + ", entry=" + this + ']');
 
-        return new GridCacheUpdateAtomicResult<>(res, old, updated, newTtl, newDrExpireTime, enqueueVer, drRes, true);
+        return new GridCacheUpdateAtomicResult<>(res,
+            old,
+            updated,
+            invokeRes,
+            newTtl,
+            newDrExpireTime,
+            enqueueVer,
+            drRes,
+            true);
     }
 
     /**

@@ -22,6 +22,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -197,7 +198,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry to map.
      * @param val Value to write.
      * @param valBytes Value bytes.
-     * @param transformC Transform closure.
+     * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
@@ -205,7 +206,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     public void addWriteEntry(GridDhtCacheEntry<K, V> entry,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC,
+        EntryProcessor<K, V, ?> entryProcessor,
         long ttl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer) {
@@ -236,7 +237,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                         topVer,
                         forceTransformBackups,
                         this.updateReq.subjectId(),
-                        this.updateReq.taskNameHash());
+                        this.updateReq.taskNameHash(),
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -245,7 +247,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     entry.keyBytes(),
                     val,
                     valBytes,
-                    transformC,
+                    entryProcessor,
                     ttl,
                     drExpireTime,
                     drVer);
@@ -258,7 +260,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param transformC Transform closure.
+     * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
@@ -266,7 +268,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridDhtCacheEntry<K, V> entry,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC,
+        EntryProcessor<K, V, ?> entryProcessor,
         long ttl,
         long expireTime) {
         GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
@@ -294,7 +296,8 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     topVer,
                     forceTransformBackups,
                     this.updateReq.subjectId(),
-                    this.updateReq.taskNameHash());
+                    this.updateReq.taskNameHash(),
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null);
 
                 mappings.put(nodeId, updateReq);
             }
@@ -308,7 +311,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                 entry.keyBytes(),
                 val,
                 valBytes,
-                transformC,
+                entryProcessor,
                 ttl,
                 expireTime);
         }
