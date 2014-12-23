@@ -1,0 +1,117 @@
+/* @java.file.header */
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.gridgain.grid.kernal.processors.query.h2.sql;
+
+import org.h2.util.*;
+import org.h2.value.*;
+
+import java.util.*;
+
+/**
+ * Function.
+ */
+public class GridSqlFunction extends GridSqlElement {
+    /** */
+    private static final Map<String, GridFunctionType> TYPE_MAP = new HashMap<>();
+
+    /**
+     *
+     */
+    static {
+        for (GridFunctionType type : GridFunctionType.values())
+            TYPE_MAP.put(type.name(), type);
+    }
+
+    /** */
+    private final String name;
+
+    /** */
+    protected final GridFunctionType type;
+
+    /**
+     * @param type Function type.
+     */
+    public GridSqlFunction(GridFunctionType type) {
+        name = type.functionName();
+
+        this.type = type;
+
+        if (type == GridFunctionType.CAST || type == GridFunctionType.CONVERT)
+            throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param name Name.
+     */
+    public GridSqlFunction(String name) {
+        this(TYPE_MAP.get(name));
+
+        if (type == GridFunctionType.CAST || type == GridFunctionType.CONVERT)
+            throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSQL() {
+        StatementBuilder buff = new StatementBuilder(name);
+
+        if (type == GridFunctionType.CASE) {
+            if (!children.isEmpty())
+                buff.append(" ").append(child().getSQL());
+
+            for (int i = 1, len = children.size() - 1; i < len; i += 2) {
+                buff.append(" WHEN ").append(child(i).getSQL());
+                buff.append(" THEN ").append(child(i + 1).getSQL());
+            }
+            if (children.size() % 2 == 0)
+                buff.append(" ELSE ").append(child(children.size() - 1).getSQL());
+
+            return buff.append(" END").toString();
+        }
+
+        buff.append('(');
+
+        if (type == GridFunctionType.CAST) {
+            throw new UnsupportedOperationException("CAST");
+//            buff.append(child().getSQL()).append(" AS ").
+//                append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+        }
+        else if (type == GridFunctionType.CONVERT) {
+            throw new UnsupportedOperationException("CONVERT");
+//            buff.append(args[0].getSQL()).append(',').
+//                append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+        }
+        else if (type == GridFunctionType.EXTRACT) {
+            ValueString v = (ValueString) ((GridValueExpression)child(0)).value();
+            buff.append(v.getString()).append(" FROM ").append(child(1).getSQL());
+        }
+        else {
+            for (GridSqlElement e : children) {
+                buff.appendExceptFirst(", ");
+                buff.append(e.getSQL());
+            }
+        }
+
+        return buff.append(')').toString();
+    }
+
+    /**
+     * @return Name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * @return Type.
+     */
+    public GridFunctionType type() {
+        return type;
+    }
+}
