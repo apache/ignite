@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -95,6 +94,44 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         cache1 = ignite1.cache(null);
         cache2 = ignite2.cache(null);
         cache3 = ignite3.cache(null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientOnlyNode() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            GridCache<Integer, Integer> c = g.cache(null);
+
+            for (int i = 0; i < 10; i++)
+                c.putx(i, i);
+
+            // Client cache should be empty.
+            assertEquals(0, c.size());
+
+            Collection<Map.Entry<Integer, Integer>> res =
+                c.queries().createSqlQuery(Integer.class, "_key >= 5 order by _key").execute().get();
+
+            assertEquals(5, res.size());
+
+            Iterator<Map.Entry<Integer, Integer>> it = res.iterator();
+
+            int i = 5;
+
+            while (it.hasNext()) {
+                Map.Entry<Integer, Integer> e  = it.next();
+
+                assertEquals(i, e.getKey().intValue());
+                assertEquals(i, e.getValue().intValue());
+
+                i++;
+            }
+        }
+        finally {
+            stopGrid("client");
+        }
     }
 
     /**
