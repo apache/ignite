@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -198,8 +198,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         ccfg.setEvictionPolicy(null);
         ccfg.setNearEvictionPolicy(null);
 
-        ccfg.setDgcFrequency(0);
-
         if (cacheMode() == PARTITIONED)
             ccfg.setBackups(backups());
 
@@ -243,7 +241,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
         final CyclicBarrier startBarrier = new CyclicBarrier(putThreads());
 
-        final ConcurrentHashMap<Integer, Integer> expVals = new ConcurrentHashMap<>();
+        final Map<Integer, Integer> expVals = new ConcurrentHashMap<>();
 
         final int keysPerThread = keyRange() / putThreads();
 
@@ -295,7 +293,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             }
                         }
                         try {
-                            GridCacheTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
+                            IgniteTx tx = atomicityMode() == TRANSACTIONAL ? cache.txStart() : null;
 
                             try {
                                 cache.putAll(putMap);

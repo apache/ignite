@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,7 +33,7 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Collection<GridCacheTxKey<K>> nearEvicted;
+    private Collection<IgniteTxKey<K>> nearEvicted;
 
     /** */
     @GridDirectCollection(byte[].class)
@@ -99,14 +100,14 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
     /**
      * @return Evicted readers.
      */
-    public Collection<GridCacheTxKey<K>> nearEvicted() {
+    public Collection<IgniteTxKey<K>> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted Evicted readers.
      */
-    public void nearEvicted(Collection<GridCacheTxKey<K>> nearEvicted) {
+    public void nearEvicted(Collection<IgniteTxKey<K>> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 

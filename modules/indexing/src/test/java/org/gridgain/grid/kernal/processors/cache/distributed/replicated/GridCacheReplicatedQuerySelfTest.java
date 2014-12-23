@@ -13,7 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -98,6 +98,44 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientOnlyNode() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            GridCache<Integer, Integer> c = g.cache(null);
+
+            for (int i = 0; i < 10; i++)
+                c.putx(i, i);
+
+            // Client cache should be empty.
+            assertEquals(0, c.size());
+
+            Collection<Map.Entry<Integer, Integer>> res =
+                c.queries().createSqlQuery(Integer.class, "_key >= 5 order by _key").execute().get();
+
+            assertEquals(5, res.size());
+
+            Iterator<Map.Entry<Integer, Integer>> it = res.iterator();
+
+            int i = 5;
+
+            while (it.hasNext()) {
+                Map.Entry<Integer, Integer> e  = it.next();
+
+                assertEquals(i, e.getKey().intValue());
+                assertEquals(i, e.getValue().intValue());
+
+                i++;
+            }
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /**
      * JUnit.
      *
      * @throws Exception If failed.
@@ -140,7 +178,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     public void testLocalQuery() throws Exception {
         cache1.clearAll();
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             cache1.put(new CacheKey(1), new CacheValue("1"));
@@ -182,7 +220,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
         ignite3.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             for (int i = 1; i <= keyCnt; i++)

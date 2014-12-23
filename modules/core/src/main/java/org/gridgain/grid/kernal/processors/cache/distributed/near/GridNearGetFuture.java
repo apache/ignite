@@ -12,10 +12,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -68,7 +68,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private GridCacheVersion ver;
 
     /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
     private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
@@ -112,7 +112,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
-        @Nullable GridCacheTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx<K, V> tx,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,

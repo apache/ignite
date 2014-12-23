@@ -11,9 +11,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -59,6 +60,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param topVer Topology version.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -70,6 +72,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -77,19 +80,19 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        boolean sys,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
@@ -118,6 +121,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param topVer Topology version.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -127,6 +131,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param grpLockKey Group lock key if transaction is group-lock.
      */
     public GridDhtTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -135,17 +140,17 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        boolean sys,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
@@ -226,8 +231,8 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        for (Iterator<GridCacheTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
-            GridCacheTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
+            IgniteTxEntry<K, V> e = it.next();
 
             GridCacheEntryEx<K, V> cached = e.cached();
 
@@ -245,7 +250,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
+    public void addWrite(IgniteTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -276,7 +281,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param drVer Data center replication version.
      * @param clos Transform closures.
      */
-    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, GridCacheTxKey<K> key, byte[] keyBytes,
+    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, IgniteTxKey<K> key, byte[] keyBytes,
         @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<IgniteClosure<V, V>> clos,
         @Nullable GridCacheVersion drVer) {
         checkInternal(key);
@@ -286,7 +291,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
+        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);

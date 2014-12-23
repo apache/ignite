@@ -10,6 +10,7 @@
 package org.gridgain.loadtests.hashmap;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.gridgain.testframework.junits.logger.*;
@@ -63,11 +64,11 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
 
             map.put(key, new GridCacheMapEntry<Integer, Integer>(ctx, key,
                 key.hashCode(), val, null, 0, 1) {
-                @Override public boolean tmLock(GridCacheTxEx<Integer, Integer> tx, long timeout) {
+                @Override public boolean tmLock(IgniteTxEx<Integer, Integer> tx, long timeout) {
                     return false;
                 }
 
-                @Override public void txUnlock(GridCacheTxEx<Integer, Integer> tx) {
+                @Override public void txUnlock(IgniteTxEx<Integer, Integer> tx) {
                     // No-op.
                 }
 

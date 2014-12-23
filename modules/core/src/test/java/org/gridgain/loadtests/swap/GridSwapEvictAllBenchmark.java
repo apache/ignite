@@ -12,7 +12,7 @@ package org.gridgain.loadtests.swap;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.store.*;
@@ -55,7 +55,7 @@ public class GridSwapEvictAllBenchmark {
             String outputFileName = args.length > 0 ? args[0] : null;
 
             Ignite g = start(new GridCacheStoreAdapter<Long, String>() {
-                @Nullable @Override public String load(@Nullable GridCacheTx tx, Long key) {
+                @Nullable @Override public String load(@Nullable IgniteTx tx, Long key) {
                     return null;
                 }
 
@@ -65,12 +65,12 @@ public class GridSwapEvictAllBenchmark {
                         c.apply((long)i, String.valueOf(i));
                 }
 
-                @Override public void put(@Nullable GridCacheTx tx, Long key,
+                @Override public void put(@Nullable IgniteTx tx, Long key,
                     @Nullable String val) {
                     assert false;
                 }
 
-                @Override public void remove(@Nullable GridCacheTx tx, Long key) {
+                @Override public void remove(@Nullable IgniteTx tx, Long key) {
                     assert false;
                 }
             });

@@ -19,7 +19,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests for local transactions.
  */
-public class GridCacheLocalTxSingleThreadedSelfTest extends GridCacheTxSingleThreadedAbstractTest {
+public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

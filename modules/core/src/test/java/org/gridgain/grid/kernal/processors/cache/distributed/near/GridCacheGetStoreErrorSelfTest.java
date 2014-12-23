@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.*;
@@ -57,17 +58,17 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setStore(new GridCacheStoreAdapter<Object, Object>() {
-            @Override public Object load(@Nullable GridCacheTx tx, Object key)
+            @Override public Object load(@Nullable IgniteTx tx, Object key)
                 throws IgniteCheckedException {
                 throw new IgniteCheckedException("Failed to get key from store: " + key);
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, Object key,
+            @Override public void put(@Nullable IgniteTx tx, Object key,
                 @Nullable Object val) {
                 // No-op.
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, Object key) {
+            @Override public void remove(@Nullable IgniteTx tx, Object key) {
                 // No-op.
             }
         });

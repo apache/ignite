@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -50,7 +51,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(GridCacheTxEx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(IgniteTxEx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();

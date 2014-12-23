@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -23,8 +24,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests write-through.
@@ -219,7 +220,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
      * @param op Op.
      * @throws Exception If failed.
      */
-    protected void checkTransform(GridCacheTxConcurrency concurrency, int nodeType, int op) throws Exception {
+    protected void checkTransform(IgniteTxConcurrency concurrency, int nodeType, int op) throws Exception {
         GridCacheProjection<String, Integer> cache = cache(0);
 
         Collection<String> keys = keysForType(nodeType);
@@ -236,7 +237,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         info(">>> Starting transform transaction");
 
-        try (GridCacheTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
+        try (IgniteTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
             if (op == OP_UPDATE) {
                 for (String key : keys)
                     cache.transform(key, INCR_CLOS);

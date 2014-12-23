@@ -25,10 +25,10 @@ public class GridCacheWriteBehindTestSuite extends TestSuite {
         // Write-behind tests.
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreMultithreadedSelfTest.class));
-//        suite.addTest(new TestSuite(GridCacheWriteBehindStoreLocalTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheWriteBehindStoreLocalTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStoreReplicatedTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedTest.class));
-//        suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedWritesTest.class));
 
         return suite;

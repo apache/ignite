@@ -15,7 +15,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -436,8 +435,6 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
             cacheCfg.setStartSize(4500000);
             cacheCfg.setBackups(backups);
-            cacheCfg.setDgcSuspectLockTimeout(600000);
-            cacheCfg.setDgcFrequency(0);
             cacheCfg.setStoreValueBytes(true);
             cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
             cacheCfg.setQueryIndexEnabled(false);

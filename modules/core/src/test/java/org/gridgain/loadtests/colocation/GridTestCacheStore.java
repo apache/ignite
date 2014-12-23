@@ -12,7 +12,7 @@ package org.gridgain.loadtests.colocation;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.jdk8.backport.*;
@@ -108,15 +108,15 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
         }
     }
 
-    @Override public Long load(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
+    @Override public Long load(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
         return null; // No-op.
     }
 
-    @Override public void put(GridCacheTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
+    @Override public void put(IgniteTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
         // No-op.
     }
 
-    @Override public void remove(GridCacheTx tx, GridTestKey key) throws IgniteCheckedException {
+    @Override public void remove(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
         // No-op.
     }
 }

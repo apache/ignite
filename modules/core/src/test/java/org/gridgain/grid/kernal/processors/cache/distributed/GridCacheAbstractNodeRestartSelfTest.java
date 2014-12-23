@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -24,8 +25,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test node restart.
@@ -210,7 +211,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @return Transaction concurrency to use in tests.
      */
-    protected GridCacheTxConcurrency txConcurrency() {
+    protected IgniteTxConcurrency txConcurrency() {
         return PESSIMISTIC;
     }
 
@@ -494,7 +495,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (GridCacheTxRollbackException | ClusterTopologyException ignored) {
+                                catch (IgniteTxRollbackException | ClusterTopologyException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -622,7 +623,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 int c = 0;
 
                                 try {
-                                    try (GridCacheTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                    try (IgniteTx tx = cache.txStart(txConcurrency(), REPEATABLE_READ)) {
                                         c = txCntr.incrementAndGet();
 
                                         if (c % logFreq == 0)
@@ -771,7 +772,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 int c = 0;
 
-                                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     c = txCntr.incrementAndGet();
 
                                     if (c % logFreq == 0)

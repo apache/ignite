@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -58,7 +59,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      * @param originatingThreadId Originating thread ID.
      * @param futId Future ID.
      */
-    public GridCachePessimisticCheckCommittedTxRequest(GridCacheTxEx<K, V> tx, long originatingThreadId, IgniteUuid futId,
+    public GridCachePessimisticCheckCommittedTxRequest(IgniteTxEx<K, V> tx, long originatingThreadId, IgniteUuid futId,
         boolean nearOnlyCheck) {
         super(tx.xidVersion(), 0);
 

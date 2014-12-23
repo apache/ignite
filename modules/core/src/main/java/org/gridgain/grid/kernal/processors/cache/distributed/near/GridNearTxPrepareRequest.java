@@ -13,6 +13,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -79,10 +80,10 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
         long topVer,
-        GridCacheTxEx<K, V> tx,
-        Collection<GridCacheTxEntry<K, V>> reads,
-        Collection<GridCacheTxEntry<K, V>> writes,
-        GridCacheTxKey grpLockKey,
+        IgniteTxEx<K, V> tx,
+        Collection<IgniteTxEntry<K, V>> reads,
+        Collection<IgniteTxEntry<K, V>> writes,
+        IgniteTxKey grpLockKey,
         boolean partLock,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
@@ -182,13 +183,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      * @param c Collection of entries to clone.
      * @return Cloned collection.
      */
-    private Collection<GridCacheTxEntry<K, V>> cloneEntries(Collection<GridCacheTxEntry<K, V>> c) {
+    private Collection<IgniteTxEntry<K, V>> cloneEntries(Collection<IgniteTxEntry<K, V>> c) {
         if (F.isEmpty(c))
             return c;
 
-        Collection<GridCacheTxEntry<K, V>> cp = new ArrayList<>(c.size());
+        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(c.size());
 
-        for (GridCacheTxEntry<K, V> e : c) {
+        for (IgniteTxEntry<K, V> e : c) {
             GridCacheContext<K, V> cacheCtx = e.context();
 
             // Clone only if it is a near cache.
@@ -219,7 +220,6 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.near = near;
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
@@ -236,29 +236,29 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+            if (!commState.putByte(directType()))
                 return false;
 
             commState.typeWritten = true;
         }
 
         switch (commState.idx) {
-            case 21:
-                if (!commState.putGridUuid("futId", futId))
-                    return false;
-
-                commState.idx++;
-
             case 22:
-                if (!commState.putBoolean("last", last))
+                if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
             case 23:
+                if (!commState.putBoolean(last))
+                    return false;
+
+                commState.idx++;
+
+            case 24:
                 if (lastBackups != null) {
                     if (commState.it == null) {
-                        if (!commState.putInt(null, lastBackups.size()))
+                        if (!commState.putInt(lastBackups.size()))
                             return false;
 
                         commState.it = lastBackups.iterator();
@@ -268,7 +268,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                         if (commState.cur == NULL)
                             commState.cur = commState.it.next();
 
-                        if (!commState.putUuid(null, (UUID)commState.cur))
+                        if (!commState.putUuid((UUID)commState.cur))
                             return false;
 
                         commState.cur = NULL;
@@ -276,38 +276,38 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                     commState.it = null;
                 } else {
-                    if (!commState.putInt(null, -1))
+                    if (!commState.putInt(-1))
                         return false;
                 }
 
                 commState.idx++;
 
-            case 24:
-                if (!commState.putGridUuid("miniId", miniId))
-                    return false;
-
-                commState.idx++;
-
             case 25:
-                if (!commState.putBoolean("near", near))
+                if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
             case 26:
-                if (!commState.putLong("topVer", topVer))
+                if (!commState.putBoolean(near))
                     return false;
 
                 commState.idx++;
 
             case 27:
-                if (!commState.putUuid("subjId", subjId))
+                if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
             case 28:
-                if (!commState.putInt("taskNameHash", taskNameHash))
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -326,8 +326,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
             return false;
 
         switch (commState.idx) {
-            case 21:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+            case 22:
+                IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -336,20 +336,20 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (buf.remaining() < 1)
                     return false;
 
-                last = commState.getBoolean("last");
+                last = commState.getBoolean();
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
 
-                    commState.readSize = commState.getInt(null);
+                    commState.readSize = commState.getInt();
                 }
 
                 if (commState.readSize >= 0) {
@@ -357,7 +357,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
                         lastBackups = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        UUID _val = commState.getUuid(null);
+                        UUID _val = commState.getUuid();
 
                         if (_val == UUID_NOT_READ)
                             return false;
@@ -373,8 +373,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 24:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+            case 25:
+                IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
                     return false;
@@ -383,24 +383,24 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (buf.remaining() < 1)
                     return false;
 
-                near = commState.getBoolean("near");
-
-                commState.idx++;
-
-            case 26:
-                if (buf.remaining() < 8)
-                    return false;
-
-                topVer = commState.getLong("topVer");
+                near = commState.getBoolean();
 
                 commState.idx++;
 
             case 27:
-                UUID subjId0 = commState.getUuid("subjId");
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
+
+                commState.idx++;
+
+            case 28:
+                UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
                     return false;
@@ -409,11 +409,11 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 if (buf.remaining() < 4)
                     return false;
 
-                taskNameHash = commState.getInt("taskNameHash");
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 

@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.testframework.junits.common.*;
@@ -463,7 +464,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, cache.primarySize());
 
-        try (GridCacheTx tx = cache.txStart()) {
+        try (IgniteTx tx = cache.txStart()) {
             long newVal = RND.nextLong();
 
             long curAtomicVal = atomic.get();

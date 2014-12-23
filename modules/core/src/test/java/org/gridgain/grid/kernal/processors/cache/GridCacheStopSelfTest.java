@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
@@ -137,7 +138,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         if (startTx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 cache.put(key, key);
 
                                 readyLatch.countDown();

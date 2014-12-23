@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -88,7 +89,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
 
             GridCache<Integer, Integer> cache = ignite.cache(null);
 
-            GridCacheTx tx = cache.txStart();
+            IgniteTx tx = cache.txStart();
 
             cache.put(1, 1);
 

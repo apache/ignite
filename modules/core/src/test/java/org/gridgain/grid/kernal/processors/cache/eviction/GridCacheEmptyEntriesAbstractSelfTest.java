@@ -10,8 +10,9 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
@@ -44,16 +45,16 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private GridCacheStore<String, String> testStore;
 
     /** Tx concurrency to use. */
-    private GridCacheTxConcurrency txConcurrency;
+    private IgniteTxConcurrency txConcurrency;
 
     /** Tx isolation to use. */
-    private GridCacheTxIsolation txIsolation;
+    private IgniteTxIsolation txIsolation;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(txConcurrency);
         txCfg.setDefaultTxIsolation(txIsolation);
@@ -123,16 +124,16 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         checkPolicy0();
 
         testStore = new GridCacheStoreAdapter<String, String>() {
-            @Override public String load(@Nullable GridCacheTx tx, String key) {
+            @Override public String load(@Nullable IgniteTx tx, String key) {
                 return null;
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, String key,
+            @Override public void put(@Nullable IgniteTx tx, String key,
                 @Nullable String val) {
                 // No-op.
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, String key) {
+            @Override public void remove(@Nullable IgniteTx tx, String key) {
                 // No-op.
             }
         };
@@ -146,10 +147,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkPolicy0() throws Exception {
-        for (GridCacheTxConcurrency concurrency : GridCacheTxConcurrency.values()) {
+        for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
             txConcurrency = concurrency;
 
-            for (GridCacheTxIsolation isolation : GridCacheTxIsolation.values()) {
+            for (IgniteTxIsolation isolation : IgniteTxIsolation.values()) {
                 txIsolation = isolation;
 
                 Ignite g = startGrids();
@@ -198,7 +199,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkExplicitTx(GridCache<String, String> cache) throws Exception {
-        GridCacheTx tx = cache.txStart();
+        IgniteTx tx = cache.txStart();
 
         try {
             assertNull(cache.get("key1"));

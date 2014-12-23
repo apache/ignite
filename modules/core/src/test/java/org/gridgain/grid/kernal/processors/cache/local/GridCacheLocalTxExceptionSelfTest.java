@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.LOCAL;
 /**
  * Tests local cache.
  */
-public class GridCacheLocalTxExceptionSelfTest extends GridCacheTxExceptionAbstractSelfTest {
+public class GridCacheLocalTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;

@@ -11,8 +11,8 @@ package org.gridgain.examples.datagrid.store.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
@@ -42,7 +42,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public Person load(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
@@ -61,7 +61,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Long key, @Nullable Person val)
+    @Override public void put(@Nullable IgniteTx tx, Long key, @Nullable Person val)
         throws IgniteCheckedException {
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -88,7 +88,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
-    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
@@ -149,7 +149,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void rollback(Session ses, GridCacheTx tx) {
+    private void rollback(Session ses, IgniteTx tx) {
         // Rollback only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
@@ -166,7 +166,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
      * @param ses Hibernate session.
      * @param tx Cache ongoing transaction.
      */
-    private void end(Session ses, @Nullable GridCacheTx tx) {
+    private void end(Session ses, @Nullable IgniteTx tx) {
         // Commit only if there is no cache transaction,
         // otherwise txEnd() will do all required work.
         if (tx == null) {
@@ -180,7 +180,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         Session ses = tx.removeMeta(ATTR_SES);
 
         if (ses != null) {
@@ -215,7 +215,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
      * @param tx Cache transaction.
      * @return Session.
      */
-    private Session session(@Nullable GridCacheTx tx) {
+    private Session session(@Nullable IgniteTx tx) {
         Session ses;
 
         if (tx != null) {

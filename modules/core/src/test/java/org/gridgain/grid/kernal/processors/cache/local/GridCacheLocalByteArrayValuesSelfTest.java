@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.swapspace.file.*;
@@ -23,8 +24,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Byte values test for LOCAL cache.
@@ -199,7 +200,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction(GridCache<Integer, Object> cache, GridCacheTxConcurrency concurrency,
+    private void testTransaction(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed(cache, concurrency, key, val, null, null);
     }
@@ -215,10 +216,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed(GridCache<Integer, Object> cache, GridCacheTxConcurrency concurrency,
+    private void testTransactionMixed(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
-        GridCacheTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
 
         try {
             cache.put(key1, val1);

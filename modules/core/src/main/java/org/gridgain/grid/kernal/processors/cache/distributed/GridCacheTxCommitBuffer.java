@@ -10,6 +10,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -23,7 +24,7 @@ public interface GridCacheTxCommitBuffer<K, V> {
      *
      * @param tx Committed transaction.
      */
-    public void addCommittedTx(GridCacheTxEx<K, V> tx);
+    public void addCommittedTx(IgniteTxEx<K, V> tx);
 
     /**
      * Gets transaction from commit buffer.

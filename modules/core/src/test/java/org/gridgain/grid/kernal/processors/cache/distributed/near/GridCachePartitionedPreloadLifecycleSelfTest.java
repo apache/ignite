@@ -14,7 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -38,8 +38,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(GridCacheTxConcurrency.OPTIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(GridCacheTxIsolation.READ_COMMITTED);
+        c.getTransactionsConfiguration().setDefaultTxConcurrency(IgniteTxConcurrency.OPTIMISTIC);
+        c.getTransactionsConfiguration().setDefaultTxIsolation(IgniteTxIsolation.READ_COMMITTED);
 
         GridCacheConfiguration cc1 = defaultCacheConfiguration();
 

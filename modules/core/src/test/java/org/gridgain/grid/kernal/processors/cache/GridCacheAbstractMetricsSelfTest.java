@@ -12,19 +12,12 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-
 /**
  * Cache metrics test.
  */
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 50;
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheWriteSynchronizationMode writeSynchronization() {
-        return FULL_SYNC;
-    }
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {
@@ -70,6 +63,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             assert g.cache(null).isEmpty();
 
             g.cache(null).resetMetrics();
+
+            g.transactions().resetMetrics();
         }
     }
 

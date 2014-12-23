@@ -11,7 +11,7 @@ package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -24,8 +24,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -65,7 +65,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         GridCache<Object, Integer> c = cache(key);
 
-        try (GridCacheTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+        try (IgniteTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
             Integer val = c.get(key);
             Integer userVal1 = c.get(new UserKey(key, 0));
             Integer userVal2 = c.get(new UserKey(key, 1));

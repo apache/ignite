@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.dataload.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -18,8 +19,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Bundled factory for cache updaters.
@@ -263,7 +264,7 @@ public class GridDataLoadCacheUpdaters {
                 Integer part = e.getKey();
                 int cnt = e.getValue();
 
-                GridCacheTx tx = cache.txStartPartition(part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
+                IgniteTx tx = cache.txStartPartition(part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
 
                 try {
                     updateAll(cache, rmvPartMap == null ? null : rmvPartMap.get(part),

@@ -14,6 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -25,8 +26,8 @@ import java.util.concurrent.atomic.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multithreaded partition cache put get test.
@@ -159,7 +160,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
-    private void doTest(final GridCacheTxConcurrency concurrency, final GridCacheTxIsolation isolation)
+    private void doTest(final IgniteTxConcurrency concurrency, final IgniteTxIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
@@ -171,7 +172,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    try (GridCacheTx tx = c.txStart(concurrency, isolation)) {
+                    try (IgniteTx tx = c.txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
                         assert c.putx(kv, kv);

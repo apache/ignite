@@ -15,6 +15,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.store.*;
@@ -392,7 +393,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ValueObject load(@Nullable GridCacheTx tx,
+        @Override public ValueObject load(@Nullable IgniteTx tx,
             Integer key) throws IgniteCheckedException {
             assert key != null;
 
@@ -400,7 +401,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx,
+        @Override public void put(@Nullable IgniteTx tx,
             Integer key, ValueObject val) throws IgniteCheckedException {
             assert key != null;
             assert val != null;
@@ -409,7 +410,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx,
+        @Override public void remove(@Nullable IgniteTx tx,
             Integer key) throws IgniteCheckedException {
             assert key != null;
 

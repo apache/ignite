@@ -11,10 +11,12 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -69,6 +71,9 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(3)
     private boolean hasTransforms;
 
+    /** Sync commit flag. */
+    private boolean syncCommit;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -105,12 +110,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         boolean implicitTx,
         boolean implicitSingleTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        boolean syncCommit,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
@@ -137,6 +143,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.topVer = topVer;
         this.implicitTx = implicitTx;
         this.implicitSingleTx = implicitSingleTx;
+        this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
@@ -190,6 +197,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public void onePhaseCommit(boolean onePhaseCommit) {
         this.onePhaseCommit = onePhaseCommit;
+    }
+
+    /**
+     * @return Sync commit flag.
+     */
+    public boolean syncCommit() {
+        return syncCommit;
     }
 
     /**
@@ -254,7 +268,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheTxEntry<K, V> writeEntry,
+        @Nullable IgniteTxEntry<K, V> writeEntry,
         @Nullable GridCacheVersion drVer,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
@@ -316,6 +330,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
         _clone.hasTransforms = hasTransforms;
+        _clone.syncCommit = syncCommit;
     }
 
     /** {@inheritDoc} */
@@ -436,6 +451,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
+            case 34:
+                if (!commState.putBoolean(syncCommit))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -576,6 +596,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
+            case 34:
+                if (buf.remaining() < 1)
+                    return false;
+
+                syncCommit = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -67,7 +66,7 @@ import java.util.*;
  *     &lt;cache:annotation-driven/&gt;
  * &lt;/beans&gt;
  * </pre>
- * Or you can provide a {@link org.apache.ignite.configuration.IgniteConfiguration} bean, like below:
+ * Or you can provide a {@link IgniteConfiguration} bean, like below:
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -115,7 +114,7 @@ import java.util.*;
  * for node startup.
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
- * {@link #setConfiguration(org.apache.ignite.configuration.IgniteConfiguration) configuration}, nor
+ * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
  * {@link #setGridName(String) gridName} are provided, cache manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.

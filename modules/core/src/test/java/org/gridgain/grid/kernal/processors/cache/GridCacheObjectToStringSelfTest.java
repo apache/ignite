@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -26,8 +27,8 @@ import java.util.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests that common cache objects' toString() methods do not lead to stack overflow.
@@ -162,7 +163,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
             assertNotNull(entries);
             assertFalse(entries.toString().isEmpty());
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(1, cache.get(1));
 
                 cache.put(2, 22);

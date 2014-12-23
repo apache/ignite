@@ -15,8 +15,8 @@ import org.gridgain.grid.kernal.processors.cache.dr.os.*;
 import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.logger.*;
 
 import static org.gridgain.testframework.junits.GridAbstractTest.*;
 
@@ -32,7 +32,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             ctx,
             new GridCacheSharedContext<>(
                 ctx,
-                new GridCacheTxManager<K, V>(),
+                new IgniteTxManager<K, V>(),
                 new GridCacheVersionManager<K, V>(),
                 new GridCacheMvccManager<K, V>(),
                 new GridCacheDeploymentManager<K, V>(),

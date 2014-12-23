@@ -14,7 +14,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -24,8 +24,8 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache sequence basic tests.
@@ -220,7 +220,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testGetAndAddInTx() throws Exception {
-        try (GridCacheTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
                 for (GridCacheAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);

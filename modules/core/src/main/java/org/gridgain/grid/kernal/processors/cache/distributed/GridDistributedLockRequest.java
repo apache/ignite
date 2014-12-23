@@ -11,9 +11,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -54,7 +55,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     private boolean isRead;
 
     /** Transaction isolation. */
-    private GridCacheTxIsolation isolation;
+    private IgniteTxIsolation isolation;
 
     /** Key bytes for keys to lock. */
     @GridDirectCollection(byte[].class)
@@ -67,7 +68,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** Write entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridCacheTxEntry<K, V>> writeEntries;
+    private List<IgniteTxEntry<K, V>> writeEntries;
 
     /** Serialized write entries. */
     private byte[] writeEntriesBytes;
@@ -85,7 +86,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** Group lock key if this is a group-lock transaction. */
     @GridDirectTransient
-    private GridCacheTxKey grpLockKey;
+    private IgniteTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -130,12 +131,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         GridCacheVersion lockVer,
         boolean isInTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock
     ) {
         super(lockVer, keyCnt);
@@ -230,7 +231,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
      */
-    public GridCacheTxIsolation isolation() {
+    public IgniteTxIsolation isolation() {
         return isolation;
     }
 
@@ -245,7 +246,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Write entries list.
      */
-    public List<GridCacheTxEntry<K, V>> writeEntries() {
+    public List<IgniteTxEntry<K, V>> writeEntries() {
         return writeEntries;
     }
 
@@ -271,7 +272,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     public void addKeyBytes(
         K key,
         @Nullable byte[] keyBytes,
-        @Nullable GridCacheTxEntry<K, V> writeEntry,
+        @Nullable IgniteTxEntry<K, V> writeEntry,
         boolean retVal,
         @Nullable Collection<GridCacheMvccCandidate<K>> cands,
         @Nullable GridCacheVersion drVer,
@@ -328,7 +329,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Group lock key.
      */
-    @Nullable public GridCacheTxKey groupLockKey() {
+    @Nullable public IgniteTxKey groupLockKey() {
         return grpLockKey;
     }
 
@@ -701,7 +702,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 byte isolation0 = commState.getByte("isolation");
 
-                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
+                isolation = IgniteTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

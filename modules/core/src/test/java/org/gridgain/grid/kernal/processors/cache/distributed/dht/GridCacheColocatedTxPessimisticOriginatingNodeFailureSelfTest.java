@@ -23,7 +23,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * Test pessimistic tx failures in colocated cache.
  */
 public class GridCacheColocatedTxPessimisticOriginatingNodeFailureSelfTest extends
-    GridCacheTxPessimisticOriginatingNodeFailureAbstractSelfTest {
+    IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> ignoreMessageClasses() {
         return F.asList((Class<?>)GridNearTxFinishRequest.class, GridDhtTxFinishRequest.class);

@@ -12,9 +12,11 @@ package org.gridgain.grid.kernal.processors.cache.local.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -1247,10 +1249,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> txLockAsync(Collection<? extends K> keys,
         long timeout,
-        GridCacheTxLocalEx<K, V> tx,
+        IgniteTxLocalEx<K, V> tx,
         boolean isRead,
         boolean retval,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return new GridFinishedFutureEx<>(new UnsupportedOperationException("Locks are not supported for " +

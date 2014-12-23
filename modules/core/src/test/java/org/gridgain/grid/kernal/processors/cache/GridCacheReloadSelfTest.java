@@ -2,6 +2,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.store.*;
@@ -62,16 +63,16 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setEvictionPolicy(new GridCacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cacheCfg.setStore(new GridCacheStoreAdapter<Integer, Integer>() {
-            @Override public Integer load(@Nullable GridCacheTx tx, Integer key) {
+            @Override public Integer load(@Nullable IgniteTx tx, Integer key) {
                 return key;
             }
 
-            @Override public void put(@Nullable GridCacheTx tx, Integer key,
+            @Override public void put(@Nullable IgniteTx tx, Integer key,
                 @Nullable Integer val) {
                 //No-op.
             }
 
-            @Override public void remove(@Nullable GridCacheTx tx, Integer key) {
+            @Override public void remove(@Nullable IgniteTx tx, Integer key) {
                 //No-op.
             }
         });
