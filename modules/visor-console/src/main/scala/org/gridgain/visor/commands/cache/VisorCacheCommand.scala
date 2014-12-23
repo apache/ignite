@@ -807,7 +807,6 @@ object VisorCacheCommand {
         cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
 
-        cacheT += ("Refresh Ahead Ratio", cfg.refreshAheadRatio)
         cacheT += ("Write Synchronization Mode", cfg.writeSynchronizationMode)
         cacheT += ("Swap Enabled", cfg.swapEnabled())
         cacheT += ("Invalidate", cfg.invalidate())

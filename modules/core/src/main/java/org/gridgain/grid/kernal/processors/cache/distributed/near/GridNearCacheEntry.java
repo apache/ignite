@@ -306,11 +306,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void refreshAhead(K key, GridCacheVersion matchVer) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override protected V readThrough(IgniteTxEx<K, V> tx, K key, boolean reload,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
@@ -336,6 +331,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @param expireTime Expiration time.
      * @param evt Event flag.
      * @param topVer Topology version.
+     * @param subjId Subject ID.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -365,8 +361,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
                 if (isNew() || !valid || expVer == null || expVer.equals(this.dhtVer)) {
                     this.primaryNodeId = primaryNodeId;
-
-                    refreshingLocked(false);
 
                     // Change entry only if dht version has changed.
                     if (!dhtVer.equals(dhtVersion())) {

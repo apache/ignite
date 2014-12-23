@@ -54,13 +54,10 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final byte IS_REFRESHING_MASK = 0x01;
+    private static final byte IS_DELETED_MASK = 0x01;
 
     /** */
-    private static final byte IS_DELETED_MASK = 0x02;
-
-    /** */
-    private static final byte IS_UNSWAPPED_MASK = 0x04;
+    private static final byte IS_UNSWAPPED_MASK = 0x02;
 
     /** */
     private static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
@@ -134,8 +131,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      * Flags:
      * <ul>
-     *     <li>Refreshing flag - mask {@link #IS_REFRESHING_MASK}</li>
      *     <li>Deleted flag - mask {@link #IS_DELETED_MASK}</li>
+     *     <li>Unswapped flag - mask {@link #IS_UNSWAPPED_MASK}</li>
      * </ul>
      */
     @GridToStringInclude
@@ -603,76 +600,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /**
-     * @param key Key.
-     * @param matchVer Version to match.
-     */
-    protected void refreshAhead(final K key, final GridCacheVersion matchVer) {
-        if (log.isDebugEnabled())
-            log.debug("Scheduling asynchronous refresh for entry: " + this);
-
-        // Asynchronous execution (we don't check filter here).
-        cctx.closures().runLocalSafe(new GPR() {
-            @SuppressWarnings({"unchecked"})
-            @Override public void run() {
-                if (log.isDebugEnabled())
-                    log.debug("Refreshing-ahead entry: " + GridCacheMapEntry.this);
-
-                synchronized (GridCacheMapEntry.this){
-                    // If there is a point to refresh.
-                    if (!matchVer.equals(ver)) {
-                        refreshingLocked(false);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Will not refresh value as entry has been recently updated: " +
-                                GridCacheMapEntry.this);
-
-                        return;
-                    }
-                }
-
-                V val = null;
-
-                try {
-                    val = cctx.store().loadFromStore(null, key);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to refresh-ahead entry: " + GridCacheMapEntry.this, e);
-                }
-                finally {
-                    synchronized (GridCacheMapEntry.this) {
-                        refreshingLocked(false);
-
-                        // If version matched, set value. Note that we don't update
-                        // swap here, as asynchronous refresh happens only if
-                        // value is already in memory.
-                        if (val != null && matchVer.equals(ver)) {
-                            try {
-                                V prev = rawGetOrUnmarshalUnlocked(false);
-
-                                long ttl = ttlExtras();
-
-                                long expTime = toExpireTime(ttl);
-
-                                // Detach value before index update.
-                                if (cctx.portableEnabled())
-                                    val = (V)cctx.kernalContext().portable().detachPortable(val);
-
-                                updateIndex(val, null, expTime, ver, prev);
-
-                                // Don't change version for read-through.
-                                update(val, null, expTime, ttl, ver);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to update cache index: " + GridCacheMapEntry.this, e);
-                            }
-                        }
-                    }
-                }
-            }
-        }, true);
-    }
-
-    /**
      * @param tx Transaction.
      * @param key Key.
      * @param reload flag.
@@ -749,8 +676,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             (new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this, true)), filter))
             return CU.<V>failed(failFast);
 
-        boolean asyncRefresh = false;
-
         GridCacheVersion startVer;
 
         boolean expired = false;
@@ -769,7 +694,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             owner = mvcc == null ? null : mvcc.anyOwner();
 
-            double delta = Double.MAX_VALUE;
+            double delta;
 
             long expireTime = expireTimeExtras();
 
@@ -829,15 +754,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            // Only calculate asynchronous refresh-ahead, if there is no other
-            // one in progress and if not expired.
-            if (delta > 0 && expireTime > 0 && !refreshingUnlocked()) {
-                double refreshRatio = cctx.config().getRefreshAheadRatio();
-
-                if (1 - delta / ttlExtras() >= refreshRatio)
-                    asyncRefresh = true;
-            }
-
             old = expired || !valid ? null : val;
 
             if (expired) {
@@ -847,8 +763,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             if (old == null && !hasOldBytes) {
-                asyncRefresh = false;
-
                 if (updateMetrics)
                     cctx.cache().metrics0().onRead(false);
             }
@@ -858,11 +772,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 // Set retVal here for event notification.
                 ret = old;
-
-                // Mark this entry as refreshing, so other threads won't schedule
-                // asynchronous refresh while this one is in progress.
-                if (asyncRefresh || readThrough)
-                    refreshingLocked(true);
             }
 
             if (evt && expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
@@ -892,12 +801,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     version(),
                     hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
             }
-        }
-
-        if (asyncRefresh && !readThrough && cctx.isStoreEnabled()) {
-            assert ret != null;
-
-            refreshAhead(key, startVer);
         }
 
         // Check before load.
@@ -4094,27 +3997,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             cctx.incrementPublicSize(this);
         }
-    }
-
-    /**
-     * @return {@code True} if refreshing.
-     */
-    protected boolean refreshingUnlocked() {
-        assert Thread.holdsLock(this);
-
-        return (flags & IS_REFRESHING_MASK) != 0;
-    }
-
-    /**
-     * @param refreshing {@code True} if refreshing.
-     */
-    protected void refreshingLocked(boolean refreshing) {
-        assert Thread.holdsLock(this);
-
-        if (refreshing)
-            flags |= IS_REFRESHING_MASK;
-        else
-            flags &= ~IS_REFRESHING_MASK;
     }
 
     /**
