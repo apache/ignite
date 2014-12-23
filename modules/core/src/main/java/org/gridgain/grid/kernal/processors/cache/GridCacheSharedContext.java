@@ -476,7 +476,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to rollback.
      * @throws IgniteCheckedException If failed.
      */
-    public void rollbackTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+    public IgniteFuture rollbackTxAsync(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
@@ -484,7 +484,7 @@ public class GridCacheSharedContext<K, V> {
                 cacheContext(cacheId).cache().awaitLastFut();
         }
 
-        tx.rollback();
+        return tx.rollbackAsync();
     }
 
     /**

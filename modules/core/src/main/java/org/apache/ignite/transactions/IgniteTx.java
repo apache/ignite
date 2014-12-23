@@ -54,7 +54,7 @@ import java.util.*;
  * <ul>
  * <li>
  *  {@link IgniteTxConcurrency#OPTIMISTIC} - in this mode all cache operations are not distributed to other
- *  nodes until {@link #commit()} or {@link #commitAsync()} are called. In this mode one {@code 'PREPARE'}
+ *  nodes until {@link #commit()} is called. In this mode one {@code 'PREPARE'}
  *  message will be sent to participating cache nodes to start acquiring per-transaction locks, and once
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
@@ -71,7 +71,7 @@ import java.util.*;
  *  {@link IgniteTxConcurrency#PESSIMISTIC} - in this mode a lock is acquired on all cache operations
  *  with exception of read operations in {@link IgniteTxIsolation#READ_COMMITTED} mode. All optional filters
  *  passed into cache operations will be evaluated after successful lock acquisition. Whenever
- *  {@link #commit()} or {@link #commitAsync()} is called, a single one-way {@code 'COMMIT'} message
+ *  {@link #commit()} is called, a single one-way {@code 'COMMIT'} message
  *  is sent to participating cache nodes without waiting for reply. Note that there is no reason for
  *  distributed 'PREPARE' step, as all locks have been already acquired. Just like with optimistic mode,
  *  it is possible to configure synchronous commit or rollback and wait till transaction commits on
@@ -106,7 +106,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface IgniteTx extends GridMetadataAware, AutoCloseable {
+public interface IgniteTx extends GridMetadataAware, AutoCloseable, IgniteAsyncSupport {
     /**
      * Gets unique identifier for this transaction.
      *
@@ -228,13 +228,6 @@ public interface IgniteTx extends GridMetadataAware, AutoCloseable {
      * @throws IgniteCheckedException If transaction could not be gracefully ended.
      */
     @Override public void close() throws IgniteCheckedException;
-
-    /**
-     * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
-     *
-     * @return Future for commit operation.
-     */
-    public IgniteFuture<IgniteTx> commitAsync();
 
     /**
      * Rolls back this transaction.

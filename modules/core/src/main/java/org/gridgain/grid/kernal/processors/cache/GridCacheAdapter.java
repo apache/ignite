@@ -3106,7 +3106,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Nullable @Override public IgniteTx tx() {
         IgniteTxAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
-        return tx == null ? null : new IgniteTxProxyImpl<>(tx, ctx.shared());
+        return tx == null ? null : new IgniteTxProxyImpl<>(tx, ctx.shared(), false);
     }
 
     /** {@inheritDoc} */
@@ -3524,7 +3524,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<IgniteTx> commitTxAsync(final IgniteTx tx) {
+    public IgniteFuture<IgniteTx> commitTxAsync(final IgniteTxEx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();

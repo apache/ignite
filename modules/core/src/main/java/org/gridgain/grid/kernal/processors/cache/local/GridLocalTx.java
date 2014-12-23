@@ -66,11 +66,6 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> future() {
-        return fut.get();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx<K, V> entry, GridCacheMvccCandidate<K> owner) {
         GridLocalTxFuture<K, V> fut = this.fut.get();
 

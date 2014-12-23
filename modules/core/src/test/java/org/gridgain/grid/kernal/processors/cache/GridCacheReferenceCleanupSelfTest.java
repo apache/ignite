@@ -430,7 +430,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     cache.putx(0, val);
 
-                    tx.commitAsync().get();
+                    tx.commit();
                 }
                 finally {
                     G.stop(g.name(), cancel);
@@ -469,7 +469,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                         cache.putxAsync(i, val);
                     }
 
-                    tx.commitAsync().get();
+                    tx.commit();
                 }
                 finally {
                     G.stop(g.name(), cancel);

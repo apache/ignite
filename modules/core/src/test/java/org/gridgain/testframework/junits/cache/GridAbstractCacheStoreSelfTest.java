@@ -483,7 +483,17 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFuture<IgniteTx> commitAsync() {
+        @Override public IgniteAsyncSupport enableAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
 

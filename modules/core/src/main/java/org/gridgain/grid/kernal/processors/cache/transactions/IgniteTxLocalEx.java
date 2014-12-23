@@ -28,11 +28,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     public GridCacheVersion minVersion();
 
     /**
-     * @return Future for this transaction.
-     */
-    public IgniteFuture<IgniteTxEx<K, V>> future();
-
-    /**
      * @return Commit error.
      */
     @Nullable public Throwable commitError();

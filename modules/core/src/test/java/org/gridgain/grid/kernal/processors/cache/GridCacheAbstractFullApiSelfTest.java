@@ -1557,7 +1557,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
         IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteFuture<IgniteTx> f = tx == null ? null : tx.commitAsync();
+        IgniteFuture<IgniteTx> f = null;
+
+        if (tx != null) {
+            tx = (IgniteTx)tx.enableAsync();
+
+            tx.commit();
+
+            f = tx.future();
+        }
 
         assert fut1.get();
         assert fut2.get();

@@ -416,12 +416,18 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     public boolean isSystemInvalidate();
 
     /**
-     * TODO-gg-4004 Put rollback async on public API?
      * Asynchronously rollback this transaction.
      *
      * @return Rollback future.
      */
     public IgniteFuture<IgniteTx> rollbackAsync();
+
+    /**
+     * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
+     *
+     * @return Future for commit operation.
+     */
+    public IgniteFuture<IgniteTx> commitAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired

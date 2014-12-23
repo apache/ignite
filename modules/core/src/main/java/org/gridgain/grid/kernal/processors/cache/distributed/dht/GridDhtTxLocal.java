@@ -229,11 +229,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         return nearFinMiniId;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> future() {
-        return prepFut.get();
-    }
-
     /**
      * @param nearFinMiniId Near future mini ID.
      */

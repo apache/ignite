@@ -139,7 +139,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         assert tx != null;
 
         // Wrap into proxy.
-        return new IgniteTxProxyImpl<>(tx, cctx);
+        return new IgniteTxProxyImpl<>(tx, cctx, false);
 
     }
 
@@ -225,7 +225,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         }
 
         // Wrap into proxy.
-        return new IgniteTxProxyImpl<>(tx0, cctx);
+        return new IgniteTxProxyImpl<>(tx0, cctx, false);
     }
 
     /** {@inheritDoc} */
