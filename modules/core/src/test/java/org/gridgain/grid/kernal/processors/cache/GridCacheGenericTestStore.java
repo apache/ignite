@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -34,16 +34,16 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     /** */
     private long ts = System.currentTimeMillis();
 
-    /** {@link #put(GridCacheTx, Object, Object)} method call counter .*/
+    /** {@link #put(IgniteTx, Object, Object)} method call counter .*/
     private AtomicInteger putCnt = new AtomicInteger();
 
-    /** {@link #putAll(GridCacheTx, Map)} method call counter .*/
+    /** {@link #putAll(IgniteTx, Map)} method call counter .*/
     private AtomicInteger putAllCnt = new AtomicInteger();
 
-    /** {@link #remove(GridCacheTx, Object)} method call counter. */
+    /** {@link #remove(IgniteTx, Object)} method call counter. */
     private AtomicInteger rmvCnt = new AtomicInteger();
 
-    /** {@link #removeAll(GridCacheTx, Collection)} method call counter. */
+    /** {@link #removeAll(IgniteTx, Collection)} method call counter. */
     private AtomicInteger rmvAllCnt = new AtomicInteger();
 
     /** Flag indicating if methods of this store should fail. */
@@ -133,35 +133,35 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /**
-     * @return Count of {@link #put(GridCacheTx, Object, Object)} method calls since last reset.
+     * @return Count of {@link #put(IgniteTx, Object, Object)} method calls since last reset.
      */
     public int getPutCount() {
         return putCnt.get();
     }
 
     /**
-     * @return Count of {@link #putAll(GridCacheTx, Map)} method calls since last reset.
+     * @return Count of {@link #putAll(IgniteTx, Map)} method calls since last reset.
      */
     public int getPutAllCount() {
         return putAllCnt.get();
     }
 
     /**
-     * @return Number of {@link #remove(GridCacheTx, Object)} method calls since last reset.
+     * @return Number of {@link #remove(IgniteTx, Object)} method calls since last reset.
      */
     public int getRemoveCount() {
         return rmvCnt.get();
     }
 
     /**
-     * @return Number of {@link #removeAll(GridCacheTx, Collection)} method calls since last reset.
+     * @return Number of {@link #removeAll(IgniteTx, Collection)} method calls since last reset.
      */
     public int getRemoveAllCount() {
         return rmvAllCnt.get();
     }
 
     /** {@inheritDoc} */
-    @Override public V load(GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(IgniteTx tx, K key) throws IgniteCheckedException {
         lastMtd = "load";
 
         checkOperation();
@@ -178,7 +178,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(GridCacheTx tx, Collection<? extends K> keys,
+    @Override public void loadAll(IgniteTx tx, Collection<? extends K> keys,
         IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         lastMtd = "loadAll";
 
@@ -193,7 +193,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val)
+    @Override public void put(@Nullable IgniteTx tx, K key, V val)
         throws IgniteCheckedException {
         lastMtd = "put";
 
@@ -205,7 +205,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(GridCacheTx tx, Map<? extends K, ? extends V> map)
+    @Override public void putAll(IgniteTx tx, Map<? extends K, ? extends V> map)
         throws IgniteCheckedException {
         lastMtd = "putAll";
 
@@ -217,7 +217,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public void remove(IgniteTx tx, K key) throws IgniteCheckedException {
         lastMtd = "remove";
 
         checkOperation();
@@ -228,7 +228,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(GridCacheTx tx, Collection<? extends K> keys)
+    @Override public void removeAll(IgniteTx tx, Collection<? extends K> keys)
         throws IgniteCheckedException {
         lastMtd = "removeAll";
 
@@ -241,7 +241,7 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) {
+    @Override public void txEnd(IgniteTx tx, boolean commit) {
         // No-op.
     }
 

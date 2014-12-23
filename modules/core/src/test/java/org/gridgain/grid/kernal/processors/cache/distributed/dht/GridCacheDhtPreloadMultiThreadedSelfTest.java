@@ -32,9 +32,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private boolean cacheEnabled = true;
-
     /**
      * Creates new test.
      */
@@ -126,7 +123,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void _testConcurrentNodesStartStop() throws Exception { // TODO GG-9141
+    public void testConcurrentNodesStartStop() throws Exception {
         try {
             multithreadedAsync(
                 new Callable<Object>() {
@@ -156,16 +153,12 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
         cfg.setGridName(gridName);
 
-        if (cacheEnabled) {
-            for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
-                if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
-                    cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
-                    cCfg.setBackups(1);
-                }
+        for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
+            if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
+                cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
+                cCfg.setBackups(1);
             }
         }
-        else
-            cfg.setCacheConfiguration();
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

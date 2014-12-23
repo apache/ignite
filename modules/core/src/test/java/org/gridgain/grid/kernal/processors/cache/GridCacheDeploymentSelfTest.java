@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -30,8 +31,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.IgniteTxIsolation.REPEATABLE_READ;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -431,7 +432,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Object> cache = g1.cache(null);
 
-            try (GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+            try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                 cache.put(new GridCacheAffinityKey<>("key1", affKey), "val1");
 
                 tx.commit();

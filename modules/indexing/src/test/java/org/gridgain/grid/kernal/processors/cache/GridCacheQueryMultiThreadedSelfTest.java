@@ -17,7 +17,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.query.*;
@@ -227,7 +226,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapString() throws Exception { // TODO GG-9141
+    public void testMultiThreadedSwapUnswapString() throws Exception {
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -307,7 +306,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapLong() throws Exception { // TODO GG-9141
+    public void testMultiThreadedSwapUnswapLong() throws Exception {
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -389,7 +388,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapLongString() throws Exception { // TODO GG-9141
+    public void testMultiThreadedSwapUnswapLongString() throws Exception {
         int threadCnt = 150;
         final int keyCnt = 2000;
         final int valCnt = 10000;
@@ -472,7 +471,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapObject() throws Exception { // TODO GG-9141
+    public void testMultiThreadedSwapUnswapObject() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 4000;
         final int valCnt = 10000;

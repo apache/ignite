@@ -11,6 +11,7 @@ package org.gridgain.loadtests.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -23,8 +24,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.PESSIMISTIC;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -102,7 +103,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < DURATION && !Thread.currentThread().isInterrupted()) {
-                GridCacheTx tx = cache.txStart();
+                IgniteTx tx = cache.txStart();
 
                 long seqVal = seq.incrementAndGet();
 

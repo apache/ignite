@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -1045,7 +1046,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removeAsync(key, entry, and(filter, true));
+        return cache.removeAsync(key, entry, and(filter, false));
     }
 
     /** {@inheritDoc} */
@@ -1079,7 +1080,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removexAsync(key, entry, and(filter, true));
+        return cache.removexAsync(key, entry, and(filter, false));
     }
 
     /** {@inheritDoc} */
@@ -1123,24 +1124,24 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        cache.removeAll(keys, and(filter, true));
+        cache.removeAll(keys, and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return cache.removeAllAsync(keys, and(filter, true));
+        return cache.removeAllAsync(keys, and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
-        cache.removeAll(and(filter, true));
+        cache.removeAll(and(filter, false));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return cache.removeAllAsync(and(filter, true));
+        return cache.removeAllAsync(and(filter, false));
     }
 
     /** {@inheritDoc} */
@@ -1199,35 +1200,35 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart() throws IllegalStateException {
+    @Override public IgniteTx txStart() throws IllegalStateException {
         return cache.txStart();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) {
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         return cache.txStart(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStart(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation,
+    @Override public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         return cache.txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartAffinity(Object affinityKey, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return cache.txStartAffinity(affinityKey, concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx txStartPartition(int partId, GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+    @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return cache.txStartPartition(partId, concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTx tx() {
+    @Override public IgniteTx tx() {
         return cache.tx();
     }
 

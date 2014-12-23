@@ -12,14 +12,15 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -29,8 +30,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -126,7 +127,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheProjection cache = priIgnite.cache(null).flagsOn(GridCacheFlag.CLONE);
 
-            GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 cache.get(mainKey);
@@ -186,10 +187,10 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void testReadersUpdate(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void testReadersUpdate(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, 1);
 
@@ -204,7 +205,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals((Integer)1, c.get(i));
         }
 
-        try (GridCacheTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, 2);
 
@@ -224,13 +225,13 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param tm Transaction manager.
      */
     @SuppressWarnings( {"unchecked"})
-    private void checkTm(Ignite g, GridCacheTxManager tm) {
-        Collection<GridCacheTxEx> txs = tm.txs();
+    private void checkTm(Ignite g, IgniteTxManager tm) {
+        Collection<IgniteTxEx> txs = tm.txs();
 
         info(">>> Number of transactions in the set [size=" + txs.size() +
             ", nodeId=" + g.cluster().localNode().id() + ']');
 
-        for (GridCacheTxEx tx : txs)
+        for (IgniteTxEx tx : txs)
             assert tx.done() : "Transaction is not finished: " + tx;
     }
 }

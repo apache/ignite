@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.*;
@@ -20,14 +20,15 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test tx salvage.
@@ -71,7 +72,6 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(GridCachePreloadMode.SYNC);
-        cc.setDgcFrequency(0);
 
         c.setCacheConfiguration(cc);
 
@@ -134,10 +134,10 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageAfterTimeout(GridCacheTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         stopNodeAndSleep(SALVAGE_TIMEOUT + DELTA_AFTER);
@@ -153,10 +153,10 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void checkSalvageBeforeTimeout(GridCacheTxConcurrency mode, boolean prepare) throws Exception {
+    private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
         startTxAndPutKeys(mode, prepare);
 
         List<Integer> nearSizes = new ArrayList<>(GRID_CNT - 1);
@@ -180,10 +180,10 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link GridCacheTxEx#prepare()}).
+     *                (i.e. call {@link IgniteTxEx#prepare()}).
      * @throws Exception If failed.
      */
-    private void startTxAndPutKeys(final GridCacheTxConcurrency mode, final boolean prepare) throws Exception {
+    private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
         final Collection<Integer> keys = nearKeys(ignite);
@@ -193,14 +193,14 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                 GridCache<Object, Object> c = cache(0);
 
                 try {
-                    GridCacheTx tx = c.txStart(mode, REPEATABLE_READ);
+                    IgniteTx tx = c.txStart(mode, REPEATABLE_READ);
 
                     for (Integer key : keys)
                         c.put(key, "val" + key);
 
                     // Unproxy.
                     if (prepare)
-                        U.<GridCacheTxEx>field(tx, "tx").prepare();
+                        U.<IgniteTxEx>field(tx, "tx").prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());

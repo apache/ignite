@@ -12,9 +12,9 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -23,13 +23,13 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Replicated cache transaction future.
  */
-final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, GridCacheTxEx<K, V>> {
+final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteTxEx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -145,7 +145,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      * @param e Error.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    void onError(GridCacheTxOptimisticException e) {
+    void onError(IgniteTxOptimisticException e) {
         if (err.compareAndSet(null, e)) {
             tx.setRollbackOnly();
 
@@ -157,7 +157,7 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      * @param e Error.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    void onError(GridCacheTxRollbackException e) {
+    void onError(IgniteTxRollbackException e) {
         if (err.compareAndSet(null, e)) {
             // Attempt rollback.
             if (tx.setRollbackOnly()) {
@@ -178,13 +178,13 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     void checkLocks() {
-        for (GridCacheTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
                     GridCacheEntryEx<K, V> entry = txEntry.cached();
 
                     if (entry == null) {
-                        onError(new GridCacheTxRollbackException("Failed to find cache entry for " +
+                        onError(new IgniteTxRollbackException("Failed to find cache entry for " +
                             "transaction key (will rollback) [key=" + txEntry.key() + ", tx=" + tx + ']'));
 
                         break;
@@ -227,13 +227,13 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback [owner=" + owner + ", entry=" + entry + ']');
 
-        for (GridCacheTxEntry<K, V> txEntry : tx.writeMap().values()) {
+        for (IgniteTxEntry<K, V> txEntry : tx.writeMap().values()) {
             while (true) {
                 try {
                     GridCacheEntryEx<K,V> cached = txEntry.cached();
 
                     if (entry == null) {
-                        onError(new GridCacheTxRollbackException("Failed to find cache entry for " +
+                        onError(new IgniteTxRollbackException("Failed to find cache entry for " +
                             "transaction key (will rollback) [key=" + txEntry.key() + ", tx=" + tx + ']'));
 
                         return true;
@@ -276,17 +276,17 @@ final class GridLocalTxFuture<K, V> extends GridFutureAdapter<GridCacheTxEx<K, V
 
                 onComplete();
             }
-            catch (GridCacheTxTimeoutException e) {
+            catch (IgniteTxTimeoutException e) {
                 onError(e);
             }
             catch (IgniteCheckedException e) {
                 if (tx.state() == UNKNOWN) {
-                    onError(new GridCacheTxHeuristicException("Commit only partially succeeded " +
+                    onError(new IgniteTxHeuristicException("Commit only partially succeeded " +
                         "(entries will be invalidated on remote nodes once transaction timeout passes): " +
                         tx, e));
                 }
                 else {
-                    onError(new GridCacheTxRollbackException(
+                    onError(new IgniteTxRollbackException(
                         "Failed to commit transaction (will attempt rollback): " + tx, e));
                 }
             }

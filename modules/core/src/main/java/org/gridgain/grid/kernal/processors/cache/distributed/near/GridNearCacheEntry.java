@@ -16,6 +16,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -310,7 +311,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(GridCacheTxEx<K, V> tx, K key, boolean reload,
+    @Override protected V readThrough(IgniteTxEx<K, V> tx, K key, boolean reload,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx, F.asList(key), reload, /*force primary*/false, filter, subjId, taskName, true).
             get().get(key);
@@ -333,7 +334,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable GridCacheTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
+    public boolean loadedValue(@Nullable IgniteTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt, long topVer, UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -519,17 +520,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         cand.otherNodeId(dhtNodeId);
 
         return cand;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized GridCacheMvccCandidate<K> readyLock(GridCacheMvccCandidate<K> cand)
-        throws GridCacheEntryRemovedException {
-        // Essentially no-op as locks are acquired on primary nodes.
-        checkObsolete();
-
-        GridCacheMvcc<K> mvcc = mvccExtras();
-
-        return mvcc == null ? null : mvcc.anyOwner();
     }
 
     /**

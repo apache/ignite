@@ -12,8 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -45,7 +45,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
-    private final GridCacheTxEx<K, V> tx;
+    private final IgniteTxEx<K, V> tx;
 
     /** All involved nodes. */
     private final Map<UUID, ClusterNode> nodes;
@@ -66,7 +66,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, GridCacheTxEx<K, V> tx,
+    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteTxEx<K, V> tx,
         UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
         super(cctx.kernalContext(), CU.boolReducer());
 

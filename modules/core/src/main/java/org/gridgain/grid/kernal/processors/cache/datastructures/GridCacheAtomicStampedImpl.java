@@ -11,7 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -24,8 +24,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache atomic stamped implementation.
@@ -212,7 +212,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
 
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
@@ -254,7 +254,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                GridCacheTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);

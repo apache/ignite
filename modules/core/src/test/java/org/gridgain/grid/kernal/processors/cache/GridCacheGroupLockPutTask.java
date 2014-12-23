@@ -14,15 +14,15 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Puts all the passed data into partitioned cache in small chunks.
@@ -97,7 +97,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                         Object affKey = pair.get1();
 
                         // Group lock partition.
-                        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey),
+                        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affKey),
                             optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ, 0, pair.get2().size())) {
                             for (Integer val : pair.get2())
                                 cache.put(val, val);

@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  * Tests cache transaction during preloading.
  */
-public class GridReplicatedTxPreloadTest extends GridCacheTxPreloadAbstractTest {
+public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return REPLICATED;

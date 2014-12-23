@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -177,7 +178,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     public void testLocalQuery() throws Exception {
         cache1.clearAll();
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             cache1.put(new CacheKey(1), new CacheValue("1"));
@@ -219,7 +220,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         ignite2.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
         ignite3.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
 
-        GridCacheTx tx = cache1.txStart();
+        IgniteTx tx = cache1.txStart();
 
         try {
             for (int i = 1; i <= keyCnt; i++)

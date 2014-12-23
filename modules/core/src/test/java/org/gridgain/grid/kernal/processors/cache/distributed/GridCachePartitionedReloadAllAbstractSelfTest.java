@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -143,17 +144,17 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                     c.apply(e.getKey(), e.getValue());
             }
 
-            @Override public String load(GridCacheTx tx, Integer key) {
+            @Override public String load(IgniteTx tx, Integer key) {
                 X.println("Loading on: " + caches.indexOf(g.<Integer, String>cache(null)) + " key=" + key);
 
                 return map.get(key);
             }
 
-            @Override public void put(GridCacheTx tx, Integer key, @Nullable String val) {
+            @Override public void put(IgniteTx tx, Integer key, @Nullable String val) {
                 fail("Should not be called within the test.");
             }
 
-            @Override public void remove(GridCacheTx tx, Integer key) {
+            @Override public void remove(IgniteTx tx, Integer key) {
                 fail("Should not be called within the test.");
             }
         };

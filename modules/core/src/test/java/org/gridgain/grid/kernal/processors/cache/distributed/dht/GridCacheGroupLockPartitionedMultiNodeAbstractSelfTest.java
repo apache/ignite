@@ -10,15 +10,15 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multi-node test for group locking.
@@ -47,12 +47,12 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     /**
      * @throws Exception If failed.
      */
-    private void checkNonLocalKey(GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkNonLocalKey(IgniteTxConcurrency concurrency) throws Exception {
         final UUID key = primaryKeyForCache(grid(1));
 
         GridCache<Object, Object> cache = grid(0).cache(null);
 
-        GridCacheTx tx = null;
+        IgniteTx tx = null;
         try {
             tx = cache.txStartAffinity(key, concurrency, READ_COMMITTED, 0, 2);
 
@@ -104,7 +104,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     /**
      * @throws Exception If failed.
      */
-    private void checkNearReadersUpdate(boolean touchAffKey, GridCacheTxConcurrency concurrency) throws Exception {
+    private void checkNearReadersUpdate(boolean touchAffKey, IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
@@ -146,7 +146,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
             assertEquals("val3", reader.cache(null).peek(key3));
         }
 
-        try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
+        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
             cache.putAll(F.asMap(
                 key1, "val01",
                 key2, "val02",

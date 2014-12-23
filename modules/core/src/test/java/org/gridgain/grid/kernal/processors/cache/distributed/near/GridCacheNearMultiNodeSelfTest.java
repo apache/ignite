@@ -12,7 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.store.*;
@@ -35,8 +35,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multi node test for near cache.
@@ -152,7 +152,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         store.reset();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).cache(null).tx();
 
             if (tx != null) {
                 error("Ending zombie transaction: " + tx);
@@ -362,11 +362,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void _testOptimisticWriteThrough() throws Exception { // TODO GG-9141
+    public void testOptimisticWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
-            try (GridCacheTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (IgniteTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
                 near.putx(2, "2");
 
                 String s = near.put(3, "3");
@@ -377,7 +377,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNull(dht(primaryGrid(2)).peek(2));
+                GridDhtCacheEntry<Integer, String> entry = dht(primaryGrid(2)).peekExx(2);
+
+                if (entry != null)
+                    assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
+
                 assertNotNull(dht(primaryGrid(3)).peek(3));
 
                 tx.commit();
@@ -495,7 +499,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         GridCache<Integer, String> near = cache(0);
 
         if (transactional()) {
-            try (GridCacheTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+            try (IgniteTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
                 assertTrue(near.putx(2, "2"));
 
                 String s = near.put(3, "3");
@@ -806,7 +810,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         if (transactional()) {
 
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Simple transaction get.
                 assertEquals(val, cache.get(key));
 
@@ -851,7 +855,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNull(near(1).peekNearOnly(key));
 
         if (transactional()) {
-            try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 // Read.
                 assertEquals(val, cache.get(key));
 
@@ -927,7 +931,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -937,13 +941,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
+        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
             throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

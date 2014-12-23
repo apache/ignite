@@ -12,6 +12,7 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.eviction.*;
@@ -26,8 +27,8 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -44,7 +45,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridTransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(PESSIMISTIC);
         txCfg.setDefaultTxIsolation(REPEATABLE_READ);
@@ -60,11 +61,11 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         cc.setEvictionPolicy(plc);
 
         cc.setStore(new GridCacheGenericTestStore<Object, Object>() {
-            @Override public Object load(GridCacheTx tx, Object key) {
+            @Override public Object load(IgniteTx tx, Object key) {
                 return key;
             }
 
-            @Override public void loadAll(GridCacheTx tx, Collection<?> keys,
+            @Override public void loadAll(IgniteTx tx, Collection<?> keys,
                 IgniteBiInClosure<Object, Object> c) {
                 for (Object key : keys)
                     c.apply(key, key);
@@ -102,7 +103,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             final Random rnd = new Random();
 
-            try (GridCacheTx tx = cache.txStart()) {
+            try (IgniteTx tx = cache.txStart()) {
                 int iterCnt = 20;
                 int keyCnt = 5000;
 
@@ -202,7 +203,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testGroupLock() throws Exception { // TODO GG-9141
+    public void testGroupLock() throws Exception {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
@@ -212,7 +213,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             GridCache<GridCacheAffinityKey<Object>, Integer> cache = g.cache(null);
 
-            GridCacheTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 5);
+            IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 5);
 
             try {
                 for (int i = 0; i < 5; i++)
@@ -248,7 +249,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testPartitionGroupLock() throws Exception { // TODO GG-9141
+    public void testPartitionGroupLock() throws Exception {
         plc = new GridCacheFifoEvictionPolicy<>(100);
 
         try {
@@ -258,7 +259,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             GridCache<Object, Integer> cache = g.cache(null);
 
-            GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC, REPEATABLE_READ,
+            IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC, REPEATABLE_READ,
                 0, 5);
 
             try {

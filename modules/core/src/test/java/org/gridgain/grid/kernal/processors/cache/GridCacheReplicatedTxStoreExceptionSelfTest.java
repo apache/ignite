@@ -17,7 +17,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class GridCacheReplicatedTxStoreExceptionSelfTest extends GridCacheTxStoreExceptionAbstractSelfTest {
+public class GridCacheReplicatedTxStoreExceptionSelfTest extends IgniteTxStoreExceptionAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return REPLICATED;

@@ -14,7 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
@@ -35,8 +35,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multiple put test.
@@ -304,7 +304,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                 GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                                try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     if (DEBUG)
                                         info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                             ", oldCntr=" + oldCntr + ", node=" + priId + ", dhtEntry=" + dhtEntry +
@@ -399,7 +399,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                     Integer oldCntr = c.peek(CNTR_KEY);
 
-                                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                         if (DEBUG)
                                             info("Started tx [grid=" + near.name() + ", primary=false, xid=" +
                                                 tx.xid() + ", oldCntr=" + oldCntr + ", node=" + nearId +
@@ -636,7 +636,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     Integer oldCntr = c.peek(CNTR_KEY);
 
-                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + near.name() + ", primary=false, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + nearId + ", nearEntry=" + nearEntry + ']');
@@ -707,7 +707,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
-                    try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
                             log.info("Started tx [grid=" + pri.name() + ", primary=true, xid=" + tx.xid() +
                                 ", oldCntr=" + oldCntr + ", node=" + pri.name() + ", dhtEntry=" +

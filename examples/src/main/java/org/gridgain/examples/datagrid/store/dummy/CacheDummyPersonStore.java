@@ -12,8 +12,8 @@ package org.gridgain.examples.datagrid.store.dummy;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
@@ -37,21 +37,21 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
     private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Person load(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         return dummyDB.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Long key, Person val) throws IgniteCheckedException {
+    @Override public void put(@Nullable IgniteTx tx, Long key, Person val) throws IgniteCheckedException {
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.put(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, Long key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.remove(key);

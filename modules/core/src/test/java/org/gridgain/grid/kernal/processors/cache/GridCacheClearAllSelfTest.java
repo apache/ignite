@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -287,7 +288,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void fillCache(GridCache<Integer, Integer> cache, int keysCnt) throws Exception {
-        try (GridCacheTx tx = cache.txStart()) {
+        try (IgniteTx tx = cache.txStart()) {
             for (int i = 0; i < keysCnt; i++)
                 cache.put(i, i);
 

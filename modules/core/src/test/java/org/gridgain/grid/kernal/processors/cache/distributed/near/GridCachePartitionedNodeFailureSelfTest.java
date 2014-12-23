@@ -30,7 +30,6 @@ public class GridCachePartitionedNodeFailureSelfTest extends GridCacheNodeFailur
         GridCacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setDgcFrequency(0);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);

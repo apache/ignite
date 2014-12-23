@@ -16,7 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
  * Tests originating node failure in REPLICATED cache.
  */
 public class GridCacheReplicatedTxOriginatingNodeFailureSelfTest extends
-    GridCacheTxOriginatingNodeFailureAbstractSelfTest {
+    IgniteTxOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return GridCacheMode.REPLICATED;

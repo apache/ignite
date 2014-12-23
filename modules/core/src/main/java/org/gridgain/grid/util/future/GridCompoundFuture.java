@@ -12,7 +12,7 @@ package org.gridgain.grid.util.future;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -324,7 +324,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     throw e;
                 }
             }
-            catch (GridCacheTxOptimisticException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 
