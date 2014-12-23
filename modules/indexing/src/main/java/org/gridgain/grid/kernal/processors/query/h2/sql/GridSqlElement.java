@@ -33,7 +33,9 @@ public abstract class GridSqlElement implements Cloneable {
     /**
      * @param expr Expr.
      */
-    public void addChild(@NotNull GridSqlElement expr) {
+    public void addChild(GridSqlElement expr) {
+        assert expr != null;
+
         children.add(expr);
     }
 
@@ -53,7 +55,7 @@ public abstract class GridSqlElement implements Cloneable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("CloneCallsConstructors")
-    @Override protected GridSqlElement clone() {
+    @Override protected GridSqlElement clone() throws CloneNotSupportedException {
         try {
             GridSqlElement res = (GridSqlElement)super.clone();
 

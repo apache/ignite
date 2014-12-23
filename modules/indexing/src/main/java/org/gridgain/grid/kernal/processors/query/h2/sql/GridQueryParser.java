@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.processors.query.h2.sql.GridQueryUtils.*;
 import org.h2.command.dml.*;
 import org.h2.expression.*;
 import org.h2.result.*;
@@ -22,7 +21,6 @@ import java.util.*;
 import java.util.Set;
 
 import static org.gridgain.grid.kernal.processors.query.h2.sql.GridOperationType.*;
-import static org.gridgain.grid.kernal.processors.query.h2.sql.GridQueryUtils.*;
 
 /**
  * H2 Query parser.
@@ -42,7 +40,7 @@ public class GridQueryParser {
     private static final Getter<Select, Expression> CONDITION = getter(Select.class, "condition");
 
     /** */
-    private static final Field GROUP_INDEXES = GridQueryUtils.getField(Select.class, "groupIndex");
+    private static final Getter<Select, int[]> GROUP_INDEXES = getter(Select.class, "groupIndex");
 
     /** */
     private static final Getter<Operation, Integer> OPERATION_TYPE = getter(Operation.class, "opType");
@@ -72,6 +70,63 @@ public class GridQueryParser {
     private static final Getter<ConditionAndOr, Expression> ANDOR_RIGHT = getter(ConditionAndOr.class, "right");
 
     /** */
+    private static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
+
+    /** */
+    private static final Getter<TableFilter, String> ALIAS = getter(TableFilter.class, "alias");
+
+    /** */
+    private static final Getter<Select, Integer> HAVING_INDEX = getter(Select.class, "havingIndex");
+
+    /** */
+    private static final Getter<ConditionIn, Expression> LEFT_CI = getter(ConditionIn.class, "left");
+
+    /** */
+    private static final Getter<ConditionIn, List<Expression>> VALUE_LIST_CI = getter(ConditionIn.class, "valueList");
+
+    /** */
+    private static final Getter<ConditionInConstantSet, Expression> LEFT_CICS =
+        getter(ConditionInConstantSet.class, "left");
+
+    /** */
+    private static final Getter<ConditionInConstantSet, List<Expression>> VALUE_LIST_CICS =
+        getter(ConditionInConstantSet.class, "valueList");
+
+    /** */
+    private static final Getter<ConditionInSelect, Expression> LEFT_CIS = getter(ConditionInSelect.class, "left");
+
+    /** */
+    private static final Getter<ConditionInSelect, Boolean> ALL = getter(ConditionInSelect.class, "all");
+
+    /** */
+    private static final Getter<ConditionInSelect, Integer> COMPARE_TYPE = getter(ConditionInSelect.class,
+        "compareType");
+
+    /** */
+    private static final Getter<ConditionInSelect, Query> QUERY = getter(ConditionInSelect.class, "query");
+
+    /** */
+    private static final Getter<CompareLike, Expression> LEFT = getter(CompareLike.class, "left");
+
+    /** */
+    private static final Getter<CompareLike, Expression> RIGHT = getter(CompareLike.class, "right");
+
+    /** */
+    private static final Getter<CompareLike, Expression> ESCAPE = getter(CompareLike.class, "escape");
+
+    /** */
+    private static final Getter<CompareLike, Boolean> REGEXP_CL = getter(CompareLike.class, "regexp");
+
+    /** */
+    private static final Getter<Aggregate, Boolean> DISTINCT = getter(Aggregate.class, "distinct");
+
+    /** */
+    private static final Getter<Aggregate, Integer> TYPE = getter(Aggregate.class, "type");
+
+    /** */
+    private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
@@ -86,7 +141,7 @@ public class GridQueryParser {
             if (tbl instanceof TableBase)
                 res = new GridTable(tbl.getSchema().getName(), tbl.getName());
             else if (tbl instanceof TableView) {
-                Query qry = GridQueryUtils.getFieldValue(tbl, "viewQuery");
+                Query qry = VIEW_QUERY.get((TableView)tbl);
 
                 assert0(qry instanceof Select, qry);
 
@@ -95,7 +150,7 @@ public class GridQueryParser {
             else
                 throw new IgniteException("Unsupported query: " + filter);
 
-            String alias = GridQueryUtils.getFieldValue(filter, "alias");
+            String alias = ALIAS.get(filter);
 
             if (alias != null)
                 res = new GridAlias(alias, res, false);
@@ -152,7 +207,7 @@ public class GridQueryParser {
 
         ArrayList<Expression> expressions = select.getExpressions();
 
-        int[] grpIdx = GridQueryUtils.getFieldValue(GROUP_INDEXES, select);
+        int[] grpIdx = GROUP_INDEXES.get(select);
 
         if (grpIdx != null) {
             for (int idx : grpIdx)
@@ -161,7 +216,7 @@ public class GridQueryParser {
 
         assert0(select.getHaving() == null, select);
 
-        int havingIdx = GridQueryUtils.getFieldValue(select, "havingIndex");
+        int havingIdx = HAVING_INDEX.get(select);
 
         if (havingIdx >= 0)
             res.having(toGridExpression(expressions.get(havingIdx)));
@@ -276,9 +331,9 @@ public class GridQueryParser {
         if (expression instanceof ConditionIn) {
             GridOperation res = new GridOperation(IN);
 
-            res.addChild(toGridExpression((Expression)GridQueryUtils.getFieldValue(expression, "left")));
+            res.addChild(toGridExpression(LEFT_CI.get((ConditionIn)expression)));
 
-            List<Expression> vals = GridQueryUtils.getFieldValue(expression, "valueList");
+            List<Expression> vals = VALUE_LIST_CI.get((ConditionIn)expression);
 
             for (Expression val : vals)
                 res.addChild(toGridExpression(val));
@@ -289,9 +344,9 @@ public class GridQueryParser {
         if (expression instanceof ConditionInConstantSet) {
             GridOperation res = new GridOperation(IN);
 
-            res.addChild(toGridExpression((Expression)GridQueryUtils.getFieldValue(expression, "left")));
+            res.addChild(toGridExpression(LEFT_CICS.get((ConditionInConstantSet)expression)));
 
-            List<Expression> vals = GridQueryUtils.getFieldValue(expression, "valueList");
+            List<Expression> vals = VALUE_LIST_CICS.get((ConditionInConstantSet)expression);
 
             for (Expression val : vals)
                 res.addChild(toGridExpression(val));
@@ -302,15 +357,15 @@ public class GridQueryParser {
         if (expression instanceof ConditionInSelect) {
             GridOperation res = new GridOperation(IN);
 
-            boolean all = GridQueryUtils.getFieldValue(expression, "all");
-            int compareType = GridQueryUtils.getFieldValue(expression, "compareType");
+            boolean all = ALL.get((ConditionInSelect)expression);
+            int compareType = COMPARE_TYPE.get((ConditionInSelect)expression);
 
             assert0(!all, expression);
             assert0(compareType == Comparison.EQUAL, expression);
 
-            res.addChild(toGridExpression((Expression)GridQueryUtils.getFieldValue(expression, "left")));
+            res.addChild(toGridExpression(LEFT_CIS.get((ConditionInSelect)expression)));
 
-            Query qry = GridQueryUtils.getFieldValue(expression, "query");
+            Query qry = QUERY.get((ConditionInSelect)expression);
 
             assert0(qry instanceof Select, qry);
 
@@ -320,13 +375,12 @@ public class GridQueryParser {
         }
 
         if (expression instanceof CompareLike) {
-            assert0(GridQueryUtils.getFieldValue(expression, "escape") == null, expression);
+            assert0(ESCAPE.get((CompareLike)expression) == null, expression);
 
-            boolean regexp = GridQueryUtils.getFieldValue(expression, "regexp");
+            boolean regexp = REGEXP_CL.get((CompareLike)expression);
 
-            return new GridOperation(regexp ? REGEXP : LIKE,
-                toGridExpression((Expression)GridQueryUtils.getFieldValue(expression, "left")),
-                toGridExpression((Expression)GridQueryUtils.getFieldValue(expression, "right")));
+            return new GridOperation(regexp ? REGEXP : LIKE, toGridExpression(LEFT.get((CompareLike)expression)),
+                toGridExpression(RIGHT.get((CompareLike)expression)));
         }
 
         if (expression instanceof Function) {
@@ -348,10 +402,10 @@ public class GridQueryParser {
             return new GridSqlParameter(((Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
-            GridAggregateFunction res = new GridAggregateFunction(GridQueryUtils.<Boolean>getFieldValue(expression,
-                "distinct"), GridQueryUtils.<Integer>getFieldValue(expression, "type"));
+            GridAggregateFunction res = new GridAggregateFunction(DISTINCT.get((Aggregate)expression),
+                TYPE.get((Aggregate)expression));
 
-            Expression on = GridQueryUtils.getFieldValue(expression, "on");
+            Expression on = ON.get((Aggregate)expression);
 
             if (on != null)
                 res.addChild(toGridExpression(on));
@@ -370,5 +424,53 @@ public class GridQueryParser {
     private static void assert0(boolean cond, Object o) {
         if (!cond)
             throw new IgniteException("Unsupported query: " + o);
+    }
+
+    /**
+     * @param cls Class.
+     * @param fldName Fld name.
+     */
+    private static <T, R> Getter<T, R> getter(Class<T> cls, String fldName) {
+        Field field;
+
+        try {
+            field = cls.getDeclaredField(fldName);
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+
+        field.setAccessible(true);
+
+        return new Getter<>(field);
+    }
+
+    /**
+     * Field getter.
+     */
+    @SuppressWarnings("unchecked")
+    private static class Getter<T, R> {
+        /** */
+        private final Field fld;
+
+        /**
+         * @param fld Fld.
+         */
+        private Getter(Field fld) {
+            this.fld = fld;
+        }
+
+        /**
+         * @param obj Object.
+         * @return Result.
+         */
+        public R get(T obj) {
+            try {
+                return (R)fld.get(obj);
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }

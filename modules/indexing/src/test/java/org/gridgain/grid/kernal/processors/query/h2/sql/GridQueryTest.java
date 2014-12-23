@@ -15,6 +15,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.query.h2.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
@@ -150,8 +151,7 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
 
         GridQueryProcessor qryProcessor = ctx.query();
 
-        GridH2Indexing idx = (GridH2Indexing)GridQueryUtils.getFieldValue(GridQueryProcessor.class, qryProcessor,
-            "idx");
+        GridH2Indexing idx = U.field(qryProcessor, "idx");
 
         return (JdbcConnection)idx.connectionForSpace(null);
     }

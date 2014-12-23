@@ -29,7 +29,7 @@ public class GridOperation extends GridSqlElement {
      * @param opType Op type.
      * @param arg argument.
      */
-    public GridOperation(@NotNull GridOperationType opType, @NotNull GridSqlElement arg) {
+    public GridOperation(GridOperationType opType, GridSqlElement arg) {
         this(opType);
 
         addChild(arg);
@@ -40,7 +40,7 @@ public class GridOperation extends GridSqlElement {
      * @param left Left.
      * @param right Right.
      */
-    public GridOperation(@NotNull GridOperationType opType, @NotNull GridSqlElement left, @NotNull GridSqlElement right) {
+    public GridOperation(GridOperationType opType, GridSqlElement left, GridSqlElement right) {
         this(opType);
 
         addChild(left);
