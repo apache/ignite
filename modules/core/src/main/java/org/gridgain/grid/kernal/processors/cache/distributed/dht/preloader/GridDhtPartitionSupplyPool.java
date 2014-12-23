@@ -190,11 +190,14 @@ class GridDhtPartitionSupplyPool<K, V> {
      * Supply work.
      */
     private class SupplyWorker extends GridWorker {
+        /** Hide worker logger and use cache logger. */
+        private IgniteLogger log = GridDhtPartitionSupplyPool.this.log;
+
         /**
          * Default constructor.
          */
         private SupplyWorker() {
-            super(cctx.gridName(), "preloader-supply-worker", log);
+            super(cctx.gridName(), "preloader-supply-worker", GridDhtPartitionSupplyPool.this.log);
         }
 
         /** {@inheritDoc} */

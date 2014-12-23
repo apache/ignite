@@ -118,7 +118,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
-            cc.setDistributionMode(distributionMode());
+            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY :distributionMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setStore(store);
             cc.setPreloadMode(SYNC);
