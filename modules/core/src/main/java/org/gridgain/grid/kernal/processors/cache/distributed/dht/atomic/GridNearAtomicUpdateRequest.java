@@ -91,6 +91,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     private boolean retval;
 
     /** Expiry policy. */
+    @GridDirectTransient
     private ExpiryPolicy expiryPlc;
 
     /** Expiry policy bytes. */
