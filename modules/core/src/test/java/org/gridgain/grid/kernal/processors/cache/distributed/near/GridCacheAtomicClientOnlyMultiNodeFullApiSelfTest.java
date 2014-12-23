@@ -17,7 +17,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;

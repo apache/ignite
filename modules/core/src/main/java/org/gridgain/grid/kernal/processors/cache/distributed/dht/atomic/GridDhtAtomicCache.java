@@ -271,8 +271,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
 
         return asyncOp(new CO<IgniteFuture<Map<K, V>>>() {
-            @Override
-            public IgniteFuture<Map<K, V>> apply() {
+            @Override public IgniteFuture<Map<K, V>> apply() {
                 return getAllAsync0(keys,
                     false,
                     forcePrimary,

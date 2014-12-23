@@ -22,7 +22,6 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.expiry.*;
-import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;

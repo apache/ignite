@@ -525,7 +525,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /**
-     *
      * @param keys Keys to lock.
      * @param timeout Lock timeout.
      * @param tx Transaction.
@@ -533,7 +532,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
-     * @param filter TTL for read operation.
+     * @param accessTtl TTL for read operation.
      * @param filter Optional filter.
      * @return Locks future.
      */

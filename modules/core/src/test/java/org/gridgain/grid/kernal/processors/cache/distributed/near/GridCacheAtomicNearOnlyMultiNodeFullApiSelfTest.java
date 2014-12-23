@@ -14,10 +14,9 @@ import org.gridgain.grid.util.typedef.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.ATOMIC;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
 /**
