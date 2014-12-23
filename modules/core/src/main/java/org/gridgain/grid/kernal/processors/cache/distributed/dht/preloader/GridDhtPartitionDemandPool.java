@@ -412,11 +412,14 @@ public class GridDhtPartitionDemandPool<K, V> {
         /** Counter. */
         private long cntr;
 
+        /** Hide worker logger and use cache logger instead. */
+        private IgniteLogger log = GridDhtPartitionDemandPool.this.log;
+
         /**
          * @param id Worker ID.
          */
         private DemandWorker(int id) {
-            super(cctx.gridName(), "preloader-demand-worker", log);
+            super(cctx.gridName(), "preloader-demand-worker", GridDhtPartitionDemandPool.this.log);
 
             assert id >= 0;
 
