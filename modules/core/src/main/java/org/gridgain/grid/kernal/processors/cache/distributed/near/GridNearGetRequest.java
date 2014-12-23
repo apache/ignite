@@ -71,7 +71,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     @GridDirectVersion(2)
     private int taskNameHash;
 
-    /** */
+    /** TTL for read operation. */
     private long accessTtl;
 
     /**

@@ -215,6 +215,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     }
 
     /**
+     * @param keyIdx Key index.
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */

@@ -35,7 +35,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Context. */
     private GridCacheContext<K, V> ctx;
 
     /** Gateway. */
@@ -614,7 +614,9 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
+
         out.writeObject(delegate);
+
         out.writeObject(prj);
     }
 
@@ -622,7 +624,9 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
+
         delegate = (GridCacheProjectionEx<K, V>)in.readObject();
+
         prj = (GridCacheProjectionImpl<K, V>)in.readObject();
 
         gate = ctx.gate();

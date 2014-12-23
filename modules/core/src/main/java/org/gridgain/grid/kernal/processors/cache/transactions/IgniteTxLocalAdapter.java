@@ -788,7 +788,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         ExpiryPolicy expiry = txEntry.expiry();
 
                                         if (expiry == null)
-                                            expiry = txEntry.context().expiry();
+                                            expiry = cacheCtx.expiry();
 
                                         if (expiry != null) {
                                             Duration duration = expiry.getExpiryForAccess();
@@ -996,12 +996,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 throw e;
             }
         }
-    }
-
-    protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
-        IgniteTxKey key,
-        @Nullable ExpiryPolicy expiryPlc) {
-        return null;
     }
 
     /**
@@ -1255,6 +1249,18 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         }
 
         return lockKeys != null ? lockKeys : Collections.<K>emptyList();
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param key Key.
+     * @param expiryPlc Expiry policy.
+     * @return Expiry policy wrapper for entries accessed locally in optimistic transaction.
+     */
+    protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
+        IgniteTxKey key,
+        @Nullable ExpiryPolicy expiryPlc) {
+        return null;
     }
 
     /**

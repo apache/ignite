@@ -759,6 +759,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * Unmarshalls entry.
      *
      * @param ctx Cache context.
+     * @param near Near flag.
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
