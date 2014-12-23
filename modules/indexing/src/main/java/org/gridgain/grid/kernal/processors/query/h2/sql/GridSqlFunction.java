@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
+import org.gridgain.grid.util.typedef.*;
 import org.h2.util.*;
 import org.h2.value.*;
 
@@ -35,6 +36,9 @@ public class GridSqlFunction extends GridSqlElement {
     /** */
     protected final GridFunctionType type;
 
+    /**  */
+    private String castType;
+
     /**
      * @param type Function type.
      */
@@ -43,7 +47,7 @@ public class GridSqlFunction extends GridSqlElement {
 
         this.type = type;
 
-        if (type == GridFunctionType.CAST || type == GridFunctionType.CONVERT)
+        if (type == GridFunctionType.CONVERT)
             throw new UnsupportedOperationException();
     }
 
@@ -52,9 +56,13 @@ public class GridSqlFunction extends GridSqlElement {
      */
     public GridSqlFunction(String name) {
         this(TYPE_MAP.get(name));
+    }
 
-        if (type == GridFunctionType.CAST || type == GridFunctionType.CONVERT)
-            throw new UnsupportedOperationException();
+    /**
+     * @param castType Type for {@link GridFunctionType#CAST} function.
+     */
+    public void setCastType(String castType) {
+        this.castType = castType;
     }
 
     /** {@inheritDoc} */
@@ -78,9 +86,10 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append('(');
 
         if (type == GridFunctionType.CAST) {
-            throw new UnsupportedOperationException("CAST");
-//            buff.append(child().getSQL()).append(" AS ").
-//                append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+            assert !F.isEmpty(castType) : castType;
+            assert children().size() == 1;
+
+            buff.append(child().getSQL()).append(" AS ").append(castType);
         }
         else if (type == GridFunctionType.CONVERT) {
             throw new UnsupportedOperationException("CONVERT");

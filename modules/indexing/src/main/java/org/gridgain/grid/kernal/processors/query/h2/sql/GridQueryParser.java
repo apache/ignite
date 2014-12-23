@@ -330,12 +330,16 @@ public class GridQueryParser {
         }
 
         if (expression instanceof Function) {
-            Function function = (Function)expression;
+            Function f = (Function)expression;
 
-            GridSqlFunction res = new GridSqlFunction(function.getName());
+            GridSqlFunction res = new GridSqlFunction(f.getName());
 
-            for (Expression arg : function.getArgs())
+            for (Expression arg : f.getArgs())
                 res.addChild(toGridExpression(arg));
+
+            if (f.getFunctionType() == Function.CAST)
+                res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
+                    .getCreateSQL());
 
             return res;
         }

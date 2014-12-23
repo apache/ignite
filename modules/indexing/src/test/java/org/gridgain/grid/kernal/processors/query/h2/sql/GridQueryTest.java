@@ -86,6 +86,10 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
         checkQuery("select case p.name when 'a' then 1 when 'a' then 2 else -1 end as a from Person p");
 
         checkQuery("select abs(p.old)  from Person p");
+        checkQuery("select cast(p.old as numeric(10, 2)) from Person p");
+        checkQuery("select cast(p.old as numeric(10, 2)) z from Person p");
+        checkQuery("select cast(p.old as numeric(10, 2)) as z from Person p");
+
         checkQuery("select * from Person p where p.name in ('a', 'b', '_' + RAND())"); // test ConditionIn
         checkQuery("select * from Person p where p.name in ('a', 'b', 'c')"); // test ConditionInConstantSet
         checkQuery("select * from Person p where p.name in (select a.street from Address a)"); // test ConditionInConstantSet
@@ -120,6 +124,8 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
         checkQuery("select p.name n from Person p, (select a.street from Address a where a.street is not null) ");
         checkQuery("select street from Person p, (select a.street from Address a where a.street is not null) ");
         checkQuery("select addr.street from Person p, (select a.street from Address a where a.street is not null) addr");
+
+        checkQuery("select p.name n from PUBLIC.Person p order by p.old + 10");
     }
 
     /**
