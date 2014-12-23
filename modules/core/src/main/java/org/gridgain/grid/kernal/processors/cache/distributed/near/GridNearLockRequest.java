@@ -452,7 +452,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 34:
-                if (!commState.putBoolean(syncCommit))
+                if (!commState.putBoolean("syncCommit", syncCommit))
                     return false;
 
                 commState.idx++;
@@ -600,7 +600,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 if (buf.remaining() < 1)
                     return false;
 
-                syncCommit = commState.getBoolean();
+                syncCommit = commState.getBoolean("syncCommit");
 
                 commState.idx++;
         }

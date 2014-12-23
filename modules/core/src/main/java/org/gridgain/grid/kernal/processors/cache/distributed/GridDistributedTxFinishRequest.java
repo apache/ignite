@@ -500,7 +500,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 commState.idx++;
 
             case 20:
-                if (!commState.putBoolean(sys))
+                if (!commState.putBoolean("sys", sys))
                     return false;
 
                 commState.idx++;
@@ -668,7 +668,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 if (buf.remaining() < 1)
                     return false;
 
-                sys = commState.getBoolean();
+                sys = commState.getBoolean("sys");
 
                 commState.idx++;
         }

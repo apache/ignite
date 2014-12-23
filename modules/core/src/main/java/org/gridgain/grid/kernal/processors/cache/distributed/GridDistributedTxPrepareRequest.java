@@ -567,7 +567,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 commState.idx++;
 
             case 21:
-                if (!commState.putBoolean(sys))
+                if (!commState.putBoolean("sys", sys))
                     return false;
 
                 commState.idx++;
@@ -747,7 +747,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (buf.remaining() < 1)
                     return false;
 
-                sys = commState.getBoolean();
+                sys = commState.getBoolean("sys");
 
                 commState.idx++;
         }
