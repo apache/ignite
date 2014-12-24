@@ -57,6 +57,15 @@ public interface GridInteropProcessor extends GridProcessor {
     public GridInteropTarget cache(@Nullable String name) throws IgniteCheckedException;
 
     /**
+     * Gets native wrapper for data loader for cache with the given name.
+     *
+     * @param cacheName Cache name ({@code null} for default cache).
+     * @return Native data loader wrapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridInteropTarget dataLoader(@Nullable String cacheName) throws IgniteCheckedException;
+
+    /**
      * Stops grid.
      *
      * @param cancel Cancel flag.
