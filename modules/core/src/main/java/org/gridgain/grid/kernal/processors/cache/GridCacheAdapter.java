@@ -2194,22 +2194,97 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(
+        final K key,
+        final EntryProcessor<K, V, T> entryProcessor,
+        final Object... args)
         throws EntryProcessorException {
-        // TODO IGNITE-44.
-        return null;
+        A.notNull(key, "key", entryProcessor, "entryProcessor");
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        ctx.denyOnLocalRead();
+
+        IgniteFuture<?> fut = asyncOp(new AsyncInOp(key) {
+            @Override public IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> inOp(IgniteTxLocalAdapter<K, V> tx) {
+                Map<? extends K, EntryProcessor> invokeMap =
+                    Collections.singletonMap(key, (EntryProcessor)entryProcessor);
+
+                return tx.invokeAsync(ctx, false, invokeMap, args);
+            }
+
+            @Override public String toString() {
+                return "invokeAsync [key=" + key + ", entryProcessor=" + entryProcessor + ']';
+            }
+        });
+
+        IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut0 =
+            (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
+
+        return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, EntryProcessorResult<T>>() {
+            @Override public EntryProcessorResult<T> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+                throws IgniteCheckedException {
+                GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
+
+                Map<K, EntryProcessorResult<T>> resMap = ret.value();
+
+                assert resMap != null;
+                assert resMap.size() == 1 : resMap.size();
+
+                return resMap.values().iterator().next();
+            }
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) {
-        // TODO IGNITE-44.
-        return null;
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(
+        final Set<? extends K> keys,
+        final EntryProcessor<K, V, T> entryProcessor,
+        final Object... args) {
+        A.notNull(entryProcessor, "entryProcessor");
+
+        if (keyCheck)
+            validateCacheKeys(keys);
+
+        ctx.denyOnLocalRead();
+
+        IgniteFuture<?> fut = asyncOp(new AsyncInOp(keys) {
+            @Override public IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> inOp(IgniteTxLocalAdapter<K, V> tx) {
+                Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+                    @Override public EntryProcessor apply(K k) {
+                        return entryProcessor;
+                    }
+                });
+
+                return tx.invokeAsync(ctx, false, invokeMap, args);
+            }
+
+            @Override public String toString() {
+                return "invokeAllAsync [keys=" + keys + ", entryProcessor=" + entryProcessor + ']';
+            }
+        });
+
+        IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut0 =
+            (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
+
+        return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+                throws IgniteCheckedException {
+                GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
+
+                assert ret != null;
+
+                return ret.value();
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void transform(final K key, final IgniteClosure<V, V> transformer) throws IgniteCheckedException {
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
+        /*
         A.notNull(key, "key", transformer, "valTransform");
 
         if (keyCheck)
@@ -2226,11 +2301,15 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "transform [key=" + key + ", valTransform=" + transformer + ']';
             }
         });
+        */
     }
 
     /** {@inheritDoc} */
     @Override public <R> R transformAndCompute(final K key, final IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
         throws IgniteCheckedException {
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
+        /*
         A.notNull(key, "key", transformer, "transformer");
 
         if (keyCheck)
@@ -2250,6 +2329,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "transformAndCompute [key=" + key + ", valTransform=" + transformer + ']';
             }
         });
+        */
     }
 
     /** {@inheritDoc} */
@@ -2291,6 +2371,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> transformAsync(final K key, final IgniteClosure<V, V> transformer,
         @Nullable final GridCacheEntryEx<K, V> entry, final long ttl) {
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
+        /*
         A.notNull(key, "key", transformer, "transformer");
 
         if (keyCheck)
@@ -2307,6 +2390,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "transformAsync [key=" + key + ", valTransform=" + transformer + ']';
             }
         });
+        */
     }
 
     /** {@inheritDoc} */
@@ -2581,6 +2665,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void transformAll(@Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> m)
         throws IgniteCheckedException {
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
+        /*
         if (F.isEmpty(m))
             return;
 
@@ -2598,6 +2685,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "transformAll [map=" + m + ']';
             }
         });
+        */
     }
 
     /** {@inheritDoc} */
@@ -2640,6 +2728,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> transformAllAsync(@Nullable final Map<? extends K, ? extends IgniteClosure<V, V>> m) {
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
+        /*
         if (F.isEmpty(m))
             return new GridFinishedFuture<>(ctx.kernalContext());
 
@@ -2657,6 +2748,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "transformAllAsync [map=" + m + ']';
             }
         });
+        */
     }
 
     /** {@inheritDoc} */

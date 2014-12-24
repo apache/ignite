@@ -16,6 +16,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -53,6 +54,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     @Nullable public IgniteTxEntry<K, V> groupLockEntry();
 
     /**
+     * @param cacheCtx Cache context.
      * @param keys Keys to get.
      * @param cached Cached entry if this method is called from entry wrapper.
      *      Cached entry is passed if and only if there is only one key in collection of keys.
@@ -68,6 +70,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
+     * @param cacheCtx Cache context.
      * @param map Map to put.
      * @param retval Flag indicating whether a value should be returned.
      * @param cached Cached entry, if any. Will be provided only if map has size 1.
@@ -84,17 +87,20 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
-     * @param map Map to put.
+     * @param cacheCtx Cache context.
+     * @param map Entry processors map.
+     * @param invokeArgs Optional arguments for entry processor.
+     * @param retval Flag indicating whether a value should be returned.
      * @return Transform operation future.
      */
-    public IgniteFuture<GridCacheReturn<V>> transformAllAsync(
+    public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
-        @Nullable Map<? extends K, ? extends IgniteClosure<V, V>> map,
         boolean retval,
-        @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl);
+        Map<? extends K, EntryProcessor> map,
+        Object... invokeArgs);
 
     /**
+     * @param cacheCtx Cache context.
      * @param keys Keys to remove.
      * @param retval Flag indicating whether a value should be returned.
      * @param cached Cached entry, if any. Will be provided only if size of keys collection is 1.
@@ -109,6 +115,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         IgnitePredicate<GridCacheEntry<K, V>>[] filter);
 
     /**
+     * @param cacheCtx Cache context.
      * @param drMap DR map to put.
      * @return Future for DR put operation.
      */
@@ -117,6 +124,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         Map<? extends K, GridCacheDrInfo<V>> drMap);
 
     /**
+     * @param cacheCtx Cache context.
      * @param drMap DR map.
      * @return Future for asynchronous remove.
      */
@@ -127,6 +135,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     /**
      * Performs keys locking for affinity-based group lock transactions.
      *
+     * @param cacheCtx Cache context.
      * @param keys Keys to lock.
      * @return Lock future.
      */
@@ -147,6 +156,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     public boolean finish(boolean commit) throws IgniteCheckedException;
 
     /**
+     * @param cacheCtx  Cache context.
      * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
      * @param c Closure.

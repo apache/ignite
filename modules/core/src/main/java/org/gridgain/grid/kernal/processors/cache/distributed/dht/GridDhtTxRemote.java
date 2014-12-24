@@ -16,9 +16,11 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -280,7 +282,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param val Value.
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
-     * @param clos Transform closures.
+     * @param entryProcessors Entry processors.
      * @param ttl TTL.
      */
     public void addWrite(GridCacheContext<K, V> cacheCtx,
@@ -289,7 +291,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         byte[] keyBytes,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        @Nullable Collection<IgniteClosure<V, V>> clos,
+        @Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors,
         @Nullable GridCacheVersion drVer,
         long ttl) {
         checkInternal(key);
@@ -310,7 +312,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);
-        txEntry.transformClosures(clos);
+        txEntry.entryProcessors(entryProcessors);
 
         writeMap.put(key, txEntry);
     }

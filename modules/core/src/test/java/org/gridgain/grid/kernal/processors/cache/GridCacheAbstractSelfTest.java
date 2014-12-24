@@ -348,6 +348,21 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Default cache instance.
+     */
+    protected IgniteCache<String, Integer> jcache() {
+        return jcache(0);
+    }
+
+    /**
+     * @param idx Index of grid.
+     * @return Default cache.
+     */
+    protected IgniteCache<String, Integer> jcache(int idx) {
+        return ignite(idx).jcache(null);
+    }
+
+    /**
      * @param idx Index of grid.
      * @return Cache context.
      */

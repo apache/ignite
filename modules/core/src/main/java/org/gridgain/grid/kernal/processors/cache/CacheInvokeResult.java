@@ -25,7 +25,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     private static final long serialVersionUID = 0L;
 
     /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
+    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "JavaAbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;
 
     /** */

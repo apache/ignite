@@ -25,6 +25,7 @@ import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -42,17 +43,29 @@ import static org.gridgain.testframework.GridTestUtils.*;
  * Full API cache test.
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
-    /** Increment closure for transform operations. */
-    public static final IgniteClosure<Integer,Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer old) {
-            return old == null ? 1 : old + 1;
+    /** Increment processor for invoke operations. */
+    public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
+        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            assertNotNull(e.getKey());
+
+            Integer old = e.getValue();
+
+            e.setValue(old == null ? 1 : old + 1);
+
+            return String.valueOf(old);
         }
     };
 
-    /** Remove closure for transform operations. */
-    public static final IgniteClosure<Integer,Integer> RMV_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer e) {
-            return null;
+    /** Increment processor for invoke operations. */
+    public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new EntryProcessor<String, Integer, String>() {
+        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            assertNotNull(e.getKey());
+
+            Integer old = e.getValue();
+
+            e.remove();
+
+            return String.valueOf(old);
         }
     };
 
@@ -772,18 +785,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTransform(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-
-        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
-            cache.transform("key1", INCR_CLOS);
-            cache.transform("key2", INCR_CLOS);
-            cache.transform("key3", RMV_CLOS);
+            assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
+            assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
+            assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -809,9 +821,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        cache.transform("key1", INCR_CLOS);
-        cache.transform("key2", INCR_CLOS);
-        cache.transform("key3", RMV_CLOS);
+        assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
+        assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
+        assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
 
         assertEquals((Integer)1, cache.get("key1"));
         assertEquals((Integer)2, cache.get("key2"));
@@ -856,25 +868,32 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void checkTransformAll(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key2", 1);
         cache.put("key3", 3);
 
         if (txEnabled()) {
-            CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
-                @Override
-                public void applyx(GridCacheProjection<String, Integer> c) throws IgniteCheckedException {
-                    c.transformAll(F.asSet("key1", "key2", "key3"), INCR_CLOS);
-                }
-            });
+            Map<String, EntryProcessorResult<String>> res;
+
+            try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                res = cache.invokeAll(F.asSet("key1", "key2", "key3"), INCR_PROCESSOR);
+
+                tx.commit();
+            }
 
             assertEquals((Integer)1, cache.get("key1"));
             assertEquals((Integer)2, cache.get("key2"));
             assertEquals((Integer)4, cache.get("key3"));
+
+            assertEquals("null", res.get("key1").get());
+            assertEquals("1", res.get("key2").get());
+            assertEquals("3", res.get("key3").get());
+
+            assertEquals(3, res.size());
         }
 
-        cache.transformAll(F.asSet("key1", "key2", "key3"), RMV_CLOS);
+        Map<String, EntryProcessorResult<String>> res = cache.invokeAll(F.asSet("key1", "key2", "key3"), RMV_PROCESSOR);
 
         for (int i = 0; i < gridCount(); i++) {
             assertNull(cache(i).peek("key1"));
@@ -882,15 +901,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(cache(i).peek("key3"));
         }
 
+        assertEquals("1", res.get("key1").get());
+        assertEquals("2", res.get("key2").get());
+        assertEquals("4", res.get("key3").get());
+
+        assertEquals(3, res.size());
+
         cache.remove("key1");
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        cache.transformAll(F.asMap("key1", INCR_CLOS, "key2", INCR_CLOS, "key3", INCR_CLOS));
+        res = cache.invokeAll(F.asSet("key1", "key2", "key3"), INCR_PROCESSOR);
 
         assertEquals((Integer)1, cache.get("key1"));
         assertEquals((Integer)2, cache.get("key2"));
         assertEquals((Integer)4, cache.get("key3"));
+
+        assertEquals("null", res.get("key1").get());
+        assertEquals("1", res.get("key2").get());
+        assertEquals("3", res.get("key3").get());
+
+        assertEquals(3, res.size());
     }
 
     /**
@@ -915,8 +946,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         {
             Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
 
-            tm.put("key1", INCR_CLOS);
-            tm.put(null, INCR_CLOS);
+            tm.put("key1", INCR_PROCESSOR);
+            tm.put(null, INCR_PROCESSOR);
 
             // WARN: F.asMap() doesn't work here, because it will throw NPE.
 
@@ -926,7 +957,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         {
             Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
 
-            tm.put("key1", INCR_CLOS);
+            tm.put("key1", INCR_PROCESSOR);
             tm.put("key2", null);
 
             // WARN: F.asMap() doesn't work here, because it will throw NPE.
@@ -934,7 +965,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.transformAll(tm);
         }
 
-        cache.transformAll(null, INCR_CLOS); // This should be no-op.
+        cache.transformAll(null, INCR_PROCESSOR); // This should be no-op.
 
         {
             Set<String> ts = new HashSet<>(3);
@@ -944,7 +975,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             // WARN: F.asSet() doesn't work here, because it will throw NPE.
 
-            cache.transformAll(ts, INCR_CLOS);
+            cache.transformAll(ts, INCR_PROCESSOR);
         }
     }
 
@@ -991,9 +1022,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (startVal)
                 cache.put("key", 2);
 
-            cache.transform("key", INCR_CLOS);
-            cache.transform("key", INCR_CLOS);
-            cache.transform("key", INCR_CLOS);
+            cache.transform("key", INCR_PROCESSOR);
+            cache.transform("key", INCR_PROCESSOR);
+            cache.transform("key", INCR_PROCESSOR);
 
             if (tx != null)
                 tx.commit();
@@ -1041,9 +1072,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             cache.remove("key");
 
-            cache.transform("key", INCR_CLOS);
-            cache.transform("key", INCR_CLOS);
-            cache.transform("key", INCR_CLOS);
+            cache.transform("key", INCR_PROCESSOR);
+            cache.transform("key", INCR_PROCESSOR);
+            cache.transform("key", INCR_PROCESSOR);
 
             if (tx != null)
                 tx.commit();
@@ -1110,7 +1141,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (put)
                 cache.put("key", 1);
 
-            cache.transform("key", INCR_CLOS);
+            cache.transform("key", INCR_PROCESSOR);
 
             assertEquals((Integer)2, cache.get("key"));
 
@@ -1190,7 +1221,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, entry.getValue());
 
-        entry.transform(INCR_CLOS);
+        entry.transform(INCR_PROCESSOR);
 
         assertEquals((Integer)2, entry.getValue());
     }
@@ -1204,9 +1235,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        IgniteFuture<?> fut0 = cache.transformAsync("key1", INCR_CLOS);
-        IgniteFuture<?> fut1 = cache.transformAsync("key2", INCR_CLOS);
-        IgniteFuture<?> fut2 = cache.transformAsync("key3", RMV_CLOS);
+        IgniteFuture<?> fut0 = cache.transformAsync("key1", INCR_PROCESSOR);
+        IgniteFuture<?> fut1 = cache.transformAsync("key2", INCR_PROCESSOR);
+        IgniteFuture<?> fut2 = cache.transformAsync("key3", RMV_PROCESSOR);
 
         fut0.get();
         fut1.get();

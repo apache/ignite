@@ -10,7 +10,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -19,6 +21,9 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -34,38 +39,85 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInvoke() throws Exception {
         // TODO IGNITE41 test with forceTransformBackups.
 
+        invoke(null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            invoke(PESSIMISTIC);
+
+            invoke(OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
+     * @throws Exception If failed.
+     */
+    private void invoke(@Nullable IgniteTxConcurrency txMode) throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache();
 
         IncrementProcessor incProcessor = new IncrementProcessor();
 
         for (final Integer key : keys()) {
-            log.info("Test invoke [key=" + key + ']');
+            log.info("Test invoke [key=" + key + ", txMode=" + txMode + ']');
 
             cache.remove(key);
 
+            IgniteTx tx = startTx(txMode);
+
             Integer res = cache.invoke(key, incProcessor);
+
+            if (tx != null)
+                tx.commit();
 
             assertEquals(-1, (int)res);
 
             checkValue(key, 1);
 
+            tx = startTx(txMode);
+
             res = cache.invoke(key, incProcessor);
+
+            if (tx != null)
+                tx.commit();
 
             assertEquals(1, (int)res);
 
             checkValue(key, 2);
 
+            tx = startTx(txMode);
+
             res = cache.invoke(key, incProcessor);
+
+            if (tx != null)
+                tx.commit();
 
             assertEquals(2, (int)res);
 
             checkValue(key, 3);
 
+            tx = startTx(txMode);
+
             res = cache.invoke(key, new ArgumentsSumProcessor(), 10, 20, 30);
+
+            if (tx != null)
+                tx.commit();
 
             assertEquals(3, (int)res);
 
             checkValue(key, 63);
+
+            tx = startTx(txMode);
+
+            String strRes = cache.invoke(key, new ToStringProcessor());
+
+            if (tx != null)
+                tx.commit();
+
+            assertEquals("63", strRes);
+
+            checkValue(key, 63);
+
+            tx = startTx(txMode);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -75,9 +127,17 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 }
             }, EntryProcessorException.class, "Test processor exception.");
 
+            if (tx != null)
+                tx.commit();
+
             checkValue(key, 63);
 
+            tx = startTx(txMode);
+
             assertNull(cache.invoke(key, new RemoveProcessor(63)));
+
+            if (tx != null)
+                tx.commit();
 
             checkValue(key, null);
         }
@@ -87,13 +147,27 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @throws Exception If failed.
      */
     public void testInvokeAll() throws Exception {
+        invokeAll(null);
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            invoke(PESSIMISTIC);
+
+            invoke(OPTIMISTIC);
+        }
+    }
+
+    /**
+     * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
+     * @throws Exception If failed.
+     */
+    private void invokeAll(@Nullable IgniteTxConcurrency txMode) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
-        invokeAll(cache, new HashSet<>(primaryKeys(cache, 3, 0)));
+        invokeAll(cache, new HashSet<>(primaryKeys(cache, 3, 0)), txMode);
 
-        invokeAll(cache, new HashSet<>(backupKeys(cache, 3, 0)));
+        invokeAll(cache, new HashSet<>(backupKeys(cache, 3, 0)), txMode);
 
-        invokeAll(cache, new HashSet<>(nearKeys(cache, 3, 0)));
+        invokeAll(cache, new HashSet<>(nearKeys(cache, 3, 0)), txMode);
 
         Set<Integer> keys = new HashSet<>();
 
@@ -101,28 +175,37 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         keys.addAll(primaryKeys(jcache(1), 3, 0));
         keys.addAll(primaryKeys(jcache(2), 3, 0));
 
-        invokeAll(cache, keys);
+        invokeAll(cache, keys, txMode);
 
         keys = new HashSet<>();
 
         for (int i = 0; i < 1000; i++)
             keys.add(i);
 
-        invokeAll(cache, keys);
+        invokeAll(cache, keys, txMode);
     }
 
     /**
      * @param cache Cache.
      * @param keys Keys.
+     * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
+     * @throws Exception If failed.
      */
-    private void invokeAll(IgniteCache<Integer, Integer> cache, Set<Integer> keys) {
+    private void invokeAll(IgniteCache<Integer, Integer> cache,
+        Set<Integer> keys,
+        @Nullable IgniteTxConcurrency txMode) throws Exception {
         cache.removeAll(keys);
 
-        log.info("Test invokeAll [keys=" + keys + ']');
+        log.info("Test invokeAll [keys=" + keys + ", txMode=" + txMode + ']');
 
         IncrementProcessor incProcessor = new IncrementProcessor();
 
+        IgniteTx tx = startTx(txMode);
+
         Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
+
+        if (tx != null)
+            tx.commit();
 
         Map<Object, Object> exp = new HashMap<>();
 
@@ -134,7 +217,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, 1);
 
+        tx = startTx(txMode);
+
         resMap = cache.invokeAll(keys, incProcessor);
+
+        if (tx != null)
+            tx.commit();
 
         exp = new HashMap<>();
 
@@ -146,7 +234,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, 2);
 
+        tx = startTx(txMode);
+
         resMap = cache.invokeAll(keys, new ArgumentsSumProcessor(), 10, 20, 30);
+
+        if (tx != null)
+            tx.commit();
 
         for (Integer key : keys)
             exp.put(key, 3);
@@ -156,7 +249,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, 62);
 
+        tx = startTx(txMode);
+
         resMap = cache.invokeAll(keys, new ExceptionProcessor(null));
+
+        if (tx != null)
+            tx.commit();
 
         for (Integer key : keys) {
             final EntryProcessorResult<Integer> res = resMap.get(key);
@@ -175,7 +273,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, 62);
 
+        tx = startTx(txMode);
+
         resMap = cache.invokeAll(keys, new RemoveProcessor(null));
+
+        if (tx != null)
+            tx.commit();
 
         for (Integer key : keys) {
             final EntryProcessorResult<Integer> res = resMap.get(key);
@@ -237,7 +340,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @return Test keys.
      * @throws Exception If failed.
      */
-    private Collection<Integer> keys() throws Exception {
+    protected Collection<Integer> keys() throws Exception {
         GridCache<Integer, Object> cache = cache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
@@ -254,6 +357,14 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         lastKey = Collections.max(keys) + 1;
 
         return keys;
+    }
+
+    /**
+     * @param txMode Transaction concurrency mode.
+     * @return Transaction.
+     */
+    @Nullable private IgniteTx startTx(@Nullable IgniteTxConcurrency txMode) {
+        return txMode == null ? null : ignite(0).transactions().txStart(txMode, REPEATABLE_READ);
     }
 
     /**
@@ -284,10 +395,27 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      *
      */
-    private static class IncrementProcessor implements EntryProcessor<Integer, Integer, Integer> {
+    protected static class ToStringProcessor implements EntryProcessor<Integer, Integer, String> {
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<Integer, Integer> e, Object... arguments)
+            throws EntryProcessorException {
+            return String.valueOf(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ToStringProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class IncrementProcessor implements EntryProcessor<Integer, Integer, Integer> {
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<Integer, Integer> e,
             Object... arguments) throws EntryProcessorException {
+            System.out.println(Thread.currentThread() + " compute, old=" + e.getValue());
             if (e.exists()) {
                 Integer val = e.getValue();
 
@@ -306,6 +434,11 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
                 return -1;
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(IncrementProcessor.class, this);
         }
     }
 
@@ -337,6 +470,11 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemoveProcessor.class, this);
+        }
     }
 
     /**
@@ -362,6 +500,11 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 assertEquals(expVal, e.getValue());
 
             throw new EntryProcessorException("Test processor exception.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ExceptionProcessor.class, this);
         }
     }
 }

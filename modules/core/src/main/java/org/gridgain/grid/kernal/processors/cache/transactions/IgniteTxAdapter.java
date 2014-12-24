@@ -1169,7 +1169,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @throws IgniteCheckedException If failed to get previous value for transform.
      * @throws GridCacheEntryRemovedException If entry was concurrently deleted.
      */
-    protected GridTuple3<GridCacheOperation, V, byte[]> applyTransformClosures(IgniteTxEntry<K, V> txEntry,
+    protected GridTuple3<GridCacheOperation, V, byte[]> applyTransformClosures(
+        IgniteTxEntry<K, V> txEntry,
         boolean metrics) throws GridCacheEntryRemovedException, IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
@@ -1177,7 +1178,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         if (isSystemInvalidate())
             return F.t(cacheCtx.isStoreEnabled() ? RELOAD : DELETE, null, null);
-        if (F.isEmpty(txEntry.transformClosures()))
+        if (F.isEmpty(txEntry.entryProcessors()))
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {
             try {
@@ -1193,19 +1194,12 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*event*/recordEvt,
                         /*temporary*/true,
                         /*subjId*/subjId,
-                        /**closure name */recordEvt ? F.first(txEntry.transformClosures()) : null,
+                        /**closure name */recordEvt ? F.first(txEntry.entryProcessors()) : null,
                         resolveTaskName(),
                         CU.<K, V>empty(),
                         null);
 
-                try {
-                    for (IgniteClosure<V, V> clos : txEntry.transformClosures())
-                        val = clos.apply(val);
-                }
-                catch (Throwable e) {
-                    throw new IgniteException("Transform closure must not throw any exceptions " +
-                        "(transaction will be invalidated)", e);
-                }
+                val = txEntry.applyEntryProcessors(val);
 
                 GridCacheOperation op = val == null ? DELETE : UPDATE;
 

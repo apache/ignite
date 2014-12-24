@@ -315,7 +315,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             true,
             false,
             entry,
-            ttl,
             filter);
     }
 
@@ -331,7 +330,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             false,
             entry,
-            ttl,
             filter);
     }
 
@@ -412,7 +410,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             true,
             true,
             null,
-            0,
             ctx.equalsPeekArray(oldVal));
     }
 
@@ -433,7 +430,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             false,
             null,
-            0,
             filter);
     }
 
@@ -454,7 +450,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             false,
             null,
-            0,
             null);
     }
 
@@ -648,18 +643,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.denyOnLocalRead();
 
-        Map<? extends K, EntryProcessor> transformMap =
+        Map<? extends K, EntryProcessor> invokeMap =
             Collections.singletonMap(key, (EntryProcessor)entryProcessor);
 
         IgniteFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
-            transformMap,
+            invokeMap,
             args,
             null,
             null,
             true,
             false,
             null,
-            -1L,
             null);
 
         return fut.chain(new CX1<IgniteFuture<Map<K, EntryProcessorResult<T>>>, EntryProcessorResult<T>>() {
@@ -687,24 +681,21 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.denyOnLocalRead();
 
-        Map<? extends K, EntryProcessor> transformMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
             @Override public EntryProcessor apply(K k) {
                 return entryProcessor;
             }
         });
 
-        IgniteFuture<Map<K, EntryProcessorResult<T>>> fut = updateAllAsync0(null,
-            transformMap,
+        return updateAllAsync0(null,
+            invokeMap,
             args,
             null,
             null,
             true,
             false,
             null,
-            -1L,
             null);
-
-        return fut;
     }
 
     /**
@@ -718,7 +709,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param cached Cached cache entry for key. May be passed if and only if map size is {@code 1}.
-     * @param ttl Entry time-to-live.
      * @param filter Cache entry filter for atomic updates.
      * @return Completion future.
      */
@@ -731,7 +721,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean retval,
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         if (map != null && keyCheck)

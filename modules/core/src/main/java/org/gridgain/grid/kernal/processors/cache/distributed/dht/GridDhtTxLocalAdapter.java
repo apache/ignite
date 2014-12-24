@@ -406,7 +406,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             if (entry != null) {
                 entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
                 entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
-                entry.transformClosures(e.transformClosures());
+                entry.entryProcessors(e.entryProcessors());
                 entry.valueBytes(e.valueBytes());
                 entry.ttl(e.ttl());
                 entry.filters(e.filters());
@@ -525,9 +525,11 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
                     cached.unswap(!read, read);
 
-                    IgniteTxEntry<K, V> w = writeEntries == null ? null : writeEntries.get(idx++);
+                    IgniteTxEntry<K, V>
+                        w = writeEntries == null ? null : writeEntries.get(idx++);
 
                     txEntry = addEntry(NOOP,
+                        null,
                         null,
                         null,
                         cached,
@@ -545,7 +547,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                         txEntry.value(w.value(), w.hasWriteValue(), w.hasReadValue());
                         txEntry.valueBytes(w.valueBytes());
                         txEntry.drVersion(w.drVersion());
-                        txEntry.transformClosures(w.transformClosures());
+                        txEntry.entryProcessors(w.entryProcessors());
                         txEntry.ttl(w.ttl());
                         txEntry.filters(w.filters());
                         txEntry.drExpireTime(w.drExpireTime());
@@ -635,14 +637,13 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                     postLockWrite(cacheCtx,
                         passedKeys,
                         skipped,
-                        null,
-                        null,
                         ret,
                         /*remove*/false,
                         /*retval*/false,
                         /*read*/read,
                         accessTtl,
-                        filter == null ? CU.<K, V>empty() : filter);
+                        filter == null ? CU.<K, V>empty() : filter,
+                        /**computeInvoke*/false);
 
                     return ret;
                 }

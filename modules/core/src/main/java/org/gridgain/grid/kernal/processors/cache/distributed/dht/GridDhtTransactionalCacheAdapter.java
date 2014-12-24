@@ -215,7 +215,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
                                 writeEntry == null ? null : writeEntry.value(),
                                 writeEntry == null ? null : writeEntry.valueBytes(),
-                                writeEntry == null ? null : writeEntry.transformClosures(),
+                                writeEntry == null ? null : writeEntry.entryProcessors(),
                                 drVer,
                                 req.accessTtl());
 

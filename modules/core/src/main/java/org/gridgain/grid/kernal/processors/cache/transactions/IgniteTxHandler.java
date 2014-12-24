@@ -1155,7 +1155,7 @@ public class IgniteTxHandler<K, V> {
                             txEntry.keyBytes(),
                             txEntry.value(),
                             txEntry.valueBytes(),
-                            txEntry.transformClosures(),
+                            txEntry.entryProcessors(),
                             txEntry.drVersion(),
                             txEntry.ttl());
 

@@ -22,6 +22,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -71,7 +72,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<IgniteClosure<V, V>> transformClosCol;
+    private Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -192,7 +193,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param tx Owning transaction.
      * @param op Operation.
      * @param val Value.
-     * @param transformClos Transform closure.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      * @param ttl Time to live.
      * @param entry Cache entry.
      * @param filters Put filters.
@@ -202,9 +204,10 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         IgniteTxEx<K, V> tx,
         GridCacheOperation op,
         V val,
-        IgniteClosure<V, V> transformClos,
+        EntryProcessor<K, V, ?> entryProcessor,
+        Object[] invokeArgs,
         long ttl,
-        GridCacheEntryEx<K,V> entry,
+        GridCacheEntryEx<K, V> entry,
         IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         GridCacheVersion drVer) {
         assert ctx != null;
@@ -220,8 +223,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         this.filters = filters;
         this.drVer = drVer;
 
-        if (transformClos != null)
-            addTransformClosure(transformClos);
+        if (entryProcessor != null)
+            addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
         keyBytes = entry.keyBytes();
@@ -299,7 +302,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         cp.filters = filters;
         cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
         cp.val.valueBytes(val.valueBytes());
-        cp.transformClosCol = transformClosCol;
+        cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.drExpireTime = drExpireTime;
         cp.explicitVer = explicitVer;
@@ -605,13 +608,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @param transformClos Transform closure.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      */
-    public void addTransformClosure(IgniteClosure<V, V> transformClos) {
-        if (transformClosCol  == null)
-            transformClosCol = new LinkedList<>();
+    public void addEntryProcessor(EntryProcessor<K, V, ?> entryProcessor, Object[] invokeArgs) {
+        if (entryProcessorsCol == null)
+            entryProcessorsCol = new LinkedList<>();
 
-        transformClosCol.add(transformClos);
+        entryProcessorsCol.add(new T2<EntryProcessor<K, V, ?>, Object[]>(entryProcessor, invokeArgs));
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
@@ -620,17 +624,41 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @return Collection of transform closures.
+     * @return Collection of entry processors.
      */
-    public Collection<IgniteClosure<V, V>> transformClosures() {
-        return transformClosCol;
+    public Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors() {
+        return entryProcessorsCol;
     }
 
     /**
-     * @param transformClosCol Collection of transform closures.
+     * @param val Value.
+     * @return New value.
      */
-    public void transformClosures(@Nullable Collection<IgniteClosure<V, V>> transformClosCol) {
-        this.transformClosCol = transformClosCol;
+    @SuppressWarnings("unchecked")
+    public V applyEntryProcessors(V val) {
+        for (T2<EntryProcessor<K, V, ?>, Object[]> t : entryProcessors()) {
+            try {
+                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(key, val);
+
+                EntryProcessor processor = t.get1();
+
+                processor.process(invokeEntry, t.get2());
+
+                val = invokeEntry.getValue();
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        return val;
+    }
+
+    /**
+     * @param entryProcessorsCol Collection of entry processors.
+     */
+    public void entryProcessors(@Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol) {
+        this.entryProcessorsCol = entryProcessorsCol;
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
@@ -740,8 +768,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
             if (keyBytes == null)
                 keyBytes = entry.getOrMarshalKeyBytes();
 
-            if (transformClosBytes == null && transformClosCol != null)
-                transformClosBytes = CU.marshal(ctx, transformClosCol);
+            if (transformClosBytes == null && entryProcessorsCol != null)
+                transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
             if (F.isEmptyOrNulls(filters))
                 filterBytes = null;
@@ -781,8 +809,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
                 key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
 
             // Unmarshal transform closure anyway if it exists.
-            if (transformClosBytes != null && transformClosCol == null)
-                transformClosCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+            if (transformClosBytes != null && entryProcessorsCol == null)
+                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
             if (filters == null && filterBytes != null) {
                 filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
@@ -820,7 +848,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
         else {
             out.writeObject(key);
-            U.writeCollection(out, transformClosCol);
+            U.writeCollection(out, entryProcessorsCol);
             U.writeArray(out, filters);
         }
 
@@ -850,7 +878,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
         else {
             key = (K)in.readObject();
-            transformClosCol = U.readCollection(in);
+            entryProcessorsCol = U.readCollection(in);
             filters = U.readEntryFilterArray(in);
         }
 
@@ -1022,6 +1050,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
 
         /**
+         * @param sharedCtx Shared cache context.
          * @param ctx Cache context.
          * @param depEnabled Deployment enabled flag.
          * @throws IgniteCheckedException If marshaling failed.

@@ -83,6 +83,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<K, V> ctx,
@@ -325,7 +327,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         else {
             // Copy values.
             entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
-            entry.transformClosures(e.transformClosures());
+            entry.entryProcessors(e.entryProcessors());
             entry.valueBytes(e.valueBytes());
             entry.op(e.op());
             entry.ttl(e.ttl());
@@ -481,7 +483,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     if (updateNearCache(cacheCtx, txEntry.key(), topVer))
                                         nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
-                                    if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
+                                    if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
