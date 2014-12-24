@@ -215,4 +215,15 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals("Expected 2 misses", 2, cache.metrics().misses());
         assertEquals("Expected 1 hit", 1, cache.metrics().hits());
     }
+
+    public void testRemoves() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        cache.put(1, 1);
+
+        // +1 remove
+        cache.remove(1);
+
+        assert cache.metrics().getCacheRemovals() == 1;
+    }
 }

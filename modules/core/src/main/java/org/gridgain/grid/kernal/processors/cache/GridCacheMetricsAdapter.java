@@ -64,6 +64,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** Number of transaction rollbacks. */
     private volatile int txRollbacks;
 
+    private volatile long getCnt;
+    private volatile long putCnt;
+    private volatile long rmCnt;
+
     /** Cache metrics. */
     @GridToStringExclude
     private transient GridCacheMetricsAdapter delegate;
@@ -90,6 +94,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = m.misses();
         txCommits = m.txCommits();
         txRollbacks = m.txRollbacks();
+        rmCnt = m.getCacheRemovals();
     }
 
     /**
@@ -131,7 +136,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** {@inheritDoc} */
     @Override public int writes() {
-        return writes;
+        return (int)(writes + rmCnt);
     }
 
     /** {@inheritDoc} */
@@ -152,6 +157,90 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** {@inheritDoc} */
     @Override public int txRollbacks() {
         return txRollbacks;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        //TODO: rewrite
+        createTime = U.currentTimeMillis();
+        readTime = createTime;
+        writeTime = createTime;
+        commitTime = createTime;
+        rollbackTime = createTime;
+        reads = 0;
+        writes = 0;
+        hits = 0;
+        misses = 0;
+        txCommits = 0;
+        txRollbacks = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheHits() {
+        return hits;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getCacheHitPercentage() {
+        long hits0 = hits;
+
+        if (hits0 == 0)
+            return 0;
+
+        return (float) hits0 / getCacheGets() * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheMisses() {
+        return misses;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getCacheMissPercentage() {
+        long misses0 = misses;
+
+        if (misses0 == 0)
+            return 0;
+
+        return (float) misses0 / getCacheGets() * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheGets() {
+        //TODO: split read
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCachePuts() {
+        //TODO: split write
+        return 0;
+    }
+
+    @Override
+    public long getCacheRemovals() {
+        return rmCnt;
+    }
+
+    @Override
+    public long getCacheEvictions() {
+        //TODO: discuss with Semen
+        return 0;
+    }
+
+    @Override
+    public float getAverageGetTime() {
+        return 0;
+    }
+
+    @Override
+    public float getAveragePutTime() {
+        return 0;
+    }
+
+    @Override
+    public float getAverageRemoveTime() {
+        return 0;
     }
 
     /**
@@ -182,6 +271,18 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onWrite();
+    }
+
+    /**
+     * Cache remove callback.
+     */
+    public void onRemove(){
+        writeTime = U.currentTimeMillis();
+
+        rmCnt++;
+
+        if (delegate != null)
+            delegate.onRemove();
     }
 
     /**

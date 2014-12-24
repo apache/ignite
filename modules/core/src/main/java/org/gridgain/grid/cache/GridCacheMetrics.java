@@ -17,13 +17,14 @@
 
 package org.gridgain.grid.cache;
 
+import javax.cache.management.*;
 import java.io.*;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.
  * Use {@link GridCache#metrics()} to obtain metrics for a cache.
  */
-public interface GridCacheMetrics extends Serializable {
+public interface GridCacheMetrics extends CacheStatisticsMXBean, Serializable {
     /**
      * Gets create time of the owning entity (either cache or entry).
      *

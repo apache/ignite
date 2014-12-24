@@ -1293,7 +1293,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, null, null, newVer);
 
                 if (metrics)
-                    cctx.cache().metrics0().onWrite();
+                    cctx.cache().metrics0().onRemove();
 
                 if (tx == null)
                     obsoleteVer = newVer;
@@ -1588,8 +1588,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 res = hadVal;
             }
 
-            if (metrics)
-                cctx.cache().metrics0().onWrite();
+            updateMetrics(op, metrics);
 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
@@ -2057,8 +2056,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 newDrExpireTime = -1L;
             }
 
-            if (metrics)
-                cctx.cache().metrics0().onWrite();
+            updateMetrics(op, metrics);
 
             if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
@@ -4127,6 +4125,21 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     protected void obsoleteVersionExtras(@Nullable GridCacheVersion obsoleteVer) {
         extras = (extras != null) ? extras.obsoleteVersion(obsoleteVer) : obsoleteVer != null ?
             new GridCacheObsoleteEntryExtras<K>(obsoleteVer) : null;
+    }
+
+    /**
+     * Updates metrics.
+     *
+     * @param op Operation.
+     * @param metrics Update merics flag.
+     */
+    private void updateMetrics(GridCacheOperation op, boolean metrics) {
+        if (metrics) {
+            if (op == DELETE)
+                cctx.cache().metrics0().onRemove();
+            else
+                cctx.cache().metrics0().onWrite();
+        }
     }
 
     /**
