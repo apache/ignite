@@ -96,7 +96,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
     public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
         boolean retval,
-        Map<? extends K, EntryProcessor> map,
+        Map<? extends K, EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
 
     /**

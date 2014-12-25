@@ -13,6 +13,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -298,4 +299,179 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size on this node.
      */
     public int localSize(CachePeekMode... peekModes);
+
+    /**
+     * Stores given key-value pair in cache. If filters are provided, then entries will
+     * be stored in cache only if they pass the filter. Note that filter check is atomic,
+     * so value stored in cache is guaranteed to be consistent with the filters. If cache
+     * previously contained value for the given key, then this value is returned.
+     * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
+     * the value will be loaded from the primary node, which in its turn may load the value
+     * from the swap storage, and consecutively, if it's not in swap,
+     * from the underlying persistent storage. If value has to be loaded from persistent
+     * storage,  {@link org.gridgain.grid.cache.store.GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * <p>
+     * If the returned value is not needed, method {@link #putIf(Object, Object, IgnitePredicate)} should
+     * always be used instead of this one to avoid the overhead associated with returning of the previous value.
+     * <p>
+     * If write-through is enabled, the stored value will be persisted to {@link org.gridgain.grid.cache.store.GridCacheStore}
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     *
+     * @param key Key to store in cache.
+     * @param val Value to be associated with the given key.
+     * @param filter Optional filter to check prior to putting value in cache. Note
+     *      that filter check is atomic with put operation.
+     * @return Previous value associated with specified key, or {@code null}
+     *  if entry did not pass the filter, or if there was no mapping for the key in swap
+     *  or in persistent storage.
+     * @throws NullPointerException If either key or value are {@code null}.
+     * @throws GridCacheFlagException If projection flags validation failed.
+     */
+    // TODO IGNITE-1 fix entry type.
+    @Nullable public V getAndPutIf(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>> filter);
+
+    /**
+     * Stores given key-value pair in cache. If filters are provided, then entries will
+     * be stored in cache only if they pass the filter. Note that filter check is atomic,
+     * so value stored in cache is guaranteed to be consistent with the filters.
+     * <p>
+     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
+     * Unlike {@link #getAndPutIf(Object, Object, IgnitePredicate)} method, it does not return previous
+     * value and, therefore, does not have any overhead associated with returning a value. It
+     * should be used whenever return value is not required.
+     * <p>
+     * If write-through is enabled, the stored value will be persisted to {@link org.gridgain.grid.cache.store.GridCacheStore}
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     *
+     * @param key Key to store in cache.
+     * @param val Value to be associated with the given key.
+     * @param filter Optional filter to check prior to putting value in cache. Note
+     *      that filter check is atomic with put operation.
+     * @return {@code True} if optional filter passed and value was stored in cache,
+     *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
+     *      specified.
+     * @throws NullPointerException If either key or value are {@code null}.
+     * @throws GridCacheFlagException If projection flags validation failed.
+     */
+    // TODO IGNITE-1 fix entry type.
+    public boolean putIf(K key, V val, IgnitePredicate<GridCacheEntry<K, V>> filter);
+
+    /**
+     * Removes given key mapping from cache. If cache previously contained value for the given key,
+     * then this value is returned. In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED}
+     * caches, the value will be loaded from the primary node, which in its turn may load the value
+     * from the disk-based swap storage, and consecutively, if it's not in swap,
+     * from the underlying persistent storage. If value has to be loaded from persistent
+     * storage, {@link org.gridgain.grid.cache.store.GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * <p>
+     * If the returned value is not needed, method {@link #removeIf(Object, IgnitePredicate)} should
+     * always be used instead of this one to avoid the overhead associated with returning of the
+     * previous value.
+     * <p>
+     * If write-through is enabled, the value will be removed from {@link org.gridgain.grid.cache.store.GridCacheStore}
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#remove(IgniteTx, Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     *
+     * @param key Key whose mapping is to be removed from cache.
+     * @param filter Optional filter to check prior to removing value form cache. Note
+     *      that filter is checked atomically together with remove operation.
+     * @return Previous value associated with specified key, or {@code null}
+     *      if there was no value for this key.
+     * @throws NullPointerException If key is {@code null}.
+     * @throws GridCacheFlagException If projection flags validation failed.
+     */
+    // TODO IGNITE-1 fix entry type.
+    public V getAndRemoveIf(K key, IgnitePredicate<GridCacheEntry<K, V>> filter);
+
+    /**
+     * Removes given key mapping from cache.
+     * <p>
+     * This method will return {@code true} if remove did occur, which means that all optionally
+     * provided filters have passed and there was something to remove, {@code false} otherwise.
+     * <p>
+     * If write-through is enabled, the value will be removed from {@link org.gridgain.grid.cache.store.GridCacheStore}
+     * via {@link org.gridgain.grid.cache.store.GridCacheStore#remove(IgniteTx, Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     * <h2 class="header">Cache Flags</h2>
+     * This method is not available if any of the following flags are set on projection:
+     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     *
+     * @param key Key whose mapping is to be removed from cache.
+     * @param filter Optional filter to check prior to removing value form cache. Note
+     *      that filter is checked atomically together with remove operation.
+     * @return {@code True} if filter passed validation and entry was removed, {@code false} otherwise.
+     *      Note that if filter is not specified, this method will return {@code true}.
+     * @throws NullPointerException if the key is {@code null}.
+     * @throws GridCacheFlagException If projection flags validation failed.
+     */
+    // TODO IGNITE-1 fix entry type.
+    public boolean removeIf(K key, IgnitePredicate<GridCacheEntry<K, V>> filter);
+
+    /**
+     * Creates projection that will operate with portable objects.
+     * <p>
+     * Projection returned by this method will force cache not to deserialize portable objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in portable format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * GridCacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * GridPortableObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@link org.gridgain.grid.cache.GridCacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
+     *
+     * @return Projection for portable objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> keepPortable();
+
+    /**
+     * Gets cache projection base on this one, but with the specified flags turned on.
+     * <h1 class="header">Cache Flags</h1>
+     * The resulting projection will inherit all the flags from this projection.
+     *
+     * @param flags Flags to turn on (if empty, then no-op).
+     * @return New projection based on this one, but with the specified flags turned on.
+     */
+    public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags);
 }

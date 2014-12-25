@@ -34,6 +34,7 @@ import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -1101,7 +1102,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
-            dataCachePrj.transform(colocatedKey, new UpdateClosure(startOff, data));
+            dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
 
             return;
         }
@@ -1125,16 +1126,16 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             boolean hasVal = false;
 
-            UpdateClosure transformClos = new UpdateClosure(startOff, data);
+            UpdateProcessor transformClos = new UpdateProcessor(startOff, data);
 
             if (vals.get(colocatedKey) != null) {
-                dataCachePrj.transform(colocatedKey, transformClos);
+                dataCachePrj.invoke(colocatedKey, transformClos);
 
                 hasVal = true;
             }
 
             if (vals.get(key) != null) {
-                dataCachePrj.transform(key, transformClos);
+                dataCachePrj.invoke(key, transformClos);
 
                 hasVal = true;
             }
@@ -1570,7 +1571,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateClosure implements IgniteClosure<byte[], byte[]>, Externalizable {
+    private static final class UpdateProcessor implements EntryProcessor<GridGgfsBlockKey, byte[], Void>,
+        Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1584,7 +1586,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * Empty constructor required for {@link Externalizable}.
          *
          */
-        public UpdateClosure() {
+        public UpdateProcessor() {
             // No-op.
         }
 
@@ -1594,7 +1596,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param start Start position in the block to write new data from.
          * @param data Data block to write into cache.
          */
-        private UpdateClosure(int start, byte[] data) {
+        private UpdateProcessor(int start, byte[] data) {
             assert start >= 0;
             assert data != null;
             assert start + data.length >= 0 : "Too much data [start=" + start + ", data.length=" + data.length + ']';
@@ -1604,7 +1606,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] apply(byte[] e) {
+        @Override public Void process(MutableEntry<GridGgfsBlockKey, byte[]> entry, Object... args) {
+            byte[] e = entry.getValue();
+
             final int size = data.length;
 
             if (e == null || e.length == 0)
@@ -1621,7 +1625,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Copy data into entry.
             U.arrayCopy(data, 0, e, start, size);
 
-            return e;
+            entry.setValue(e);
+
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -1638,7 +1644,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(UpdateClosure.class, this, "start", start, "data.length", data.length);
+            return S.toString(UpdateProcessor.class, this, "start", start, "data.length", data.length);
         }
     }
 

@@ -180,7 +180,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"unchecked"})
-    public boolean loadAllFromStore(@Nullable IgniteTx tx, Collection<? extends K> keys,
+    public boolean loadAllFromStore(@Nullable IgniteTx tx,
+        Collection<? extends K> keys,
         final IgniteBiInClosure<K, V> vis) throws IgniteCheckedException {
         if (store != null) {
             if (!keys.isEmpty()) {
@@ -229,6 +230,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
 
             return true;
+        }
+        else {
+            for (K key : keys)
+                vis.apply(key, null);
         }
 
         return false;

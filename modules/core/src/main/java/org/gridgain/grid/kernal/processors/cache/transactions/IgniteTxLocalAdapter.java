@@ -1768,7 +1768,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     @Override public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
         boolean retval,
-        @Nullable Map<? extends K, EntryProcessor> map,
+        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> map,
         Object... invokeArgs
     ) {
         return (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)putAllAsync0(cacheCtx,
@@ -1829,7 +1829,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable ExpiryPolicy expiryPlc,
         boolean implicit,
         @Nullable Map<? extends K, ? extends V> lookup,
-        @Nullable Map<? extends K, EntryProcessor> invokeMap,
+        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> invokeMap,
         @Nullable Object[] invokeArgs,
         boolean retval,
         boolean lockOnly,
@@ -1992,7 +1992,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 break; // While.
                             }
 
-                            GridCacheOperation op = lockOnly ? NOOP : rmv ? DELETE :
+                            final GridCacheOperation op = lockOnly ? NOOP : rmv ? DELETE :
                                 entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
 
                             txEntry = addEntry(op,
@@ -2019,7 +2019,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 txEntry.markValid();
 
                                 if (old == null) {
-                                    if (retval && !readThrough) {
+                                    boolean load = retval && !readThrough;
+
+                                    // Check for transform here to avoid map creation.
+                                    load |= (op == TRANSFORM && keys.size() == 1);
+
+                                    if (load) {
                                         // If return value is required, then we know for sure that there is only
                                         // one key in the keys collection.
                                         assert keys.size() == 1;
@@ -2035,7 +2040,16 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                                         log.debug("Loaded value from remote node [key=" + k + ", val=" +
                                                             v + ']');
 
-                                                    ret.set(v, true);
+                                                    if (op == TRANSFORM) {
+                                                        IgniteTxEntry<K, V> e =
+                                                            entry(new IgniteTxKey<>(k, cacheCtx.cacheId()));
+
+                                                        assert e != null && e.op() == TRANSFORM : e;
+
+                                                        addInvokeResult(e, v, ret);
+                                                    }
+                                                    else
+                                                        ret.set(v, true);
                                                 }
                                             });
 
@@ -2130,6 +2144,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             drVer);
 
                         enlisted.add(key);
+
+                        if (txEntry.op() == TRANSFORM)
+                            addInvokeResult(txEntry, txEntry.value(), ret);
                     }
 
                     if (!pessimistic()) {
@@ -2137,6 +2154,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         if (retval)
                             ret.set(v, true);
+                        else
+                            ret.success(true);
                     }
                 }
             }
@@ -2155,11 +2174,15 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 missedForInvoke,
                 deserializePortables(cacheCtx),
                 new CI2<K, V>() {
-                    @Override public void apply(K k, V v) {
+                    @Override public void apply(K key, V val) {
                         if (log.isDebugEnabled())
-                            log.debug("Loaded value from remote node [key=" + k + ", val=" + v + ']');
+                            log.debug("Loaded value from remote node [key=" + key + ", val=" + val + ']');
 
-                        addInvokeResult(entry(new IgniteTxKey<>(k, cacheCtx.cacheId())), v, ret);
+                        IgniteTxEntry<K, V> e = entry(new IgniteTxKey<>(key, cacheCtx.cacheId()));
+
+                        assert e != null && e.op() == TRANSFORM : e;
+
+                        addInvokeResult(e, val, ret);
                     }
                 });
 
@@ -2373,17 +2396,19 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     private IgniteFuture putAllAsync0(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends V> map,
-        @Nullable Map<? extends K, EntryProcessor> invokeMap,
+        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        assert filter == null || invokeMap == null;
+
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_PUT);
 
         // Cached entry may be passed only from entry wrapper.
         final Map<K, V> map0;
-        final Map<K, EntryProcessor> invokeMap0;
+        final Map<K, EntryProcessor<K, V, Object>> invokeMap0;
 
         if (drMap != null) {
             assert map == null;
@@ -2419,7 +2444,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 invokeMap0 = U.newHashMap(invokeMap.size());
 
                 try {
-                    for (Map.Entry<? extends K, EntryProcessor> e : invokeMap.entrySet()) {
+                    for (Map.Entry<? extends K, EntryProcessor<K, V, Object>> e : invokeMap.entrySet()) {
                         K key = (K)cacheCtx.marshalToPortable(e.getKey());
 
                         invokeMap0.put(key, e.getValue());
@@ -2434,7 +2459,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         }
         else {
             map0 = (Map<K, V>)map;
-            invokeMap0 = (Map<K, EntryProcessor>)invokeMap;
+            invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
         }
 
         if (log.isDebugEnabled())

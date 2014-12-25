@@ -399,9 +399,31 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param key Key.
      * @param entryProcessor Entry processor.
      * @param args Arguments.
+     * @return Invoke result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> EntryProcessorResult<T> invoke(K key,
+         EntryProcessor<K, V, T> entryProcessor,
+         Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
      * @return Future.
      */
-    public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key,
+    public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
 
@@ -411,7 +433,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param args Arguments.
      * @return Future.
      */
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
+    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
 }

@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
@@ -48,7 +49,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testTransformTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -57,12 +58,14 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                IgniteTransactions txs = ignite(0).transactions();
+
                 for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
-                        cache.transform(key, new IncClosure());
+                    try (IgniteTx tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
+                        cache.invoke(key, new IncProcessor());
 
                         tx.commit();
                     }

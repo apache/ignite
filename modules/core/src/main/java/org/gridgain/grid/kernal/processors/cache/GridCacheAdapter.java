@@ -1420,12 +1420,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param reload Reload flag.
      * @param tx Transaction.
      * @param filter Filter.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
      * @param vis Visitor.
      * @return Future.
      */
-    public IgniteFuture<Object> readThroughAllAsync(final Collection<? extends K> keys, boolean reload,
-        @Nullable final IgniteTxEx<K, V> tx, IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable UUID subjId,
-        String taskName, final IgniteBiInClosure<K, V> vis) {
+    public IgniteFuture<Object> readThroughAllAsync(final Collection<? extends K> keys,
+        boolean reload,
+        @Nullable final IgniteTxEx<K, V> tx,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable UUID subjId,
+        String taskName,
+        final IgniteBiInClosure<K, V> vis) {
         return ctx.closures().callLocalSafe(new GPC<Object>() {
             @Nullable @Override public Object call() {
                 try {
@@ -2194,7 +2200,66 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(
+    @Override public <T> EntryProcessorResult<T> invoke(final K key,
+        final EntryProcessor<K, V, T> entryProcessor,
+        final Object... args)
+        throws IgniteCheckedException {
+        A.notNull(key, "key", entryProcessor, "entryProcessor");
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        ctx.denyOnLocalRead();
+
+        return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
+            @Nullable @Override public EntryProcessorResult<T> op(IgniteTxLocalAdapter<K, V> tx)
+                throws IgniteCheckedException {
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
+                    Collections.singletonMap(key, (EntryProcessor<K, V, Object>)entryProcessor);
+
+                IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut =
+                    tx.invokeAsync(ctx, false, invokeMap, args);
+
+                Map<K, EntryProcessorResult<T>> resMap = fut.get().value();
+
+                assert resMap != null;
+                assert resMap.size() == 1 : resMap.size();
+
+                return resMap.values().iterator().next();
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(final Set<? extends K> keys,
+        final EntryProcessor<K, V, T> entryProcessor,
+        final Object... args) throws IgniteCheckedException {
+        A.notNull(keys, "keys", entryProcessor, "entryProcessor");
+
+        if (keyCheck)
+            validateCacheKeys(keys);
+
+        ctx.denyOnLocalRead();
+
+        return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
+            @Nullable @Override public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
+                throws IgniteCheckedException {
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor<K, V, Object>>() {
+                    @Override public EntryProcessor apply(K k) {
+                        return entryProcessor;
+                    }
+                });
+
+                IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut =
+                    tx.invokeAsync(ctx, false, invokeMap, args);
+
+                return fut.get().value();
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(
         final K key,
         final EntryProcessor<K, V, T> entryProcessor,
         final Object... args)
@@ -2208,8 +2273,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         IgniteFuture<?> fut = asyncOp(new AsyncInOp(key) {
             @Override public IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> inOp(IgniteTxLocalAdapter<K, V> tx) {
-                Map<? extends K, EntryProcessor> invokeMap =
-                    Collections.singletonMap(key, (EntryProcessor)entryProcessor);
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
+                    Collections.singletonMap(key, (EntryProcessor<K, V, Object>)entryProcessor);
 
                 return tx.invokeAsync(ctx, false, invokeMap, args);
             }
@@ -2238,11 +2303,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         final Set<? extends K> keys,
         final EntryProcessor<K, V, T> entryProcessor,
         final Object... args) {
-        A.notNull(entryProcessor, "entryProcessor");
+        A.notNull(keys, "keys", entryProcessor, "entryProcessor");
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -2251,7 +2316,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         IgniteFuture<?> fut = asyncOp(new AsyncInOp(keys) {
             @Override public IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> inOp(IgniteTxLocalAdapter<K, V> tx) {
-                Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor<K, V, Object>>() {
                     @Override public EntryProcessor apply(K k) {
                         return entryProcessor;
                     }

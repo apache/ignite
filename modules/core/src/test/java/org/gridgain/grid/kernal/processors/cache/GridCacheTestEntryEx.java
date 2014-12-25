@@ -423,9 +423,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver,
+    @Override public IgniteBiTuple<Boolean, Object> innerUpdateLocal(GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,

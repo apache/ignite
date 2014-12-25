@@ -10,16 +10,17 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -162,7 +163,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            GridCache <String, TestObject> cache = ignite.cache(null);
+            IgniteCache<String, TestObject> cache = ignite.jcache(null);
 
             assertNotNull(cache);
 
@@ -173,11 +174,11 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
 
             while (true) {
                 try {
-                    cache.transform("key", new Transformer());
+                    cache.invoke("key", new Processor());
 
                     break;
                 }
-                catch (GridCachePartialUpdateException ignored) {
+                catch (CachePartialUpdateException ignored) {
                     // Need to re-check if update actually succeeded.
                     TestObject updated = cache.get("key");
 
@@ -210,12 +211,16 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Transformer implements C1<TestObject, TestObject> {
+    private static class Processor implements EntryProcessor<String, TestObject, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject apply(TestObject obj) {
+        @Override public Void process(MutableEntry<String, TestObject> e, Object... args) {
+            TestObject obj = e.getValue();
+
             assert obj != null;
 
-            return new TestObject(obj.val + 1);
+            e.setValue(new TestObject(obj.val + 1));
+
+            return null;
         }
     }
 }

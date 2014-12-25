@@ -1365,10 +1365,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(
+    @Override public IgniteBiTuple<Boolean, Object> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
@@ -1381,7 +1382,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
-        V old;
+        Object opRes;
 
         boolean res = true;
 
@@ -1397,7 +1398,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 unswap(true, retval);
 
             // Possibly get old value form store.
-            old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
+            V old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
+
+            opRes = old;
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
@@ -1428,7 +1431,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             updateTtl(ttl);
                     }
 
-                    return new IgniteBiTuple<>(false, retval ? old : null);
+                    return new IgniteBiTuple<>(false, (Object)(retval ? old : null));
                 }
             }
 
@@ -1444,11 +1447,24 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (op == GridCacheOperation.TRANSFORM) {
                 transformCloClsName = writeObj.getClass().getName();
 
-                IgniteClosure<V, V> transform = (IgniteClosure<V, V>)writeObj;
+                EntryProcessor<K, V, ?> entryProcessor = (EntryProcessor<K, V, ?>)writeObj;
 
-                assert transform != null;
+                assert entryProcessor != null;
 
-                updated = cctx.unwrapTemporary(transform.apply(old));
+                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(key, old);
+
+                try {
+                    Object computed = entryProcessor.process(entry, invokeArgs);
+
+                    updated = cctx.unwrapTemporary(entry.getValue());
+
+                    opRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+                }
+                catch (Exception e) {
+                    updated = old;
+
+                    opRes = new CacheInvokeResult<>(e);
+                }
             }
             else
                 updated = (V)writeObj;
@@ -1460,13 +1476,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
 
                     if (updated == null)
-                        return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(old));
+                        return new IgniteBiTuple<>(false, (Object)cctx.<V>unwrapTemporary(old));
                 }
                 else {
                     interceptorRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
                     if (cctx.cancelRemove(interceptorRes))
-                        return new IgniteBiTuple<>(false, cctx.<V>unwrapTemporary(interceptorRes.get2()));
+                        return new IgniteBiTuple<>(false,
+                            (Object)cctx.<V>unwrapTemporary(interceptorRes.get2()));
                 }
             }
 
@@ -1576,7 +1593,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        return new IgniteBiTuple<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old));
+        return new IgniteBiTuple<>(res,
+            (Object)(cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : opRes)));
     }
 
     /** {@inheritDoc} */

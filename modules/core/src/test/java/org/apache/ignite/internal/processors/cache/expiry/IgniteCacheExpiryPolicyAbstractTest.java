@@ -363,12 +363,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         createUpdatePutAll(null);
 
         if (atomicityMode() == TRANSACTIONAL) {
-            IgniteTxConcurrency[] txModes;
-
-            if (cacheMode() == LOCAL)
-                txModes= new IgniteTxConcurrency[]{PESSIMISTIC};
-            else
-                txModes= new IgniteTxConcurrency[]{PESSIMISTIC, OPTIMISTIC};
+            IgniteTxConcurrency[] txModes = new IgniteTxConcurrency[]{PESSIMISTIC, OPTIMISTIC};
 
             for (IgniteTxConcurrency tx : txModes) {
                 for (final Integer key : keys()) {

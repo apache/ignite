@@ -42,7 +42,7 @@ public interface GridCacheInterceptor<K, V> {
     @Nullable public V onGet(K key, @Nullable V val);
 
     /**
-     * This method is called within {@link GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * This method is called within {@link GridCacheProjection#put(Object, Object, IgnitePredicate[])}
      * and similar operations before new value is stored in cache.
      * <p>
      * Implementations should not execute any complex logic,
@@ -56,7 +56,7 @@ public interface GridCacheInterceptor<K, V> {
      * @param oldVal Old value.
      * @param newVal New value.
      * @return Value to be put to cache. Returning {@code null} cancels the update.
-     * @see GridCacheProjection#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])
+     * @see GridCacheProjection#put(Object, Object, IgnitePredicate[])
      */
     @Nullable public V onBeforePut(K key, @Nullable V oldVal, V newVal);
 
@@ -76,7 +76,7 @@ public interface GridCacheInterceptor<K, V> {
     public void onAfterPut(K key, V val);
 
     /**
-     * This method is called within {@link GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])}
+     * This method is called within {@link GridCacheProjection#remove(Object, IgnitePredicate[])}
      * and similar operations to provide control over returned value.
      * <p>
      * Implementations should not execute any complex logic,
@@ -91,7 +91,7 @@ public interface GridCacheInterceptor<K, V> {
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.
-     * @see GridCacheProjection#remove(Object, org.apache.ignite.lang.IgnitePredicate[])
+     * @see GridCacheProjection#remove(Object, IgnitePredicate[])
      */
     @Nullable public IgniteBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val);
 

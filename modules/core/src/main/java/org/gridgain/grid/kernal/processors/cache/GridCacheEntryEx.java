@@ -450,6 +450,7 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param ver Cache version.
      * @param op Operation.
      * @param writeObj Value. Type depends on operation.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy..
@@ -459,14 +460,15 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
-     * @return Tuple containing success flag and old value.
+     * @return Tuple containing success flag and operation result.
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public IgniteBiTuple<Boolean, V> innerUpdateLocal(
+    public IgniteBiTuple<Boolean, Object> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,

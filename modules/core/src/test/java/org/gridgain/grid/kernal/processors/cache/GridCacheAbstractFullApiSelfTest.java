@@ -891,6 +891,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals("3", res.get("key3").get());
 
             assertEquals(3, res.size());
+
+            cache.remove("key1");
+            cache.put("key2", 1);
+            cache.put("key3", 3);
         }
 
         Map<String, EntryProcessorResult<String>> res = cache.invokeAll(F.asSet("key1", "key2", "key3"), RMV_PROCESSOR);
@@ -901,9 +905,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(cache(i).peek("key3"));
         }
 
-        assertEquals("1", res.get("key1").get());
-        assertEquals("2", res.get("key2").get());
-        assertEquals("4", res.get("key3").get());
+        assertEquals("null", res.get("key1").get());
+        assertEquals("1", res.get("key2").get());
+        assertEquals("3", res.get("key3").get());
 
         assertEquals(3, res.size());
 
@@ -928,9 +932,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformAllWithNulls() throws Exception {
-        final GridCacheProjection<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
-        cache.transformAll(null); // This should be no-op.
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.invokeAll(null, INCR_PROCESSOR);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.invokeAll(F.asSet("key1"), null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
 
         {
             Map<String, Integer> m = new HashMap<>(2);
@@ -944,38 +962,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         {
-            Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
+            Set<String> keys = new HashSet<>(2);
 
-            tm.put("key1", INCR_PROCESSOR);
-            tm.put(null, INCR_PROCESSOR);
-
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
-
-            cache.transformAll(tm);
-        }
-
-        {
-            Map<String, IgniteClosure<Integer, Integer>> tm = new HashMap<>(2);
-
-            tm.put("key1", INCR_PROCESSOR);
-            tm.put("key2", null);
-
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
-
-            cache.transformAll(tm);
-        }
-
-        cache.transformAll(null, INCR_PROCESSOR); // This should be no-op.
-
-        {
-            Set<String> ts = new HashSet<>(3);
-
-            ts.add("key1");
-            ts.add(null);
+            keys.add("key1");
+            keys.add(null);
 
             // WARN: F.asSet() doesn't work here, because it will throw NPE.
 
-            cache.transformAll(ts, INCR_PROCESSOR);
+            cache.invokeAll(keys, INCR_PROCESSOR);
         }
     }
 
@@ -1014,17 +1008,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void checkTransformSequential0(boolean startVal, IgniteTxConcurrency concurrency)
         throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
-        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
+        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
                 cache.put("key", 2);
 
-            cache.transform("key", INCR_PROCESSOR);
-            cache.transform("key", INCR_PROCESSOR);
-            cache.transform("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
 
             if (tx != null)
                 tx.commit();
@@ -1063,18 +1057,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTransformAfterRemove(IgniteTxConcurrency concurrency) throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key", 4);
 
-        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, READ_COMMITTED) : null;
+        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             cache.remove("key");
 
-            cache.transform("key", INCR_PROCESSOR);
-            cache.transform("key", INCR_PROCESSOR);
-            cache.transform("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
 
             if (tx != null)
                 tx.commit();
@@ -1128,20 +1122,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkTransformReturnValue(boolean put, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation) throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+    private void checkTransformReturnValue(boolean put,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation)
+        throws Exception
+    {
+        IgniteCache<String, Integer> cache = jcache();
 
         if (!put)
             cache.put("key", 1);
 
-        IgniteTx tx = txEnabled() ? cache.txStart(concurrency, isolation) : null;
+        IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
             if (put)
                 cache.put("key", 1);
 
-            cache.transform("key", INCR_PROCESSOR);
+            cache.invoke("key", INCR_PROCESSOR);
 
             assertEquals((Integer)2, cache.get("key"));
 
@@ -1211,33 +1208,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testTransformEntry() throws Exception {
-        GridCacheEntry<String, Integer> entry = cache().entry("test");
-
-        entry.setValue(1);
-
-        // Make user entry capture cache entry.
-        entry.version();
-
-        assertEquals((Integer)1, entry.getValue());
-
-        entry.transform(INCR_PROCESSOR);
-
-        assertEquals((Integer)2, entry.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAsync() throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+    public void testInvokeAsync() throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        IgniteFuture<?> fut0 = cache.transformAsync("key1", INCR_PROCESSOR);
-        IgniteFuture<?> fut1 = cache.transformAsync("key2", INCR_PROCESSOR);
-        IgniteFuture<?> fut2 = cache.transformAsync("key3", RMV_PROCESSOR);
+        cache = cache.enableAsync();
+
+        assertNull(cache.invoke("key1", INCR_PROCESSOR));
+
+        IgniteFuture<?> fut0 = cache.future();
+
+        assertNull(cache.invoke("key2", INCR_PROCESSOR));
+
+        IgniteFuture<?> fut1 = cache.future();
+
+        assertNull(cache.invoke("key3", RMV_PROCESSOR));
+
+        IgniteFuture<?> fut2 = cache.future();
 
         fut0.get();
         fut1.get();
@@ -1254,46 +1243,54 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testTransformCompute() throws Exception {
-        GridCacheProjection<String, Integer> cache = cache();
+    public void testInvoke() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
 
-        IgniteClosure<Integer, IgniteBiTuple<Integer, String>> c;
-
-        c = new IgniteClosure<Integer, IgniteBiTuple<Integer, String>>() {
-            @Override public IgniteBiTuple<Integer, String> apply(Integer val) {
-                return val == null ? new IgniteBiTuple<>(0, "null") : new IgniteBiTuple<>(val + 1, String.valueOf(val));
-            }
-        };
-
-        assertEquals("null", cache.transformAndCompute("k0", c));
-
-        assertEquals((Integer)0, cache.get("k0"));
-
-        assertEquals("0", cache.transformAndCompute("k0", c));
+        assertEquals("null", cache.invoke("k0", INCR_PROCESSOR));
 
         assertEquals((Integer)1, cache.get("k0"));
 
+        assertEquals("1", cache.invoke("k0", INCR_PROCESSOR));
+
+        assertEquals((Integer)2, cache.get("k0"));
+
         cache.put("k1", 1);
 
-        assertEquals("1", cache.transformAndCompute("k1", c));
+        assertEquals("1", cache.invoke("k1", INCR_PROCESSOR));
 
         assertEquals((Integer)2, cache.get("k1"));
 
-        assertEquals("2", cache.transformAndCompute("k1", c));
+        assertEquals("2", cache.invoke("k1", INCR_PROCESSOR));
 
         assertEquals((Integer)3, cache.get("k1"));
 
-        c = new IgniteClosure<Integer, IgniteBiTuple<Integer, String>>() {
-            @Override public IgniteBiTuple<Integer, String> apply(Integer integer) {
-                return new IgniteBiTuple<>(null, null);
+        EntryProcessor<String, Integer, Integer> c = new EntryProcessor<String, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+                e.remove();
+
+                return null;
             }
         };
 
-        assertNull(cache.transformAndCompute("k1", c));
+        assertNull(cache.invoke("k1", c));
         assertNull(cache.get("k1"));
 
         for (int i = 0; i < gridCount(); i++)
             assertNull(cache(i).peek("k1"));
+
+        final EntryProcessor<String, Integer, Integer> errProcessor = new EntryProcessor<String, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+                throw new EntryProcessorException("Test entry processor exception.");
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.invoke("k1", errProcessor);
+
+                return null;
+            }
+        }, EntryProcessorException.class, "Test entry processor exception.");
     }
 
     /**

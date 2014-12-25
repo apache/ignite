@@ -455,7 +455,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        transformAsync(key, transformer).get();
+        //transformAsync(key, transformer).get();
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -482,8 +484,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        transformAllAsync(m).get();
+    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m)
+        throws IgniteCheckedException {
+        //transformAllAsync(m).get();
+        // TODO IGNITE-44.
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -632,8 +637,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
+        throws IgniteCheckedException {
+        return invokeAsync(key, entryProcessor, args).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args)
+        throws IgniteCheckedException {
+        return invokeAllAsync(keys, entryProcessor, args).get();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invoke(K key,
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         A.notNull(key, "key", entryProcessor, "entryProcessor");
@@ -671,7 +690,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAll(Set<? extends K> keys,
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         final EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         A.notNull(keys, "keys", entryProcessor, "entryProcessor");
@@ -701,8 +720,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Entry point for all public API put/transform methods.
      *
-     * @param map Put map. Either {@code map}, {@code transformMap} or {@code drMap} should be passed.
-     * @param transformMap Transform map. Either {@code map}, {@code transformMap} or {@code drMap} should be passed.
+     * @param map Put map. Either {@code map}, {@code invokeMap} or {@code drMap} should be passed.
+     * @param invokeMap Invoke map. Either {@code map}, {@code invokeMap} or {@code drMap} should be passed.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param drPutMap DR put map.
      * @param drRmvMap DR remove map.
@@ -714,7 +733,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private IgniteFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, EntryProcessor> transformMap,
+        @Nullable final Map<? extends K, EntryProcessor> invokeMap,
         @Nullable Object[] invokeArgs,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drPutMap,
         @Nullable final Map<? extends K, GridCacheVersion> drRmvMap,
@@ -738,10 +757,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx,
             this,
             ctx.config().getWriteSynchronizationMode(),
-            transformMap != null ? TRANSFORM : UPDATE,
-            map != null ? map.keySet() : transformMap != null ? transformMap.keySet() : drPutMap != null ?
+            invokeMap != null ? TRANSFORM : UPDATE,
+            map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : drPutMap != null ?
                 drPutMap.keySet() : drRmvMap.keySet(),
-            map != null ? map.values() : transformMap != null ? transformMap.values() : null,
+            map != null ? map.values() : invokeMap != null ? invokeMap.values() : null,
             invokeArgs,
             drPutMap != null ? drPutMap.values() : null,
             drRmvMap != null ? drRmvMap.values() : null,
@@ -1213,12 +1232,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int size = req.keys().size();
 
         Map<K, V> putMap = null;
+
         Map<K, EntryProcessor<K, V, ?>> entryProcessorMap = null;
+
         Collection<K> rmvKeys = null;
+
         UpdateBatchResult<K, V> updRes = new UpdateBatchResult<>();
+
         List<GridDhtCacheEntry<K, V>> filtered = new ArrayList<>(size);
+
         GridCacheOperation op = req.operation();
-        Map<Object, Object> invokeResMap = op == TRANSFORM ? U.newHashMap(size) : null;
+
+        Map<K, EntryProcessorResult> invokeResMap =
+            op == TRANSFORM ? U.<K, EntryProcessorResult>newHashMap(size) : null;
 
         int firstEntryIdx = 0;
 
@@ -2644,7 +2670,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private boolean readersOnly;
 
         /** */
-        private Map<Object, Object> invokeRes;
+        private Map<K, EntryProcessorResult> invokeRes;
 
         /**
          * @param entry Entry.
@@ -2679,14 +2705,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * @param invokeRes Result for invoke operation.
          */
-        private void invokeResult(Map<Object, Object> invokeRes) {
+        private void invokeResult(Map<K, EntryProcessorResult> invokeRes) {
             this.invokeRes = invokeRes;
         }
 
         /**
          * @return Result for invoke operation.
          */
-        Map<Object, Object> invokeResults() {
+        Map<K, EntryProcessorResult> invokeResults() {
             return invokeRes;
         }
 

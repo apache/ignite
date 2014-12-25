@@ -10,13 +10,14 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jdk8.backport.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -62,14 +63,14 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
                         for (int i = rangeStart; i < rangeStart + range; i++) {
                             int idx = ThreadLocalRandom8.current().nextInt(gridCount());
 
-                            GridCacheProjection<Integer, Integer> cache = grid(idx).cache(null);
+                            IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
 
                             cache = cache.flagsOn(GridCacheFlag.FORCE_TRANSFORM_BACKUP);
 
-                            cache.transform(i, new Transformer(i));
+                            cache.invoke(i, new Transformer(i));
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         throw new IgniteException(e);
                     }
                 }
@@ -102,20 +103,28 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
     /**
      *
      */
-    private static class Transformer implements IgniteClosure<Integer, Integer> {
+    private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
+        /** */
         private int key;
 
+        /**
+         * @param key Key.
+         */
         private Transformer(int key) {
             this.key = key;
         }
 
         /** {@inheritDoc} */
-        @Override public Integer apply(Integer old) {
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            Integer old = e.getValue();
+
             if (key < 5)
                 System.err.println(Thread.currentThread().getName() + " <> Transforming value [key=" + key +
                     ", val=" + old + ']');
 
-            return old == null ? 1 : old + 1;
+            e.setValue(old == null ? 1 : old + 1);
+
+            return null;
         }
     }
 }

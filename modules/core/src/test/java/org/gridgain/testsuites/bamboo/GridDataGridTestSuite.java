@@ -10,6 +10,7 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.expiry.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.fair.*;
@@ -31,13 +32,23 @@ import org.gridgain.testsuites.*;
  */
 public class GridDataGridTestSuite extends TestSuite {
     /**
-     * @return GridGain TeamCity in-memory data grid test suite.
+     * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain In-Memory Data Grid Test Suite");
+        TestSuite suite = new TestSuite("IgniteCache Test Suite");
 
         suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
+
+        suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
+        suite.addTestSuite(IgniteCacheTxInvokeTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);

@@ -61,6 +61,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param idx Grid index.
+     * @return Cache.
+     */
+    protected <K, V> IgniteCache<K, V> jcache(int idx) {
+        return grid(idx).jcache(null);
+    }
+
+    /**
+     * @param idx Grid index.
      * @param name Cache name.
      * @return Cache.
      */
@@ -275,7 +283,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Collection of keys for which given cache is primary.
+     * @return Key for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
     protected Integer primaryKey(GridCacheProjection<?, ?> cache)
@@ -327,7 +335,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Collection of keys for which given cache is backup.
+     * @return Key for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
     protected Integer backupKey(GridCacheProjection<?, ?> cache)
@@ -379,7 +387,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
-     * @return Collection of keys for which given cache is neither primary nor backup.
+     * @return Keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
     protected Integer nearKey(GridCacheProjection<?, ?> cache)
@@ -469,6 +477,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return nearKeys(prj, cnt, startFrom);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Collection of keys for which given cache is primary.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected Integer primaryKey(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return primaryKey(prj);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Keys for which given cache is backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected Integer backupKey(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return backupKey(prj);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Key for which given cache is neither primary nor backup.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected Integer nearKey(IgniteCache<?, ?> cache)
+        throws IgniteCheckedException {
+        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return nearKey(prj);
     }
 
     /**

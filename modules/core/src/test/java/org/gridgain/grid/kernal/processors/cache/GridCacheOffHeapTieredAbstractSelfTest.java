@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
@@ -18,6 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -92,48 +94,61 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     private void checkTransform(Integer key) throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNull("Unexpected value: " + val, val);
 
                 return null;
             }
         });
 
-        c.putx(key, 1);
+        c.put(key, 1);
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
                 assertEquals((Integer) 1, val);
 
-                return val + 1;
+                e.setValue(val + 1);
+
+                return null;
             }
         });
 
         assertEquals((Integer)2, c.get(key));
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
                 assertEquals((Integer)2, val);
 
-                return val;
+                e.setValue(val);
+
+                return null;
             }
         });
 
-        assertEquals((Integer) 2, c.get(key));
+        assertEquals((Integer)2, c.get(key));
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override
-            public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
-                assertEquals((Integer) 2, val);
+                assertEquals((Integer)2, val);
+
+                e.remove();
 
                 return null;
             }
