@@ -668,6 +668,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             cache.removeEntry(entry);
 
+            cache.metrics0().onEvict();
+
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
                     EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null);

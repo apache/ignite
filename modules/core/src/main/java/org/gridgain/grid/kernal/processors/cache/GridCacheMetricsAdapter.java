@@ -64,8 +64,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** Number of transaction rollbacks. */
     private volatile int txRollbacks;
 
-    private volatile long getCnt;
-    private volatile long putCnt;
+    /** Number of evictions. */
+    private volatile long evictCnt;
+
+    /** Number of removed entries. */
     private volatile long rmCnt;
 
     /** Cache metrics. */
@@ -95,6 +97,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         txCommits = m.txCommits();
         txRollbacks = m.txRollbacks();
         rmCnt = m.getCacheRemovals();
+        evictCnt = m.getCacheEvictions();
     }
 
     /**
@@ -161,7 +164,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        //TODO: rewrite
         createTime = U.currentTimeMillis();
         readTime = createTime;
         writeTime = createTime;
@@ -207,39 +209,36 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        //TODO: split read
-        return 0;
+        return reads;
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        //TODO: split write
-        return 0;
+        return writes;
     }
 
-    @Override
-    public long getCacheRemovals() {
+    /** {@inheritDoc} */
+    @Override public long getCacheRemovals() {
         return rmCnt;
     }
 
-    @Override
-    public long getCacheEvictions() {
-        //TODO: discuss with Semen
+    /** {@inheritDoc} */
+    @Override public long getCacheEvictions() {
+        return evictCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageGetTime() {
         return 0;
     }
 
-    @Override
-    public float getAverageGetTime() {
+    /** {@inheritDoc} */
+    @Override public float getAveragePutTime() {
         return 0;
     }
 
-    @Override
-    public float getAveragePutTime() {
-        return 0;
-    }
-
-    @Override
-    public float getAverageRemoveTime() {
+    /** {@inheritDoc} */
+    @Override public float getAverageRemoveTime() {
         return 0;
     }
 
@@ -283,6 +282,16 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
         if (delegate != null)
             delegate.onRemove();
+    }
+
+    /**
+     * Cache remove callback.
+     */
+    public void onEvict() {
+        evictCnt++;
+
+        if (delegate != null)
+            delegate.onEvict();
     }
 
     /**
@@ -336,6 +345,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         out.writeInt(misses);
         out.writeInt(txCommits);
         out.writeInt(txRollbacks);
+        out.writeLong(rmCnt);
+        out.writeLong(evictCnt);
     }
 
     /** {@inheritDoc} */
@@ -352,6 +363,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         misses = in.readInt();
         txCommits = in.readInt();
         txRollbacks = in.readInt();
+        rmCnt = in.readLong();
+        evictCnt = in.readLong();
     }
 
     /** {@inheritDoc} */
