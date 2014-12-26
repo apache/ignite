@@ -72,6 +72,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Map of proxies. */
     private final Map<String, GridCache<?, ?>> proxies;
 
+    /** Map of proxies. */
+    private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+
     /** Map of public proxies, i.e. proxies which could be returned to the user. */
     private final Map<String, GridCache<?, ?>> publicProxies;
 
@@ -105,6 +108,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         caches = new LinkedHashMap<>();
         proxies = new HashMap<>();
         publicProxies = new HashMap<>();
+        jCacheProxies = new HashMap<>();
         preloadFuts = new TreeMap<>();
 
         sysCaches = new HashSet<>();
@@ -816,6 +820,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheAdapter cache = e.getValue();
 
             proxies.put(e.getKey(), new GridCacheProxyImpl(cache.context(), cache, null));
+
+            jCacheProxies.put(e.getKey(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
 
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
@@ -1594,12 +1600,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        GridCacheAdapter<K, V> cache = (GridCacheAdapter<K, V>)caches.get(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
-        return new IgniteCacheProxy<>(cache.context(), cache, null, false);
+        return cache;
     }
 
     /**
@@ -1608,12 +1614,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteCacheProxy<K, V> jcache(@Nullable String name) {
-        GridCacheAdapter<K, V> cache = (GridCacheAdapter<K, V>)caches.get(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
-        return new IgniteCacheProxy<>(cache.context(), cache, null, false);
+        return cache;
     }
 
     /**

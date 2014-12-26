@@ -117,18 +117,6 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
-     * @param key Key.
-     * @param transformer Transformer closure.
-     * @param entry Cached entry.
-     * @param ttl Optional time-to-lve.
-     * @return Transform operation future.
-     */
-    public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl);
-
-    /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
-     *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
      * @param filter Optional filter.
@@ -402,20 +390,9 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Invoke result.
      * @throws IgniteCheckedException If failed.
      */
-    public <T> EntryProcessorResult<T> invoke(K key,
+    @Nullable public <T> EntryProcessorResult<T> invoke(K key,
          EntryProcessor<K, V, T> entryProcessor,
          Object... args) throws IgniteCheckedException;
-
-    /**
-     * @param keys Keys.
-     * @param entryProcessor Entry processor.
-     * @param args Arguments.
-     * @return Invoke results.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException;
 
     /**
      * @param key Key.
@@ -431,9 +408,29 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param keys Keys.
      * @param entryProcessor Entry processor.
      * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
      * @return Future.
      */
     public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
 }

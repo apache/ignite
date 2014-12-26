@@ -277,7 +277,24 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         tx = startTx(txMode);
 
-        resMap = cache.invokeAll(keys, new RemoveProcessor(null));
+        Map<Integer, EntryProcessor<Integer, Integer, Integer>> invokeMap = new HashMap<>();
+
+        for (Integer key : keys) {
+            switch (key % 4) {
+                case 0: invokeMap.put(key, new IncrementProcessor()); break;
+
+                case 1: invokeMap.put(key, new RemoveProcessor(62)); break;
+
+                case 2: invokeMap.put(key, new ArgumentsSumProcessor()); break;
+
+                case 3: invokeMap.put(key, new ExceptionProcessor(62)); break;
+
+                default:
+                    fail();
+            }
+        }
+
+        resMap = cache.invokeAll(invokeMap, 10, 20, 30);
 
         if (tx != null)
             tx.commit();
@@ -285,10 +302,63 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys) {
             final EntryProcessorResult<Integer> res = resMap.get(key);
 
-            assertNotNull("No result for " + key);
+            switch (key % 4) {
+                case 0: {
+                    assertNotNull("No result for " + key);
 
-            assertNull(res.get());
+                    assertEquals(62, (int)res.get());
+
+                    checkValue(key, 63);
+
+                    break;
+                }
+
+                case 1: {
+                    assertNull(res);
+
+                    checkValue(key, null);
+
+                    break;
+                }
+
+                case 2: {
+                    assertNotNull("No result for " + key);
+
+                    assertEquals(3, (int)res.get());
+
+                    checkValue(key, 122);
+
+                    break;
+                }
+
+                case 3: {
+                    assertNotNull("No result for " + key);
+
+                    GridTestUtils.assertThrows(log, new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            res.get();
+
+                            return null;
+                        }
+                    }, EntryProcessorException.class, "Test processor exception.");
+
+                    checkValue(key, 62);
+
+                    break;
+                }
+            }
         }
+
+        cache.invokeAll(keys, new IncrementProcessor());
+
+        tx = startTx(txMode);
+
+        resMap = cache.invokeAll(keys, new RemoveProcessor(null));
+
+        if (tx != null)
+            tx.commit();
+
+        assertEquals("Unexpected results: " + resMap, 0, resMap.size());
 
         for (Integer key : keys)
             checkValue(key, null);

@@ -201,17 +201,6 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        // No-op.
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         // No-op.
         return null;

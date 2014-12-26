@@ -936,7 +936,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invokeAll(null, INCR_PROCESSOR);
+                cache.invokeAll((Set<String>)null, INCR_PROCESSOR);
 
                 return null;
             }

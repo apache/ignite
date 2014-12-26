@@ -14,6 +14,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
+import javax.cache.processor.*;
 import java.util.concurrent.*;
 
 /**
@@ -61,55 +62,62 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Put and return previous value.
-        String v = cache.put(1, "1");
+        String v = cache.getAndPut(1, "1");
         assert v == null;
 
         // Put and do not return previous value (all methods ending with 'x' return boolean).
         // Performs better when previous value is not needed.
-        cache.putx(2, "2");
+        cache.put(2, "2");
+
 
         // Put asynchronously (every cache operation has async counterpart).
-        IgniteFuture<String> fut = cache.putAsync(3, "3");
-
-        // Asynchronously wait for result.
-        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> fut) {
-                try {
-                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
-                }
-                catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        // TODO IGNITE-60: uncomment when implemented.
+//        IgniteFuture<String> fut = cache.putAsync(3, "3");
+//
+//        // Asynchronously wait for result.
+//        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+//            @Override public void apply(IgniteFuture<String> fut) {
+//                try {
+//                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
+//                }
+//                catch (IgniteCheckedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
 
         // Put-if-absent.
-        boolean b1 = cache.putxIfAbsent(4, "4");
-        boolean b2 = cache.putxIfAbsent(4, "44");
+        boolean b1 = cache.putIfAbsent(4, "4");
+        boolean b2 = cache.putIfAbsent(4, "44");
         assert b1 && !b2;
 
 
         // Put-with-predicate, will succeed if predicate evaluates to true.
-        cache.putx(5, "5");
-        cache.putx(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
-            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+        cache.put(5, "5");
+        cache.putIf(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
+            @Override
+            public boolean apply(GridCacheEntry<Integer, String> e) {
                 return "5".equals(e.peek()); // Update only if previous value is "5".
             }
         });
 
-        // Transform - assign new value based on previous value.
-        cache.putx(6, "6");
-        cache.transform(6, new IgniteClosure<String, String>() {
-            @Override public String apply(String v) {
-                return v + "6"; // Set new value based on previous value.
+        // Invoke - assign new value based on previous value.
+        cache.put(6, "6");
+        cache.invoke(6, new EntryProcessor<Integer, String, Void>() {
+            @Override public Void process(MutableEntry<Integer, String> entry, Object... args) {
+                String v = entry.getValue();
+
+                entry.setValue(v + "6"); // Set new value based on previous value.
+
+                return null;
             }
         });
 
         // Replace.
-        cache.putx(7, "7");
+        cache.put(7, "7");
         b1 = cache.replace(7, "7", "77");
         b2 = cache.replace(7, "7", "777");
         assert b1 & !b2;

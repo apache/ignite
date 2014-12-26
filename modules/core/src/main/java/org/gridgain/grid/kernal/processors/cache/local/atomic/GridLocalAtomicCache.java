@@ -337,92 +337,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        /*
-        ctx.denyOnLocalRead();
-
-        updateAllInternal(TRANSFORM,
-            Collections.singleton(key),
-            Collections.singleton(transformer),
-            expiryPerCall(),
-            false,
-            false,
-            null,
-            ctx.isStoreEnabled());
-            */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        /*
-        return (R)updateAllInternal(TRANSFORM,
-            Collections.singleton(key),
-            Collections.singleton(new GridCacheTransformComputeClosure<>(transformer)),
-            expiryPerCall(),
-            true,
-            false,
-            null,
-            ctx.isStoreEnabled());
-            */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key,
-        IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl) {
-        /*
-        ctx.denyOnLocalRead();
-
-        return updateAllAsync0(null, Collections.singletonMap(key, transformer), false, false, ttl, null);
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        /*
-        ctx.denyOnLocalRead();
-
-        if (F.isEmpty(m))
-            return;
-
-        updateAllInternal(TRANSFORM,
-            m.keySet(),
-            m.values(),
-            expiryPerCall(),
-            false,
-            false,
-            null,
-            ctx.isStoreEnabled());
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        /*
-        ctx.denyOnLocalRead();
-
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
-
-        return updateAllAsync0(null, m, false, false, 0, null);
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public V remove(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
@@ -760,10 +674,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 throws IgniteCheckedException {
                 Map<K, EntryProcessorResult<T>> resMap = fut.get();
 
-                assert resMap != null;
-                assert resMap.size() == 1 : resMap.size();
+                if (resMap != null) {
+                    assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                return resMap.values().iterator().next();
+                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                }
+
+                return null;
             }
         });
     }
@@ -795,6 +712,26 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             null);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        A.notNull(map, "map");
+
+        if (keyCheck)
+            validateCacheKeys(map.keySet());
+
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(null,
+            map,
+            args,
+            true,
+            false,
+            null);
+    }
+
     /**
      * Entry point for public API update methods.
      *
@@ -808,7 +745,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     private IgniteFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, EntryProcessor> invokeMap,
+        @Nullable final Map<? extends K, ? extends EntryProcessor> invokeMap,
         @Nullable final Object[] invokeArgs,
         final boolean retval,
         final boolean rawRetval,
@@ -961,19 +898,21 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         taskName);
 
                     if (op == TRANSFORM) {
-                        assert t.get2() instanceof EntryProcessorResult : t.get2();
+                        assert t.get2() == null || t.get2() instanceof EntryProcessorResult : t.get2();
 
-                        Map<K, EntryProcessorResult> computedMap;
+                        if (t.get2() != null) {
+                            Map<K, EntryProcessorResult> computedMap;
 
-                        if (res == null) {
-                            computedMap = U.newHashMap(keys.size());
+                            if (res == null) {
+                                computedMap = U.newHashMap(keys.size());
 
-                            res = new IgniteBiTuple<>(true, computedMap);
+                                res = new IgniteBiTuple<>(true, computedMap);
+                            }
+                            else
+                                computedMap = (Map<K, EntryProcessorResult>)res.get2();
+
+                            computedMap.put(key, (EntryProcessorResult)t.getValue());
                         }
-                        else
-                            computedMap = (Map<K, EntryProcessorResult>)res.get2();
-
-                        computedMap.put(key, (EntryProcessorResult)t.getValue());
                     }
                     else if (res == null)
                         res = t;
@@ -1006,8 +945,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (err != null)
             throw err;
 
-        return res == null ? null : rawRetval ?
+        Object ret = res == null ? null : rawRetval ?
             new GridCacheReturn<>(res.get2(), res.get1()) : retval ? res.get2() : res.get1();
+
+        if (op == TRANSFORM && ret == null)
+            ret = Collections.emptyMap();
+
+        return ret;
     }
 
     /**
@@ -1104,14 +1048,15 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
 
                         V updated;
-                        CacheInvokeResult invokeRes;
+                        CacheInvokeResult invokeRes = null;
 
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
                             updated = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                            invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
+                            if (computed != null)
+                                invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
                         }
                         catch (Exception e) {
                             invokeRes = new CacheInvokeResult<>(e);
@@ -1119,7 +1064,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             updated = old;
                         }
 
-                        invokeResMap.put(entry.key(), invokeRes);
+                        if (invokeRes != null)
+                            invokeResMap.put(entry.key(), invokeRes);
 
                         if (updated == null) {
                             if (intercept) {

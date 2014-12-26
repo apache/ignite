@@ -324,6 +324,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         Object retval = res == null ? null : rawRetval ? ret : this.retval ? ret.value() : ret.success();
 
+        if (op == TRANSFORM && retval == null)
+            retval = Collections.emptyMap();
+
         if (super.onDone(retval, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
@@ -376,7 +379,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     if (op == TRANSFORM) {
                         assert !req.fastMap();
 
-                        addInvokeResults(res.returnValue());
+                        if (res.returnValue() != null)
+                            addInvokeResults(res.returnValue());
                     }
                     else if (req.fastMap() && req.hasPrimary())
                         opRes = res.returnValue();
@@ -840,15 +844,17 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      */
     private synchronized void addInvokeResults(GridCacheReturn<Object> ret) {
         assert op == TRANSFORM : op;
-        assert ret.value() instanceof Map : ret.value();
+        assert ret.value() == null || ret.value() instanceof Map : ret.value();
 
-        if (opRes != null) {
-            Map<Object, Object> map = (Map<Object, Object>)opRes.value();
+        if (ret.value() != null) {
+            if (opRes != null) {
+                Map<Object, Object> map = (Map<Object, Object>)opRes.value();
 
-            map.putAll((Map<Object, Object>)ret.value());
+                map.putAll((Map<Object, Object>)ret.value());
+            }
+            else
+                opRes = ret;
         }
-        else
-            opRes = ret;
     }
 
     /**

@@ -774,21 +774,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        A.notNull(key, "key", transformer, "valTransform");
-
-        cache.transform(key, transformer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        A.notNull(key, "key", transformer, "transformer");
-
-        return cache.transformAndCompute(key, transformer);
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws IgniteCheckedException {
         return cache.invoke(key, entryProcessor, args);
@@ -816,6 +801,13 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        return cache.invokeAllAsync(map, args);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxAsync(K key, V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return putxAsync(key, val, null, -1, filter);
@@ -831,13 +823,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             return new GridFinishedFuture<>(cctx.kernalContext(), false);
 
         return cache.putxAsync(key, val, entry, ttl, and(filter, false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer) {
-        A.notNull(key, "key", transformer, "valTransform");
-
-        return cache.transformAsync(key, transformer);
     }
 
     /** {@inheritDoc} */
@@ -858,12 +843,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
         return putxAsync(key, val, cctx.noPeekArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
-        return cache.transformAsync(key, transformer, entry, ttl);
     }
 
     /** {@inheritDoc} */
@@ -905,23 +884,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        if (F.isEmpty(m))
-            return;
-
-        cache.transformAll(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        if (F.isEmpty(keys))
-            return;
-
-        cache.transformAll(keys, transformer);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         m = isAll(m, true);
@@ -930,23 +892,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             return new GridFinishedFuture<>(cctx.kernalContext());
 
         return cache.putAllAsync(m, and(filter, false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<>(cctx.kernalContext());
-
-        return cache.transformAllAsync(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext());
-
-        return cache.transformAllAsync(keys, transformer);
     }
 
     /** {@inheritDoc} */

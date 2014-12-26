@@ -396,18 +396,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        ctx.denyOnFlag(READ);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        ctx.denyOnFlag(READ);
-
-        return new GridFinishedFuture<>(ctx.kernalContext(), false);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         assert impl != null;
 

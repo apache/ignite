@@ -735,7 +735,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (hdr.empty())
             return true;
 
-        GridCacheQueueAdapter.removeKeys(cctx.cache(), hdr.id(), name, hdr.collocated(), hdr.head(), hdr.tail(),
+        GridCacheQueueAdapter.removeKeys(cctx.kernalContext().cache().jcache(cctx.cache().name()),
+            hdr.id(),
+            name,
+            hdr.collocated(),
+            hdr.head(),
+            hdr.tail(),
             batchSize);
 
         return true;

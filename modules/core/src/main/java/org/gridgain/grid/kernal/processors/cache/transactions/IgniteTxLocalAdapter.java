@@ -1767,8 +1767,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     @SuppressWarnings("unchecked")
     @Override public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
-        boolean retval,
-        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> map,
+        @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs
     ) {
         return (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)putAllAsync0(cacheCtx,
@@ -1776,7 +1775,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             map,
             invokeArgs,
             null,
-            retval,
+            false,
             null,
             null);
     }
@@ -2371,7 +2370,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 res = entryProcessor.process(invokeEntry, t.get2());
             }
 
-            ret.addEntryProcessResult(txEntry.key(), new CacheInvokeResult<>(res));
+            if (res != null)
+                ret.addEntryProcessResult(txEntry.key(), new CacheInvokeResult<>(res));
         }
         catch (Exception e) {
             ret.addEntryProcessResult(txEntry.key(), new CacheInvokeResult(e));
@@ -2396,7 +2396,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     private IgniteFuture putAllAsync0(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends V> map,
-        @Nullable Map<? extends K, EntryProcessor<K, V, Object>> invokeMap,
+        @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
@@ -2444,7 +2444,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 invokeMap0 = U.newHashMap(invokeMap.size());
 
                 try {
-                    for (Map.Entry<? extends K, EntryProcessor<K, V, Object>> e : invokeMap.entrySet()) {
+                    for (Map.Entry<? extends K, ? extends EntryProcessor<K, V, Object>> e : invokeMap.entrySet()) {
                         K key = (K)cacheCtx.marshalToPortable(e.getKey());
 
                         invokeMap0.put(key, e.getValue());

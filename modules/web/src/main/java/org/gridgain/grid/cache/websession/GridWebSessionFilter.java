@@ -10,6 +10,7 @@
 package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -18,6 +19,7 @@ import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -144,7 +146,10 @@ public class GridWebSessionFilter implements Filter {
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
 
     /** Cache. */
-    private GridCache<String, GridWebSession> cache;
+    private IgniteCache<String, GridWebSession> cache;
+
+    /** Transactions. */
+    private IgniteTransactions txs;
 
     /** Listener. */
     private GridWebSessionListener lsnr;
@@ -192,18 +197,20 @@ public class GridWebSessionFilter implements Filter {
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
+        txs = webSesIgnite.transactions();
+
         log = webSesIgnite.log();
 
         if (webSesIgnite == null)
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
-        cache = webSesIgnite.cache(cacheName);
+        cache = webSesIgnite.jcache(cacheName);
 
         if (cache == null)
             throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
 
-        GridCacheConfiguration cacheCfg = cache.configuration();
+        GridCacheConfiguration cacheCfg = cache.getConfiguration(GridCacheConfiguration.class);
 
         if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
             throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
@@ -274,7 +281,7 @@ public class GridWebSessionFilter implements Filter {
 
             try {
                 if (txEnabled) {
-                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         sesId = doFilter0(httpReq, res, chain);
 
                         tx.commit();
@@ -380,19 +387,19 @@ public class GridWebSessionFilter implements Filter {
         try {
             while (true) {
                 try {
-                    GridCacheProjection<String, GridWebSession> cache0;
+                    IgniteCache<String, GridWebSession> cache0;
 
                     if (cached.getMaxInactiveInterval() > 0) {
                         long ttl = cached.getMaxInactiveInterval() * 1000;
 
                         ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        cache0 = ((GridCacheProjectionEx<String, GridWebSession>)cache).withExpiryPolicy(plc);
+                        cache0 = cache.withExpiryPolicy(plc);
                     }
                     else
                         cache0 = cache;
 
-                    GridWebSession old = cache0.putIfAbsent(sesId, cached);
+                    GridWebSession old = cache0.getAndPutIfAbsent(sesId, cached);
 
                     if (old != null) {
                         cached = old;
@@ -403,13 +410,13 @@ public class GridWebSessionFilter implements Filter {
 
                     break;
                 }
-                catch (GridCachePartialUpdateException e) {
+                catch (CachePartialUpdateException e) {
                     if (log.isDebugEnabled())
                         log.debug(e.getMessage());
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             throw new IgniteException("Failed to save session: " + sesId, e);
         }
 

@@ -10,7 +10,6 @@
 package org.apache.ignite.dataload;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
 
 import java.io.*;
 import java.util.*;
@@ -31,5 +30,5 @@ public interface IgniteDataLoadCacheUpdater<K, V> extends Serializable {
      * @param entries Collection of entries.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteCheckedException;
+    public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteCheckedException;
 }

@@ -90,13 +90,11 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param cacheCtx Cache context.
      * @param map Entry processors map.
      * @param invokeArgs Optional arguments for entry processor.
-     * @param retval Flag indicating whether a value should be returned.
      * @return Transform operation future.
      */
     public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
-        boolean retval,
-        Map<? extends K, EntryProcessor<K, V, Object>> map,
+        Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
 
     /**

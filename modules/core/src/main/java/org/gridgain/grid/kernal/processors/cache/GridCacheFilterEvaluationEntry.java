@@ -239,16 +239,6 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        throw new UnsupportedOperationException("transform");
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        throw new UnsupportedOperationException("transformAsync");
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("replace");
     }

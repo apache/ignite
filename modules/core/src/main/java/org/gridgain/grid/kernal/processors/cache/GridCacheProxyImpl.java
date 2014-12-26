@@ -713,31 +713,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.transform(key, transformer);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.transformAndCompute(key, transformer);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
@@ -745,20 +720,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.invoke(key, entryProcessor, args);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.invokeAll(keys, entryProcessor, args);
         }
         finally {
             gate.leave(prev);
@@ -780,13 +741,42 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.invokeAll(keys, entryProcessor, args);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.invokeAllAsync(keys, entryProcessor, args);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.invokeAllAsync(map, args);
         }
         finally {
             gate.leave(prev);
@@ -813,18 +803,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.putxAsync(key, val, entry, ttl, filter);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.transformAsync(key, transformer);
         }
         finally {
             gate.leave(prev);
@@ -873,19 +851,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.putxIfAbsentAsync(key, val);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.transformAsync(key, transformer);
         }
         finally {
             gate.leave(prev);
@@ -978,62 +943,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.transformAll(m);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.transformAll(keys, transformer);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.putAllAsync(m, filter);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.transformAllAsync(m);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.transformAllAsync(keys, transformer);
         }
         finally {
             gate.leave(prev);

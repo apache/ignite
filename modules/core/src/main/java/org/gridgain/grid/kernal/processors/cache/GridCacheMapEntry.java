@@ -1458,7 +1458,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     updated = cctx.unwrapTemporary(entry.getValue());
 
-                    opRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+                    opRes = computed != null ? new CacheInvokeResult<>(cctx.unwrapTemporary(computed)) : null;
                 }
                 catch (Exception e) {
                     updated = old;
@@ -1808,7 +1808,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     updated = cctx.unwrapTemporary(entry.getValue());
 
-                    invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
+                    if (computed != null)
+                        invokeRes = new CacheInvokeResult<>(cctx.unwrapTemporary(computed));
 
                     valBytes = null;
                 }

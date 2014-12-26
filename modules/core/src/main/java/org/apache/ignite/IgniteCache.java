@@ -19,6 +19,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
@@ -427,6 +428,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean removeIf(K key, IgnitePredicate<GridCacheEntry<K, V>> filter);
 
     /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @return The map of {@link EntryProcessorResult}s of the processing per key,
+     * if any, defined by the {@link EntryProcessor} implementation.  No mappings
+     * will be returned for {@link EntryProcessor}s that return a
+     * <code>null</code> value for a key.
+     */
+    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
+
+    /**
      * Creates projection that will operate with portable objects.
      * <p>
      * Projection returned by this method will force cache not to deserialize portable objects,
@@ -474,4 +485,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return New projection based on this one, but with the specified flags turned on.
      */
     public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags);
+
+    /**
+     * @return Ignite instance.
+     */
+    public Ignite ignite();
 }

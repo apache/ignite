@@ -9,8 +9,11 @@
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.processor.*;
 
 /**
  * Cache projection flags that specify projection behaviour. This flags can be explicitly passed into
@@ -76,7 +79,7 @@ public enum GridCacheFlag {
     INVALIDATE,
 
     /**
-     * Skips version check during {@link GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)} writes in
+     * Skips version check during {@link IgniteCache#invoke(Object, EntryProcessor, Object[])} writes in
      * {@link GridCacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
      * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
      * node to backup nodes to ensure proper update ordering.

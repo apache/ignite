@@ -324,7 +324,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (int i = 0; i < 100; i++)
             map.put(i, i);
 
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         Map<Integer, Integer> map0 = c.getAll(map.keySet());
 
@@ -339,9 +339,13 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (Map.Entry<Integer, Integer> e : map.entrySet())
             checkValue(e.getKey(), e.getValue());
 
-        c.transformAll(map.keySet(), new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
-                return val + 1;
+        c.invokeAll(map.keySet(), new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
+                e.setValue(val + 1);
+
+                return null;
             }
         });
 

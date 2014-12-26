@@ -526,35 +526,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        dht.transform(key, transformer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        return dht.transformAndCompute(key, transformer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key,
-        IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl) {
-        return dht.transformAsync(key, transformer, entry, ttl);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        dht.transformAll(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        return dht.transformAllAsync(m);
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
@@ -566,6 +537,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
         return dht.invokeAll(keys, entryProcessor, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        return dht.invokeAllAsync(map, args);
     }
 
     /** {@inheritDoc} */

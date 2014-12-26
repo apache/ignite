@@ -11,9 +11,10 @@
 
 package org.gridgain.scalar.examples
 
+import javax.cache.processor.{MutableEntry, EntryProcessor}
+
 import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
-import org.apache.ignite.IgniteCheckedException
-import org.gridgain.grid.cache.GridCache
+import org.apache.ignite.{IgniteCache, IgniteCheckedException}
 
 import java.util
 import java.util.Timer
@@ -88,15 +89,24 @@ object ScalarCachePopularNumbersExample extends App {
         // Reduce parallel operations since we running the whole grid locally under heavy load.
         val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
 
-        val f = (i: Long) => i + 1
+        val f = new EntryProcessor[Int, Long, Void] {
+            override def process(e: MutableEntry[Int, Long], arguments: AnyRef*): Void = {
+                if (e.exists())
+                    e.setValue(e.getValue + 1)
+                else
+                    e.setValue(1)
+
+                null
+            }
+        }
 
         // Set custom updater to increment value for each key.
         ldr.updater(new IgniteDataLoadCacheUpdater[Int, Long] {
-            def update(cache: GridCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) = {
+            def update(cache: IgniteCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) = {
                 import scala.collection.JavaConversions._
 
                 for (e <- entries)
-                    cache.transform(e.getKey, f)
+                    cache.invoke(e.getKey, f)
             }
         })
 

@@ -507,16 +507,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        transformAsync(transformer).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        return proxy.transformAsync(key, transformer, isNearEnabled(ctx) ? null : cached, ttl);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean replacex(V val) throws IgniteCheckedException {
         return setx(val, ctx.hasPeekArray());
     }

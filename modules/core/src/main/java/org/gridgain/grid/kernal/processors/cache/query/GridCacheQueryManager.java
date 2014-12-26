@@ -2693,16 +2693,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void transform(IgniteClosure<V, V> transformer) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public V replace(V val) {
             throw new UnsupportedOperationException();
         }

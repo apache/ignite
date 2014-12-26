@@ -454,56 +454,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        //transformAsync(key, transformer).get();
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        /*
-        return (R)updateAllAsync0(null,
-            Collections.singletonMap(key, new GridCacheTransformComputeClosure<>(transformer)), null, null, true,
-            false, null, 0, null).get();
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
-        /*
-        return updateAllAsync0(null, Collections.singletonMap(key, transformer), null, null, false, false, entry, ttl,
-            null);
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m)
-        throws IgniteCheckedException {
-        //transformAllAsync(m).get();
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        /*
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<Object>(ctx.kernalContext());
-
-        return updateAllAsync0(null, m, null, null, false, false, null, 0, null);
-        */
-        // TODO IGNITE-44.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         return removeAsync(key, entry, filter).get();
@@ -680,10 +630,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 throws IgniteCheckedException {
                 Map<K, EntryProcessorResult<T>> resMap = fut.get();
 
-                assert resMap != null;
-                assert resMap.size() == 1 : resMap.size();
+                if (resMap != null) {
+                    assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                return resMap.values().iterator().next();
+                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                }
+
+                return null;
             }
         });
     }
@@ -717,6 +670,28 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null);
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        A.notNull(map, "map");
+
+        if (keyCheck)
+            validateCacheKeys(map.keySet());
+
+        ctx.denyOnLocalRead();
+
+        return updateAllAsync0(null,
+            map,
+            args,
+            null,
+            null,
+            true,
+            false,
+            null,
+            null);
+    }
+
     /**
      * Entry point for all public API put/transform methods.
      *
@@ -733,7 +708,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private IgniteFuture updateAllAsync0(
         @Nullable final Map<? extends K, ? extends V> map,
-        @Nullable final Map<? extends K, EntryProcessor> invokeMap,
+        @Nullable final Map<? extends K, ? extends EntryProcessor> invokeMap,
         @Nullable Object[] invokeArgs,
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drPutMap,
         @Nullable final Map<? extends K, GridCacheVersion> drRmvMap,
@@ -1309,14 +1284,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
 
                     V updated;
-                    CacheInvokeResult invokeRes;
+                    CacheInvokeResult invokeRes = null;
 
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
                         updated = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                        invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
+                        if (computed != null)
+                            invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
                     }
                     catch (Exception e) {
                         invokeRes = new CacheInvokeResult<>(e);
@@ -1324,7 +1300,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         updated = old;
                     }
 
-                    invokeResMap.put(entry.key(), invokeRes);
+                    if (invokeRes != null)
+                        invokeResMap.put(entry.key(), invokeRes);
 
                     if (updated == null) {
                         if (intercept) {
@@ -1773,13 +1750,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (op == TRANSFORM) {
                     assert req.returnValue();
 
-                    if (retVal == null) {
-                        computedMap = U.newHashMap(keys.size());
+                    if (updRes.computedResult() != null) {
+                        if (retVal == null) {
+                            computedMap = U.newHashMap(keys.size());
 
-                        retVal = new GridCacheReturn<>((Object)computedMap, updRes.success());
+                            retVal = new GridCacheReturn<>((Object)computedMap, updRes.success());
+                        }
+
+                        computedMap.put(k, updRes.computedResult());
                     }
-
-                    computedMap.put(k, updRes.computedResult());
                 }
                 else {
                     // Create only once.

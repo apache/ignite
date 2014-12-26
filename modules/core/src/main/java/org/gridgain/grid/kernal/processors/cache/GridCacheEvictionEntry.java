@@ -267,16 +267,6 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw unsupported();
     }
