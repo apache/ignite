@@ -70,6 +70,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         if (log.isDebugEnabled())
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
 
+//        TODO IGNITE-77: restore adapter usage.
 //        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 //
 //        IgniteFuture<?> f = cache.context().preloader().startFuture();

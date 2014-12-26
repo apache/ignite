@@ -1335,7 +1335,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             putMap = null;
-                            entryProcessorMap = null;
 
                             filtered = new ArrayList<>();
                         }
@@ -1377,7 +1376,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             rmvKeys = null;
-                            entryProcessorMap = null;
 
                             filtered = new ArrayList<>();
                         }

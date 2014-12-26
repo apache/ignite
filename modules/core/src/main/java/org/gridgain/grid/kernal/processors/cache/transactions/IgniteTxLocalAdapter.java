@@ -2264,10 +2264,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             try {
                                 if (!hasPrevVal)
                                     v = cached.innerGet(this,
-                                        /*swap*/retval,
-                                        /*read-through*/retval,
+                                        /*swap*/true,
+                                        /*read-through*/true,
                                         /*failFast*/false,
-                                        /*unmarshal*/retval,
+                                        /*unmarshal*/true,
                                         /*metrics*/true,
                                         /*event*/!dht(),
                                         /*temporary*/false,

@@ -671,7 +671,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                             throws IgniteCheckedException {
                             EntryProcessorResult<T> res = fut.get();
 
-                            return res.get();
+                            return res != null ? res.get() : null;
                         }
                     });
 

@@ -24,6 +24,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheFlag.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -37,24 +38,29 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        // TODO IGNITE41 test with forceTransformBackups.
+        IgniteCache<Integer, Integer> cache = jcache();
 
-       invoke(null);
+        invoke(cache, null);
 
         if (atomicityMode() == TRANSACTIONAL) {
-            invoke(PESSIMISTIC);
+            invoke(cache, PESSIMISTIC);
 
-            invoke(OPTIMISTIC);
+            invoke(cache, OPTIMISTIC);
+        }
+        else if (gridCount() > 1) {
+            cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+
+            invoke(cache, null);
         }
     }
 
     /**
+     * @param cache Cache.
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void invoke(@Nullable IgniteTxConcurrency txMode) throws Exception {
-        final IgniteCache<Integer, Integer> cache = jcache();
-
+    private void invoke(final IgniteCache<Integer, Integer> cache, @Nullable IgniteTxConcurrency txMode)
+        throws Exception {
         IncrementProcessor incProcessor = new IncrementProcessor();
 
         for (final Integer key : keys()) {
@@ -147,22 +153,28 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @throws Exception If failed.
      */
     public void testInvokeAll() throws Exception {
-        invokeAll(null);
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        invokeAll(cache, null);
 
         if (atomicityMode() == TRANSACTIONAL) {
-            invoke(PESSIMISTIC);
+            invokeAll(cache, PESSIMISTIC);
 
-            invoke(OPTIMISTIC);
+            invokeAll(cache, OPTIMISTIC);
+        }
+        else if (gridCount() > 1) {
+            cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+
+            invokeAll(cache, null);
         }
     }
 
     /**
+     * @param cache Cache.
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
      */
-    private void invokeAll(@Nullable IgniteTxConcurrency txMode) throws Exception {
-        IgniteCache<Integer, Integer> cache = jcache();
-
+    private void invokeAll(IgniteCache<Integer, Integer> cache, @Nullable IgniteTxConcurrency txMode) throws Exception {
         invokeAll(cache, new HashSet<>(primaryKeys(cache, 3, 0)), txMode);
 
         if (gridCount() > 1) {
