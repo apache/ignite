@@ -655,6 +655,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
+            U.onGridStart();
+
             // Set context into rich adapter.
             setKernalContext(ctx);
 
@@ -2096,6 +2098,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     }
                 }
             }
+
+            U.onGridStop();
         }
         else {
             // Proper notification.

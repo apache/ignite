@@ -31,6 +31,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 
@@ -125,7 +126,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         resLatch.countDown();
 
-        finishLatch.await();
+        assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
 
         Map map = U.field(((GridKernal)grid(0)).context().io(), "msgSetMap");
 
@@ -145,21 +146,26 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
             IgniteRunnable msgC) {
-            GridIoMessage ioMsg = (GridIoMessage)msg;
+            try {
+                GridIoMessage ioMsg = (GridIoMessage)msg;
 
-            boolean wait = ioMsg.message() instanceof GridCacheQueryResponse ||
-                ioMsg.message() instanceof GridJobExecuteResponse;
+                boolean wait = ioMsg.message() instanceof GridCacheQueryResponse ||
+                        ioMsg.message() instanceof GridJobExecuteResponse;
 
-            if (wait) {
-                cancelLatch.countDown();
+                if (wait) {
+                    cancelLatch.countDown();
 
-                U.awaitQuiet(resLatch);
+                    assertTrue(U.await(resLatch, 5000, MILLISECONDS));
+                }
+
+                super.notifyListener(sndId, msg, msgC);
+
+                if (wait)
+                    finishLatch.countDown();
             }
-
-            super.notifyListener(sndId, msg, msgC);
-
-            if (wait)
-                finishLatch.countDown();
+            catch (Exception e) {
+                fail("Unexpected error: " + e);
+            }
         }
     }
 
