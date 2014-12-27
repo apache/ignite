@@ -128,22 +128,18 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         switch (commState.idx) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 4:
-                GridCacheVersion txId0 = commState.getCacheVersion("txId");
+                txId = commState.getCacheVersion("txId");
 
-                if (txId0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                txId = txId0;
 
                 commState.idx++;
 

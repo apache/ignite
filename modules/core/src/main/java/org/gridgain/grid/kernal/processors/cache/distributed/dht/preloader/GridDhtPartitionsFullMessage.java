@@ -205,30 +205,26 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
 
         switch (commState.idx) {
             case 5:
-                byte[] affAssignmentBytes0 = commState.getByteArray("affAssignmentBytes");
+                affAssignmentBytes = commState.getByteArray("affAssignmentBytes");
 
-                if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                affAssignmentBytes = affAssignmentBytes0;
 
                 commState.idx++;
 
             case 6:
-                byte[] partsBytes0 = commState.getByteArray("partsBytes");
+                partsBytes = commState.getByteArray("partsBytes");
 
-                if (partsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                partsBytes = partsBytes0;
 
                 commState.idx++;
 
             case 7:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

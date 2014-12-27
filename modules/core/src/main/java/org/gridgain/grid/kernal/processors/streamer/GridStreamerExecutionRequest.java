@@ -263,49 +263,45 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
         switch (commState.idx) {
             case 0:
-                byte[] batchBytes0 = commState.getByteArray("batchBytes");
+                batchBytes = commState.getByteArray("batchBytes");
 
-                if (batchBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                batchBytes = batchBytes0;
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
+                clsLdrId = commState.getGridUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clsLdrId = clsLdrId0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte depMode0 = commState.getByte("depMode");
+
+                if (!commState.lastRead())
+                    return false;
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 forceLocDep = commState.getBoolean("forceLocDep");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -316,7 +312,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                         if (!commState.keyDone) {
                             UUID _val = commState.getUuid(null);
 
-                            if (_val == UUID_NOT_READ)
+                            if (!commState.lastRead())
                                 return false;
 
                             commState.cur = _val;
@@ -325,7 +321,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
                         IgniteUuid _val = commState.getGridUuid(null);
 
-                        if (_val == GRID_UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         ldrParticipants.put((UUID)commState.cur, _val);
@@ -343,22 +339,18 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 commState.idx++;
 
             case 5:
-                String sampleClsName0 = commState.getString("sampleClsName");
+                sampleClsName = commState.getString("sampleClsName");
 
-                if (sampleClsName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sampleClsName = sampleClsName0;
 
                 commState.idx++;
 
             case 6:
-                String userVer0 = commState.getString("userVer");
+                userVer = commState.getString("userVer");
 
-                if (userVer0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                userVer = userVer0;
 
                 commState.idx++;
 

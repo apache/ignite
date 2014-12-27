@@ -136,28 +136,26 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray("errBytes");
+                errBytes = commState.getByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                errBytes = errBytes0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 forceLocDep = commState.getBoolean("forceLocDep");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 reqId = commState.getLong("reqId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

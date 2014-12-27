@@ -174,10 +174,10 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         switch (commState.idx) {
             case 9:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -187,7 +187,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearKeyBytes.add((byte[])_val);

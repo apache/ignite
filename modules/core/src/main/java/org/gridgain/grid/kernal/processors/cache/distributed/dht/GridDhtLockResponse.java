@@ -333,10 +333,10 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
         switch (commState.idx) {
             case 11:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -344,10 +344,10 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                         invalidParts = new HashSet<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
                         int _val = commState.getInt(null);
+
+                        if (!commState.lastRead())
+                            return false;
 
                         invalidParts.add((Integer)_val);
 
@@ -361,21 +361,19 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                 commState.idx++;
 
             case 12:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 13:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -385,7 +383,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearEvictedBytes.add((byte[])_val);
@@ -401,10 +399,10 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
             case 14:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -414,7 +412,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         preloadEntriesBytes.add((byte[])_val);

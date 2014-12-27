@@ -295,10 +295,10 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
         switch (commState.idx) {
             case 3:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -306,10 +306,10 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                         parts = new HashSet<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
                         int _val = commState.getInt(null);
+
+                        if (!commState.lastRead())
+                            return false;
 
                         parts.add((Integer)_val);
 
@@ -323,44 +323,42 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 8)
-                    return false;
-
                 timeout = commState.getLong("timeout");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 6:
-                byte[] topicBytes0 = commState.getByteArray("topicBytes");
+                topicBytes = commState.getByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                topicBytes = topicBytes0;
 
                 commState.idx++;
 
             case 7:
-                if (buf.remaining() < 8)
-                    return false;
-
                 updateSeq = commState.getLong("updateSeq");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 8:
-                if (buf.remaining() < 4)
-                    return false;
-
                 workerId = commState.getInt("workerId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

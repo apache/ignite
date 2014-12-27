@@ -625,10 +625,10 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         switch (commState.idx) {
             case 8:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -638,7 +638,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         drVersByIdx[i] = (GridCacheVersion)_val;
@@ -653,54 +653,50 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 10:
-                byte[] grpLockKeyBytes0 = commState.getByteArray("grpLockKeyBytes");
+                grpLockKeyBytes = commState.getByteArray("grpLockKeyBytes");
 
-                if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                grpLockKeyBytes = grpLockKeyBytes0;
 
                 commState.idx++;
 
             case 11:
-                if (buf.remaining() < 1)
-                    return false;
-
                 isInTx = commState.getBoolean("isInTx");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 12:
-                if (buf.remaining() < 1)
-                    return false;
-
                 isInvalidate = commState.getBoolean("isInvalidate");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 13:
-                if (buf.remaining() < 1)
-                    return false;
-
                 isRead = commState.getBoolean("isRead");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 14:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte isolation0 = commState.getByte("isolation");
+
+                if (!commState.lastRead())
+                    return false;
 
                 isolation = IgniteTxIsolation.fromOrdinal(isolation0);
 
@@ -708,10 +704,10 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
             case 15:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -721,7 +717,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         keyBytes.add((byte[])_val);
@@ -736,74 +732,66 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 commState.idx++;
 
             case 16:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion("nearXidVer");
+                nearXidVer = commState.getCacheVersion("nearXidVer");
 
-                if (nearXidVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearXidVer = nearXidVer0;
 
                 commState.idx++;
 
             case 17:
-                UUID nodeId0 = commState.getUuid("nodeId");
+                nodeId = commState.getUuid("nodeId");
 
-                if (nodeId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nodeId = nodeId0;
 
                 commState.idx++;
 
             case 18:
-                if (buf.remaining() < 1)
-                    return false;
-
                 partLock = commState.getBoolean("partLock");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 19:
-                boolean[] retVals0 = commState.getBooleanArray("retVals");
+                retVals = commState.getBooleanArray("retVals");
 
-                if (retVals0 == BOOLEAN_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                retVals = retVals0;
 
                 commState.idx++;
 
             case 20:
-                if (buf.remaining() < 8)
-                    return false;
-
                 threadId = commState.getLong("threadId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 21:
-                if (buf.remaining() < 8)
-                    return false;
-
                 timeout = commState.getLong("timeout");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 22:
-                if (buf.remaining() < 4)
-                    return false;
-
                 txSize = commState.getInt("txSize");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 23:
-                byte[] writeEntriesBytes0 = commState.getByteArray("writeEntriesBytes");
+                writeEntriesBytes = commState.getByteArray("writeEntriesBytes");
 
-                if (writeEntriesBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                writeEntriesBytes = writeEntriesBytes0;
 
                 commState.idx++;
 

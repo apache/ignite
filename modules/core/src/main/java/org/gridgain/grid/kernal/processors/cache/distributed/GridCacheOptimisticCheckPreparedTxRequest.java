@@ -165,40 +165,34 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
         switch (commState.idx) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 10:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion("nearXidVer");
+                nearXidVer = commState.getCacheVersion("nearXidVer");
 
-                if (nearXidVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearXidVer = nearXidVer0;
 
                 commState.idx++;
 
             case 11:
-                if (buf.remaining() < 4)
-                    return false;
-
                 txNum = commState.getInt("txNum");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

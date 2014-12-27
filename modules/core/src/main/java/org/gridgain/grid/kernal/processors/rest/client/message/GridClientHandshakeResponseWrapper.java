@@ -67,10 +67,10 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 1)
-                    return false;
-
                 code = commState.getByte("code");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

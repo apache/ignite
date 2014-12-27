@@ -173,48 +173,42 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                UUID clientId0 = commState.getUuid("clientId");
+                clientId = commState.getUuid("clientId");
 
-                if (clientId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clientId = clientId0;
 
                 commState.idx++;
 
             case 1:
-                UUID destId0 = commState.getUuid("destId");
+                destId = commState.getUuid("destId");
 
-                if (destId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                destId = destId0;
 
                 commState.idx++;
 
             case 2:
-                ByteBuffer msg0 = commState.getByteBuffer("msg");
+                msg = commState.getByteBuffer("msg");
 
-                if (msg0 == BYTE_BUF_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                msg = msg0;
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 4)
-                    return false;
-
                 msgSize = commState.getInt("msgSize");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 8)
-                    return false;
-
                 reqId = commState.getLong("reqId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

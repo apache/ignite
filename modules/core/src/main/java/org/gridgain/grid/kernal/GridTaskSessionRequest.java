@@ -152,32 +152,26 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                byte[] attrsBytes0 = commState.getByteArray("attrsBytes");
+                attrsBytes = commState.getByteArray("attrsBytes");
 
-                if (attrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                attrsBytes = attrsBytes0;
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid jobId0 = commState.getGridUuid("jobId");
+                jobId = commState.getGridUuid("jobId");
 
-                if (jobId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobId = jobId0;
 
                 commState.idx++;
 
             case 2:
-                IgniteUuid sesId0 = commState.getGridUuid("sesId");
+                sesId = commState.getGridUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesId = sesId0;
 
                 commState.idx++;
 

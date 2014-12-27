@@ -78,12 +78,10 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
         switch (commState.idx) {
             case 0:
-                byte[] bytes0 = commState.getByteArray("bytes");
+                bytes = commState.getByteArray("bytes");
 
-                if (bytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                bytes = bytes0;
 
                 commState.idx++;
 

@@ -318,10 +318,10 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
         switch (commState.idx) {
             case 11:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -331,7 +331,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         dhtVers[i] = (GridCacheVersion)_val;
@@ -346,21 +346,19 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 12:
-                boolean[] filterRes0 = commState.getBooleanArray("filterRes");
+                filterRes = commState.getBooleanArray("filterRes");
 
-                if (filterRes0 == BOOLEAN_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                filterRes = filterRes0;
 
                 commState.idx++;
 
             case 13:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -370,7 +368,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         mappedVers[i] = (GridCacheVersion)_val;
@@ -385,21 +383,19 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                 commState.idx++;
 
             case 14:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 15:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -409,7 +405,7 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         pending.add((GridCacheVersion)_val);

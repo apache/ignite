@@ -461,18 +461,24 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 commState.idx++;
 
             case 17:
-                if (!commState.putLong("threadId", threadId))
+                if (!commState.putBoolean("sys", sys))
                     return false;
 
                 commState.idx++;
 
             case 18:
-                if (!commState.putInt("txSize", txSize))
+                if (!commState.putLong("threadId", threadId))
                     return false;
 
                 commState.idx++;
 
             case 19:
+                if (!commState.putInt("txSize", txSize))
+                    return false;
+
+                commState.idx++;
+
+            case 20:
                 if (writeEntriesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, writeEntriesBytes.size()))
@@ -499,11 +505,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 20:
-                if (!commState.putBoolean("sys", sys))
-                    return false;
-
-                commState.idx++;
         }
 
         return true;
@@ -519,67 +520,59 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
         switch (commState.idx) {
             case 8:
-                GridCacheVersion baseVer0 = commState.getCacheVersion("baseVer");
+                baseVer = commState.getCacheVersion("baseVer");
 
-                if (baseVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                baseVer = baseVer0;
 
                 commState.idx++;
 
             case 9:
-                if (buf.remaining() < 1)
-                    return false;
-
                 commit = commState.getBoolean("commit");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 10:
-                GridCacheVersion commitVer0 = commState.getCacheVersion("commitVer");
+                commitVer = commState.getCacheVersion("commitVer");
 
-                if (commitVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                commitVer = commitVer0;
 
                 commState.idx++;
 
             case 11:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 12:
-                byte[] grpLockKeyBytes0 = commState.getByteArray("grpLockKeyBytes");
+                grpLockKeyBytes = commState.getByteArray("grpLockKeyBytes");
 
-                if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                grpLockKeyBytes = grpLockKeyBytes0;
 
                 commState.idx++;
 
             case 13:
-                if (buf.remaining() < 1)
-                    return false;
-
                 invalidate = commState.getBoolean("invalidate");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 14:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -589,7 +582,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         recoveryWritesBytes.add((byte[])_val);
@@ -604,43 +597,51 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 commState.idx++;
 
             case 15:
-                if (buf.remaining() < 1)
-                    return false;
-
                 syncCommit = commState.getBoolean("syncCommit");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 16:
-                if (buf.remaining() < 1)
-                    return false;
-
                 syncRollback = commState.getBoolean("syncRollback");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 17:
-                if (buf.remaining() < 8)
-                    return false;
+                sys = commState.getBoolean("sys");
 
-                threadId = commState.getLong("threadId");
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 18:
-                if (buf.remaining() < 4)
-                    return false;
+                threadId = commState.getLong("threadId");
 
-                txSize = commState.getInt("txSize");
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 19:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                txSize = commState.getInt("txSize");
 
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 20:
+                if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -650,7 +651,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         writeEntriesBytes.add((byte[])_val);
@@ -664,13 +665,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 20:
-                if (buf.remaining() < 1)
-                    return false;
-
-                sys = commState.getBoolean("sys");
-
-                commState.idx++;
         }
 
         return true;

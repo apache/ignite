@@ -759,4 +759,8 @@ public class GridTcpCommunicationMessageState {
     public final GridTcpCommunicationMessageAdapter getMessage(String name) {
         return reader.readMessage(name);
     }
+
+    public final boolean lastRead() {
+        return reader.isLastRead();
+    }
 }

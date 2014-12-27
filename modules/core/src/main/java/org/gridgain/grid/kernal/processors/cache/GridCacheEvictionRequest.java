@@ -201,28 +201,26 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
         switch (commState.idx) {
             case 3:
-                byte[] entriesBytes0 = commState.getByteArray("entriesBytes");
+                entriesBytes = commState.getByteArray("entriesBytes");
 
-                if (entriesBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                entriesBytes = entriesBytes0;
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 8)
-                    return false;
-
                 futId = commState.getLong("futId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

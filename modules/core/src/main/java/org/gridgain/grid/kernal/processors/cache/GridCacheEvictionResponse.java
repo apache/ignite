@@ -212,27 +212,27 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
         switch (commState.idx) {
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 err = commState.getBoolean("err");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 8)
-                    return false;
-
                 futId = commState.getLong("futId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -242,7 +242,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         rejectedKeyBytes.add((byte[])_val);

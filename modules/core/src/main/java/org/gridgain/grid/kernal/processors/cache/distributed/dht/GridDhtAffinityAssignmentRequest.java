@@ -112,10 +112,10 @@ public class GridDhtAffinityAssignmentRequest<K, V> extends GridCacheMessage<K, 
 
         switch (commState.idx) {
             case 3:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

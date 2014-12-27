@@ -622,174 +622,156 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
         switch (commState.idx) {
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 all = commState.getBoolean("all");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
-                byte[] argsBytes0 = commState.getByteArray("argsBytes");
+                argsBytes = commState.getByteArray("argsBytes");
 
-                if (argsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                argsBytes = argsBytes0;
 
                 commState.idx++;
 
             case 5:
-                String cacheName0 = commState.getString("cacheName");
+                cacheName = commState.getString("cacheName");
 
-                if (cacheName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                cacheName = cacheName0;
 
                 commState.idx++;
 
             case 6:
-                if (buf.remaining() < 1)
-                    return false;
-
                 cancel = commState.getBoolean("cancel");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 7:
-                String clause0 = commState.getString("clause");
+                clause = commState.getString("clause");
 
-                if (clause0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clause = clause0;
 
                 commState.idx++;
 
             case 8:
-                String clsName0 = commState.getString("clsName");
+                clsName = commState.getString("clsName");
 
-                if (clsName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clsName = clsName0;
 
                 commState.idx++;
 
             case 9:
-                if (buf.remaining() < 1)
-                    return false;
-
                 fields = commState.getBoolean("fields");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 10:
-                if (buf.remaining() < 8)
-                    return false;
-
                 id = commState.getLong("id");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 11:
-                if (buf.remaining() < 1)
-                    return false;
-
                 incBackups = commState.getBoolean("incBackups");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 12:
-                if (buf.remaining() < 1)
-                    return false;
-
                 incMeta = commState.getBoolean("incMeta");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 13:
-                byte[] keyValFilterBytes0 = commState.getByteArray("keyValFilterBytes");
+                keyValFilterBytes = commState.getByteArray("keyValFilterBytes");
 
-                if (keyValFilterBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                keyValFilterBytes = keyValFilterBytes0;
 
                 commState.idx++;
 
             case 14:
-                if (buf.remaining() < 4)
-                    return false;
-
                 pageSize = commState.getInt("pageSize");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 15:
-                byte[] prjFilterBytes0 = commState.getByteArray("prjFilterBytes");
+                prjFilterBytes = commState.getByteArray("prjFilterBytes");
 
-                if (prjFilterBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                prjFilterBytes = prjFilterBytes0;
 
                 commState.idx++;
 
             case 16:
-                byte[] rdcBytes0 = commState.getByteArray("rdcBytes");
+                rdcBytes = commState.getByteArray("rdcBytes");
 
-                if (rdcBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                rdcBytes = rdcBytes0;
 
                 commState.idx++;
 
             case 17:
-                byte[] transBytes0 = commState.getByteArray("transBytes");
+                transBytes = commState.getByteArray("transBytes");
 
-                if (transBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                transBytes = transBytes0;
 
                 commState.idx++;
 
             case 18:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte type0 = commState.getByte("type");
+
+                if (!commState.lastRead())
+                    return false;
 
                 type = GridCacheQueryType.fromOrdinal(type0);
 
                 commState.idx++;
 
             case 19:
-                if (buf.remaining() < 1)
-                    return false;
-
                 keepPortable = commState.getBoolean("keepPortable");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 20:
-                UUID subjId0 = commState.getUuid("subjId");
+                subjId = commState.getUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 21:
-                if (buf.remaining() < 4)
-                    return false;
-
                 taskHash = commState.getInt("taskHash");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

@@ -647,103 +647,93 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
+                clsLdrId = commState.getGridUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clsLdrId = clsLdrId0;
 
                 commState.idx++;
 
             case 1:
-                String cpSpi0 = commState.getString("cpSpi");
+                cpSpi = commState.getString("cpSpi");
 
-                if (cpSpi0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                cpSpi = cpSpi0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 createTime = commState.getLong("createTime");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte depMode0 = commState.getByte("depMode");
+
+                if (!commState.lastRead())
+                    return false;
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 1)
-                    return false;
-
                 dynamicSiblings = commState.getBoolean("dynamicSiblings");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
-                if (buf.remaining() < 1)
-                    return false;
-
                 forceLocDep = commState.getBoolean("forceLocDep");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 6:
-                if (buf.remaining() < 1)
-                    return false;
-
                 internal = commState.getBoolean("internal");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 7:
-                byte[] jobAttrsBytes0 = commState.getByteArray("jobAttrsBytes");
+                jobAttrsBytes = commState.getByteArray("jobAttrsBytes");
 
-                if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobAttrsBytes = jobAttrsBytes0;
 
                 commState.idx++;
 
             case 8:
-                byte[] jobBytes0 = commState.getByteArray("jobBytes");
+                jobBytes = commState.getByteArray("jobBytes");
 
-                if (jobBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobBytes = jobBytes0;
 
                 commState.idx++;
 
             case 9:
-                IgniteUuid jobId0 = commState.getGridUuid("jobId");
+                jobId = commState.getGridUuid("jobId");
 
-                if (jobId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobId = jobId0;
 
                 commState.idx++;
 
             case 10:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -754,7 +744,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                         if (!commState.keyDone) {
                             UUID _val = commState.getUuid(null);
 
-                            if (_val == UUID_NOT_READ)
+                            if (!commState.lastRead())
                                 return false;
 
                             commState.cur = _val;
@@ -763,7 +753,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                         IgniteUuid _val = commState.getGridUuid(null);
 
-                        if (_val == GRID_UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         ldrParticipants.put((UUID)commState.cur, _val);
@@ -781,85 +771,75 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 11:
-                byte[] sesAttrsBytes0 = commState.getByteArray("sesAttrsBytes");
+                sesAttrsBytes = commState.getByteArray("sesAttrsBytes");
 
-                if (sesAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesAttrsBytes = sesAttrsBytes0;
 
                 commState.idx++;
 
             case 12:
-                if (buf.remaining() < 1)
-                    return false;
-
                 sesFullSup = commState.getBoolean("sesFullSup");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 13:
-                IgniteUuid sesId0 = commState.getGridUuid("sesId");
+                sesId = commState.getGridUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesId = sesId0;
 
                 commState.idx++;
 
             case 14:
-                byte[] siblingsBytes0 = commState.getByteArray("siblingsBytes");
+                siblingsBytes = commState.getByteArray("siblingsBytes");
 
-                if (siblingsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                siblingsBytes = siblingsBytes0;
 
                 commState.idx++;
 
             case 15:
-                if (buf.remaining() < 8)
-                    return false;
-
                 startTaskTime = commState.getLong("startTaskTime");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 16:
-                String taskClsName0 = commState.getString("taskClsName");
+                taskClsName = commState.getString("taskClsName");
 
-                if (taskClsName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                taskClsName = taskClsName0;
 
                 commState.idx++;
 
             case 17:
-                String taskName0 = commState.getString("taskName");
+                taskName = commState.getString("taskName");
 
-                if (taskName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                taskName = taskName0;
 
                 commState.idx++;
 
             case 18:
-                if (buf.remaining() < 8)
-                    return false;
-
                 timeout = commState.getLong("timeout");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 19:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -869,7 +849,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         UUID _val = commState.getUuid(null);
 
-                        if (_val == UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         top.add((UUID)_val);
@@ -884,12 +864,10 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 20:
-                String userVer0 = commState.getString("userVer");
+                userVer = commState.getString("userVer");
 
-                if (userVer0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                userVer = userVer0;
 
                 commState.idx++;
 

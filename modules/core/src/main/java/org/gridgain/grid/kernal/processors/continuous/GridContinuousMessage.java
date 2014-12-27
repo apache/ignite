@@ -166,30 +166,26 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                byte[] dataBytes0 = commState.getByteArray("dataBytes");
+                dataBytes = commState.getByteArray("dataBytes");
 
-                if (dataBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                dataBytes = dataBytes0;
 
                 commState.idx++;
 
             case 1:
-                UUID routineId0 = commState.getUuid("routineId");
+                routineId = commState.getUuid("routineId");
 
-                if (routineId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                routineId = routineId0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte type0 = commState.getByte("type");
+
+                if (!commState.lastRead())
+                    return false;
 
                 type = GridContinuousMessageType.fromOrdinal(type0);
 

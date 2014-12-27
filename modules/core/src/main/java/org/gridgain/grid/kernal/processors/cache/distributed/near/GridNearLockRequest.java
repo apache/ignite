@@ -428,34 +428,35 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 30:
-                if (!commState.putLong("topVer", topVer))
+                if (!commState.putBoolean("syncCommit", syncCommit))
                     return false;
 
                 commState.idx++;
 
             case 31:
-                if (!commState.putUuid("subjId", subjId))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 32:
-                if (!commState.putInt("taskNameHash", taskNameHash))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 33:
-                if (!commState.putBoolean("hasTransforms", hasTransforms))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
 
             case 34:
-                if (!commState.putBoolean("syncCommit", syncCommit))
+                if (!commState.putBoolean("hasTransforms", hasTransforms))
                     return false;
 
                 commState.idx++;
+
         }
 
         return true;
@@ -472,10 +473,10 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         switch (commState.idx) {
             case 24:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -485,7 +486,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         dhtVers[i] = (GridCacheVersion)_val;
@@ -501,10 +502,10 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 25:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -514,7 +515,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         filterBytes[i] = (byte[])_val;
@@ -529,80 +530,77 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                 commState.idx++;
 
             case 26:
-                if (buf.remaining() < 1)
-                    return false;
-
                 implicitSingleTx = commState.getBoolean("implicitSingleTx");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 27:
-                if (buf.remaining() < 1)
-                    return false;
-
                 implicitTx = commState.getBoolean("implicitTx");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 28:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 29:
-                if (buf.remaining() < 1)
-                    return false;
-
                 onePhaseCommit = commState.getBoolean("onePhaseCommit");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 30:
-                if (buf.remaining() < 8)
-                    return false;
+                syncCommit = commState.getBoolean("syncCommit");
 
-                topVer = commState.getLong("topVer");
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 31:
-                UUID subjId0 = commState.getUuid("subjId");
+                topVer = commState.getLong("topVer");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 32:
-                if (buf.remaining() < 4)
-                    return false;
+                subjId = commState.getUuid("subjId");
 
-                taskNameHash = commState.getInt("taskNameHash");
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 33:
-                if (buf.remaining() < 1)
-                    return false;
+                taskNameHash = commState.getInt("taskNameHash");
 
-                hasTransforms = commState.getBoolean("hasTransforms");
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 34:
-                if (buf.remaining() < 1)
+                hasTransforms = commState.getBoolean("hasTransforms");
+
+                if (!commState.lastRead())
                     return false;
 
-                syncCommit = commState.getBoolean("syncCommit");
-
                 commState.idx++;
+
         }
 
         return true;

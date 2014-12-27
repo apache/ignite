@@ -100,12 +100,10 @@ public class GridTaskCancelRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid sesId0 = commState.getGridUuid("sesId");
+                sesId = commState.getGridUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesId = sesId0;
 
                 commState.idx++;
 

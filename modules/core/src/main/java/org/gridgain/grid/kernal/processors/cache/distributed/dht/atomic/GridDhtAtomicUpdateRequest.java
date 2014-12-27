@@ -921,31 +921,27 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (commState.idx) {
             case 3:
-                GridLongList drExpireTimes0 = commState.getLongList("drExpireTimes");
+                drExpireTimes = commState.getLongList("drExpireTimes");
 
-                if (drExpireTimes0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                drExpireTimes = drExpireTimes0;
 
                 commState.idx++;
 
             case 4:
-                GridLongList drTtls0 = commState.getLongList("drTtls");
+                drTtls = commState.getLongList("drTtls");
 
-                if (drTtls0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                drTtls = drTtls0;
 
                 commState.idx++;
 
             case 5:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -955,7 +951,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         drVers.add((GridCacheVersion)_val);
@@ -970,21 +966,19 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 6:
-                GridCacheVersion futVer0 = commState.getCacheVersion("futVer");
+                futVer = commState.getCacheVersion("futVer");
 
-                if (futVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futVer = futVer0;
 
                 commState.idx++;
 
             case 7:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -994,7 +988,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         keyBytes.add((byte[])_val);
@@ -1009,47 +1003,45 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 8:
-                UUID nodeId0 = commState.getUuid("nodeId");
+                nodeId = commState.getUuid("nodeId");
 
-                if (nodeId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nodeId = nodeId0;
 
                 commState.idx++;
 
             case 9:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte syncMode0 = commState.getByte("syncMode");
+
+                if (!commState.lastRead())
+                    return false;
 
                 syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
                 commState.idx++;
 
             case 10:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 11:
-                if (buf.remaining() < 8)
-                    return false;
-
                 ttl = commState.getLong("ttl");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 12:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1059,7 +1051,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheValueBytes _val = commState.getValueBytes(null);
 
-                        if (_val == VAL_BYTES_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         valBytes.add((GridCacheValueBytes)_val);
@@ -1074,21 +1066,19 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 13:
-                GridCacheVersion writeVer0 = commState.getCacheVersion("writeVer");
+                writeVer = commState.getCacheVersion("writeVer");
 
-                if (writeVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                writeVer = writeVer0;
 
                 commState.idx++;
 
             case 14:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1098,7 +1088,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearKeyBytes.add((byte[])_val);
@@ -1114,10 +1104,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
             case 15:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1127,7 +1117,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheValueBytes _val = commState.getValueBytes(null);
 
-                        if (_val == VAL_BYTES_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearValBytes.add((GridCacheValueBytes)_val);
@@ -1142,19 +1132,19 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 16:
-                if (buf.remaining() < 1)
-                    return false;
-
                 forceTransformBackups = commState.getBoolean("forceTransformBackups");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 17:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1164,7 +1154,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearTransformClosBytes.add((byte[])_val);
@@ -1180,10 +1170,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
             case 18:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1193,7 +1183,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         transformClosBytes.add((byte[])_val);
@@ -1208,20 +1198,18 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 19:
-                UUID subjId0 = commState.getUuid("subjId");
+                subjId = commState.getUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 20:
-                if (buf.remaining() < 4)
-                    return false;
-
                 taskNameHash = commState.getInt("taskNameHash");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

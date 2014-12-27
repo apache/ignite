@@ -126,18 +126,18 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 8)
-                    return false;
-
                 order = commState.getLong("order");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 res = commState.getBoolean("res");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

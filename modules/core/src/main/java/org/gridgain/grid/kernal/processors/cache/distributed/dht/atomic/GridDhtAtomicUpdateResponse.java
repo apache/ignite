@@ -270,41 +270,35 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         switch (commState.idx) {
             case 3:
-                byte[] errBytes0 = commState.getByteArray("errBytes");
+                errBytes = commState.getByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                errBytes = errBytes0;
 
                 commState.idx++;
 
             case 4:
-                byte[] failedKeysBytes0 = commState.getByteArray("failedKeysBytes");
+                failedKeysBytes = commState.getByteArray("failedKeysBytes");
 
-                if (failedKeysBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                failedKeysBytes = failedKeysBytes0;
 
                 commState.idx++;
 
             case 5:
-                GridCacheVersion futVer0 = commState.getCacheVersion("futVer");
+                futVer = commState.getCacheVersion("futVer");
 
-                if (futVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futVer = futVer0;
 
                 commState.idx++;
 
             case 6:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -314,7 +308,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearEvictedBytes.add((byte[])_val);

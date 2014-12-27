@@ -432,31 +432,27 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
         switch (commState.idx) {
             case 24:
-                BitSet invalidateEntries0 = commState.getBitSet("invalidateEntries");
+                invalidateEntries = commState.getBitSet("invalidateEntries");
 
-                if (invalidateEntries0 == BIT_SET_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                invalidateEntries = invalidateEntries0;
 
                 commState.idx++;
 
             case 25:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 26:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -466,7 +462,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearKeyBytes.add((byte[])_val);
@@ -481,48 +477,42 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 27:
-                byte[] ownedBytes0 = commState.getByteArray("ownedBytes");
+                ownedBytes = commState.getByteArray("ownedBytes");
 
-                if (ownedBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                ownedBytes = ownedBytes0;
 
                 commState.idx++;
 
             case 28:
-                if (buf.remaining() < 8)
-                    return false;
-
                 topVer = commState.getLong("topVer");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 29:
-                UUID subjId0 = commState.getUuid("subjId");
+                subjId = commState.getUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 30:
-                if (buf.remaining() < 4)
-                    return false;
-
                 taskNameHash = commState.getInt("taskNameHash");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 31:
-                BitSet preloadKeys0 = commState.getBitSet("preloadKeys");
+                preloadKeys = commState.getBitSet("preloadKeys");
 
-                if (preloadKeys0 == BIT_SET_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                preloadKeys = preloadKeys0;
 
                 commState.idx++;
 

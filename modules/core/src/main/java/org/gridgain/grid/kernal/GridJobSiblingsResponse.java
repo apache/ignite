@@ -117,12 +117,10 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
         switch (commState.idx) {
             case 0:
-                byte[] siblingsBytes0 = commState.getByteArray("siblingsBytes");
+                siblingsBytes = commState.getByteArray("siblingsBytes");
 
-                if (siblingsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                siblingsBytes = siblingsBytes0;
 
                 commState.idx++;
 

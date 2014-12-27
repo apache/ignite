@@ -369,31 +369,27 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (commState.idx) {
             case 10:
-                GridCacheVersion dhtVer0 = commState.getCacheVersion("dhtVer");
+                dhtVer = commState.getCacheVersion("dhtVer");
 
-                if (dhtVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                dhtVer = dhtVer0;
 
                 commState.idx++;
 
             case 11:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 12:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -401,10 +397,10 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                         invalidParts = new ArrayList<>(commState.readSize);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
                         int _val = commState.getInt(null);
+
+                        if (!commState.lastRead())
+                            return false;
 
                         invalidParts.add((Integer)_val);
 
@@ -418,21 +414,19 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 13:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 14:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -442,7 +436,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         ownedValsBytes.add((byte[])_val);
@@ -458,10 +452,10 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
             case 15:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -471,7 +465,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         pending.add((GridCacheVersion)_val);

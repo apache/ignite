@@ -330,44 +330,42 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid("affKey");
+                affKey = commState.getGridUuid("affKey");
 
-                if (affKey0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                affKey = affKey0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 done = commState.getBoolean("done");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 endOff = commState.getLong("endOff");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 8)
-                    return false;
-
                 startOff = commState.getLong("startOff");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 4)
-                    return false;
-
                 status = commState.getInt("status");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

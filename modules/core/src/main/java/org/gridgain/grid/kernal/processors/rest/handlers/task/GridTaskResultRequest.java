@@ -146,22 +146,18 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid taskId0 = commState.getGridUuid("taskId");
+                taskId = commState.getGridUuid("taskId");
 
-                if (taskId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                taskId = taskId0;
 
                 commState.idx++;
 
             case 1:
-                byte[] topicBytes0 = commState.getByteArray("topicBytes");
+                topicBytes = commState.getByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                topicBytes = topicBytes0;
 
                 commState.idx++;
 

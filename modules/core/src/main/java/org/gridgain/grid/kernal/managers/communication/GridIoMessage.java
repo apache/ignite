@@ -275,64 +275,60 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                Object msg0 = commState.getMessage("msg");
+                msg = (GridTcpCommunicationMessageAdapter)commState.getMessage("msg");
 
-                if (msg0 == MSG_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                msg = (GridTcpCommunicationMessageAdapter)msg0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 8)
-                    return false;
-
                 msgId = commState.getLong("msgId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte plc0 = commState.getByte("plc");
+
+                if (!commState.lastRead())
+                    return false;
 
                 plc = GridIoPolicy.fromOrdinal(plc0);
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 skipOnTimeout = commState.getBoolean("skipOnTimeout");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 8)
-                    return false;
-
                 timeout = commState.getLong("timeout");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
-                byte[] topicBytes0 = commState.getByteArray("topicBytes");
+                topicBytes = commState.getByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                topicBytes = topicBytes0;
 
                 commState.idx++;
 
             case 6:
-                if (buf.remaining() < 4)
-                    return false;
-
                 topicOrd = commState.getInt("topicOrd");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

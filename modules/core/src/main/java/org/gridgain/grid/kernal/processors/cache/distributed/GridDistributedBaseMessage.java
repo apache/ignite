@@ -349,31 +349,27 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         switch (commState.idx) {
             case 3:
-                byte[] candsByIdxBytes0 = commState.getByteArray("candsByIdxBytes");
+                candsByIdxBytes = commState.getByteArray("candsByIdxBytes");
 
-                if (candsByIdxBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                candsByIdxBytes = candsByIdxBytes0;
 
                 commState.idx++;
 
             case 4:
-                byte[] candsByKeyBytes0 = commState.getByteArray("candsByKeyBytes");
+                candsByKeyBytes = commState.getByteArray("candsByKeyBytes");
 
-                if (candsByKeyBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                candsByKeyBytes = candsByKeyBytes0;
 
                 commState.idx++;
 
             case 5:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -383,7 +379,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         committedVers.add((GridCacheVersion)_val);
@@ -399,10 +395,10 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
             case 6:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -412,7 +408,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         rolledbackVers.add((GridCacheVersion)_val);
@@ -427,12 +423,10 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 commState.idx++;
 
             case 7:
-                GridCacheVersion ver0 = commState.getCacheVersion("ver");
+                ver = commState.getCacheVersion("ver");
 
-                if (ver0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                ver = ver0;
 
                 commState.idx++;
 

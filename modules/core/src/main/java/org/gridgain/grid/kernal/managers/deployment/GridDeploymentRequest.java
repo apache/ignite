@@ -245,29 +245,27 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 1)
-                    return false;
-
                 isUndeploy = commState.getBoolean("isUndeploy");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid ldrId0 = commState.getGridUuid("ldrId");
+                ldrId = commState.getGridUuid("ldrId");
 
-                if (ldrId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                ldrId = ldrId0;
 
                 commState.idx++;
 
             case 2:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -277,7 +275,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         UUID _val = commState.getUuid(null);
 
-                        if (_val == UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nodeIds.add((UUID)_val);
@@ -292,22 +290,18 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 3:
-                byte[] resTopicBytes0 = commState.getByteArray("resTopicBytes");
+                resTopicBytes = commState.getByteArray("resTopicBytes");
 
-                if (resTopicBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                resTopicBytes = resTopicBytes0;
 
                 commState.idx++;
 
             case 4:
-                String rsrcName0 = commState.getString("rsrcName");
+                rsrcName = commState.getString("rsrcName");
 
-                if (rsrcName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                rsrcName = rsrcName0;
 
                 commState.idx++;
 

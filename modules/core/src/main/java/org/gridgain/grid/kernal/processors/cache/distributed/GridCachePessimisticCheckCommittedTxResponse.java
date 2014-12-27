@@ -177,32 +177,26 @@ public class GridCachePessimisticCheckCommittedTxResponse<K, V> extends GridDist
 
         switch (commState.idx) {
             case 8:
-                byte[] committedTxInfoBytes0 = commState.getByteArray("committedTxInfoBytes");
+                committedTxInfoBytes = commState.getByteArray("committedTxInfoBytes");
 
-                if (committedTxInfoBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                committedTxInfoBytes = committedTxInfoBytes0;
 
                 commState.idx++;
 
             case 9:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 10:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 

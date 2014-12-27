@@ -137,32 +137,26 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                String cpSpi0 = commState.getString("cpSpi");
+                cpSpi = commState.getString("cpSpi");
 
-                if (cpSpi0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                cpSpi = cpSpi0;
 
                 commState.idx++;
 
             case 1:
-                String key0 = commState.getString("key");
+                key = commState.getString("key");
 
-                if (key0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                key = key0;
 
                 commState.idx++;
 
             case 2:
-                IgniteUuid sesId0 = commState.getGridUuid("sesId");
+                sesId = commState.getGridUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesId = sesId0;
 
                 commState.idx++;
 

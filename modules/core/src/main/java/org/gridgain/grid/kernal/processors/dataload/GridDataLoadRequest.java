@@ -328,67 +328,61 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
         switch (commState.idx) {
             case 0:
-                String cacheName0 = commState.getString("cacheName");
+                cacheName = commState.getString("cacheName");
 
-                if (cacheName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                cacheName = cacheName0;
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
+                clsLdrId = commState.getGridUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clsLdrId = clsLdrId0;
 
                 commState.idx++;
 
             case 2:
-                byte[] colBytes0 = commState.getByteArray("colBytes");
+                colBytes = commState.getByteArray("colBytes");
 
-                if (colBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                colBytes = colBytes0;
 
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte depMode0 = commState.getByte("depMode");
+
+                if (!commState.lastRead())
+                    return false;
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
             case 4:
-                if (buf.remaining() < 1)
-                    return false;
-
                 forceLocDep = commState.getBoolean("forceLocDep");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 5:
-                if (buf.remaining() < 1)
-                    return false;
-
                 ignoreDepOwnership = commState.getBoolean("ignoreDepOwnership");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 6:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -399,7 +393,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                         if (!commState.keyDone) {
                             UUID _val = commState.getUuid(null);
 
-                            if (_val == UUID_NOT_READ)
+                            if (!commState.lastRead())
                                 return false;
 
                             commState.cur = _val;
@@ -408,7 +402,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
                         IgniteUuid _val = commState.getGridUuid(null);
 
-                        if (_val == GRID_UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         ldrParticipants.put((UUID)commState.cur, _val);
@@ -426,50 +420,42 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 7:
-                if (buf.remaining() < 8)
-                    return false;
-
                 reqId = commState.getLong("reqId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 8:
-                byte[] resTopicBytes0 = commState.getByteArray("resTopicBytes");
+                resTopicBytes = commState.getByteArray("resTopicBytes");
 
-                if (resTopicBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                resTopicBytes = resTopicBytes0;
 
                 commState.idx++;
 
             case 9:
-                String sampleClsName0 = commState.getString("sampleClsName");
+                sampleClsName = commState.getString("sampleClsName");
 
-                if (sampleClsName0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sampleClsName = sampleClsName0;
 
                 commState.idx++;
 
             case 10:
-                byte[] updaterBytes0 = commState.getByteArray("updaterBytes");
+                updaterBytes = commState.getByteArray("updaterBytes");
 
-                if (updaterBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                updaterBytes = updaterBytes0;
 
                 commState.idx++;
 
             case 11:
-                String userVer0 = commState.getString("userVer");
+                userVer = commState.getString("userVer");
 
-                if (userVer0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                userVer = userVer0;
 
                 commState.idx++;
 

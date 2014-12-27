@@ -178,38 +178,34 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                String err0 = commState.getString("err");
+                err = commState.getString("err");
 
-                if (err0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                err = err0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 finished = commState.getBoolean("finished");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 found = commState.getBoolean("found");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 3:
-                byte[] resBytes0 = commState.getByteArray("resBytes");
+                resBytes = commState.getByteArray("resBytes");
 
-                if (resBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                resBytes = resBytes0;
 
                 commState.idx++;
 

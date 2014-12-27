@@ -94,10 +94,10 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 4)
-                    return false;
-
                 delta = commState.getInt("delta");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

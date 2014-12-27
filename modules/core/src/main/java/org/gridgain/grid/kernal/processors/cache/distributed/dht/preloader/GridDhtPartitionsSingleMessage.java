@@ -142,12 +142,10 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         switch (commState.idx) {
             case 5:
-                byte[] partsBytes0 = commState.getByteArray("partsBytes");
+                partsBytes = commState.getByteArray("partsBytes");
 
-                if (partsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                partsBytes = partsBytes0;
 
                 commState.idx++;
 

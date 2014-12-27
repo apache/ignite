@@ -282,70 +282,58 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                byte[] gridExBytes0 = commState.getByteArray("gridExBytes");
+                gridExBytes = commState.getByteArray("gridExBytes");
 
-                if (gridExBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                gridExBytes = gridExBytes0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 isCancelled = commState.getBoolean("isCancelled");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 2:
-                byte[] jobAttrsBytes0 = commState.getByteArray("jobAttrsBytes");
+                jobAttrsBytes = commState.getByteArray("jobAttrsBytes");
 
-                if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobAttrsBytes = jobAttrsBytes0;
 
                 commState.idx++;
 
             case 3:
-                IgniteUuid jobId0 = commState.getGridUuid("jobId");
+                jobId = commState.getGridUuid("jobId");
 
-                if (jobId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                jobId = jobId0;
 
                 commState.idx++;
 
             case 4:
-                UUID nodeId0 = commState.getUuid("nodeId");
+                nodeId = commState.getUuid("nodeId");
 
-                if (nodeId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nodeId = nodeId0;
 
                 commState.idx++;
 
             case 5:
-                byte[] resBytes0 = commState.getByteArray("resBytes");
+                resBytes = commState.getByteArray("resBytes");
 
-                if (resBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                resBytes = resBytes0;
 
                 commState.idx++;
 
             case 6:
-                IgniteUuid sesId0 = commState.getGridUuid("sesId");
+                sesId = commState.getGridUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                sesId = sesId0;
 
                 commState.idx++;
 

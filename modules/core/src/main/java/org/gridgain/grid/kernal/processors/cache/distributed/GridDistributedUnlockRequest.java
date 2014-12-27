@@ -186,10 +186,10 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
         switch (commState.idx) {
             case 8:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -199,7 +199,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         keyBytes.add((byte[])_val);

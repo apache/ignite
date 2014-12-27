@@ -624,28 +624,26 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 4)
-                    return false;
-
                 cacheId = commState.getInt("cacheId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 1:
-                Object depInfo0 = commState.getMessage("depInfo");
+                depInfo = (GridDeploymentInfoBean)commState.getMessage("depInfo");
 
-                if (depInfo0 == MSG_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                depInfo = (GridDeploymentInfoBean)depInfo0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 msgId = commState.getLong("msgId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

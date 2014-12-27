@@ -193,40 +193,41 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         switch (commState.idx) {
             case 21:
-                if (!commState.putBoolean(null, explicitLock))
+                if (!commState.putBoolean("explicitLock", explicitLock))
                     return false;
 
                 commState.idx++;
 
             case 22:
-                if (!commState.putGridUuid(null, miniId))
+                if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
             case 23:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putBoolean("storeEnabled", storeEnabled))
                     return false;
 
                 commState.idx++;
 
             case 24:
-                if (!commState.putUuid(null, subjId))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 25:
-                if (!commState.putInt(null, taskNameHash))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 26:
-                if (!commState.putBoolean(null, storeEnabled))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
+
         }
 
         return true;
@@ -242,56 +243,53 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         switch (commState.idx) {
             case 21:
-                if (buf.remaining() < 1)
-                    return false;
+                explicitLock = commState.getBoolean("explicitLock");
 
-                explicitLock = commState.getBoolean(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 22:
-                IgniteUuid miniId0 = commState.getGridUuid(null);
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 23:
-                if (buf.remaining() < 8)
-                    return false;
+                storeEnabled = commState.getBoolean("storeEnabled");
 
-                topVer = commState.getLong(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 24:
-                UUID subjId0 = commState.getUuid(null);
+                topVer = commState.getLong("topVer");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 25:
-                if (buf.remaining() < 4)
-                    return false;
+                subjId = commState.getUuid("subjId");
 
-                taskNameHash = commState.getInt(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 26:
-                if (buf.remaining() < 1)
+                taskNameHash = commState.getInt("taskNameHash");
+
+                if (!commState.lastRead())
                     return false;
 
-                storeEnabled = commState.getBoolean(null);
-
                 commState.idx++;
+
         }
 
         return true;

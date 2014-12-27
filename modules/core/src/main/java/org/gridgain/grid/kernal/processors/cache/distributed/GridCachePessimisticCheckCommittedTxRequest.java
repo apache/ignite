@@ -212,58 +212,50 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         switch (commState.idx) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid("futId");
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 
             case 10:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion("nearXidVer");
+                nearXidVer = commState.getCacheVersion("nearXidVer");
 
-                if (nearXidVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearXidVer = nearXidVer0;
 
                 commState.idx++;
 
             case 11:
-                UUID originatingNodeId0 = commState.getUuid("originatingNodeId");
+                originatingNodeId = commState.getUuid("originatingNodeId");
 
-                if (originatingNodeId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                originatingNodeId = originatingNodeId0;
 
                 commState.idx++;
 
             case 12:
-                if (buf.remaining() < 8)
-                    return false;
-
                 originatingThreadId = commState.getLong("originatingThreadId");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 13:
-                if (buf.remaining() < 1)
-                    return false;
-
                 nearOnlyCheck = commState.getBoolean("nearOnlyCheck");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

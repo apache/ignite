@@ -12,7 +12,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -179,10 +178,10 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
         switch (commState.idx) {
             case 0:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -191,9 +190,9 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
-                            Object _val = commState.getMessage(null);
+                            GridGgfsBlockKey _val = (GridGgfsBlockKey)commState.getMessage(null);
 
-                            if (_val == MSG_NOT_READ)
+                            if (!commState.lastRead())
                                 return false;
 
                             commState.cur = _val;
@@ -202,7 +201,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         blocks.put((GridGgfsBlockKey)commState.cur, _val);
@@ -220,20 +219,18 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid("fileId");
+                fileId = commState.getGridUuid("fileId");
 
-                if (fileId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                fileId = fileId0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 id = commState.getLong("id");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

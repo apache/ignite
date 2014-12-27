@@ -165,30 +165,26 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
 
         switch (commState.idx) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray("errBytes");
+                errBytes = commState.getByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                errBytes = errBytes0;
 
                 commState.idx++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid("fileId");
+                fileId = commState.getGridUuid("fileId");
 
-                if (fileId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                fileId = fileId0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
                 id = commState.getLong("id");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

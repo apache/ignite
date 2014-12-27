@@ -141,10 +141,10 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
         switch (commState.idx) {
             case 3:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -154,7 +154,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         futVers.add((GridCacheVersion)_val);

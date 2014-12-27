@@ -160,30 +160,26 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                GridByteArrayList byteSrc0 = commState.getByteArrayList("byteSrc");
+                byteSrc = commState.getByteArrayList("byteSrc");
 
-                if (byteSrc0 == BYTE_ARR_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                byteSrc = byteSrc0;
 
                 commState.idx++;
 
             case 1:
-                String errMsg0 = commState.getString("errMsg");
+                errMsg = commState.getString("errMsg");
 
-                if (errMsg0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                errMsg = errMsg0;
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 success = commState.getBoolean("success");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

@@ -237,39 +237,37 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
         switch (commState.idx) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid("clsLdrId");
+                clsLdrId = commState.getGridUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                clsLdrId = clsLdrId0;
 
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 1)
-                    return false;
-
                 byte depMode0 = commState.getByte("depMode");
+
+                if (!commState.lastRead())
+                    return false;
 
                 depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 1)
-                    return false;
-
                 locDepOwner = commState.getBoolean("locDepOwner");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 3:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -280,7 +278,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                         if (!commState.keyDone) {
                             UUID _val = commState.getUuid(null);
 
-                            if (_val == UUID_NOT_READ)
+                            if (!commState.lastRead())
                                 return false;
 
                             commState.cur = _val;
@@ -289,7 +287,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
                         IgniteUuid _val = commState.getGridUuid(null);
 
-                        if (_val == GRID_UUID_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         participants.put((UUID)commState.cur, _val);
@@ -307,12 +305,10 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
                 commState.idx++;
 
             case 4:
-                String userVer0 = commState.getString("userVer");
+                userVer = commState.getString("userVer");
 
-                if (userVer0 == STR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                userVer = userVer0;
 
                 commState.idx++;
 

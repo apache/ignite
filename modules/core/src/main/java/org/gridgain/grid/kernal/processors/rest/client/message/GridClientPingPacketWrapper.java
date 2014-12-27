@@ -53,10 +53,10 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
         switch (commState.idx) {
             case 0:
-                if (buf.remaining() < 4)
-                    return false;
-
                 size = commState.getInt("size");
+
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 

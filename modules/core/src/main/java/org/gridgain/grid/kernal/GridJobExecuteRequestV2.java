@@ -156,12 +156,10 @@ public class GridJobExecuteRequestV2 extends GridJobExecuteRequest {
 
         switch (commState.idx) {
             case 21:
-                UUID subjId0 = commState.getUuid("subjId");
+                subjId = commState.getUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 

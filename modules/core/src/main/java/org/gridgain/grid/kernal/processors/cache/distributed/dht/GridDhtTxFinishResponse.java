@@ -116,12 +116,10 @@ public class GridDhtTxFinishResponse<K, V> extends GridDistributedTxFinishRespon
 
         switch (commState.idx) {
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid("miniId");
+                miniId = commState.getGridUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                miniId = miniId0;
 
                 commState.idx++;
 

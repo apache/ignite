@@ -118,22 +118,18 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (commState.idx) {
             case 3:
-                GridDhtPartitionExchangeId exchId0 = commState.getDhtPartitionExchangeId("exchId");
+                exchId = commState.getDhtPartitionExchangeId("exchId");
 
-                if (exchId0 == DHT_PART_EXCHANGE_ID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                exchId = exchId0;
 
                 commState.idx++;
 
             case 4:
-                GridCacheVersion lastVer0 = commState.getCacheVersion("lastVer");
+                lastVer = commState.getCacheVersion("lastVer");
 
-                if (lastVer0 == CACHE_VER_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                lastVer = lastVer0;
 
                 commState.idx++;
 
