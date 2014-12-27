@@ -14,15 +14,14 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -503,8 +502,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return e != null ? (V)e.value() : null;
                     }
 
-                    @Override public GridTcpMessageFactory messageFactory() {
-                        return ctx.messageFactory();
+                    @Override public MessageFactory messageFactory() {
+                        return ctx.io().messageFactory();
                     }
 
                     /**

@@ -10,6 +10,7 @@
 package org.gridgain.grid.util.nio;
 
 import org.apache.ignite.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
@@ -28,7 +29,7 @@ public class GridDirectParser implements GridNioParser {
     private IgniteSpiAdapter spi;
 
     /** */
-    private GridTcpMessageFactory msgFactory;
+    private MessageFactory msgFactory;
 
     /**
      * @param spi Spi.

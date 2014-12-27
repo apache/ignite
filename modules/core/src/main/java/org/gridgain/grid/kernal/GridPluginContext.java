@@ -88,6 +88,6 @@ public class GridPluginContext implements PluginContext {
 
     /** {@inheritDoc} */
     @Override public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
-        return ctx.registerMessageProducer(producer);
+        return ctx.io().registerMessageProducer(producer);
     }
 }

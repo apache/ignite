@@ -13,6 +13,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
@@ -509,8 +510,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTcpMessageFactory messageFactory() {
-        return new GridTcpMessageFactory() {
+    @Override public MessageFactory messageFactory() {
+        return new MessageFactory() {
             @Override public GridTcpCommunicationMessageAdapter create(byte type) {
                 return GridTcpCommunicationMessageFactory.create(type);
             }

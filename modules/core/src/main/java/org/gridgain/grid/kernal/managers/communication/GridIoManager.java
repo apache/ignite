@@ -14,6 +14,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.*;
@@ -136,6 +137,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Workers count. */
     private final LongAdder workersCnt = new LongAdder();
 
+    /** */
+    private int pluginMsg = GridTcpCommunicationMessageFactory.MAX_COMMON_TYPE;
+
+    /** */
+    private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
+
+    /** */
+    private MessageFactory msgFactory;
+
+    /** */
+    private MessageWriterFactory writerFactory;
+
+    /** */
+    private MessageReaderFactory readerFactory;
+
     /**
      * @param ctx Grid kernal context.
      */
@@ -148,6 +164,74 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         discoDelay = ctx.config().getDiscoveryStartupDelay();
 
         marsh = ctx.config().getMarshaller();
+    }
+
+    /**
+     * @param producer Message producer.
+     * @return Message type code.
+     */
+    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
+        int nextMsg = ++pluginMsg;
+
+        if (nextMsg > Byte.MAX_VALUE)
+            throw new IgniteException();
+
+        if (pluginMsgs == null)
+            pluginMsgs = new HashMap<>();
+
+        pluginMsgs.put((byte)nextMsg, producer);
+
+        return (byte)nextMsg;
+    }
+
+    /**
+     * Initializes manager (called prior to discovery start, but after all other components).
+     */
+    public void initMessageFactory() {
+        final GridTcpCommunicationMessageProducer[] common = GridTcpCommunicationMessageFactory.commonProducers();
+
+        final GridTcpCommunicationMessageProducer[] producers;
+
+        if (pluginMsgs != null) {
+            producers = Arrays.copyOf(common, pluginMsg + 1);
+
+            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : pluginMsgs.entrySet()) {
+                assert producers[e.getKey()] == null : e.getKey();
+
+                producers[e.getKey()] = e.getValue();
+            }
+
+            pluginMsgs = null;
+        }
+        else
+            producers = common;
+
+        msgFactory = new MessageFactory() {
+            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+                GridTcpCommunicationMessageAdapter msg;
+
+                if (type < 0 || type >= producers.length)
+                    msg = GridTcpCommunicationMessageFactory.create(type);
+                else {
+                    GridTcpCommunicationMessageProducer producer = producers[type];
+
+                    if (producer == null)
+                        throw new IllegalStateException("Common message type producer is not registered: " + type);
+
+                    msg = producer.create(type);
+                }
+
+                msg.setReader(readerFactory.reader());
+
+                return msg;
+            }
+        };
+    }
+
+    public MessageFactory messageFactory() {
+        assert msgFactory != null;
+
+        return msgFactory;
     }
 
     /**
@@ -188,6 +272,30 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
         });
+
+        MessageWriterFactory[] writerExt = ctx.plugins().extensions(MessageWriterFactory.class);
+
+        if (writerExt != null && writerExt.length > 0)
+            writerFactory = writerExt[0];
+        else {
+            writerFactory = new MessageWriterFactory() {
+                @Override public MessageWriter writer() {
+                    return new GridTcpCommunicationMessageWriter();
+                }
+            };
+        }
+
+        MessageReaderFactory[] readerExt = ctx.plugins().extensions(MessageReaderFactory.class);
+
+        if (readerExt != null && readerExt.length > 0)
+            readerFactory = readerExt[0];
+        else {
+            readerFactory = new MessageReaderFactory() {
+                @Override public MessageReader reader() {
+                    return new GridTcpCommunicationMessageReader(msgFactory);
+                }
+            };
+        }
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -892,6 +1000,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 processRegularMessage0(ioMsg, locNodeId);
         }
         else {
+            ioMsg.setWriter(writerFactory.writer());
+
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));
 

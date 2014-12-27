@@ -12,11 +12,11 @@ package org.apache.ignite.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -391,5 +391,5 @@ public interface IgniteSpiContext {
     /**
      * @return Message factory.
      */
-    public GridTcpMessageFactory messageFactory();
+    public MessageFactory messageFactory();
 }

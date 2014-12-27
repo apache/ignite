@@ -14,7 +14,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -25,6 +24,7 @@ import org.gridgain.grid.kernal.managers.failover.*;
 import org.gridgain.grid.kernal.managers.indexing.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
 import org.gridgain.grid.kernal.managers.securesession.*;
+import org.gridgain.grid.kernal.managers.security.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -53,7 +53,6 @@ import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.util.*;
@@ -494,15 +493,4 @@ public interface GridKernalContext extends GridMetadataAware, Iterable<GridCompo
      * @return Created component.
      */
     public <T> T createComponent(Class<T> cls);
-
-    /**
-     * @return Message factory.
-     */
-    public GridTcpMessageFactory messageFactory();
-
-    /**
-     * @param producer Message producer.
-     * @return Message type code.
-     */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 }

@@ -7,15 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.util.direct;
+package org.apache.ignite.plugin.extensions.communication;
 
 /**
- *
+ * TODO
  */
-public interface GridTcpMessageFactory {
-    /**
-     * @param type Message type.
-     * @return Message instance.
-     */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+public interface MessageReaderFactory {
+    public MessageReader reader();
 }

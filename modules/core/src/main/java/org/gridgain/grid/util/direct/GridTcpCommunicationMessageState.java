@@ -10,7 +10,7 @@
 package org.gridgain.grid.util.direct;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
@@ -35,19 +35,10 @@ public class GridTcpCommunicationMessageState {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private static final int FIELD_HDR_LEN = 0;
+    private MessageWriter writer;
 
     /** */
-    private final GridTcpCommunicationPortableStream stream = new GridTcpCommunicationPortableStream();
-
-    /** */
-    private final PortableWriter writer = new GridTcpCommunicationPortableWriter(stream);
-
-    /** */
-    private final PortableReader reader = new GridTcpCommunicationPortableReader(stream);
-
-    /** */
-    private boolean hdrDone;
+    private MessageReader reader;
 
     /** */
     public int idx;
@@ -71,10 +62,30 @@ public class GridTcpCommunicationMessageState {
     public int readItems;
 
     /**
+     * @param writer Writer.
+     */
+    public final void setWriter(MessageWriter writer) {
+        if (this.writer == null)
+            this.writer = writer;
+    }
+
+    /**
+     * @param reader Reader.
+     */
+    public final void setReader(MessageReader reader) {
+        if (this.reader == null)
+            this.reader = reader;
+    }
+
+    /**
      * @param buf Buffer.
      */
     public final void setBuffer(ByteBuffer buf) {
-        stream.setBuffer(buf);
+        if (writer != null)
+            writer.setBuffer(buf);
+
+        if (reader != null)
+            reader.setBuffer(buf);
     }
 
     /**
@@ -83,12 +94,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putByte(String name, byte b) {
-        if (stream.remaining() < FIELD_HDR_LEN + 1)
-            return false;
-
-        writer.writeByte(name, b);
-
-        return true;
+        return writer.writeByte(name, b);
     }
 
     /**
@@ -105,12 +111,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putShort(String name, short s) {
-        if (stream.remaining() < FIELD_HDR_LEN + 2)
-            return false;
-
-        writer.writeShort(name, s);
-
-        return true;
+        return writer.writeShort(name, s);
     }
 
     /**
@@ -127,12 +128,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putInt(String name, int i) {
-        if (stream.remaining() < FIELD_HDR_LEN + 4)
-            return false;
-
-        writer.writeInt(name, i);
-
-        return true;
+        return writer.writeInt(name, i);
     }
 
     /**
@@ -149,12 +145,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putLong(String name, long l) {
-        if (stream.remaining() < FIELD_HDR_LEN + 8)
-            return false;
-
-        writer.writeLong(name, l);
-
-        return true;
+        return writer.writeLong(name, l);
     }
 
     /**
@@ -171,12 +162,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putFloat(String name, float f) {
-        if (stream.remaining() < FIELD_HDR_LEN + 4)
-            return false;
-
-        writer.writeFloat(name, f);
-
-        return true;
+        return writer.writeFloat(name, f);
     }
 
     /**
@@ -193,12 +179,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putDouble(String name, double d) {
-        if (stream.remaining() < FIELD_HDR_LEN + 8)
-            return false;
-
-        writer.writeDouble(name, d);
-
-        return true;
+        return writer.writeDouble(name, d);
     }
 
     /**
@@ -215,12 +196,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putChar(String name, char c) {
-        if (stream.remaining() < FIELD_HDR_LEN + 2)
-            return false;
-
-        writer.writeChar(name, c);
-
-        return true;
+        return writer.writeChar(name, c);
     }
 
     /**
@@ -237,12 +213,7 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was written.
      */
     public final boolean putBoolean(String name, boolean b) {
-        if (stream.remaining() < FIELD_HDR_LEN + 1)
-            return false;
-
-        writer.writeBoolean(name, b);
-
-        return true;
+        return writer.writeBoolean(name, b);
     }
 
     /**
@@ -259,47 +230,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putByteArray(String name, @Nullable byte[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeByteArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeByteArray(arr);
-
-        return lastWritten();
+        return writer.writeByteArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Byte array or special
-     *      {@link GridTcpCommunicationMessageAdapter#BYTE_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Byte array.
      */
     public final byte[] getByteArray(String name) {
-        byte[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return BYTE_ARR_NOT_READ;
-
-            arr = reader.readByteArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readByteArray(-1);
-
-        if (arr != BYTE_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readByteArray(name);
     }
 
     /**
@@ -308,47 +247,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putShortArray(String name, short[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeShortArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeShortArray(arr);
-
-        return lastWritten();
+        return writer.writeShortArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Short array or special
-     *      {@link GridTcpCommunicationMessageAdapter#SHORT_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Short array.
      */
     public final short[] getShortArray(String name) {
-        short[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return SHORT_ARR_NOT_READ;
-
-            arr = reader.readShortArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readShortArray(-1);
-
-        if (arr != SHORT_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readShortArray(name);
     }
 
     /**
@@ -357,47 +264,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putIntArray(String name, int[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeIntArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeIntArray(arr);
-
-        return lastWritten();
+        return writer.writeIntArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Integer array or special
-     *      {@link GridTcpCommunicationMessageAdapter#INT_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Integer array.
      */
     public final int[] getIntArray(String name) {
-        int[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return INT_ARR_NOT_READ;
-
-            arr = reader.readIntArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readIntArray(-1);
-
-        if (arr != INT_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readIntArray(name);
     }
 
     /**
@@ -406,47 +281,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putLongArray(String name, long[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeLongArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeLongArray(arr);
-
-        return lastWritten();
+        return writer.writeLongArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Long array or special
-     *      {@link GridTcpCommunicationMessageAdapter#LONG_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Long array.
      */
     public final long[] getLongArray(String name) {
-        long[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return LONG_ARR_NOT_READ;
-
-            arr = reader.readLongArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readLongArray(-1);
-
-        if (arr != LONG_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readLongArray(name);
     }
 
     /**
@@ -455,47 +298,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putFloatArray(String name, float[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeFloatArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeFloatArray(arr);
-
-        return lastWritten();
+        return writer.writeFloatArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Float array or special
-     *      {@link GridTcpCommunicationMessageAdapter#FLOAT_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Float array.
      */
     public final float[] getFloatArray(String name) {
-        float[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return FLOAT_ARR_NOT_READ;
-
-            arr = reader.readFloatArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readFloatArray(-1);
-
-        if (arr != FLOAT_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readFloatArray(name);
     }
 
     /**
@@ -504,47 +315,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putDoubleArray(String name, double[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeDoubleArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeDoubleArray(arr);
-
-        return lastWritten();
+        return writer.writeDoubleArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Double array or special
-     *      {@link GridTcpCommunicationMessageAdapter#DOUBLE_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Double array.
      */
     public final double[] getDoubleArray(String name) {
-        double[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return DOUBLE_ARR_NOT_READ;
-
-            arr = reader.readDoubleArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readDoubleArray(-1);
-
-        if (arr != DOUBLE_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readDoubleArray(name);
     }
 
     /**
@@ -553,47 +332,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putCharArray(String name, char[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeCharArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeCharArray(arr);
-
-        return lastWritten();
+        return writer.writeCharArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Char array or special
-     *      {@link GridTcpCommunicationMessageAdapter#CHAR_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Char array.
      */
     public final char[] getCharArray(String name) {
-        char[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return CHAR_ARR_NOT_READ;
-
-            arr = reader.readCharArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readCharArray(-1);
-
-        if (arr != CHAR_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readCharArray(name);
     }
 
     /**
@@ -602,47 +349,15 @@ public class GridTcpCommunicationMessageState {
      * @return Whether array was fully written.
      */
     public final boolean putBooleanArray(String name, boolean[] arr) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return false;
-
-            writer.writeBooleanArray(name, arr);
-
-            if (arr == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeBooleanArray(arr);
-
-        return lastWritten();
+        return writer.writeBooleanArray(name, arr);
     }
 
     /**
      * @param name Field name.
-     * @return Boolean array or special
-     *      {@link GridTcpCommunicationMessageAdapter#BOOLEAN_ARR_NOT_READ}
-     *      value if it was not fully read.
+     * @return Boolean array.
      */
     public final boolean[] getBooleanArray(String name) {
-        boolean[] arr;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 4)
-                return BOOLEAN_ARR_NOT_READ;
-
-            arr = reader.readBooleanArray(name);
-
-            hdrDone = true;
-        }
-        else
-            arr = stream.readBooleanArray(-1);
-
-        if (arr != BOOLEAN_ARR_NOT_READ)
-            hdrDone = false;
-
-        return arr;
+        return reader.readBooleanArray(name);
     }
 
     /**
@@ -668,16 +383,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link ByteBuffer} or special
-     *      {@link GridTcpCommunicationMessageAdapter#BYTE_BUF_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link ByteBuffer}.
      */
     public final ByteBuffer getByteBuffer(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return BYTE_BUF_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else
             return ByteBuffer.wrap(arr);
@@ -703,16 +414,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link UUID} or special
-     *      {@link GridTcpCommunicationMessageAdapter#UUID_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link UUID}.
      */
     public final UUID getUuid(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return UUID_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             long most = UNSAFE.getLong(arr, BYTE_ARR_OFF);
@@ -743,16 +450,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link org.apache.ignite.lang.IgniteUuid} or special
-     *      {@link GridTcpCommunicationMessageAdapter#GRID_UUID_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link IgniteUuid}.
      */
     public final IgniteUuid getGridUuid(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return GRID_UUID_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             long most = UNSAFE.getLong(arr, BYTE_ARR_OFF);
@@ -783,16 +486,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridClockDeltaVersion} or special
-     *      {@link GridTcpCommunicationMessageAdapter#CLOCK_DELTA_VER_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridClockDeltaVersion}.
      */
     public final GridClockDeltaVersion getClockDeltaVersion(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return CLOCK_DELTA_VER_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             long ver = UNSAFE.getLong(arr, BYTE_ARR_OFF);
@@ -813,17 +512,13 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridByteArrayList} or special
-     *      {@link GridTcpCommunicationMessageAdapter#BYTE_ARR_LIST_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridByteArrayList}.
      */
     @SuppressWarnings("IfMayBeConditional")
     public final GridByteArrayList getByteArrayList(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return BYTE_ARR_LIST_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else
             return new GridByteArrayList(arr);
@@ -840,17 +535,13 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridLongList} or special
-     *      {@link GridTcpCommunicationMessageAdapter#LONG_LIST_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridLongList}.
      */
     @SuppressWarnings("IfMayBeConditional")
     public final GridLongList getLongList(String name) {
         long[] arr = getLongArray(name);
 
-        if (arr == LONG_ARR_NOT_READ)
-            return LONG_LIST_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else
             return new GridLongList(arr);
@@ -878,16 +569,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridCacheVersion} or special
-     *      {@link GridTcpCommunicationMessageAdapter#CACHE_VER_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridCacheVersion}.
      */
     public final GridCacheVersion getCacheVersion(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return CACHE_VER_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             int topVerDrId = UNSAFE.getInt(arr, BYTE_ARR_OFF);
@@ -921,16 +608,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridDhtPartitionExchangeId} or special
-     *      {@link GridTcpCommunicationMessageAdapter#DHT_PART_EXCHANGE_ID_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridDhtPartitionExchangeId}.
      */
     public final GridDhtPartitionExchangeId getDhtPartitionExchangeId(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return DHT_PART_EXCHANGE_ID_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             long most = UNSAFE.getLong(arr, BYTE_ARR_OFF);
@@ -974,16 +657,12 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridCacheValueBytes} or special
-     *      {@link GridTcpCommunicationMessageAdapter#VAL_BYTES_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridCacheValueBytes}.
      */
     public final GridCacheValueBytes getValueBytes(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return VAL_BYTES_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else {
             boolean notNull = UNSAFE.getBoolean(arr, BYTE_ARR_OFF);
@@ -1017,16 +696,13 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link String} or special {@link GridTcpCommunicationMessageAdapter#STR_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link String}.
      */
     @SuppressWarnings("IfMayBeConditional")
     public final String getString(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == BYTE_ARR_NOT_READ)
-            return STR_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else
             return new String(arr);
@@ -1043,16 +719,13 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link BitSet} or special {@link GridTcpCommunicationMessageAdapter#BIT_SET_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link BitSet}.
      */
     @SuppressWarnings("IfMayBeConditional")
     public final BitSet getBitSet(String name) {
         long[] arr = getLongArray(name);
 
-        if (arr == LONG_ARR_NOT_READ)
-            return BIT_SET_NOT_READ;
-        else if (arr == null)
+        if (arr == null)
             return null;
         else
             return BitSet.valueOf(arr);
@@ -1073,58 +746,17 @@ public class GridTcpCommunicationMessageState {
      * @return Whether value was fully written.
      */
     public final boolean putMessage(String name, @Nullable GridTcpCommunicationMessageAdapter msg) {
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN + 1)
-                return false;
+        if (msg != null)
+            msg.setWriter(writer);
 
-            writer.writeObject(name, msg);
-
-            if (msg == null)
-                return true;
-
-            hdrDone = true;
-        }
-        else
-            stream.writeMessage(msg);
-
-        return lastWritten();
+        return writer.writeMessage(name, msg);
     }
 
     /**
      * @param name Field name.
-     * @return {@link GridTcpCommunicationMessageAdapter} or special
-     *      {@link GridTcpCommunicationMessageAdapter#MSG_NOT_READ}
-     *      value if it was not fully read.
+     * @return {@link GridTcpCommunicationMessageAdapter}.
      */
     public final GridTcpCommunicationMessageAdapter getMessage(String name) {
-        GridTcpCommunicationMessageAdapter msg;
-
-        if (!hdrDone) {
-            if (stream.remaining() < FIELD_HDR_LEN)
-                return MSG_NOT_READ;
-
-            msg = reader.readObject(name);
-
-            hdrDone = true;
-        }
-        else
-            msg = stream.readMessage();
-
-        if (msg != MSG_NOT_READ)
-            hdrDone = false;
-
-        return msg;
-    }
-
-    /**
-     * @return Whether last array was fully written.
-     */
-    private boolean lastWritten() {
-        boolean written = stream.lastWritten();
-
-        if (written)
-            hdrDone = false;
-
-        return written;
+        return reader.readMessage(name);
     }
 }

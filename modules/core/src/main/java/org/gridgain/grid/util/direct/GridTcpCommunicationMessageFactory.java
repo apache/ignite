@@ -323,7 +323,7 @@ public class GridTcpCommunicationMessageFactory {
      */
     public static void registerCommon(GridTcpCommunicationMessageProducer producer, int... types) {
         for (int type : types) {
-            assert type >= 0 && type < COMMON.length : "Commmon type being registered is out of common messages " +
+            assert type >= 0 && type < COMMON.length : "Common type being registered is out of common messages " +
                 "array length: " + type;
 
             COMMON[type] = producer;

@@ -9,19 +9,18 @@
 
 package org.gridgain.grid.util.direct;
 
-import org.gridgain.grid.kernal.processors.portable.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.gridgain.grid.util.*;
+import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
 
 import java.nio.*;
 
-import static org.gridgain.grid.util.direct.GridTcpCommunicationMessageAdapter.*;
-
 /**
  * Portable stream based on {@link ByteBuffer}.
  */
-public class GridTcpCommunicationPortableStream implements GridPortableOutputStream, GridPortableInputStream {
+public class GridTcpCommunicationByteBufferStream {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -76,10 +75,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
         @Override public byte[] create(int len) {
-            switch (len) {
-                case -1:
-                    return BYTE_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return BYTE_ARR_EMPTY;
 
@@ -92,10 +90,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<short[]> SHORT_ARR_CREATOR = new ArrayCreator<short[]>() {
         @Override public short[] create(int len) {
-            switch (len) {
-                case -1:
-                    return SHORT_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return SHORT_ARR_EMPTY;
 
@@ -108,10 +105,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<int[]> INT_ARR_CREATOR = new ArrayCreator<int[]>() {
         @Override public int[] create(int len) {
-            switch (len) {
-                case -1:
-                    return INT_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return INT_ARR_EMPTY;
 
@@ -124,10 +120,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<long[]> LONG_ARR_CREATOR = new ArrayCreator<long[]>() {
         @Override public long[] create(int len) {
-            switch (len) {
-                case -1:
-                    return LONG_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return LONG_ARR_EMPTY;
 
@@ -140,10 +135,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<float[]> FLOAT_ARR_CREATOR = new ArrayCreator<float[]>() {
         @Override public float[] create(int len) {
-            switch (len) {
-                case -1:
-                    return FLOAT_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return FLOAT_ARR_EMPTY;
 
@@ -156,10 +150,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<double[]> DOUBLE_ARR_CREATOR = new ArrayCreator<double[]>() {
         @Override public double[] create(int len) {
-            switch (len) {
-                case -1:
-                    return DOUBLE_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return DOUBLE_ARR_EMPTY;
 
@@ -172,10 +165,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<char[]> CHAR_ARR_CREATOR = new ArrayCreator<char[]>() {
         @Override public char[] create(int len) {
-            switch (len) {
-                case -1:
-                    return CHAR_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return CHAR_ARR_EMPTY;
 
@@ -188,10 +180,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     /** */
     private static final ArrayCreator<boolean[]> BOOLEAN_ARR_CREATOR = new ArrayCreator<boolean[]>() {
         @Override public boolean[] create(int len) {
-            switch (len) {
-                case -1:
-                    return BOOLEAN_ARR_NOT_READ;
+            assert len >= 0;
 
+            switch (len) {
                 case 0:
                     return BOOLEAN_ARR_EMPTY;
 
@@ -200,6 +191,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
             }
         }
     };
+
+    /** */
+    private final MessageFactory msgFactory;
 
     /** */
     private ByteBuffer buf;
@@ -229,12 +223,19 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     private GridTcpCommunicationMessageAdapter msg;
 
     /** */
-    private boolean lastWritten;
+    private boolean lastFinished;
+
+    /**
+     * @param msgFactory Message factory.
+     */
+    public GridTcpCommunicationByteBufferStream(@Nullable MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+    }
 
     /**
      * @param buf Buffer.
      */
-    public final void setBuffer(ByteBuffer buf) {
+    public void setBuffer(ByteBuffer buf) {
         assert buf != null;
 
         if (this.buf != buf) {
@@ -245,11 +246,143 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
         }
     }
 
+    public int remaining() {
+        return buf.remaining();
+    }
+
     /**
-     * @return Whether last object was fully written.
+     * @return Whether last object was fully written or read.
      */
-    public boolean lastWritten() {
-        return lastWritten;
+    public boolean lastFinished() {
+        return lastFinished;
+    }
+
+    /** {@inheritDoc} */
+    public void writeByte(byte val) {
+        int pos = buf.position();
+
+        UNSAFE.putByte(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 1);
+    }
+
+    /** {@inheritDoc} */
+    public void writeByteArray(byte[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length);
+    }
+
+    /** {@inheritDoc} */
+    public void writeBoolean(boolean val) {
+        int pos = buf.position();
+
+        UNSAFE.putBoolean(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 1);
+    }
+
+    /** {@inheritDoc} */
+    public void writeBooleanArray(boolean[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, BOOLEAN_ARR_OFF, val.length, val.length);
+    }
+
+    /** {@inheritDoc} */
+    public void writeShort(short val) {
+        int pos = buf.position();
+
+        UNSAFE.putShort(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 2);
+    }
+
+    /** {@inheritDoc} */
+    public void writeShortArray(short[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, SHORT_ARR_OFF, val.length, val.length << 1);
+    }
+
+    /** {@inheritDoc} */
+    public void writeChar(char val) {
+        int pos = buf.position();
+
+        UNSAFE.putChar(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 2);
+    }
+
+    /** {@inheritDoc} */
+    public void writeCharArray(char[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, CHAR_ARR_OFF, val.length, val.length << 1);
+    }
+
+    /** {@inheritDoc} */
+    public void writeInt(int val) {
+        int pos = buf.position();
+
+        UNSAFE.putInt(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 4);
+    }
+
+    /** {@inheritDoc} */
+    public void writeIntArray(int[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, INT_ARR_OFF, val.length, val.length << 2);
+    }
+
+    /** {@inheritDoc} */
+    public void writeFloat(float val) {
+        int pos = buf.position();
+
+        UNSAFE.putFloat(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 4);
+    }
+
+    /** {@inheritDoc} */
+    public void writeFloatArray(float[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, FLOAT_ARR_OFF, val.length, val.length << 2);
+    }
+
+    /** {@inheritDoc} */
+    public void writeLong(long val) {
+        int pos = buf.position();
+
+        UNSAFE.putLong(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 8);
+    }
+
+    /** {@inheritDoc} */
+    public void writeLongArray(long[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, LONG_ARR_OFF, val.length, val.length << 3);
+    }
+
+    /** {@inheritDoc} */
+    public void writeDouble(double val) {
+        int pos = buf.position();
+
+        UNSAFE.putDouble(heapArr, baseOff + pos, val);
+
+        buf.position(pos + 8);
+    }
+
+    /** {@inheritDoc} */
+    public void writeDoubleArray(double[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, DOUBLE_ARR_OFF, val.length, val.length << 3);
     }
 
     /**
@@ -258,7 +391,135 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
     public void writeMessage(GridTcpCommunicationMessageAdapter msg) {
         assert msg != null;
 
-        lastWritten = msg.writeTo(buf);
+        lastFinished = msg.writeTo(buf);
+    }
+
+    /** {@inheritDoc} */
+    public byte readByte() {
+        assert buf.hasRemaining();
+
+        int pos = buf.position();
+
+        buf.position(pos + 1);
+
+        return UNSAFE.getByte(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public byte[] readByteArray() {
+        return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public boolean readBoolean() {
+        assert buf.hasRemaining();
+
+        int pos = buf.position();
+
+        buf.position(pos + 1);
+
+        return UNSAFE.getBoolean(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public boolean[] readBooleanArray() {
+        return readArray(BOOLEAN_ARR_CREATOR, 0, BOOLEAN_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public short readShort() {
+        assert buf.remaining() >= 2;
+
+        int pos = buf.position();
+
+        buf.position(pos + 2);
+
+        return UNSAFE.getShort(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public short[] readShortArray() {
+        return readArray(SHORT_ARR_CREATOR, 1, SHORT_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public char readChar() {
+        assert buf.remaining() >= 2;
+
+        int pos = buf.position();
+
+        buf.position(pos + 2);
+
+        return UNSAFE.getChar(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public char[] readCharArray() {
+        return readArray(CHAR_ARR_CREATOR, 1, CHAR_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public int readInt() {
+        assert buf.remaining() >= 4;
+
+        int pos = buf.position();
+
+        buf.position(pos + 4);
+
+        return UNSAFE.getInt(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public int[] readIntArray() {
+        return readArray(INT_ARR_CREATOR, 2, INT_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public float readFloat() {
+        assert buf.remaining() >= 4;
+
+        int pos = buf.position();
+
+        buf.position(pos + 4);
+
+        return UNSAFE.getFloat(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public float[] readFloatArray() {
+        return readArray(FLOAT_ARR_CREATOR, 2, FLOAT_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public long readLong() {
+        assert buf.remaining() >= 8;
+
+        int pos = buf.position();
+
+        buf.position(pos + 8);
+
+        return UNSAFE.getLong(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public long[] readLongArray() {
+        return readArray(LONG_ARR_CREATOR, 3, LONG_ARR_OFF);
+    }
+
+    /** {@inheritDoc} */
+    public double readDouble() {
+        assert buf.remaining() >= 8;
+
+        int pos = buf.position();
+
+        buf.position(pos + 8);
+
+        return UNSAFE.getDouble(heapArr, baseOff + pos);
+    }
+
+    /** {@inheritDoc} */
+    public double[] readDoubleArray() {
+        return readArray(DOUBLE_ARR_CREATOR, 3, DOUBLE_ARR_OFF);
     }
 
     /**
@@ -266,11 +527,12 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
      */
     public GridTcpCommunicationMessageAdapter readMessage() {
         if (!msgTypeDone) {
-            assert buf.hasRemaining();
+            if (!buf.hasRemaining())
+                return null;
 
             byte type = readByte();
 
-            msg = type == Byte.MIN_VALUE ? null : GridTcpCommunicationMessageFactory.create(type);
+            msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
             msgTypeDone = true;
         }
@@ -284,350 +546,30 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
             return msg0;
         }
         else
-            return MSG_NOT_READ;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeByte(byte val) {
-        int pos = buf.position();
-
-        UNSAFE.putByte(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeByteArray(byte[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, BYTE_ARR_OFF, val.length);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBoolean(boolean val) {
-        int pos = buf.position();
-
-        UNSAFE.putBoolean(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBooleanArray(boolean[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, BOOLEAN_ARR_OFF, val.length);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeShort(short val) {
-        int pos = buf.position();
-
-        UNSAFE.putShort(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeShortArray(short[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, SHORT_ARR_OFF, val.length << 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeChar(char val) {
-        int pos = buf.position();
-
-        UNSAFE.putChar(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeCharArray(char[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, CHAR_ARR_OFF, val.length << 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeInt(int val) {
-        int pos = buf.position();
-
-        UNSAFE.putInt(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 4);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeInt(int pos, int val) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeIntArray(int[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, INT_ARR_OFF, val.length << 2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeFloat(float val) {
-        int pos = buf.position();
-
-        UNSAFE.putFloat(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 4);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeFloatArray(float[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, FLOAT_ARR_OFF, val.length << 2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeLong(long val) {
-        int pos = buf.position();
-
-        UNSAFE.putLong(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeLongArray(long[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, LONG_ARR_OFF, val.length << 3);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeDouble(double val) {
-        int pos = buf.position();
-
-        UNSAFE.putDouble(heapArr, baseOff + pos, val);
-
-        buf.position(pos + 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeDoubleArray(double[] val) {
-        assert val != null;
-
-        lastWritten = writeArray(val, DOUBLE_ARR_OFF, val.length << 3);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(byte[] arr, int off, int len) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(long addr, int cnt) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte readByte() {
-        assert buf.hasRemaining();
-
-        int pos = buf.position();
-
-        buf.position(pos + 1);
-
-        return UNSAFE.getByte(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] readByteArray(int cnt) {
-        return readArray(BYTE_ARR_CREATOR, cnt, 0, BYTE_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readBoolean() {
-        assert buf.hasRemaining();
-
-        int pos = buf.position();
-
-        buf.position(pos + 1);
-
-        return UNSAFE.getBoolean(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean[] readBooleanArray(int cnt) {
-        return readArray(BOOLEAN_ARR_CREATOR, cnt, 0, BOOLEAN_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short readShort() {
-        assert buf.remaining() >= 2;
-
-        int pos = buf.position();
-
-        buf.position(pos + 2);
-
-        return UNSAFE.getShort(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short[] readShortArray(int cnt) {
-        return readArray(SHORT_ARR_CREATOR, cnt, 1, SHORT_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public char readChar() {
-        assert buf.remaining() >= 2;
-
-        int pos = buf.position();
-
-        buf.position(pos + 2);
-
-        return UNSAFE.getChar(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public char[] readCharArray(int cnt) {
-        return readArray(CHAR_ARR_CREATOR, cnt, 1, CHAR_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int readInt() {
-        assert buf.remaining() >= 4;
-
-        int pos = buf.position();
-
-        buf.position(pos + 4);
-
-        return UNSAFE.getInt(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int readInt(int pos) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int[] readIntArray(int cnt) {
-        return readArray(INT_ARR_CREATOR, cnt, 2, INT_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public float readFloat() {
-        assert buf.remaining() >= 4;
-
-        int pos = buf.position();
-
-        buf.position(pos + 4);
-
-        return UNSAFE.getFloat(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public float[] readFloatArray(int cnt) {
-        return readArray(FLOAT_ARR_CREATOR, cnt, 2, FLOAT_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long readLong() {
-        assert buf.remaining() >= 8;
-
-        int pos = buf.position();
-
-        buf.position(pos + 8);
-
-        return UNSAFE.getLong(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long[] readLongArray(int cnt) {
-        return readArray(LONG_ARR_CREATOR, cnt, 3, LONG_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double readDouble() {
-        assert buf.remaining() >= 8;
-
-        int pos = buf.position();
-
-        buf.position(pos + 8);
-
-        return UNSAFE.getDouble(heapArr, baseOff + pos);
-    }
-
-    /** {@inheritDoc} */
-    @Override public double[] readDoubleArray(int cnt) {
-        return readArray(DOUBLE_ARR_CREATOR, cnt, 3, DOUBLE_ARR_OFF);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(byte[] arr, int off, int len) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int read(long addr, int len) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int position() {
-        return buf.position();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void position(int pos) {
-        buf.position(pos);
-    }
-
-    /** {@inheritDoc} */
-    public int remaining() {
-        return buf.remaining();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] array() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] arrayCopy() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long offheapPointer() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasArray() {
-        throw new UnsupportedOperationException();
+            return null;
     }
 
     /**
      * @param arr Array.
      * @param off Offset.
+     * @param len Length.
      * @param bytes Length in bytes.
      * @return Whether array was fully written
      */
-    private boolean writeArray(Object arr, long off, int bytes) {
+    private boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
+        assert len >= 0;
         assert bytes >= 0;
         assert bytes >= arrOff;
 
-        if (!buf.hasRemaining())
-            return false;
+        if (arrOff == 0) {
+            if (remaining() < 4)
+                return false;
+
+            writeInt(len);
+        }
 
         int toWrite = bytes - arrOff;
         int pos = buf.position();
@@ -659,20 +601,31 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
 
     /**
      * @param creator Array creator.
-     * @param len Array Array length.
      * @param lenShift Array length shift size.
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    private <T> T readArray(ArrayCreator<T> creator, int len, int lenShift, long off) {
+    private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
+            if (remaining() < 4) {
+                lastFinished = false;
+
+                return null;
+            }
+
+           int len = readInt();
+
             switch (len) {
                 case -1:
+                    lastFinished = true;
+
                     return null;
 
                 case 0:
+                    lastFinished = true;
+
                     return creator.create(0);
 
                 default:
@@ -692,7 +645,9 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
 
             tmpArrOff += remaining;
 
-            return creator.create(-1);
+            lastFinished = false;
+
+            return null;
         }
         else {
             UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, toRead);
@@ -704,6 +659,8 @@ public class GridTcpCommunicationPortableStream implements GridPortableOutputStr
             tmpArr = null;
             tmpArrBytes = 0;
             tmpArrOff = 0;
+
+            lastFinished = true;
 
             return arr;
         }

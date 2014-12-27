@@ -752,7 +752,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
 
-            ctx.createMessageFactory();
+            ctx.io().initMessageFactory();
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx);
