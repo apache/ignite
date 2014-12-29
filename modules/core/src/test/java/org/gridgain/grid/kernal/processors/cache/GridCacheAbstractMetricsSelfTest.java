@@ -85,6 +85,196 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            g.cache(null).configuration().setStatisticsEnabled(true);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+
+        assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
+
+        long start = System.nanoTime();
+
+        jcache.remove(1);
+
+        float times = (System.nanoTime() - start) * 1.f / 1000;
+
+        float averageRemoveTime = cache.metrics().getAverageRemoveTime();
+
+        assert averageRemoveTime > 0;
+
+        assertEquals(times, averageRemoveTime, times / 10);
+
+        jcache.remove(2);
+
+        assert cache.metrics().getAverageRemoveTime() > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAllAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+        jcache.put(3, 3);
+
+        assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
+
+        long start = System.nanoTime();
+
+        Set<Integer> keys = new HashSet<>(4, 1);
+        keys.add(1);
+        keys.add(2);
+        keys.add(3);
+
+        jcache.removeAll(keys);
+
+        float times = (System.nanoTime() - start) * 1.f / 3 / 1000;
+
+        float averageRemoveTime = cache.metrics().getAverageRemoveTime();
+
+        assert averageRemoveTime > 0;
+        assertEquals(times, averageRemoveTime, times / 10);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+
+        assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
+        assertEquals(0, cache.metrics().reads());
+
+        long start = System.nanoTime();
+
+        jcache.get(1);
+
+        float times = (System.nanoTime() - start) * 1.f / 1000;
+
+        float averageGetTime = cache.metrics().getAverageGetTime();
+
+        assert averageGetTime > 0;
+
+        assertEquals(1, cache.metrics().reads());
+        assertEquals(times, averageGetTime, times / 3);
+
+        jcache.get(2);
+
+        assert cache.metrics().getAverageGetTime() > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+        jcache.put(3, 3);
+
+        assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
+        assertEquals(0, cache.metrics().reads());
+
+        long start = System.nanoTime();
+
+        Set<Integer> keys = new HashSet<>();
+        keys.add(1);
+        keys.add(2);
+        keys.add(3);
+
+        jcache.getAll(keys);
+
+        float times = (System.nanoTime() - start) * 1.f / 3 / 1000;
+
+        float averageGetTime = cache.metrics().getAverageGetTime();
+
+        assert averageGetTime > 0;
+        assertEquals(3, cache.metrics().reads());
+        assertEquals(times, averageGetTime, times / 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.metrics().writes());
+
+        long start = System.nanoTime();
+
+        jcache.put(1, 1);
+
+        float times = (System.nanoTime() - start) * 1.f / 1000;
+
+        float averagePutTime = cache.metrics().getAveragePutTime();
+
+        assert averagePutTime > 0;
+
+        assertEquals(1, cache.metrics().writes());
+        assertEquals(times, averagePutTime, times / 3);
+
+        jcache.put(2, 2);
+
+        assert cache.metrics().getAveragePutTime() > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.metrics().writes());
+
+        Map<Integer, Integer> values = new HashMap<>();
+
+        values.put(1, 1);
+        values.put(2, 2);
+        values.put(3, 3);
+
+        long start = System.nanoTime();
+
+        jcache.putAll(values);
+
+        float times = (System.nanoTime() - start) * 1.f / 1000 / values.size();
+
+        float averagePutTime = cache.metrics().getAveragePutTime();
+
+        assert averagePutTime > 0;
+
+        assertEquals(values.size(), cache.metrics().writes());
+        assertEquals(times, averagePutTime, times / 3);
+    }
+
     /**
      * @throws Exception If failed.
      */

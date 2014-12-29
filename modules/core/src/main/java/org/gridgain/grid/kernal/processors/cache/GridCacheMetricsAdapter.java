@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,6 +29,9 @@ import java.io.*;
  * Adapter for cache metrics.
  */
 public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
+    /** */
+    private static final long NANOS_IN_MICROSECOND = 1000L;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -70,6 +74,15 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /** Number of removed entries. */
     private volatile long rmCnt;
 
+    /** Put time taken nanos. */
+    private volatile long putTimeNanos;
+
+    /** Get time taken nanos. */
+    private volatile long getTimeNanos;
+
+    /** Remove time taken nanos. */
+    private volatile long removeTimeNanos;
+
     /** Cache metrics. */
     @GridToStringExclude
     private transient GridCacheMetricsAdapter delegate;
@@ -84,7 +97,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /**
      * @param m Metrics to copy from.
      */
-    public GridCacheMetricsAdapter(GridCacheMetrics m) {
+    public GridCacheMetricsAdapter(GridCacheMetricsAdapter m) {
         createTime = m.createTime();
         readTime = m.readTime();
         writeTime = m.writeTime();
@@ -98,6 +111,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         txRollbacks = m.txRollbacks();
         rmCnt = m.getCacheRemovals();
         evictCnt = m.getCacheEvictions();
+        getTimeNanos = m.getTimeNanos();
+        putTimeNanos = m.putTimeNanos();
+        removeTimeNanos = m.removeTimeNanos();
     }
 
     /**
@@ -227,19 +243,64 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         return evictCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public float getAverageGetTime() {
-        return 0;
+    /**
+     * Increments the get time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addGetTimeNanos(long duration) {
+        getTimeNanos += duration;
     }
 
-    /** {@inheritDoc} */
-    @Override public float getAveragePutTime() {
-        return 0;
+    /**
+     * Increments the put time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutTimeNanos(long duration) {
+        putTimeNanos += duration;
     }
 
-    /** {@inheritDoc} */
-    @Override public float getAverageRemoveTime() {
-        return 0;
+    /**
+     * Increments the remove time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveTimeNanos(long duration) {
+        removeTimeNanos += duration;
+    }
+
+    @Override
+    public float getAverageGetTime() {
+        long timeNanos = getTimeNanos;
+        long readsCnt = reads;
+
+        if (timeNanos == 0 || readsCnt == 0)
+            return 0;
+
+        return ((1f * timeNanos) / readsCnt) / NANOS_IN_MICROSECOND;
+    }
+
+    @Override
+    public float getAveragePutTime() {
+        long timeNanos = putTimeNanos;
+        long putsCnt = writes;
+
+        if (timeNanos == 0 || putsCnt == 0)
+            return 0;
+
+        return ((1f * timeNanos) / putsCnt) / NANOS_IN_MICROSECOND;
+    }
+
+    @Override
+    public float getAverageRemoveTime() {
+        long timeNanos = removeTimeNanos;
+        long removesCnt = rmCnt;
+
+        if (timeNanos == 0 || removesCnt == 0)
+            return 0;
+
+        return ((1f * timeNanos) / removesCnt) / NANOS_IN_MICROSECOND;
     }
 
     /**
@@ -319,12 +380,39 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /**
+     * Gets remove time.
+     *
+     * @return Remove time taken nanos.
+     */
+    public long removeTimeNanos() {
+        return removeTimeNanos;
+    }
+
+    /**
+     * Gets get time.
+     *
+     * @return Get time taken nanos.
+     */
+    public long getTimeNanos() {
+        return getTimeNanos;
+    }
+
+    /**
+     * Gets put time.
+     *
+     * @return Get time taken nanos.
+     */
+    public long putTimeNanos() {
+        return putTimeNanos;
+    }
+
+    /**
      * Create a copy of given metrics object.
      *
      * @param m Metrics to copy from.
      * @return Copy of given metrics.
      */
-    @Nullable public static GridCacheMetricsAdapter copyOf(@Nullable GridCacheMetrics m) {
+    @Nullable public static GridCacheMetricsAdapter copyOf(@Nullable GridCacheMetricsAdapter m) {
         if (m == null)
             return null;
 
