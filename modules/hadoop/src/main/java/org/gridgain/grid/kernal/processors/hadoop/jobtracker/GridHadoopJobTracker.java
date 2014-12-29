@@ -652,7 +652,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     }
 
     /**
-     *
+     * @param jobId  Job ID.
+     * @param plan Map-reduce plan.
      */
     private void printPlan(GridHadoopJobId jobId, GridHadoopMapReducePlan plan) {
         log.info("Plan for " + jobId);
@@ -1325,9 +1326,10 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /**
          * @param prev Previous closure.
          * @param splits Mapper splits to remove.
+         * @param err Error.
          */
         private RemoveMappersProcessor(@Nullable StackedProcessor prev, Collection<GridHadoopInputSplit> splits,
-                                       Throwable err) {
+            Throwable err) {
             super(prev);
 
             this.splits = splits;
@@ -1382,6 +1384,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         /**
          * @param prev Previous closure.
          * @param rdc Reducer to remove.
+         * @param err Error.
          */
         private RemoveReducerProcessor(@Nullable StackedProcessor prev, int rdc, Throwable err) {
             super(prev);

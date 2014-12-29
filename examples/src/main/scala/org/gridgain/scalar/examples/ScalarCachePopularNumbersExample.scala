@@ -89,26 +89,7 @@ object ScalarCachePopularNumbersExample extends App {
         // Reduce parallel operations since we running the whole grid locally under heavy load.
         val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
 
-        val f = new EntryProcessor[Int, Long, Void] {
-            override def process(e: MutableEntry[Int, Long], arguments: AnyRef*): Void = {
-                if (e.exists())
-                    e.setValue(e.getValue + 1)
-                else
-                    e.setValue(1)
-
-                null
-            }
-        }
-
-        // Set custom updater to increment value for each key.
-        ldr.updater(new IgniteDataLoadCacheUpdater[Int, Long] {
-            def update(cache: IgniteCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) = {
-                import scala.collection.JavaConversions._
-
-                for (e <- entries)
-                    cache.invoke(e.getKey, f)
-            }
-        })
+        // TODO IGNITE-44: restore invoke.
 
         (0 until CNT) foreach (_ => ldr.addData(Random.nextInt(RANGE), 1L))
 

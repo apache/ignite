@@ -926,6 +926,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals("3", res.get("key3").get());
 
         assertEquals(3, res.size());
+
+        cache.remove("key1");
+        cache.put("key2", 1);
+        cache.put("key3", 3);
+
+        res = cache.invokeAll(F.asMap("key1", INCR_PROCESSOR, "key2", INCR_PROCESSOR, "key3", INCR_PROCESSOR));
+
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertEquals((Integer)4, cache.get("key3"));
+
+        assertEquals("null", res.get("key1").get());
+        assertEquals("1", res.get("key2").get());
+        assertEquals("3", res.get("key3").get());
+
+        assertEquals(3, res.size());
     }
 
     /**

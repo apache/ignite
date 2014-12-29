@@ -1194,8 +1194,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case UPDATE_FILTER: {
                     Object old = cache.getAndRemoveIf(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
-                        @Override
-                        public boolean apply(GridCacheEntry<String, Integer> entry) {
+                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                             return true;
                         }
                     });
@@ -1207,8 +1206,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case TRANSFORM: {
                     cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
-                        @Override
-                        public Void process(MutableEntry<String, Integer> e, Object... args) {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
                             Integer old = e.getValue();
 
                             assertEquals(expOld, old);
@@ -1242,8 +1240,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case UPDATE_FILTER: {
                     Object old = cache.getAndPutIf(key, val, new P1<GridCacheEntry<String, Integer>>() {
-                        @Override
-                        public boolean apply(GridCacheEntry<String, Integer> entry) {
+                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                             return true;
                         }
                     });
@@ -1255,8 +1252,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case TRANSFORM: {
                     cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
-                        @Override
-                        public Void process(MutableEntry<String, Integer> e, Object... args) {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
                             Integer old = e.getValue();
 
                             assertEquals(expOld, old);

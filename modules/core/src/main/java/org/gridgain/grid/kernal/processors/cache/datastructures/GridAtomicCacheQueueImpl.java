@@ -223,7 +223,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
     /**
      * @param c EntryProcessor to be applied for queue header.
-     * @return Value computed by the transform closure.
+     * @return Value computed by the entry processor.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")

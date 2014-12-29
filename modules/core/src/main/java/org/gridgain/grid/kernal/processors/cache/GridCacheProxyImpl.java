@@ -797,8 +797,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> putxAsync(K key,
+        V val,
+        @Nullable GridCacheEntryEx<K, V> entry,
+        long ttl,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

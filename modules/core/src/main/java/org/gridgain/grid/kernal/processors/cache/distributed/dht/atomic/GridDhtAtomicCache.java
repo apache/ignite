@@ -1276,11 +1276,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         CU.<K, V>empty(),
                         null);
 
-                    if (entryProcessorMap == null)
-                        entryProcessorMap = new HashMap<>();
-
-                    entryProcessorMap.put(entry.key(), entryProcessor);
-
                     CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
 
                     V updated;
@@ -1335,6 +1330,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             putMap = null;
+                            entryProcessorMap = null;
 
                             filtered = new ArrayList<>();
                         }
@@ -1376,6 +1372,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             firstEntryIdx = i + 1;
 
                             rmvKeys = null;
+                            entryProcessorMap = null;
 
                             filtered = new ArrayList<>();
                         }
@@ -1385,6 +1382,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         putMap.put(entry.key(), ctx.<V>unwrapTemporary(updated));
                     }
+
+                    if (entryProcessorMap == null)
+                        entryProcessorMap = new HashMap<>();
+
+                    entryProcessorMap.put(entry.key(), entryProcessor);
                 }
                 else if (op == UPDATE) {
                     V updated = req.value(i);

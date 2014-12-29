@@ -19,6 +19,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -423,7 +424,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Boolean, Object> innerUpdateLocal(GridCacheVersion ver,
+    @Override public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
@@ -437,7 +438,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new IgniteBiTuple<>(false, null);
+        return new GridTuple3<>(false, null, null);
     }
 
     /** {@inheritDoc} */

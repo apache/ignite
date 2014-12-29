@@ -1365,7 +1365,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteBiTuple<Boolean, Object> innerUpdateLocal(
+    @Override public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
@@ -1382,11 +1382,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.isLocal() && cctx.atomic();
 
-        Object opRes;
+        V old;
 
         boolean res = true;
 
         IgniteBiTuple<Boolean, ?> interceptorRes = null;
+
+        EntryProcessorResult<Object> invokeRes = null;
 
         synchronized (this) {
             boolean needVal = retval || intercept || op == GridCacheOperation.TRANSFORM || !F.isEmpty(filter);
@@ -1398,9 +1400,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 unswap(true, retval);
 
             // Possibly get old value form store.
-            V old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
-
-            opRes = old;
+            old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
@@ -1431,7 +1431,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             updateTtl(ttl);
                     }
 
-                    return new IgniteBiTuple<>(false, (Object)(retval ? old : null));
+                    return new T3<>(false, retval ? old : null, null);
                 }
             }
 
@@ -1458,12 +1458,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     updated = cctx.unwrapTemporary(entry.getValue());
 
-                    opRes = computed != null ? new CacheInvokeResult<>(cctx.unwrapTemporary(computed)) : null;
+                    invokeRes = computed != null ? new CacheInvokeResult<>(cctx.unwrapTemporary(computed)) : null;
                 }
                 catch (Exception e) {
                     updated = old;
 
-                    opRes = new CacheInvokeResult<>(e);
+                    invokeRes = new CacheInvokeResult<>(e);
                 }
             }
             else
@@ -1476,14 +1476,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = (V)cctx.config().getInterceptor().onBeforePut(key, old, updated);
 
                     if (updated == null)
-                        return new IgniteBiTuple<>(false, (Object)cctx.<V>unwrapTemporary(old));
+                        return new GridTuple3<>(false, cctx.<V>unwrapTemporary(old), invokeRes);
                 }
                 else {
                     interceptorRes = cctx.config().getInterceptor().onBeforeRemove(key, old);
 
                     if (cctx.cancelRemove(interceptorRes))
-                        return new IgniteBiTuple<>(false,
-                            (Object)cctx.<V>unwrapTemporary(interceptorRes.get2()));
+                        return new GridTuple3<>(false, cctx.<V>unwrapTemporary(interceptorRes.get2()), invokeRes);
                 }
             }
 
@@ -1593,8 +1592,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        return new IgniteBiTuple<>(res,
-            (Object)(cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : opRes)));
+        return new GridTuple3<>(res, cctx.<V>unwrapTemporary(interceptorRes != null ? interceptorRes.get2() : old), invokeRes);
     }
 
     /** {@inheritDoc} */

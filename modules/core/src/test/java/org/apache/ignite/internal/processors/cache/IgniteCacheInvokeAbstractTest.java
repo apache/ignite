@@ -10,6 +10,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -138,9 +139,23 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             checkValue(key, 63);
 
+            IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+
+            assertTrue(asyncCache.isAsync());
+
+            assertNull(asyncCache.invoke(key, incProcessor));
+
+            IgniteFuture<Integer> fut = asyncCache.future();
+
+            assertNotNull(fut);
+
+            assertEquals(63, (int)fut.get());
+
+            checkValue(key, 64);
+
             tx = startTx(txMode);
 
-            assertNull(cache.invoke(key, new RemoveProcessor(63)));
+            assertNull(cache.invoke(key, new RemoveProcessor(64)));
 
             if (tx != null)
                 tx.commit();
@@ -374,6 +389,45 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         for (Integer key : keys)
             checkValue(key, null);
+
+        IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+
+        assertTrue(asyncCache.isAsync());
+
+        assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
+
+        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+
+        resMap = fut.get();
+
+        exp = new HashMap<>();
+
+        for (Integer key : keys)
+            exp.put(key, -1);
+
+        checkResult(resMap, exp);
+
+        for (Integer key : keys)
+            checkValue(key, 1);
+
+        invokeMap = new HashMap<>();
+
+        for (Integer key : keys)
+            invokeMap.put(key, incProcessor);
+
+        assertNull(asyncCache.invokeAll(invokeMap));
+
+        fut = asyncCache.future();
+
+        resMap = fut.get();
+
+        for (Integer key : keys)
+            exp.put(key, 1);
+
+        checkResult(resMap, exp);
+
+        for (Integer key : keys)
+            checkValue(key, 2);
     }
 
     /**

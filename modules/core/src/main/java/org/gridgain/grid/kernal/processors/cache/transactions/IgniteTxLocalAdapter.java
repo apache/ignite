@@ -1850,9 +1850,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         Set<K> skipped = null;
 
-        Set<K> missedForInvoke = null;
-
         boolean rmv = lookup == null && invokeMap == null;
+
+        Set<K> missedForInvoke = null;
 
         try {
             // Set transform flag for transaction.
@@ -2285,7 +2285,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         }
                         else {
                             if (!hasPrevVal)
-                                v = retval ? cached.rawGetOrUnmarshal(false) : cached.rawGet();
+                                v = cached.rawGetOrUnmarshal(false);
                         }
 
                         if (txEntry.op() == TRANSFORM) {

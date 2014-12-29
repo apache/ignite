@@ -82,7 +82,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     @GridDirectTransient
     private Object[] invokeArgs;
 
-    /** Filter bytes. */
+    /** Entry processor arguments bytes. */
     private byte[][] invokeArgsBytes;
 
     /** DR versions. */

@@ -20,6 +20,7 @@ import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -460,11 +461,11 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
-     * @return Tuple containing success flag and operation result.
+     * @return Tuple containing success flag, old value and result for invoke operation.
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public IgniteBiTuple<Boolean, Object> innerUpdateLocal(
+    public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,

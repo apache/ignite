@@ -826,17 +826,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 
-    /**
-     * @param e Checked exception.
-     * @return Cache exception.
-     */
-    private CacheException cacheException(IgniteCheckedException e) {
-        if (e instanceof GridCachePartialUpdateException)
-            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
-
-        return new CacheException(e);
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K1, V1> IgniteCache<K1, V1> keepPortable() {
@@ -895,6 +884,17 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         finally {
             gate.leave(prev);
         }
+    }
+
+    /**
+     * @param e Checked exception.
+     * @return Cache exception.
+     */
+    private CacheException cacheException(IgniteCheckedException e) {
+        if (e instanceof GridCachePartialUpdateException)
+            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
+
+        return new CacheException(e);
     }
 
     /** {@inheritDoc} */

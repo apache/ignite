@@ -156,7 +156,7 @@ public class CachePopularNumbersExample {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
                 Long val = e.getValue();
 
-                e.setValue(val == null ? 1 : val + 1);
+                e.setValue(val == null ? 1L : val + 1);
 
                 return null;
             }

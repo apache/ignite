@@ -19,6 +19,7 @@ import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -882,7 +883,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 try {
                     entry = entryEx(key);
 
-                    IgniteBiTuple<Boolean, Object> t = entry.innerUpdateLocal(
+                    GridTuple3<Boolean, V, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
                         ver,
                         val == null ? DELETE : op,
                         val,
@@ -898,9 +899,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         taskName);
 
                     if (op == TRANSFORM) {
-                        assert t.get2() == null || t.get2() instanceof EntryProcessorResult : t.get2();
-
-                        if (t.get2() != null) {
+                        if (t.get3() != null) {
                             Map<K, EntryProcessorResult> computedMap;
 
                             if (res == null) {
@@ -911,11 +910,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             else
                                 computedMap = (Map<K, EntryProcessorResult>)res.get2();
 
-                            computedMap.put(key, (EntryProcessorResult)t.getValue());
+                            computedMap.put(key, t.get3());
                         }
                     }
                     else if (res == null)
-                        res = t;
+                        res = new T2(t.get1(), t.get2());
 
                     break; // While.
                 }
@@ -1297,7 +1296,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 assert writeVal != null || op == DELETE : "null write value found.";
 
-                IgniteBiTuple<Boolean, Object> t = entry.innerUpdateLocal(
+                GridTuple3<Boolean, V, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
                     ver,
                     op,
                     writeVal,

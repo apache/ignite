@@ -1118,9 +1118,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
             Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
@@ -1146,9 +1144,6 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     ", dataLen=" + data.length + ']');
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
     }
 

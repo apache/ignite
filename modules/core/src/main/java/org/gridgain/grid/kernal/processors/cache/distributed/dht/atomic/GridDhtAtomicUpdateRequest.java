@@ -120,11 +120,11 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectVersion(2)
     private List<byte[]> entryProcessorsBytes;
 
-    /** Near transform closures. */
+    /** Near entry processors. */
     @GridDirectTransient
     private List<EntryProcessor<K, V, ?>> nearEntryProcessors;
 
-    /** Near transform closures bytes. */
+    /** Near entry processors bytes. */
     @GridDirectCollection(byte[].class)
     @GridDirectVersion(2)
     private List<byte[]> nearEntryProcessorsBytes;
@@ -133,7 +133,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     @GridDirectTransient
     private Object[] invokeArgs;
 
-    /** Filter bytes. */
+    /** Entry processor arguments bytes. */
     private byte[][] invokeArgsBytes;
 
     /** Subject ID. */

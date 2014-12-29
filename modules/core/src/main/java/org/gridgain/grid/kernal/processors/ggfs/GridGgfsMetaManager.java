@@ -2796,11 +2796,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
             GridGgfsListingEntry entry = listing.get(fileName);
 
-            if (entry == null || !entry.fileId().equals(fileId)) {
-                e.setValue(fileInfo);
-
+            if (entry == null || !entry.fileId().equals(fileId))
                 return null;
-            }
 
             entry = new GridGgfsListingEntry(entry, entry.length() + lenDelta,
                 accessTime == -1 ? entry.accessTime() : accessTime,
