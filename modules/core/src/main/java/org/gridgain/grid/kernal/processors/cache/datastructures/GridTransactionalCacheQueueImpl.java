@@ -17,6 +17,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -70,17 +71,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         break;
                     }
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch (ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -117,17 +122,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to poll, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -174,17 +183,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to addAll, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -217,17 +230,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to remove item, will retry [err=" + e + ", idx=" + rmvIdx + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
         }
