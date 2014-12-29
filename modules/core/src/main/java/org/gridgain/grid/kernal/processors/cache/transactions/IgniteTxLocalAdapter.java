@@ -2259,7 +2259,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     if (!F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter))
                         retval = true;
 
-                    if (retval || txEntry.op() == TRANSFORM) {
+                    boolean invoke = txEntry.op() == TRANSFORM;
+
+                    if (retval || invoke) {
                         if (!cacheCtx.isNear()) {
                             try {
                                 if (!hasPrevVal)
@@ -2268,8 +2270,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         /*read-through*/true,
                                         /*failFast*/false,
                                         /*unmarshal*/true,
-                                        /*metrics*/true,
-                                        /*event*/!dht(),
+                                        /*metrics*/!invoke,
+                                        /*event*/!invoke && !dht(),
                                         /*temporary*/false,
                                         CU.subjectId(this, cctx),
                                         null,
