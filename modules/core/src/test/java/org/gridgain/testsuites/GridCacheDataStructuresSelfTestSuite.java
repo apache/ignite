@@ -51,9 +51,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
-        // TODO IGNITE-44.
-        //suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
-        //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
 
