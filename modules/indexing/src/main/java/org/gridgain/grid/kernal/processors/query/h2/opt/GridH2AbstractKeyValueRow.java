@@ -219,9 +219,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         if (valObj != null) {
                             Value upd = wrap(valObj, desc.valueType());
 
-                            Value res = updateWeakValue(v, upd);
+                            Value res = updateWeakValue(null, upd);
 
-                            if (res == v) {
+                            if (res == null) {
                                 if (super.getValue(KEY_COL) == null)
                                     cache();
 

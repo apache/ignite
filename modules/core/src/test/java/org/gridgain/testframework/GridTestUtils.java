@@ -1382,4 +1382,11 @@ public final class GridTestUtils {
 
         return res;
     }
+
+    /**
+     * @return Path to apache ignite.
+     */
+    public static String apacheIgniteTestPath() {
+        return System.getProperty("IGNITE_TEST_PATH", U.getGridGainHome() + "/target/ignite");
+    }
 }

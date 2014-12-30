@@ -16,6 +16,7 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -57,7 +58,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public @Override IgniteCache<K, V> enableAsync();
 
     /** {@inheritDoc} */
-    public @Override CacheConfiguration<K, V> getConfiguration();
+    public @Override <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method

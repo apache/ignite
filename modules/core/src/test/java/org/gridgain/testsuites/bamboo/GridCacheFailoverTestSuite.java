@@ -29,13 +29,15 @@ public class GridCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
         // Group lock failover.
-        suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
+        // TODO: IGNITE-80.
+        //suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+        // TODO: IGNITE-80.
+        // suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
         // suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO GG-9150
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
