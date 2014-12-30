@@ -10,6 +10,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
@@ -85,6 +86,8 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
 
         suite.addTestSuite(GridCacheSwapScanQuerySelfTest.class);
+
+        suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
 
         return suite;
     }
