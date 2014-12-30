@@ -18,6 +18,6 @@ import javax.cache.configuration.*;
  * @version @java.version
  */
 // TODO: remove 'abstract'
-public abstract class CacheConfiguration<K, V> extends Configuration<K, V> {
+public abstract class CacheConfiguration<K, V> implements Configuration<K, V> {
 
 }

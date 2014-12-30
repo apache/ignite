@@ -60,7 +60,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration<K, V> getConfiguration() {
+    @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
         // TODO IGNITE-1.
         throw new UnsupportedOperationException();
     }
@@ -468,7 +468,7 @@ public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Map<K, T> invokeAll(Set<? extends K> keys,
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         // TODO IGNITE-1.
