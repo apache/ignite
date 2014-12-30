@@ -270,16 +270,11 @@ public class GridDataLoadCacheUpdaters {
                 Integer part = e.getKey();
                 int cnt = e.getValue();
 
-                IgniteTx tx = txs.txStartPartition(cache.getName(), part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
-
-                try {
+                try (IgniteTx tx = txs.txStartPartition(cache.getName(), part, PESSIMISTIC, REPEATABLE_READ, 0, cnt)) {
                     updateAll(cache, rmvPartMap == null ? null : rmvPartMap.get(part),
                         putPartMap == null ? null : putPartMap.get(part));
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
             }
         }

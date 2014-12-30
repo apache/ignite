@@ -428,6 +428,16 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
      * @return Future.
      */
     public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(

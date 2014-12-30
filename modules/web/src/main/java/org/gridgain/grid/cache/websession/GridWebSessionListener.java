@@ -11,10 +11,8 @@ package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;

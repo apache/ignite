@@ -18,6 +18,6 @@ public class IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest extends
     IgniteCacheAtomicPrimaryWriteOrderInvokeTest {
     /** {@inheritDoc} */
     @Override protected GridCacheStore<?, ?> cacheStore() {
-        return new TestStore();
+        return new IgniteCacheAbstractTest.TestStore();
     }
 }

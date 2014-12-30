@@ -82,7 +82,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /**
      * @return Ignite instance.
      */
-    public GridEx ignite() {
+    @Override public GridEx ignite() {
         return ctx.grid();
     }
 

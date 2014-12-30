@@ -2388,6 +2388,27 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        final Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        final Object... args) throws IgniteCheckedException {
+        A.notNull(map, "map");
+
+        if (keyCheck)
+            validateCacheKeys(map.keySet());
+
+        ctx.denyOnLocalRead();
+
+        return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(map.size() == 1) {
+            @Nullable @Override public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
+                throws IgniteCheckedException {
+                IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut = tx.invokeAsync(ctx, map, args);
+
+                return fut.get().value();
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxAsync(K key, V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
         return putxAsync(key, val, null, -1, filter);

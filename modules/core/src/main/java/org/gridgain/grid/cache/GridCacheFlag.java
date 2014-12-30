@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.cache;
 
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
