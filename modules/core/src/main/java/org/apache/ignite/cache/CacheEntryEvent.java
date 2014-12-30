@@ -10,27 +10,61 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.events.*;
 
 import javax.cache.event.*;
-import java.util.*;
 
 /**
- * TODO: Add class description.
  *
- * @author @java.author
- * @version @java.version
  */
-public abstract class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
+public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
-    private UUID nodeId;
+    private final IgniteCacheEvent evt;
 
-    protected CacheEntryEvent(IgniteCache source, EventType eventType, UUID nodeId) {
-        super(source, eventType);
+    /**
+     * @param src Cache.
+     * @param type Event type.
+     * @param evt Ignite event.
+     */
+    public CacheEntryEvent(IgniteCache src, EventType type, IgniteCacheEvent evt) {
+        super(src, type);
 
-        this.nodeId = nodeId;
+        this.evt = evt;
     }
 
-    public UUID getNodeId() {
-        return nodeId;
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public V getOldValue() {
+        return (V)evt.oldValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOldValueAvailable() {
+        return evt.hasOldValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public K getKey() {
+        return evt.key();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public V getValue() {
+        return (V)evt.newValue();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (cls.equals(IgniteCacheEvent.class))
+            return (T)evt;
+
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "CacheEntryEvent [evtType=" + getEventType() + ", evt=" + evt + ']';
     }
 }
