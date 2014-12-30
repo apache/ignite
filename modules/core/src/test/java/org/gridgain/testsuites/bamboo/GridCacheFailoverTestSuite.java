@@ -29,8 +29,9 @@ public class GridCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
         // Group lock failover.
-        suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
+        // TODO: IGNITE-80.
+        //suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);

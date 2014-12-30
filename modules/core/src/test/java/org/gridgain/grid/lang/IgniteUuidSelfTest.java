@@ -95,6 +95,9 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
 
         long dur2 = System.currentTimeMillis() - start;
 
+        if (dur2 == 0)
+            dur2 = 1;
+
         System.out.println("Creation: UUID=" + dur1 + "ms, GridUuid=" + dur2 + "ms, " + (dur1 / dur2) + "x faster.");
     }
 

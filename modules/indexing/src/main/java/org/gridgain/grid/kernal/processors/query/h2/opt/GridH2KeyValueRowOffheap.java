@@ -207,6 +207,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     /** {@inheritDoc} */
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override protected Value updateWeakValue(Value exp, Value upd) {
+        setValue(VAL_COL, upd);
+
         return exp;
     }
 

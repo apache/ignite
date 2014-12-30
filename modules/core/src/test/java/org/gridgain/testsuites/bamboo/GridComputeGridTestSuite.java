@@ -78,7 +78,6 @@ public class GridComputeGridTestSuite {
         suite.addTestSuite(GridTaskNameAnnotationSelfTest.class);
         suite.addTestSuite(GridJobCheckpointCleanupSelfTest.class);
         suite.addTestSuite(GridEventStorageSelfTest.class);
-        suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
         suite.addTestSuite(GridFailoverTaskWithPredicateSelfTest.class);
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);
