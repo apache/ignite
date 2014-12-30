@@ -5596,6 +5596,16 @@ public abstract class GridUtils {
     }
 
     /**
+     * Checks if given class is of {@code Ignite} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code GridGain} type.
+     */
+    public static boolean isIgnite(Class<?> cls) {
+        return cls.getName().startsWith("org.apache.ignite");
+    }
+
+    /**
      * Checks if given class is of {@code Grid} type.
      *
      * @param cls Class to check.
