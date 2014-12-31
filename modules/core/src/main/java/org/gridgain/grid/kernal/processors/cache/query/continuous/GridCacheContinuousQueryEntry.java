@@ -77,6 +77,9 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     @GridToStringExclude
     private GridDeploymentInfo depInfo;
 
+    /** */
+    private boolean expired;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -85,7 +88,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         impl = null;
     }
 
-    /**
+    /*
      * @param ctx Cache context.
      * @param impl Cache entry.
      * @param key Key.
@@ -93,9 +96,16 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param newValBytes Value bytes.
      * @param oldVal Old value.
      * @param oldValBytes Old value bytes.
+     * @param expired {@code True} if created for expired entry.
      */
-    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx, GridCacheEntry<K, V> impl, K key, @Nullable V newVal,
-        @Nullable GridCacheValueBytes newValBytes, @Nullable V oldVal, @Nullable GridCacheValueBytes oldValBytes) {
+    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
+        GridCacheEntry<K, V> impl,
+        K key,
+        @Nullable V newVal,
+        @Nullable GridCacheValueBytes newValBytes,
+        @Nullable V oldVal,
+        @Nullable GridCacheValueBytes oldValBytes,
+        boolean expired) {
         assert ctx != null;
         assert impl != null;
         assert key != null;
@@ -107,6 +117,14 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         this.newValBytes = newValBytes;
         this.oldVal = oldVal;
         this.oldValBytes = oldValBytes;
+        this.expired = expired;
+    }
+
+    /**
+     * @return {@code True} if entry expired.
+     */
+    public boolean expired() {
+        return expired;
     }
 
     /**
@@ -710,6 +728,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             out.writeObject(newVal);
             out.writeObject(oldVal);
         }
+
+        out.writeBoolean(expired);
     }
 
     /** {@inheritDoc} */
@@ -734,6 +754,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             newVal = (V)in.readObject();
             oldVal = (V)in.readObject();
         }
+
+        expired = in.readBoolean();
     }
 
     /** {@inheritDoc} */

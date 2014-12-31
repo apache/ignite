@@ -24,6 +24,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 
@@ -61,6 +62,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Internal flag. */
     private boolean internal;
 
+    /** Entry listener flag. */
+    private boolean entryLsnr;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -75,11 +79,15 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param filter Filter.
      * @param prjPred Projection predicate.
      * @param internal If {@code true} then query is notified about internal entries updates.
+     * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
      */
-    GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
+    GridCacheContinuousQueryHandler(@Nullable String cacheName,
+        Object topic,
         IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
         @Nullable IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
+        boolean internal,
+        boolean entryLsnr) {
         assert topic != null;
         assert cb != null;
 
@@ -89,6 +97,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.filter = filter;
         this.prjPred = prjPred;
         this.internal = internal;
+        this.entryLsnr = entryLsnr;
     }
 
     /** {@inheritDoc} */
@@ -183,7 +192,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         }
                     }
 
-                    if (recordEvt) {
+                    if (!entryLsnr && recordEvt) {
                         ctx.event().record(new IgniteCacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
@@ -241,12 +250,12 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         };
 
-        return manager(ctx).registerListener(nodeId, routineId, lsnr, internal);
+        return manager(ctx).registerListener(routineId, lsnr, internal, entryLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        manager(ctx).iterate(internal, routineId);
+        manager(ctx).iterate(internal, routineId, entryLsnr);
     }
 
     /** {@inheritDoc} */
@@ -371,6 +380,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             out.writeObject(prjPred);
 
         out.writeBoolean(internal);
+
+        out.writeBoolean(entryLsnr);
     }
 
     /** {@inheritDoc} */
@@ -394,6 +405,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             prjPred = (IgnitePredicate<GridCacheEntry<K, V>>)in.readObject();
 
         internal = in.readBoolean();
+
+        entryLsnr = in.readBoolean();
     }
 
     /**

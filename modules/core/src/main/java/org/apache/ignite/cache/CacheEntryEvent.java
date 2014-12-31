@@ -10,7 +10,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.events.*;
+import org.gridgain.grid.cache.query.*;
 
 import javax.cache.event.*;
 
@@ -19,52 +19,49 @@ import javax.cache.event.*;
  */
 public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
-    private final IgniteCacheEvent evt;
+    private final GridCacheContinuousQueryEntry<K, V> e;
 
     /**
      * @param src Cache.
      * @param type Event type.
-     * @param evt Ignite event.
+     * @param e Ignite event.
      */
-    public CacheEntryEvent(IgniteCache src, EventType type, IgniteCacheEvent evt) {
+    public CacheEntryEvent(IgniteCache src, EventType type, GridCacheContinuousQueryEntry<K, V> e) {
         super(src, type);
 
-        this.evt = evt;
+        this.e = e;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public V getOldValue() {
-        return (V)evt.oldValue();
+        return e.getOldValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isOldValueAvailable() {
-        return evt.hasOldValue();
+        return e.getOldValue() != null;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        return evt.key();
+        return e.getKey();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public V getValue() {
-        return (V)evt.newValue();
+        return e.getValue();
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.equals(IgniteCacheEvent.class))
-            return (T)evt;
-
         throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheEntryEvent [evtType=" + getEventType() + ", evt=" + evt + ']';
+        return "CacheEntryEvent [evtType=" + getEventType() +
+            ", key=" + getKey() +
+            ", val=" + getValue() +
+            ", oldVal=" + getOldValue() + ']';
     }
 }

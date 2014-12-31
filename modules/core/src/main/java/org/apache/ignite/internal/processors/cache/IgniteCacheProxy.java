@@ -11,11 +11,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.CacheEntryEvent;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -26,15 +23,12 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
-import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Cache proxy.
@@ -771,322 +765,33 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            A.notNull(lsnrCfg, "lsnrCfg");
-
-            Factory<CacheEntryListener<? super K, ? super V>> factory = lsnrCfg.getCacheEntryListenerFactory();
-
-            A.notNull(factory, "cacheEntryListenerFactory");
-
-            CacheEntryListener lsnr = factory.create();
-
-            A.notNull(lsnr, "lsnr");
-
-            EventCallback cb = new EventCallback(lsnr);
-
-            Set<Integer> types = new HashSet<>();
-
-            if (cb.create() || cb.update())
-                types.add(EVT_CACHE_OBJECT_PUT);
-
-            if (cb.remove())
-                types.add(EVT_CACHE_OBJECT_REMOVED);
-
-            if (cb.expire())
-                types.add(EVT_CACHE_OBJECT_EXPIRED);
-
-            if (types.isEmpty())
-                throw new IllegalArgumentException();
-
-            int[] types0 = new int[types.size()];
-
-            int i = 0;
-
-            for (Integer type : types)
-                types0[i++] = type;
-
-            EventFilter fltr = new EventFilter(cb.create(),
-                cb.update(),
-                lsnrCfg.getCacheEntryEventFilterFactory(),
-                ignite(),
-                ctx.name());
-
-            IgniteFuture<UUID> fut = ctx.kernalContext().continuous().startRoutine(
-                new GridEventConsumeHandler(cb, fltr, types0),
-                1,
-                0,
-                true,
-                null);
-
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            ctx.continuousQueries().registerCacheEntryListener(lsnrCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
         }
     }
 
-    /**
-     *
-     */
-    static class EventFilter implements IgnitePredicate<IgniteEvent>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private boolean update;
-
-        /** */
-        private boolean create;
-
-        /** */
-        private Factory<CacheEntryEventFilter> fltrFactory;
-
-        /** */
-        private CacheEntryEventFilter fltr;
-
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private IgniteCache cache;
-
-        /** */
-        private String cacheName;
-
-        /**
-         *
-         */
-        public EventFilter() {
-            // No-op.
-        }
-
-        /**
-         * @param create {@code True} if listens for create event.
-         * @param update {@code True} if listens for create event.
-         * @param fltrFactory Filter factory.
-         * @param ignite Ignite instance.
-         * @param cacheName Cache name.
-         */
-        EventFilter(
-            boolean create,
-            boolean update,
-            Factory<CacheEntryEventFilter> fltrFactory,
-            Ignite ignite,
-            @Nullable String cacheName) {
-            this.update = update;
-            this.create = create;
-            this.fltrFactory = fltrFactory;
-            this.ignite = ignite;
-            this.cacheName = cacheName;
-
-            if (fltrFactory != null)
-                fltr = fltrFactory.create();
-
-            cache = ignite.jcache(cacheName);
-
-            assert cache != null : cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(IgniteEvent evt) {
-            assert evt instanceof IgniteCacheEvent : evt;
-
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
-
-            EventType evtType;
-
-            switch (cacheEvt.type()) {
-                case EVT_CACHE_OBJECT_REMOVED: {
-                    evtType = EventType.REMOVED;
-
-                    break;
-                }
-
-                case EVT_CACHE_OBJECT_PUT: {
-                    assert update || create;
-
-                    if (cacheEvt.hasOldValue()) {
-                        if (!update)
-                            return false;
-
-                        evtType = EventType.UPDATED;
-                    }
-                    else {
-                        if (!create)
-                            return false;
-
-                        evtType = EventType.CREATED;
-                    }
-
-                    break;
-                }
-
-                case EVT_CACHE_OBJECT_EXPIRED: {
-                    evtType = EventType.EXPIRED;
-
-                    break;
-                }
-
-                default:
-                    assert false : cacheEvt;
-
-                    throw new IgniteException("Unexpected event: " + cacheEvt);
-            }
-
-            if (cache == null) {
-                cache = ignite.jcache(cacheName);
-
-                assert cache != null : cacheName;
-            }
-
-            return fltr == null || fltr.evaluate(new CacheEntryEvent(cache, evtType, cacheEvt));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeBoolean(create);
-
-            out.writeBoolean(update);
-
-            U.writeString(out, cacheName);
-
-            out.writeObject(fltrFactory);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            create = in.readBoolean();
-
-            update = in.readBoolean();
-
-            cacheName = U.readString(in);
-
-            fltrFactory = (Factory<CacheEntryEventFilter>)in.readObject();
-
-            if (fltrFactory != null)
-                fltr = fltrFactory.create();
-        }
-    }
-
-    /**
-     *
-     */
-    class EventCallback implements IgniteBiPredicate<UUID, IgniteEvent> {
-        /** */
-        private final CacheEntryCreatedListener createLsnr;
-
-        /** */
-        private final CacheEntryUpdatedListener updateLsnr;
-
-        /** */
-        private final CacheEntryRemovedListener rmvLsnr;
-
-        /** */
-        private final CacheEntryExpiredListener expireLsnr;
-
-        /**
-         * @param lsnr Listener.
-         */
-        EventCallback(CacheEntryListener lsnr) {
-            createLsnr = lsnr instanceof CacheEntryCreatedListener ? (CacheEntryCreatedListener)lsnr : null;
-            updateLsnr = lsnr instanceof CacheEntryUpdatedListener ? (CacheEntryUpdatedListener)lsnr : null;
-            rmvLsnr = lsnr instanceof CacheEntryRemovedListener ? (CacheEntryRemovedListener)lsnr : null;
-            expireLsnr = lsnr instanceof CacheEntryExpiredListener ? (CacheEntryExpiredListener)lsnr : null;
-        }
-
-        /**
-         * @return {@code True} if listens for create event.
-         */
-        boolean create() {
-            return createLsnr != null;
-        }
-
-        /**
-         * @return {@code True} if listens for update event.
-         */
-        boolean update() {
-            return updateLsnr != null;
-        }
-
-        /**
-         * @return {@code True} if listens for remove event.
-         */
-        boolean remove() {
-            return rmvLsnr != null;
-        }
-
-        /**
-         * @return {@code True} if listens for expire event.
-         */
-        boolean expire() {
-            return expireLsnr != null;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(UUID uuid, IgniteEvent evt) {
-            assert evt instanceof IgniteCacheEvent : evt;
-
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
-
-            switch (cacheEvt.type()) {
-                case EVT_CACHE_OBJECT_REMOVED: {
-                    assert rmvLsnr != null;
-
-                    CacheEntryEvent evt0 = new CacheEntryEvent(IgniteCacheProxy.this, EventType.REMOVED, cacheEvt);
-
-                    rmvLsnr.onRemoved(Collections.singleton(evt0));
-
-                    break;
-                }
-
-                case EVT_CACHE_OBJECT_PUT: {
-                    if (cacheEvt.hasOldValue()) {
-                        assert updateLsnr != null;
-
-                        CacheEntryEvent evt0 = new CacheEntryEvent(IgniteCacheProxy.this, EventType.UPDATED, cacheEvt);
-
-                        updateLsnr.onUpdated(Collections.singleton(evt0));
-                    }
-                    else {
-                        assert createLsnr != null;
-
-                        CacheEntryEvent evt0 = new CacheEntryEvent(IgniteCacheProxy.this, EventType.CREATED, cacheEvt);
-
-                        createLsnr.onCreated(Collections.singleton(evt0));
-                    }
-
-                    break;
-                }
-
-                case EVT_CACHE_OBJECT_EXPIRED: {
-                    assert expireLsnr != null;
-
-                    CacheEntryEvent evt0 = new CacheEntryEvent(IgniteCacheProxy.this, EventType.EXPIRED, cacheEvt);
-
-                    expireLsnr.onExpired(Collections.singleton(evt0));
-
-                    break;
-                }
-            }
-
-            return false;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            ctx.continuousQueries().deregisterCacheEntryListener(lsnrCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

@@ -14,6 +14,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 
@@ -41,13 +42,18 @@ public class GridCacheContinuousQueryHandlerV2<K, V> extends GridCacheContinuous
      * @param filter Filter.
      * @param prjPred Projection predicate.
      * @param internal If {@code true} then query is notified about internal entries updates.
+     * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
      * @param taskHash Task hash.
      */
-    public GridCacheContinuousQueryHandlerV2(@Nullable String cacheName, Object topic,
+    public GridCacheContinuousQueryHandlerV2(@Nullable String cacheName,
+        Object topic,
         IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> cb,
         @Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> filter,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred, boolean internal, int taskHash) {
-        super(cacheName, topic, cb, filter, prjPred, internal);
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
+        boolean internal,
+        boolean entryLsnr,
+        int taskHash) {
+        super(cacheName, topic, cb, filter, prjPred, internal, entryLsnr);
 
         this.taskHash = taskHash;
     }

@@ -38,6 +38,13 @@ public class GridDataGridTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite");
 
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicReplicatedTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicLocalTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxReplicatedTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerTxLocalTest.class);
+
         suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
 
         suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);

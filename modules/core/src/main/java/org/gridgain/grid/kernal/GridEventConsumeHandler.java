@@ -31,7 +31,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Continuous routine handler for remote event listening.
  */
-public class GridEventConsumeHandler implements GridContinuousHandler {
+class GridEventConsumeHandler implements GridContinuousHandler {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -76,7 +76,7 @@ public class GridEventConsumeHandler implements GridContinuousHandler {
      * @param filter Filter.
      * @param types Types.
      */
-    public GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, IgniteEvent> cb, @Nullable IgnitePredicate<IgniteEvent> filter,
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, IgniteEvent> cb, @Nullable IgnitePredicate<IgniteEvent> filter,
         @Nullable int[] types) {
         this.cb = cb == null ? DFLT_CALLBACK : cb;
         this.filter = filter;

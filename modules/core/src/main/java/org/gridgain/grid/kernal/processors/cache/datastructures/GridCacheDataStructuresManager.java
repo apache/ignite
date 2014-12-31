@@ -679,7 +679,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                }
             });
 
-            queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
+            queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true, false);
         }
 
         GridCacheQueueProxy queue = queuesMap.get(header.id());

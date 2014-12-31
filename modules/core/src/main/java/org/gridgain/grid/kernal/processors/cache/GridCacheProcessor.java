@@ -43,6 +43,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import javax.management.*;
 import java.util.*;
 
@@ -810,7 +811,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             cacheCtx.cache().start();
-
 
             if (log.isInfoEnabled())
                 log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
