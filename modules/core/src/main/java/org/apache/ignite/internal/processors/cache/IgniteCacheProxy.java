@@ -88,10 +88,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        if (!clazz.equals(GridCacheConfiguration.class))
+        GridCacheConfiguration cfg = ctx.config();
+
+        if (!clazz.isAssignableFrom(cfg.getClass()))
             throw new IllegalArgumentException();
 
-        return (C)ctx.config();
+        return clazz.cast(cfg);
     }
 
     /** {@inheritDoc} */
