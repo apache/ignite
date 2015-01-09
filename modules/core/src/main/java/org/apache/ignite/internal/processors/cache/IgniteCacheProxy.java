@@ -428,8 +428,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.containsKey(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -741,8 +747,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
+            IgniteCachingProvider.class.getName(),
+            IgniteCachingProvider.class.getClassLoader());
+
+        if (provider == null)
+            return null;
+
+        return provider.findManager(this);
     }
 
     /** {@inheritDoc} */

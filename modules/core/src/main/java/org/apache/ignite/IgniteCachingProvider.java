@@ -66,7 +66,7 @@ public class IgniteCachingProvider implements CachingProvider {
 
             IgniteCacheManager mgr = uriMap.get(uri);
 
-            if (mgr == null) {
+            if (mgr == null || mgr.isClosed()) {
                 mgr = new IgniteCacheManager(uri, this, clsLdr);
 
                 uriMap.put(uri, mgr);
@@ -99,6 +99,24 @@ public class IgniteCachingProvider implements CachingProvider {
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
         return getCacheManager(getDefaultURI(), getDefaultClassLoader());
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    public CacheManager findManager(IgniteCache<?,?> cache) {
+        Ignite ignite = cache.ignite();
+
+        synchronized (cacheManagers) {
+            for (Map<URI, IgniteCacheManager> map : cacheManagers.values()) {
+                for (IgniteCacheManager manager : map.values()) {
+                    if (manager.isManagedIgnite(ignite))
+                        return manager;
+                }
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

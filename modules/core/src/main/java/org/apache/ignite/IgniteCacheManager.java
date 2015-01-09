@@ -77,6 +77,9 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheCfg == null)
             throw new NullPointerException();
 
+        if (cacheName == null)
+            throw new NullPointerException();
+
         if (!(cacheCfg instanceof CompleteConfiguration))
             throw new UnsupportedOperationException("Configuration is not supported: " + cacheCfg);
 
@@ -86,7 +89,7 @@ public class IgniteCacheManager implements CacheManager {
             if (cfgCacheName != null && !cacheName.equals(cfgCacheName))
                 throw new IllegalArgumentException();
 
-            cacheCfg = (C)new GridCacheConfiguration((GridCacheConfiguration)cacheCfg);
+            cacheCfg = (C)new GridCacheConfiguration((CompleteConfiguration)cacheCfg);
 
             ((GridCacheConfiguration)cacheCfg).setName(cacheName);
         }
@@ -175,13 +178,22 @@ public class IgniteCacheManager implements CacheManager {
     @Override public Iterable<String> getCacheNames() {
         ensureNotClosed();
 
-        Collection<String> res;
+        String[] resArr;
 
         synchronized (igniteMap) {
-            res = new ArrayList<>(igniteMap.keySet());
+            resArr = igniteMap.keySet().toArray(new String[igniteMap.keySet().size()]);
         }
 
-        return res;
+        return Arrays.asList(resArr);
+    }
+
+    /**
+     * @param ignite Ignite.
+     */
+    public boolean isManagedIgnite(Ignite ignite) {
+        synchronized (igniteMap) {
+            return igniteMap.values().contains(ignite);
+        }
     }
 
     /** {@inheritDoc} */
@@ -209,11 +221,17 @@ public class IgniteCacheManager implements CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
+        if (cacheName == null)
+            throw new NullPointerException();
+
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
+        if (cacheName == null)
+            throw new NullPointerException();
+
         throw new UnsupportedOperationException();
     }
 
