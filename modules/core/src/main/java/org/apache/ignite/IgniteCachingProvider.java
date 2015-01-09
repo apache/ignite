@@ -45,6 +45,9 @@ public class IgniteCachingProvider implements CachingProvider {
     }
 
     /** */
+    public static final Properties DFLT_PROPS = new Properties();
+
+    /** */
     private final Map<ClassLoader, Map<URI, IgniteCacheManager>> cacheManagers = new WeakHashMap<>();
 
     /** {@inheritDoc} */
@@ -67,7 +70,7 @@ public class IgniteCachingProvider implements CachingProvider {
             IgniteCacheManager mgr = uriMap.get(uri);
 
             if (mgr == null || mgr.isClosed()) {
-                mgr = new IgniteCacheManager(uri, this, clsLdr);
+                mgr = new IgniteCacheManager(uri, this, clsLdr, props);
 
                 uriMap.put(uri, mgr);
             }
@@ -88,7 +91,7 @@ public class IgniteCachingProvider implements CachingProvider {
 
     /** {@inheritDoc} */
     @Override public Properties getDefaultProperties() {
-        return null;
+        return DFLT_PROPS;
     }
 
     /** {@inheritDoc} */

@@ -343,6 +343,14 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheMockEntry.class, this);
     }

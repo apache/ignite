@@ -481,6 +481,14 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return cached.key().hashCode();
     }

@@ -36,17 +36,22 @@ public class IgniteCacheManager implements CacheManager {
     private final ClassLoader clsLdr;
 
     /** */
+    private final Properties props;
+
+    /** */
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * @param uri Uri.
      * @param cachingProvider Caching provider.
      * @param clsLdr Class loader.
+     * @param props
      */
-    public IgniteCacheManager(URI uri, CachingProvider cachingProvider, ClassLoader clsLdr) {
+    public IgniteCacheManager(URI uri, CachingProvider cachingProvider, ClassLoader clsLdr, Properties props) {
         this.uri = uri;
         this.cachingProvider = cachingProvider;
         this.clsLdr = clsLdr;
+        this.props = props;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +71,7 @@ public class IgniteCacheManager implements CacheManager {
 
     /** {@inheritDoc} */
     @Override public Properties getProperties() {
-        return null;
+        return props;
     }
 
     /** {@inheritDoc} */
@@ -86,12 +91,15 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheCfg instanceof GridCacheConfiguration) {
             String cfgCacheName = ((GridCacheConfiguration)cacheCfg).getName();
 
-            if (cfgCacheName != null && !cacheName.equals(cfgCacheName))
-                throw new IllegalArgumentException();
+            if (cfgCacheName != null) {
+                if (!cacheName.equals(cfgCacheName))
+                    throw new IllegalArgumentException();
+            }
+            else {
+                cacheCfg = (C)new GridCacheConfiguration((CompleteConfiguration)cacheCfg);
 
-            cacheCfg = (C)new GridCacheConfiguration((CompleteConfiguration)cacheCfg);
-
-            ((GridCacheConfiguration)cacheCfg).setName(cacheName);
+                ((GridCacheConfiguration)cacheCfg).setName(cacheName);
+            }
         }
 
         Ignite ignite;
@@ -176,7 +184,9 @@ public class IgniteCacheManager implements CacheManager {
 
     /** {@inheritDoc} */
     @Override public Iterable<String> getCacheNames() {
-        ensureNotClosed();
+        if (isClosed())
+            return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
+                                           // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
 
         String[] resArr;
 
@@ -184,7 +194,7 @@ public class IgniteCacheManager implements CacheManager {
             resArr = igniteMap.keySet().toArray(new String[igniteMap.keySet().size()]);
         }
 
-        return Arrays.asList(resArr);
+        return Collections.unmodifiableCollection(Arrays.asList(resArr));
     }
 
     /**
@@ -221,6 +231,8 @@ public class IgniteCacheManager implements CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
+        ensureNotClosed();
+
         if (cacheName == null)
             throw new NullPointerException();
 
@@ -229,6 +241,8 @@ public class IgniteCacheManager implements CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
+        ensureNotClosed();
+
         if (cacheName == null)
             throw new NullPointerException();
 
