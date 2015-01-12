@@ -9,60 +9,63 @@
 
 package org.apache.ignite.cache;
 
-import javax.cache.*;
-import javax.cache.configuration.*;
+import org.gridgain.grid.cache.GridCacheConfiguration;
+
 import javax.cache.management.*;
 
 /**
- * TODO: Add class description.
+ * Implementation of {@link CacheMXBean}.
+ *
+ * It's a simple wrapper around {@link GridCacheConfiguration} for readonly
+ * access to cache configuration.
  */
-public class CacheConfigurationMXBean<K, V> implements CacheMXBean {
+public class CacheConfigurationMXBean implements CacheMXBean {
     /**
      *
      */
-    private final Cache<K, V> cache;
+    private final GridCacheConfiguration cacheCfg;
 
     /**
      * Constructor.
      *
-     * @param cache The cache.
+     * @param cacheCfg The cache configuration.
      */
-    public CacheConfigurationMXBean(Cache<K, V> cache) {
-        this.cache = cache;
+    public CacheConfigurationMXBean(GridCacheConfiguration cacheCfg) {
+        this.cacheCfg = cacheCfg;
     }
 
     /** {@inheritDoc} */
     @Override public String getKeyType() {
-        return cache.getConfiguration(CompleteConfiguration.class).getKeyType().getName();
+        return cacheCfg.getKeyType().getName();
     }
 
     /** {@inheritDoc} */
     @Override public String getValueType() {
-        return cache.getConfiguration(CompleteConfiguration.class).getValueType().getName();
+        return cacheCfg.getValueType().getName();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadThrough() {
-        return cache.getConfiguration(CompleteConfiguration.class).isReadThrough();
+        return cacheCfg.isReadThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
-        return cache.getConfiguration(CompleteConfiguration.class).isWriteThrough();
+        return cacheCfg.isWriteThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
-        return cache.getConfiguration(Configuration.class).isStoreByValue();
+        return cacheCfg.isStoreByValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        return cache.getConfiguration(CompleteConfiguration.class).isStatisticsEnabled();
+        return cacheCfg.isStatisticsEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
-        return cache.getConfiguration(CompleteConfiguration.class).isManagementEnabled();
+        return cacheCfg.isManagementEnabled();
     }
 }

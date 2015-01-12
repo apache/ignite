@@ -25,6 +25,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import javax.cache.expiry.*;
+import javax.management.*;
+import java.net.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -114,11 +116,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         float times = (System.nanoTime() - start) * 1.f / 1000;
 
-        float averageRemoveTime = cache.metrics().getAverageRemoveTime();
+        float avgRmvTime = cache.metrics().getAverageRemoveTime();
 
-        assert averageRemoveTime > 0;
+        assert avgRmvTime > 0;
 
-        assertEquals(times, averageRemoveTime, times / 10);
+        assertEquals(times, avgRmvTime, times / 10);
 
         jcache.remove(2);
 
@@ -188,6 +190,71 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testStatisticMXBean() throws Exception {
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+
+        URI uri = URI.create("ignite://default");
+
+        IgniteCacheManager cacheManager = new IgniteCacheManager(uri);
+
+        cacheManager.enableStatistics(null, true);
+
+        ObjectName objectName =
+            new ObjectName("javax.cache:type=CacheStatistics,CacheManager=ignite.//default,Cache=null");
+
+        long cachePuts = (long)getConfiguration().getMBeanServer().getAttribute(objectName, "CachePuts");
+
+        assertEquals(0L, cachePuts);
+
+        jcache.put(1, 1);
+
+        cachePuts = (long)getConfiguration().getMBeanServer().getAttribute(objectName, "CachePuts");
+
+        assertEquals(1, cachePuts);
+
+        cacheManager.enableStatistics(null, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheMxBean() throws Exception {
+        URI uri = URI.create("ignite://default");
+
+        IgniteCacheManager cacheManager = new IgniteCacheManager(uri);
+
+        cacheManager.enableManagement(null, true);
+
+        ObjectName objectName =
+            new ObjectName("javax.cache:type=CacheConfiguration,CacheManager=ignite.//default,Cache=null");
+
+        String keyType = (String)getConfiguration().getMBeanServer().getAttribute(objectName, "KeyType");
+        assertEquals("java.lang.Object", keyType);
+
+        String valueType = (String)getConfiguration().getMBeanServer().getAttribute(objectName, "ValueType");
+        assertEquals("java.lang.Object", valueType);
+
+        boolean readThrough = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "ReadThrough");
+        assertEquals(false, readThrough);
+
+        boolean writeThrough = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "WriteThrough");
+        assertEquals(false, writeThrough);
+
+        boolean storeByValue = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "StoreByValue");
+        assertEquals(true, storeByValue);
+
+        boolean isStat = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "StatisticsEnabled");
+        assertEquals(true, isStat);
+
+        boolean isMng = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "ManagementEnabled");
+        assertEquals(true, isMng);
+
+        cacheManager.enableManagement(null, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
@@ -233,12 +300,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         float times = (System.nanoTime() - start) * 1.f / 1000;
 
-        float averagePutTime = cache.metrics().getAveragePutTime();
+        float avgPutTime = cache.metrics().getAveragePutTime();
 
-        assert averagePutTime > 0;
+        assert avgPutTime > 0;
 
         assertEquals(1, cache.metrics().writes());
-        assertEquals(times, averagePutTime, times / 3);
+        assertEquals(times, avgPutTime, times / 3);
 
         jcache.put(2, 2);
 
@@ -332,7 +399,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(keyCnt, hits);
         assertEquals(expMisses, misses);
     }
-
 
     /**
      * @throws Exception If failed.
