@@ -50,6 +50,9 @@ object ScalarCachePopularNumbersExample extends App {
     private final val CNT = 100000
 
     scalar("examples/config/example-cache.xml") {
+        // Clean up caches on all nodes before run.
+        cache$(CACHE_NAME).get.globalClearAll(0)
+
         println()
         println(">>> Cache popular numbers example started.")
 

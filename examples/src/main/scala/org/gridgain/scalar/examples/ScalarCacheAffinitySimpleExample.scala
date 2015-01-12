@@ -33,6 +33,9 @@ object ScalarCacheAffinitySimpleExample extends App {
     /** Number of keys. */
     private val KEY_CNT = 20
 
+    /** Name of cache specified in spring configuration. */
+    private val NAME = "partitioned"
+
     /** Type alias. */
     type Cache = GridCache[Int, String]
 
@@ -41,7 +44,10 @@ object ScalarCacheAffinitySimpleExample extends App {
      * since there is no distribution, values may come back as `nulls`.
      */
     scalar("examples/config/example-cache.xml") {
-        val c = grid$.cache[Int, String]("partitioned")
+        // Clean up caches on all nodes before run.
+        cache$(NAME).get.globalClearAll(0)
+
+        val c = grid$.cache[Int, String](NAME)
 
         populate(c)
         visit(c)
@@ -55,7 +61,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      */
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
-            grid$.compute().affinityRun("partitioned", i,
+            grid$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
         )
     }
