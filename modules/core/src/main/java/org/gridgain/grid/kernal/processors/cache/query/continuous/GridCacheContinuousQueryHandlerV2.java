@@ -43,6 +43,7 @@ public class GridCacheContinuousQueryHandlerV2<K, V> extends GridCacheContinuous
      * @param prjPred Projection predicate.
      * @param internal If {@code true} then query is notified about internal entries updates.
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      * @param taskHash Task hash.
      */
     public GridCacheContinuousQueryHandlerV2(@Nullable String cacheName,
@@ -52,8 +53,9 @@ public class GridCacheContinuousQueryHandlerV2<K, V> extends GridCacheContinuous
         @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
         boolean internal,
         boolean entryLsnr,
+        boolean sync,
         int taskHash) {
-        super(cacheName, topic, cb, filter, prjPred, internal, entryLsnr);
+        super(cacheName, topic, cb, filter, prjPred, internal, entryLsnr, sync);
 
         this.taskHash = taskHash;
     }

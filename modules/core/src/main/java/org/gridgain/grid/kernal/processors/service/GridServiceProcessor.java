@@ -124,13 +124,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             cfgQry.localCallback(new DeploymentListener());
 
-            cfgQry.execute(ctx.grid().forLocal(), true, false);
+            cfgQry.execute(ctx.grid().forLocal(), true, false, false);
 
             assignQry = (GridCacheContinuousQueryAdapter<Object, Object>)cache.queries().createContinuousQuery();
 
             assignQry.localCallback(new AssignmentListener());
 
-            assignQry.execute(ctx.grid().forLocal(), true, false);
+            assignQry.execute(ctx.grid().forLocal(), true, false, false);
         }
         finally {
             if (ctx.deploy().enabled())

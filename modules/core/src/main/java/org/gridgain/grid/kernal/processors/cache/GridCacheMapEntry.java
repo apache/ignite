@@ -3342,12 +3342,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             obsolete = true; // Success, will return "true".
                     }
 
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED))
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, EVT_CACHE_OBJECT_EXPIRED,
-                            null, false, expiredVal, expiredVal != null || hasOldBytes, null, null, null);
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+                        cctx.events().addEvent(partition(),
+                            key,
+                            cctx.localNodeId(),
+                            null,
+                            EVT_CACHE_OBJECT_EXPIRED,
+                            null,
+                            false,
+                            expiredVal,
+                            expiredVal != null || hasOldBytes,
+                            null,
+                            null,
+                            null);
+                    }
+
+                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal, null);
                 }
-
-
             }
         }
         catch (IgniteCheckedException e) {

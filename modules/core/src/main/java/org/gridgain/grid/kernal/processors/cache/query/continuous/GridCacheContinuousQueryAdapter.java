@@ -213,12 +213,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
     /** {@inheritDoc} */
     @Override public void execute() throws IgniteCheckedException {
-        execute(null, false, false);
+        execute(null, false, false, false);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@Nullable ClusterGroup prj) throws IgniteCheckedException {
-        execute(prj, false, false);
+        execute(prj, false, false, false);
     }
 
     /**
@@ -227,9 +227,13 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
      * @param prj Grid projection.
      * @param internal If {@code true} then query notified about internal entries updates.
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      * @throws IgniteCheckedException If failed.
      */
-    public void execute(@Nullable ClusterGroup prj, boolean internal, boolean entryLsnr) throws IgniteCheckedException {
+    public void execute(@Nullable ClusterGroup prj,
+        boolean internal,
+        boolean entryLsnr,
+        boolean sync) throws IgniteCheckedException {
         if (locCb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
@@ -282,6 +286,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
                     prjPred,
                     internal,
                     entryLsnr,
+                    sync,
                     ctx.kernalContext().job().currentTaskNameHash());
             }
             else {
@@ -291,7 +296,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
                     rmtFilter,
                     prjPred,
                     internal,
-                    entryLsnr);
+                    entryLsnr,
+                    sync);
             }
 
             routineId = ctx.kernalContext().continuous().startRoutine(hnd,

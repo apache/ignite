@@ -185,21 +185,23 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         if (F.isEmpty(lsnrCol))
             return;
 
-        GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
-            cctx,
-            e.wrap(false),
-            key,
-            null,
-            null,
-            oldVal,
-            oldBytes,
-            true);
+        if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, -1)) {
+            GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
+                cctx,
+                e.wrap(false),
+                key,
+                null,
+                null,
+                oldVal,
+                oldBytes,
+                true);
 
-        for (ListenerInfo<K, V> lsnr : lsnrCol.values()) {
-            if (!lsnr.entryListener())
-                continue;
+            for (ListenerInfo<K, V> lsnr : lsnrCol.values()) {
+                if (!lsnr.entryListener())
+                    continue;
 
-            lsnr.onEntryUpdate(e0, false);
+                lsnr.onEntryUpdate(e0, false);
+            }
         }
     }
 
@@ -252,7 +254,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             qry.remoteFilter(fltr);
 
-            qry.execute(null, false, true);
+            qry.execute(null, false, true, lsnrCfg.isSynchronous());
         }
         catch (IgniteCheckedException e) {
             lsnrQrys.remove(lsnrCfg, qry); // Remove query if failed to execute it.
@@ -279,12 +281,17 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param lsnr Listener.
      * @param internal Internal flag.
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      * @return Whether listener was actually registered.
      */
-    boolean registerListener(UUID lsnrId, GridCacheContinuousQueryListener<K, V> lsnr,
+    boolean registerListener(UUID lsnrId,
+        GridCacheContinuousQueryListener<K, V> lsnr,
         boolean internal,
-        boolean entryLsnr) {
-        ListenerInfo<K, V> info = new ListenerInfo<>(lsnr, entryLsnr);
+        boolean entryLsnr,
+        boolean sync) {
+        assert !sync || entryLsnr;
+
+        ListenerInfo<K, V> info = new ListenerInfo<>(lsnr, entryLsnr, sync);
 
         boolean added;
 
@@ -326,36 +333,33 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * Iterates through existing data.
      *
      * @param internal Internal flag.
-     * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
      * @param id Listener ID.
      */
-    void iterate(boolean internal, UUID id, boolean entryLsnr) {
+    void iterate(boolean internal, UUID id) {
         ListenerInfo<K, V> info = internal ? intLsnrs.get(id) : lsnrs.get(id);
 
         assert info != null;
 
-        if (!entryLsnr) {
-            Set<GridCacheEntry<K, V>> entries;
+        Set<GridCacheEntry<K, V>> entries;
 
-            if (cctx.isReplicated())
-                entries = internal ? cctx.cache().entrySetx() :
-                    cctx.cache().entrySet();
-            else
-                entries = internal ? cctx.cache().primaryEntrySetx() :
-                    cctx.cache().primaryEntrySet();
+        if (cctx.isReplicated())
+            entries = internal ? cctx.cache().entrySetx() :
+                cctx.cache().entrySet();
+        else
+            entries = internal ? cctx.cache().primaryEntrySetx() :
+                cctx.cache().primaryEntrySet();
 
-            for (GridCacheEntry<K, V> e : entries) {
-                GridCacheContinuousQueryEntry<K, V> qryEntry = new GridCacheContinuousQueryEntry<>(cctx,
-                    e,
-                    e.getKey(),
-                    e.getValue(),
-                    null,
-                    null,
-                    null,
-                    false);
+        for (GridCacheEntry<K, V> e : entries) {
+            GridCacheContinuousQueryEntry<K, V> qryEntry = new GridCacheContinuousQueryEntry<>(cctx,
+                e,
+                e.getKey(),
+                e.getValue(),
+                null,
+                null,
+                null,
+                false);
 
-                info.onIterate(qryEntry, !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
-            }
+            info.onIterate(qryEntry, !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
         }
 
         info.flushPending();
@@ -369,18 +373,26 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         private final GridCacheContinuousQueryListener<K, V> lsnr;
 
         /** Pending entries. */
-        private Collection<PendingEntry<K, V>> pending = new LinkedList<>();
+        private Collection<PendingEntry<K, V>> pending;
 
         /** */
-        private boolean entryLsnr;
+        private final boolean entryLsnr;
+
+        /** */
+        private final boolean sync;
 
         /**
          * @param lsnr Listener.
          * @param entryLsnr {@code True} if listener created for {@link CacheEntryListener}.
+         * @param sync {@code True} if listener is synchronous.
          */
-        private ListenerInfo(GridCacheContinuousQueryListener<K, V> lsnr, boolean entryLsnr) {
+        private ListenerInfo(GridCacheContinuousQueryListener<K, V> lsnr, boolean entryLsnr, boolean sync) {
             this.lsnr = lsnr;
             this.entryLsnr = entryLsnr;
+            this.sync = sync;
+
+            if (!entryLsnr)
+                pending = new LinkedList<>();
         }
 
         /**
@@ -399,7 +411,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             }
 
             if (notifyLsnr)
-                lsnr.onEntryUpdate(e, recordEvt);
+                lsnr.onEntryUpdate(e, recordEvt, sync);
         }
 
         /**
@@ -407,7 +419,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
          * @param recordEvt Whether to record event.
          */
         void onIterate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
-            lsnr.onEntryUpdate(e, recordEvt);
+            lsnr.onEntryUpdate(e, recordEvt, sync);
         }
 
         /**
@@ -423,7 +435,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             }
 
             for (PendingEntry<K, V> e : pending0)
-                lsnr.onEntryUpdate(e.entry, e.recordEvt);
+                lsnr.onEntryUpdate(e.entry, e.recordEvt, sync);
         }
 
         /**

@@ -480,6 +480,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Cache.
+     */
+    protected <K, V> IgniteCache<K, V> primaryCache(Object key, @Nullable String cacheName) {
+        ClusterNode node = grid(0).cache(cacheName).affinity().mapKeyToNode(key);
+
+        assertNotNull(node);
+
+        return grid((String)node.attribute(GridNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
+    }
+
+    /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.

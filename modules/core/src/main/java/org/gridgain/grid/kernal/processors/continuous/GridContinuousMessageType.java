@@ -28,7 +28,10 @@ enum GridContinuousMessageType {
     MSG_STOP_ACK,
 
     /** Remote event notification. */
-    MSG_EVT_NOTIFICATION;
+    MSG_EVT_NOTIFICATION,
+
+    /** Event notification acknowledgement for synchronous events. */
+    MSG_EVT_ACK;
 
     /** Enumerated values. */
     private static final GridContinuousMessageType[] VALS = values();

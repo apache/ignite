@@ -65,6 +65,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Entry listener flag. */
     private boolean entryLsnr;
 
+    /** Synchronous listener flag. */
+    private boolean sync;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -80,6 +83,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param prjPred Projection predicate.
      * @param internal If {@code true} then query is notified about internal entries updates.
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName,
         Object topic,
@@ -87,7 +91,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         @Nullable IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
         boolean internal,
-        boolean entryLsnr) {
+        boolean entryLsnr,
+        boolean sync) {
         assert topic != null;
         assert cb != null;
 
@@ -98,6 +103,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.prjPred = prjPred;
         this.internal = internal;
         this.entryLsnr = entryLsnr;
+        this.sync = sync;
     }
 
     /** {@inheritDoc} */
@@ -150,7 +156,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
             }
 
-            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
+            @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e,
+                boolean recordEvt,
+                boolean sync) {
                 boolean notify;
 
                 GridCacheFlag[] f = cacheContext(ctx).forceLocalRead();
@@ -185,7 +193,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                                 depMgr.prepare(e);
                             }
 
-                            ctx.continuous().addNotification(nodeId, routineId, e, topic);
+                            ctx.continuous().addNotification(nodeId, routineId, e, topic, sync);
                         }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
@@ -250,12 +258,13 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
         };
 
-        return manager(ctx).registerListener(routineId, lsnr, internal, entryLsnr);
+        return manager(ctx).registerListener(routineId, lsnr, internal, entryLsnr, sync);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        manager(ctx).iterate(internal, routineId, entryLsnr);
+        if (!entryLsnr)
+            manager(ctx).iterate(internal, routineId);
     }
 
     /** {@inheritDoc} */
@@ -382,6 +391,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         out.writeBoolean(internal);
 
         out.writeBoolean(entryLsnr);
+
+        out.writeBoolean(sync);
     }
 
     /** {@inheritDoc} */
@@ -407,6 +418,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         internal = in.readBoolean();
 
         entryLsnr = in.readBoolean();
+
+        sync = in.readBoolean();
     }
 
     /**

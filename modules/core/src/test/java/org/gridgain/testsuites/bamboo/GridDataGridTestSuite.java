@@ -44,6 +44,7 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheEntryListenerTxTest.class);
         suite.addTestSuite(IgniteCacheEntryListenerTxReplicatedTest.class);
         suite.addTestSuite(IgniteCacheEntryListenerTxLocalTest.class);
+        suite.addTestSuite(IgniteCacheEntryListenerEagerTtlDisabledTest.class);
 
         suite.addTest(IgniteCacheExpiryPolicyTestSuite.suite());
 
