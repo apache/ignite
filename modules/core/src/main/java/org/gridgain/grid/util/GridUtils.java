@@ -3867,6 +3867,8 @@ public abstract class GridUtils {
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
+        appendJvmId(sb);
+
         if (gridName != null && !gridName.isEmpty())
             sb.a("grid=").a(gridName).a(',');
 
@@ -3876,6 +3878,18 @@ public abstract class GridUtils {
         sb.a("name=").a(name);
 
         return new ObjectName(sb.toString());
+    }
+
+    /**
+     * @param sb Sb.
+     */
+    private static void appendJvmId(SB sb) {
+        if (getBoolean(GG_MBEAN_APPEND_JVM_ID)) {
+            String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
+                + ManagementFactory.getRuntimeMXBean().getName();
+
+            sb.a("jvmId=").a(gridId).a(',');
+        }
     }
 
     /**
@@ -3901,6 +3915,8 @@ public abstract class GridUtils {
     public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
+
+        appendJvmId(sb);
 
         if (gridName != null && !gridName.isEmpty())
             sb.a("grid=").a(gridName).a(',');
