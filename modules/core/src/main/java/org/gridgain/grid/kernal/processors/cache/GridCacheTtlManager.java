@@ -127,7 +127,8 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         if (wrapper.entry.onTtlExpired(obsoleteVer))
                             wrapper.entry.context().cache().removeEntry(wrapper.entry);
 
-                        wrapper.entry.context().cache().metrics0().onEvict();
+                        if (wrapper.entry.context().cache().configuration().isStatisticsEnabled())
+                            wrapper.entry.context().cache().metrics0().onEvict();
 
                         it.remove();
                     }

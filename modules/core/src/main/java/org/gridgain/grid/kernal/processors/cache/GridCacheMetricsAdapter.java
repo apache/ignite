@@ -269,8 +269,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         removeTimeNanos += duration;
     }
 
-    @Override
-    public float getAverageGetTime() {
+    /** {@inheritDoc} */
+    @Override public float getAverageGetTime() {
         long timeNanos = getTimeNanos;
         long readsCnt = reads;
 
@@ -280,8 +280,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         return ((1f * timeNanos) / readsCnt) / NANOS_IN_MICROSECOND;
     }
 
-    @Override
-    public float getAveragePutTime() {
+    /** {@inheritDoc} */
+    @Override public float getAveragePutTime() {
         long timeNanos = putTimeNanos;
         long putsCnt = writes;
 
@@ -291,8 +291,8 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         return ((1f * timeNanos) / putsCnt) / NANOS_IN_MICROSECOND;
     }
 
-    @Override
-    public float getAverageRemoveTime() {
+    /** {@inheritDoc} */
+    @Override public float getAverageRemoveTime() {
         long timeNanos = removeTimeNanos;
         long removesCnt = rmCnt;
 

@@ -74,6 +74,17 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            g.cache(null).configuration().setStatisticsEnabled(true);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cc = super.cacheConfiguration(gridName);
 

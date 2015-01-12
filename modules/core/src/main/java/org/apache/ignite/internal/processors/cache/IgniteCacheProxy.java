@@ -415,6 +415,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -444,17 +445,25 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      */
     public Map<K, V> getAll(Collection<? extends K> keys) {
         try {
+            boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+            long start = statisticsEnabled ? System.nanoTime() : 0L;
+
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
+            Map<K, V> res;
+
             try {
-                return delegate.getAll(keys);
+                res = delegate.getAll(keys);
             }
             finally {
                 gate.leave(prev);
             }
 
             if (statisticsEnabled)
-                ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+                ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -519,6 +528,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public void put(K key, V val) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -571,6 +581,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public void putAll(Map<? extends K, ? extends V> map) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -581,6 +592,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             finally {
                 gate.leave(prev);
             }
+
+            if (statisticsEnabled)
+                ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -591,6 +605,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public boolean putIfAbsent(K key, V val) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -618,6 +633,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public boolean remove(K key) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -631,7 +647,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                 gate.leave(prev);
             }
 
-            if (statisticsEnabled)
+            if (statisticsEnabled && removed)
                 ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
             return removed;
@@ -645,6 +661,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public boolean remove(K key, V oldVal) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -672,6 +689,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public V getAndRemove(K key) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -685,8 +703,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                 gate.leave(prev);
             }
 
-            if (statisticsEnabled)
+            if (statisticsEnabled) {
                 ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+            }
 
             return removed;
         }
@@ -706,9 +726,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             finally {
                 gate.leave(prev);
             }
-
-            if (statisticsEnabled)
-                ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -753,6 +770,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public void removeAll(Set<? extends K> keys) {
         try {
             boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
             long start = statisticsEnabled ? System.nanoTime() : 0L;
 
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -763,6 +781,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             finally {
                 gate.leave(prev);
             }
+
+            if (statisticsEnabled)
+                ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -774,6 +795,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      */
     public void removeAll(Collection<? extends K> keys) {
         try {
+            boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+            long start = statisticsEnabled ? System.nanoTime() : 0L;
+
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
@@ -782,6 +807,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             finally {
                 gate.leave(prev);
             }
+
+            if (statisticsEnabled)
+                ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

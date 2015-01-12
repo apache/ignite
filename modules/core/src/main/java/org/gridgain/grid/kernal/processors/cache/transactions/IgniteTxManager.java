@@ -1256,7 +1256,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    cacheCtx.cache().metrics0().onTxCommit();
+                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
+                        cacheCtx.cache().metrics0().onTxCommit();
                 }
             }
 
@@ -1329,7 +1330,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    cacheCtx.cache().metrics0().onTxRollback();
+                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
+                        cacheCtx.cache().metrics0().onTxRollback();
                 }
             }
 

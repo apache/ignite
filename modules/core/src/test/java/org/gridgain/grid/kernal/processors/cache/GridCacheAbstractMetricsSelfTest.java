@@ -20,16 +20,21 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
+import javax.cache.spi.*;
 import javax.management.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.gridgain.grid.util.GridUtils.*;
 
 /**
  * Cache metrics test.
@@ -37,6 +42,9 @@ import static java.util.concurrent.TimeUnit.*;
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 50;
+
+    /** */
+    private static final String CACHE_NAME = "mbean_test";
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {
@@ -187,20 +195,38 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assert cache.metrics().getAverageGetTime() > 0;
     }
 
+    private String getUriForMbean() throws Exception {
+        String uri;
+
+        try{
+            uri = resolveGridGainUrl(GridGainEx.DFLT_CFG).toURI().toString();
+        }
+        catch (Exception e){
+            uri = URI.create("ignite://default").toString();
+        }
+
+        return uri.replaceAll(",|:|=|\n", ".");
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testStatisticMXBean() throws Exception {
-        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        CachingProvider cachingProvider = Caching.getCachingProvider();
 
-        URI uri = URI.create("ignite://default");
+        CacheManager cacheMgr = cachingProvider.getCacheManager();
 
-        IgniteCacheManager cacheManager = new IgniteCacheManager(uri);
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
 
-        cacheManager.enableStatistics(null, true);
+        cfg.setManagementEnabled(true);
 
-        ObjectName objectName =
-            new ObjectName("javax.cache:type=CacheStatistics,CacheManager=ignite.//default,Cache=null");
+        cfg.setStatisticsEnabled(true);
+
+        Cache jcache = cacheMgr.createCache(CACHE_NAME, cfg);
+
+        String beanName = "javax.cache:type=CacheStatistics,CacheManager=" + getUriForMbean() + ",Cache=" + CACHE_NAME;
+
+        ObjectName objectName = new ObjectName(beanName);
 
         long cachePuts = (long)getConfiguration().getMBeanServer().getAttribute(objectName, "CachePuts");
 
@@ -212,21 +238,29 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(1, cachePuts);
 
-        cacheManager.enableStatistics(null, false);
+        cacheMgr.destroyCache(CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheMxBean() throws Exception {
-        URI uri = URI.create("ignite://default");
+        CachingProvider cachingProvider = Caching.getCachingProvider();
 
-        IgniteCacheManager cacheManager = new IgniteCacheManager(uri);
+        CacheManager cacheMgr = cachingProvider.getCacheManager();
 
-        cacheManager.enableManagement(null, true);
+        GridCacheConfiguration cfg = new GridCacheConfiguration();
 
-        ObjectName objectName =
-            new ObjectName("javax.cache:type=CacheConfiguration,CacheManager=ignite.//default,Cache=null");
+        cfg.setManagementEnabled(true);
+
+        cfg.setStatisticsEnabled(true);
+
+        cacheMgr.createCache(CACHE_NAME, cfg);
+
+        String beanName = "javax.cache:type=CacheConfiguration,CacheManager=" + getUriForMbean()
+            + ",Cache=" + CACHE_NAME;
+
+        ObjectName objectName = new ObjectName(beanName);
 
         String keyType = (String)getConfiguration().getMBeanServer().getAttribute(objectName, "KeyType");
         assertEquals("java.lang.Object", keyType);
@@ -249,7 +283,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         boolean isMng = (boolean)getConfiguration().getMBeanServer().getAttribute(objectName, "ManagementEnabled");
         assertEquals(true, isMng);
 
-        cacheManager.enableManagement(null, false);
+        cacheMgr.destroyCache(CACHE_NAME);
     }
 
     /**
@@ -788,5 +822,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TimeUnit.MINUTES.toMillis(10L);
     }
 }

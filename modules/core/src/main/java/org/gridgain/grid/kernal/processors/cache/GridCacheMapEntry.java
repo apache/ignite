@@ -772,11 +772,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             if (old == null && !hasOldBytes) {
-                if (updateMetrics)
+                if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
                     cctx.cache().metrics0().onRead(false);
             }
             else {
-                if (updateMetrics)
+                if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
                     cctx.cache().metrics0().onRead(true);
 
                 // Set retVal here for event notification.
@@ -1140,7 +1140,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             recordNodeId(affNodeId);
 
-            if (metrics)
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled())
                 cctx.cache().metrics0().onWrite();
 
             if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
@@ -1292,7 +1292,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 drReplicate(drType, null, null, newVer);
 
-                if (metrics)
+                if (metrics && cctx.cache().configuration().isStatisticsEnabled())
                     cctx.cache().metrics0().onRemove();
 
                 if (tx == null)
@@ -1444,7 +1444,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             // Apply metrics.
-            if (metrics && needVal)
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal)
                 cctx.cache().metrics0().onRead(old != null);
 
             String transformCloClsName = null;
@@ -1800,7 +1800,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
 
             // Apply metrics.
-            if (metrics && needVal)
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal)
                 cctx.cache().metrics0().onRead(old != null);
 
             // Calculate new value.
@@ -4134,7 +4134,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param metrics Update merics flag.
      */
     private void updateMetrics(GridCacheOperation op, boolean metrics) {
-        if (metrics) {
+        if (metrics && cctx.cache().configuration().isStatisticsEnabled()) {
             if (op == DELETE)
                 cctx.cache().metrics0().onRemove();
             else
