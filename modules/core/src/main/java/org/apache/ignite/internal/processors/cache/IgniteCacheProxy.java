@@ -747,6 +747,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
         IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
             IgniteCachingProvider.class.getName(),
             IgniteCachingProvider.class.getClassLoader());
@@ -759,14 +760,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        getCacheManager().destroyCache(getName());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        return getCacheManager() == null;
     }
 
     /** {@inheritDoc} */

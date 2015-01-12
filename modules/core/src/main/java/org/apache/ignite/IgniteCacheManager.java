@@ -10,11 +10,14 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.typedef.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.spi.*;
+import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -24,7 +27,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteCacheManager implements CacheManager {
     /** */
-    private final Map<String, Ignite> igniteMap = new HashMap<>();
+    private final Map<String, IgniteBiTuple<Ignite, IgniteCacheMXBean>> igniteMap = new HashMap<>();
 
     /** */
     private final URI uri;
@@ -45,7 +48,7 @@ public class IgniteCacheManager implements CacheManager {
      * @param uri Uri.
      * @param cachingProvider Caching provider.
      * @param clsLdr Class loader.
-     * @param props
+     * @param props Properties.
      */
     public IgniteCacheManager(URI uri, CachingProvider cachingProvider, ClassLoader clsLdr, Properties props) {
         this.uri = uri;
@@ -102,11 +105,13 @@ public class IgniteCacheManager implements CacheManager {
             }
         }
 
-        Ignite ignite;
+        IgniteCache<K, V> res;
 
         synchronized (igniteMap) {
             if (igniteMap.containsKey(cacheName))
                 throw new CacheException("Cache already exists [cacheName=" + cacheName + ", manager=" + uri + ']');
+
+            Ignite ignite;
 
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
@@ -126,26 +131,31 @@ public class IgniteCacheManager implements CacheManager {
             else
                 throw new UnsupportedOperationException();
 
-            igniteMap.put(cacheName, ignite);
+            res = ignite.jcache(cacheName);
+
+            igniteMap.put(cacheName, new T2<>(ignite, new IgniteCacheMXBean(res)));
         }
 
-        return ignite.jcache(cacheName);
+        if (((CompleteConfiguration)cacheCfg).isManagementEnabled())
+            enableManagement(cacheName, true);
+
+        return res;
     }
 
     /**
      * @param cacheName Cache name.
      */
     private <K, V> IgniteCache<K, V> findCache(String cacheName) {
-        Ignite ignite;
+        IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple;
 
         synchronized (igniteMap) {
-            ignite = igniteMap.get(cacheName);
+            tuple = igniteMap.get(cacheName);
         }
 
-        if (ignite == null)
+        if (tuple == null)
             return null;
 
-        return ignite.jcache(cacheName);
+        return tuple.get1().jcache(cacheName);
     }
 
     /** {@inheritDoc} */
@@ -202,8 +212,13 @@ public class IgniteCacheManager implements CacheManager {
      */
     public boolean isManagedIgnite(Ignite ignite) {
         synchronized (igniteMap) {
-            return igniteMap.values().contains(ignite);
+            for (IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple : igniteMap.values()) {
+                if (ignite.equals(tuple.get1()))
+                    return true;
+            }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -213,19 +228,48 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        Ignite ignite;
+        IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple;
 
         synchronized (igniteMap) {
-            ignite = igniteMap.remove(cacheName);
+            tuple = igniteMap.remove(cacheName);
         }
 
-        if (ignite != null) {
+        if (tuple != null) {
             try {
-                ignite.close();
+                tuple.get1().close();
             }
             catch (Exception ignored) {
 
             }
+
+            ObjectName objName = getObjectName(cacheName);
+
+            MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
+
+            for (ObjectName n : mBeanSrv.queryNames(objName, null)) {
+                try {
+                    mBeanSrv.unregisterMBean(n);
+                }
+                catch (Exception ignored) {
+
+                }
+            }
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private ObjectName getObjectName(String cacheName) {
+        String mBeanName = "javax.cache:type=CacheConfiguration,CacheManager="
+            + uri.toString().replaceAll(",|:|=|\n", ".")
+            + ",Cache=" + cacheName.replaceAll(",|:|=|\n", ".");
+
+        try {
+            return new ObjectName(mBeanName);
+        }
+        catch (MalformedObjectNameException e) {
+            throw new CacheException("Failed to create MBean name: " + mBeanName, e);
         }
     }
 
@@ -236,7 +280,32 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        throw new UnsupportedOperationException();
+        IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple;
+
+        synchronized (igniteMap) {
+            tuple = igniteMap.get(cacheName);
+        }
+
+        ObjectName objName = getObjectName(cacheName);
+        MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
+
+        try {
+            if (enabled) {
+                if(mBeanSrv.queryNames(objName, null).isEmpty())
+                    mBeanSrv.registerMBean(tuple.get2(), objName);
+            }
+            else {
+                for (ObjectName n : mBeanSrv.queryNames(objName, null))
+                    mBeanSrv.unregisterMBean(n);
+
+            }
+        }
+        catch (InstanceAlreadyExistsException | InstanceNotFoundException ignored) {
+
+        }
+        catch (MBeanRegistrationException | NotCompliantMBeanException e) {
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -260,15 +329,15 @@ public class IgniteCacheManager implements CacheManager {
     /** {@inheritDoc} */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
-            Ignite[] ignites;
+            IgniteBiTuple<Ignite, IgniteCacheMXBean>[] ignites;
 
             synchronized (igniteMap) {
-                ignites = igniteMap.values().toArray(new Ignite[igniteMap.values().size()]);
+                ignites = igniteMap.values().toArray(new IgniteBiTuple[igniteMap.values().size()]);
             }
 
-            for (Ignite ignite : ignites) {
+            for (IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple : ignites) {
                 try {
-                    ignite.close();
+                    tuple.get1().close();
                 }
                 catch (Exception ignored) {
                     // Ignore any exceptions according to javadoc of javax.cache.CacheManager#close()
