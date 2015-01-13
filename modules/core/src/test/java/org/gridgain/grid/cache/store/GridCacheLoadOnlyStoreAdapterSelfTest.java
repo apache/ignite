@@ -46,7 +46,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     public void testStore() throws Exception {
-        cache().loadCache(null, 0, 1, 2, 3);
+        jcache().localLoadCache(null, 1, 2, 3);
 
         int cnt = 0;
 
@@ -56,6 +56,9 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
         assertEquals(INPUT_SIZE - (INPUT_SIZE/10), cnt);
     }
 
+    /**
+     *
+     */
     private static class TestStore extends GridCacheLoadOnlyStoreAdapter<Integer, String, String> {
         /** {@inheritDoc} */
         @Override protected Iterator<String> inputIterator(@Nullable Object... args)

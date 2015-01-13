@@ -86,6 +86,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @return Cache.
      */
+    protected <K, V> IgniteCache<K, V> jcache() {
+        return grid().jcache(null);
+    }
+
+    /**
+     * @return Cache.
+     */
     protected <K, V> GridLocalCache<K, V> local() {
         return (GridLocalCache<K, V>)((GridKernal)grid()).<K, V>internalCache();
     }
