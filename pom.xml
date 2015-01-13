@@ -25,7 +25,7 @@
     </parent>
 
     <properties>
-        <ignite.version>7.0.0</ignite.version>
+        <ignite.version>7.0.0-SNAPSHOT</ignite.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
