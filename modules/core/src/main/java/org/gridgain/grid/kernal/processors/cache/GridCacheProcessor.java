@@ -43,6 +43,8 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import javax.management.*;
 import java.util.*;
 
@@ -207,6 +209,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +
                     "cacheName=" + cfg.getName() + ']');
             }
+        }
+
+        if (cfg.getStore() == null) {
+            Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
+
+            CacheLoader ldr = null;
+
+            if (ldrFactory != null)
+                ldr = ldrFactory.create();
+
+            Factory<CacheWriter> writerFactory = cfg.getCacheWriterFactory();
+
+            CacheWriter writer = null;
+
+            if (cfg.isWriteBehindEnabled() && writerFactory != null)
+                writer = writerFactory.create();
+
+            if (ldr != null || writer != null)
+                cfg.setStore(new GridCacheLoaderWriterStore(ldr, writer));
         }
     }
 

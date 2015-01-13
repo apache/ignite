@@ -248,7 +248,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    public boolean loadCache(final GridInClosure3<K, V, GridCacheVersion> vis, Object[] args) throws IgniteCheckedException {
+    public boolean loadCache(final GridInClosure3<K, V, GridCacheVersion> vis, Object[] args)
+        throws IgniteCheckedException {
         if (store != null) {
             if (log.isDebugEnabled())
                 log.debug("Loading all values from store.");

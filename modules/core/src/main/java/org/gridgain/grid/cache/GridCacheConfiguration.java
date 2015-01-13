@@ -343,7 +343,9 @@ public class GridCacheConfiguration extends MutableConfiguration {
         atomicityMode = cc.getAtomicityMode();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
+        cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
+        cacheWriterFactory = cc.getCacheWriterFactory();
         cloner = cc.getCloner();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
