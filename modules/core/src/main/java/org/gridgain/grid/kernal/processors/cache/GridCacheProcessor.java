@@ -43,7 +43,6 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.configuration.*;
 import javax.management.*;
 import java.util.*;
 

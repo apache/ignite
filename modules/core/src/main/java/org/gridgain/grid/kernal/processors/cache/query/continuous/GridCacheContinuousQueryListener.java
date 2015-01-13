@@ -23,7 +23,6 @@ interface GridCacheContinuousQueryListener<K, V> {
      *
      * @param e Entry.
      * @param recordEvt Whether to record event.
-     * @param sync {@code True} if event is synchronous.
      */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt, boolean sync);
+    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
 }

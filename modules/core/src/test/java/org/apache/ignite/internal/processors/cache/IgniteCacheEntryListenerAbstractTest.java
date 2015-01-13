@@ -12,6 +12,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
@@ -27,7 +28,6 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 import static javax.cache.event.EventType.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 
 /**
  *
@@ -46,7 +46,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     private Integer lastKey = 0;
 
     /** */
-    private CacheEntryListenerConfiguration lsnrCfg;
+    private CacheEntryListenerConfiguration<Integer, Integer> lsnrCfg;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -58,9 +58,38 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cfg.setEagerTtl(eagerTtl());
 
-        cfg.setPreloadMode(SYNC);
-
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoOldValue() throws Exception {
+        CacheEntryListenerConfiguration<Integer, Integer> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+            new Factory<CacheEntryListener<Integer, Integer>>() {
+                @Override public CacheEntryListener<Integer, Integer> create() {
+                    return new CreateUpdateRemoveExpireListener();
+                }
+            },
+            null,
+            false,
+            true
+        );
+
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        try {
+            for (Integer key : keys()) {
+                log.info("Check create/update/remove/expire events, no old value [key=" + key + ']');
+
+                cache.registerCacheEntryListener(lsnrCfg);
+
+                checkEvents(cache, lsnrCfg, key, true, true, true, true, false);
+            }
+        }
+        finally {
+            cache.deregisterCacheEntryListener(lsnrCfg);
+        }
     }
 
     /**
@@ -208,6 +237,10 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 cache.putAll(vals);
 
             fut.get();
+
+            log.info("Update one more time.");
+
+            cache.putAll(vals);
         }
         finally {
             stopGrid(gridCount());
@@ -223,7 +256,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      */
     private void syncEvent(Integer key, Integer val, IgniteCache<Integer, Integer> cache, int expEvts)
         throws Exception {
-        evts = new ArrayList<>();
+        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<? extends Integer, ? extends Integer>>());
 
         evtsLatch = new CountDownLatch(expEvts);
 
@@ -296,7 +329,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         Map<Integer, Integer> vals = new HashMap<>();
 
         for (int i = 0; i < 100; i++)
-            vals.put(i + 1_000_000, i);
+            vals.put(i + 2_000_000, i);
 
         cache.putAll(vals); // Put some data in cache to make sure events are not generated for existing entries.
 
@@ -386,7 +419,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             log.info("Check create/update/remove events for listener in configuration [key=" + key + ']');
 
-            checkEvents(cache, lsnrCfg, key, true, true, true, true);
+            checkEvents(cache, lsnrCfg, key, true, true, true, true, true);
         }
         finally {
             stopGrid(gridCount());
@@ -453,7 +486,12 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cache.registerCacheEntryListener(lsnrCfg);
 
-        checkEvents(cache, lsnrCfg, key, create, update, rmv, expire);
+        try {
+            checkEvents(cache, lsnrCfg, key, create, update, rmv, expire, true);
+        }
+        finally {
+            cache.deregisterCacheEntryListener(lsnrCfg);
+        }
     }
 
     /**
@@ -461,8 +499,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @param vals Values in cache.
      * @throws Exception If failed.
      */
-    private void checkFilter(IgniteCache<Integer, Integer> cache, Map<Integer, Integer> vals) throws Exception {
-        evts = new ArrayList<>();
+    private void checkFilter(final IgniteCache<Integer, Integer> cache, Map<Integer, Integer> vals) throws Exception {
+        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<? extends Integer, ? extends Integer>>());
 
         final int expEvts = (vals.size() / 2) * 4; // Remove, create, update and expire for half of modified entries.
 
@@ -472,19 +510,23 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cache.putAll(vals);
 
-        Map<Integer, Integer> newVals = new HashMap<>();
+        final Map<Integer, Integer> newVals = new HashMap<>();
 
         for (Integer key : vals.keySet())
             newVals.put(key, -1);
 
-        cache.withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(MILLISECONDS, 100))).putAll(newVals);
+        cache.withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(MILLISECONDS, 500))).putAll(newVals);
 
-        U.sleep(200);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Integer key : newVals.keySet()) {
+                    if (primaryCache(key, cache.getName()).get(key) != null)
+                        return false;
+                }
 
-        if (!eagerTtl()) { // Provoke expire events if eager ttl is disabled.
-            for (Integer key : newVals.keySet())
-                assertNull(primaryCache(key, cache.getName()).get(key));
-        }
+                return true;
+            }
+        }, 5000);
 
         evtsLatch.await(5000, MILLISECONDS);
 
@@ -568,6 +610,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @param update {@code True} if listens for update events.
      * @param rmv {@code True} if listens for remove events.
      * @param expire {@code True} if listens for expire events.
+     * @param oldVal {@code True} if old value should be provided for event.
      * @throws Exception If failed.
      */
     private void checkEvents(
@@ -577,7 +620,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         boolean create,
         boolean update,
         boolean rmv,
-        boolean expire) throws Exception {
+        boolean expire,
+        boolean oldVal) throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 cache.registerCacheEntryListener(lsnrCfg);
@@ -602,7 +646,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         if (expire)
             expEvts += 2;
 
-        evts = new ArrayList<>();
+        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<? extends Integer, ? extends Integer>>());
 
         evtsLatch = new CountDownLatch(expEvts);
 
@@ -659,32 +703,32 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         if (update) {
             for (int i = 0; i < UPDATES; i++)
-                checkEvent(iter, key, UPDATED, i + 1, i);
+                checkEvent(iter, key, UPDATED, i + 1, oldVal ? i : null);
         }
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, UPDATES);
+            checkEvent(iter, key, REMOVED, null, oldVal ? UPDATES : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 10, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, 10);
+            checkEvent(iter, key, EXPIRED, null, oldVal ? 10 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 1, null);
 
         if (update)
-            checkEvent(iter, key, UPDATED, 2, 1);
+            checkEvent(iter, key, UPDATED, 2, oldVal ? 1 : null);
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, 2);
+            checkEvent(iter, key, REMOVED, null, oldVal ? 2 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 20, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, 20);
+            checkEvent(iter, key, EXPIRED, null, oldVal ? 20 : null);
 
         assertEquals(0, evts.size());
 
@@ -786,10 +830,10 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     private static void onEvent(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
         // System.out.println("Received event [evt=" + evt + ", thread=" + Thread.currentThread().getName() + ']');
 
-        assert evt != null;
-        assert evt.getSource() != null : evt;
-        assert evt.getEventType() != null : evt;
-        assert evt.getKey() != null : evt;
+        assertNotNull(evt);
+        assertNotNull(evt.getSource());
+        assertNotNull(evt.getEventType());
+        assertNotNull(evt.getKey());
 
         evts.add(evt);
 
@@ -847,20 +891,20 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
-                assert evt != null;
-                assert evt.getSource() != null : evt;
-                assert evt.getEventType() != null : evt;
-                assert evt.getKey() != null : evt;
+                assertNotNull(evt);
+                assertNotNull(evt.getSource());
+                assertNotNull(evt.getEventType());
+                assertNotNull(evt.getKey());
             }
         }
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
             for (CacheEntryEvent<? extends Integer, ? extends Integer> evt : evts) {
-                assert evt != null;
-                assert evt.getSource() != null : evt;
-                assert evt.getEventType() != null : evt;
-                assert evt.getKey() != null : evt;
+                assertNotNull(evt);
+                assertNotNull(evt.getSource());
+                assertNotNull(evt.getEventType());
+                assertNotNull(evt.getKey());
             }
         }
     }

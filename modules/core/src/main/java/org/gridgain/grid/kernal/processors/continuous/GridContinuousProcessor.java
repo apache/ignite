@@ -898,7 +898,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             LocalRoutineInfo routine = locInfos.get(routineId);
 
             if (routine != null)
-                routine.hnd.notifyCallback(nodeId, routineId, (Collection<?>) msg.data(), ctx);
+                routine.hnd.notifyCallback(nodeId, routineId, (Collection<?>)msg.data(), ctx);
         }
         finally {
             if (msg.futureId() != null) {
@@ -1726,7 +1726,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Future for stop routine.
+     * Synchronous message acknowledgement future.
      */
     private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
         /** */

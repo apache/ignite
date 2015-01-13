@@ -21,6 +21,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,10 +38,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Event type enum values. */
+    private static final EventType[] EVT_TYPE_VALS = EventType.values();
+
     /** Cache context. */
     @SuppressWarnings("TransientFieldNotInitialized")
     @GridToStringExclude
-    private final transient GridCacheContext ctx;
+    private final transient GridCacheContext<K, V> ctx;
 
     /** Cache entry. */
     @SuppressWarnings("TransientFieldNotInitialized")
@@ -78,7 +82,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     private GridDeploymentInfo depInfo;
 
     /** */
-    private boolean expired;
+    private EventType evtType;
 
     /**
      * Required by {@link Externalizable}.
@@ -88,7 +92,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         impl = null;
     }
 
-    /*
+    /**
      * @param ctx Cache context.
      * @param impl Cache entry.
      * @param key Key.
@@ -96,7 +100,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param newValBytes Value bytes.
      * @param oldVal Old value.
      * @param oldValBytes Old value bytes.
-     * @param expired {@code True} if created for expired entry.
+     * @param evtType Event type.
      */
     GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
         GridCacheEntry<K, V> impl,
@@ -105,10 +109,11 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         @Nullable GridCacheValueBytes newValBytes,
         @Nullable V oldVal,
         @Nullable GridCacheValueBytes oldValBytes,
-        boolean expired) {
+        EventType evtType) {
         assert ctx != null;
         assert impl != null;
         assert key != null;
+        assert evtType != null;
 
         this.ctx = ctx;
         this.impl = impl;
@@ -117,14 +122,35 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         this.newValBytes = newValBytes;
         this.oldVal = oldVal;
         this.oldValBytes = oldValBytes;
-        this.expired = expired;
+        this.evtType = evtType;
+    }
+
+    /**
+     * @return Cache entry.
+     */
+    GridCacheEntry<K, V> entry() {
+        return impl;
+    }
+
+    /**
+     * @return Cache context.
+     */
+    GridCacheContext<K, V> context() {
+        return ctx;
+    }
+
+    /**
+     * @return New value bytes.
+     */
+    GridCacheValueBytes newValueBytes() {
+        return newValBytes;
     }
 
     /**
      * @return {@code True} if entry expired.
      */
-    public boolean expired() {
-        return expired;
+    public EventType eventType() {
+        return evtType;
     }
 
     /**
@@ -729,7 +755,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             out.writeObject(oldVal);
         }
 
-        out.writeBoolean(expired);
+        out.writeByte((byte)evtType.ordinal());
     }
 
     /** {@inheritDoc} */
@@ -755,7 +781,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             oldVal = (V)in.readObject();
         }
 
-        expired = in.readBoolean();
+        evtType = EVT_TYPE_VALS[in.readByte()];
     }
 
     /** {@inheritDoc} */

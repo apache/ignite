@@ -3016,7 +3016,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, val, valBytes, ver);
 
                 if (!skipQryNtf) {
-                    if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated()) {
+                    if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                         cctx.continuousQueries().onEntryUpdate(this,
                             key,
                             val,
