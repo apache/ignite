@@ -36,7 +36,8 @@ public class GridCacheFailoverTestSuite extends TestSuite {
         // Failure consistency tests.
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+        // TODO: IGNITE-80.
+        // suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
         // suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO GG-9150
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
