@@ -12,6 +12,8 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
@@ -59,6 +61,19 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         cfg.setEagerTtl(eagerTtl());
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
+
+            ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
+
+            assertEquals(0, syncMsgFuts.size());
+        }
     }
 
     /**
