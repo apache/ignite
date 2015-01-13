@@ -27,7 +27,13 @@ import collection.JavaConversions._
  * be started with or without cache.
  */
 object ScalarCacheExample extends App {
+    /** Name of cache specified in spring configuration. */
+    private val NAME = "partitioned"
+
     scalar("examples/config/example-cache.xml") {
+        // Clean up caches on all nodes before run.
+        cache$(NAME).get.globalClearAll(0)
+
         registerListener()
 
         basicOperations()
@@ -39,7 +45,7 @@ object ScalarCacheExample extends App {
      */
     def basicOperations() {
         // Create cache predicate-based projection (all values > 30).
-        val c = cache$("partitioned").get.viewByType(classOf[String], classOf[Int]).
+        val c = cache$(NAME).get.viewByType(classOf[String], classOf[Int]).
             viewByKv((k: String, v: Int) => v < 30)
 
         // Add few values.
@@ -87,8 +93,8 @@ object ScalarCacheExample extends App {
      */
     def twoViewsOneCache() {
         // Create two typed views on the same cache.
-        val view1 = cache$("partitioned").get.viewByType(classOf[String], classOf[Int])
-        val view2 = cache$("partitioned").get.viewByType(classOf[Int], classOf[String])
+        val view1 = cache$(NAME).get.viewByType(classOf[String], classOf[Int])
+        val view2 = cache$(NAME).get.viewByType(classOf[Int], classOf[String])
 
         view1 += ("key1" -> 1)
         view1 += ("key2" -> 2)

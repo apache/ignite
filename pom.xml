@@ -18,8 +18,14 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>16</version>
+    </parent>
+
     <properties>
-        <ignite.version>7.0.0</ignite.version>
+        <ignite.version>7.0.0-SNAPSHOT</ignite.version>
         <gridgain.edition>fabric</gridgain.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
@@ -34,7 +40,7 @@
     <version>${ignite.version}</version>
     <packaging>pom</packaging>
 
-    <url>http://www.gridgain.com</url>
+    <url>http://ignite.incubator.apache.org</url>
 
     <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
 
@@ -45,9 +51,24 @@
         </license>
     </licenses>
 
+    <mailingLists>
+        <mailingList>
+            <name>Ignite Dev List</name>
+            <subscribe>dev-subscribe@ignite.incubator.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@ignite.incubator.apache.org</unsubscribe>
+            <post>dev@ignite.incubator.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/incubator-ignite-dev</archive>
+        </mailingList>
+    </mailingLists>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.apache.org/jira/browse/IGNITE</url>
+    </issueManagement>
+
     <scm>
-        <url>https://github.com/gridgain/gridgain</url>
-        <connection>scm:git:git://github.com/gridgain/gridgain.git</connection>
+        <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
+        <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
     </scm>
 
     <developers>
