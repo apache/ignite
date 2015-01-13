@@ -103,7 +103,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class GridGainEx {
     /** Default configuration path relative to GridGain home. */
-    private static final String DFLT_CFG = "config/default-config.xml";
+    public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named grids. */
     private static final ConcurrentMap<Object, GridNamedInstance> grids = new ConcurrentHashMap8<>();

@@ -2863,6 +2863,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
             throw new UnsupportedOperationException();
         }
+
+        /** {@inheritDoc} */
+        @Override public <T> T unwrap(Class<T> clazz) {
+            if(clazz.isAssignableFrom(getClass()))
+                return clazz.cast(this);
+
+            throw new IllegalArgumentException();
+        }
     }
 
     /**

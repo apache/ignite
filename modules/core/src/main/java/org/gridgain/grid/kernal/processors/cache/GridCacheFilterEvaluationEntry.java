@@ -413,6 +413,14 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheFilterEvaluationEntry.class, this);
     }
