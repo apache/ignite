@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.gridgain.scalar.examples
 
 import org.gridgain.scalar.scalar
@@ -29,6 +46,12 @@ import org.jdk8.backport.ThreadLocalRandom8
  * cache: `'ggstart.sh examples/config/example-cache.xml'`.
  */
 object ScalarSnowflakeSchemaExample {
+    /** Name of replicated cache specified in spring configuration. */
+    private val REPL_CACHE_NAME = "replicated"
+
+    /** Name of partitioned cache specified in spring configuration. */
+    private val PART_CACHE_NAME = "partitioned"
+
     /** ID generator. */
     private[this] val idGen = Stream.from(0).iterator
 
@@ -37,6 +60,10 @@ object ScalarSnowflakeSchemaExample {
      */
     def main(args: Array[String]) {
         scalar("examples/config/example-cache.xml") {
+            // Clean up caches on all nodes before run.
+            cache$(REPL_CACHE_NAME).get.globalClearAll(0)
+            cache$(PART_CACHE_NAME).get.globalClearAll(0)
+
             populateDimensions()
             populateFacts()
 
@@ -50,7 +77,7 @@ object ScalarSnowflakeSchemaExample {
      * `DimStore` and `DimProduct` instances.
      */
     def populateDimensions() {
-        val dimCache = grid$.cache[Int, Object]("replicated")
+        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
 
         val store1 = new DimStore(idGen.next(), "Store1", "12345", "321 Chilly Dr, NY")
         val store2 = new DimStore(idGen.next(), "Store2", "54321", "123 Windy Dr, San Francisco")
@@ -70,8 +97,8 @@ object ScalarSnowflakeSchemaExample {
      * Populate cache with `facts`, which in our case are `FactPurchase` objects.
      */
     def populateFacts() {
-        val dimCache = grid$.cache[Int, Object]("replicated")
-        val factCache = grid$.cache[Int, FactPurchase]("partitioned")
+        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
+        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val stores: GridCacheProjection[Int, DimStore] = dimCache.viewByType(classOf[Int], classOf[DimStore])
         val prods: GridCacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
@@ -91,7 +118,7 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = grid$.cache[Int, FactPurchase]("partitioned")
+        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val storePurchases = factCache.sql(
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
@@ -107,8 +134,8 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val dimCache = grid$.cache[Int, Object]("replicated")
-        val factCache = grid$.cache[Int, FactPurchase]("partitioned")
+        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
+        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val prods: GridCacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
 
