@@ -43,7 +43,7 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
          GridCacheOperation op,
          @Nullable Object writeObj,
          @Nullable byte[] valBytes,
-         long ttl,
+         @Nullable IgniteCacheExpiryPolicy expiryPlc,
          long drTtl,
          long drExpireTime,
          @Nullable GridCacheVersion drVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
