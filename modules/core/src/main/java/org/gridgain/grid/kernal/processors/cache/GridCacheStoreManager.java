@@ -418,13 +418,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');
 
-            else {
-                try {
-                    store.remove(tx, key);
-                }
-                catch (ClassCastException e) {
-                    handleClassCastException(e);
-                }
+            try {
+                store.remove(tx, key);
+            }
+            catch (ClassCastException e) {
+                handleClassCastException(e);
             }
 
             if (log.isDebugEnabled())
