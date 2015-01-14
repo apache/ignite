@@ -5248,45 +5248,112 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        for (int i = 0; i < 100; ++i)
+        final int cacheSz = 100;
+        Map<String, Integer> entries = new HashMap();
+
+        for (int i = 0; i < cacheSz; ++i) {
             cache.put(Integer.toString(i), i);
+            entries.put(Integer.toString(i), i);
+        }
 
-        checkIteratorCacheSize(cache, 100);
+        checkIteratorHasNext();
 
-        removeCacheIterator(cache);
+        checkIteratorCache(entries);
 
-        checkIteratorCacheSize(cache, 100 - 1);
+        checkIteratorRemove(cache, entries);
+
     }
 
     /**
-     * Remove one element from the cache. Throws exception if cache is empty.
-     *
-     * @param cache Cache.
+     * If hasNext() is called repeatedly, it should return the same result.
      */
-    private void removeCacheIterator(IgniteCache<String, Integer> cache) {
-        Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
+    private void checkIteratorHasNext() {
+        Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
 
-        if (iter.hasNext())
+        assertEquals(iter.hasNext(), iter.hasNext());
+
+        while (iter.hasNext())
+            iter.next();
+
+        assertFalse(iter.hasNext());
+    }
+
+    /**
+     * @param cache Cache.
+     * @param entries Expected entries in the cache.
+     */
+    private void checkIteratorRemove(IgniteCache<String, Integer> cache, Map<String, Integer> entries) {
+        //Check that we can remove element.
+        String rmvKey = Integer.toString(5);
+        removeCacheIterator(cache, rmvKey);
+        entries.remove(rmvKey);
+        assertFalse(cache.containsKey(rmvKey));
+
+        checkIteratorCache(entries);
+
+        try {
+            //check that we cannot call Iterator.remove() without next().
+            Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+
+            assertTrue(iter.hasNext());
+
+            iter.next();
             iter.remove();
-        else
+            iter.remove();
+
             fail();
+        }
+        catch (Exception e) {
+        }
     }
 
     /**
      * @param cache Cache.
-     * @param size Expected value of cache's size.
+     * @param key Key to remove.
      */
-    private void checkIteratorCacheSize(IgniteCache<String, Integer> cache, int size) {
+    private void removeCacheIterator(IgniteCache<String, Integer> cache, String key) {
+        Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
+        int delCnt = 0;
+
+        while (iter.hasNext()) {
+            Cache.Entry<String, Integer> cur = iter.next();
+
+            if (cur.getKey().equals(key)) {
+                iter.remove();
+                delCnt++;
+            }
+
+        }
+
+        assertEquals(1, delCnt);
+    }
+
+    /**
+     * @param entries Expected entries in the cache.
+     */
+    private void checkIteratorCache(Map<String, Integer> entries) {
+        for (int i = 0; i < gridCount(); ++i)
+            checkIteratorCache(jcache(i), entries);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param entries Expected entries in the cache.
+     */
+    private void checkIteratorCache(IgniteCache<String, Integer> cache, Map<String, Integer> entries) {
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
 
         int cnt = 0;
 
         while (iter.hasNext()) {
-            iter.next();
+            Cache.Entry<String, Integer> cur = iter.next();
+
+            assertTrue(entries.containsKey(cur.getKey()));
+            assertEquals(entries.get(cur.getKey()), cur.getValue());
 
             cnt++;
         }
 
-        assertEquals(size, cnt);
+        assertEquals(entries.size(), cnt);
     }
 }

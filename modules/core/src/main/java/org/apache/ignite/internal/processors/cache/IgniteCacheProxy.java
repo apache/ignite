@@ -1083,19 +1083,17 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         /** Current element. */
         private Map.Entry<K, V> curIter;
 
+        /** Next element. */
+        private Map.Entry<K,V> nextIter;
+
         /**
-         *
+         * No-arg constructor.
          */
         public IgniteCacheIterator() {
             fut = delegate.queries().createScanQuery(null).execute();
-        }
 
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
             try {
-                curIter = fut.next();
-
-                return curIter != null;
+                nextIter = fut.next();
             }
             catch (IgniteCheckedException e) {
                 throw cacheException(e);
@@ -1103,7 +1101,27 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         }
 
         /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return nextIter != null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Entry<K, V> next() {
+            curIter = nextIter;
+
+            if (curIter == null) {
+                throw new NoSuchElementException();
+            }
+
+            try {
+                nextIter = fut.next();
+            }
+            catch (IgniteCheckedException e) {
+                curIter = null;
+
+                throw cacheException(e);
+            }
+
             return new Cache.Entry<K, V>() {
                 @Override public K getKey() {
                     return curIter.getKey();
@@ -1121,12 +1139,16 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
         /** {@inheritDoc} */
         @Override public void remove() {
+            if (curIter == null)
+                throw new IllegalStateException();
+
             try {
                 delegate.removex(curIter.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw cacheException(e);
             }
+            curIter = null;
         }
     }
 }
