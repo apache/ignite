@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -22,9 +23,11 @@ import java.util.*;
  */
 public class GridCacheTwoStepQuery implements Serializable {
     /** */
+    @GridToStringInclude
     private Map<String, GridCacheSqlQuery> mapQrys;
 
     /** */
+    @GridToStringInclude
     private GridCacheSqlQuery reduce;
 
     /**
@@ -62,5 +65,10 @@ public class GridCacheTwoStepQuery implements Serializable {
      */
     public Collection<GridCacheSqlQuery> mapQueries() {
         return mapQrys.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheTwoStepQuery.class, this);
     }
 }

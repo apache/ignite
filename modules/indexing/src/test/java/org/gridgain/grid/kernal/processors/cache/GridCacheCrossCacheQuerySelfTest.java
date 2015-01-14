@@ -96,8 +96,10 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testTwoStep() throws Exception {
         fillCaches();
 
+        String cache = "partitioned";
+
         GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
+            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache(cache).queries();
 
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
@@ -106,9 +108,42 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2 ,2);
 
-        Object cnt = qx.execute(q).get().iterator().next().get(0);
+        Object cnt = qx.execute(cache, q).get().iterator().next().get(0);
 
         assertEquals(10L, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoStepGroup() throws Exception {
+        fillCaches();
+
+        GridCacheQueriesEx<Integer, FactPurchase> qx =
+            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
+
+        Set<Integer> set0 = new HashSet<>();
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase group by productId")
+            .get()) {
+            X.println("___ -> " + o);
+
+            assertTrue(set0.add((Integer) o.get(0)));
+        }
+
+        X.println("___ ");
+
+        Set<Integer> set1 = new HashSet<>();
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase")
+            .get()) {
+            X.println("___ -> " + o);
+
+            set1.add((Integer)o.get(0));
+        }
+
+        assertFalse(set1.isEmpty());
+        assertEquals(set0, set1);
     }
 
     /** @throws Exception If failed. */

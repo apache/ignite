@@ -106,24 +106,36 @@ public class GridReduceQueryExecutor {
         });
     }
 
-    public IgniteFuture<GridCacheSqlResult> query(GridCacheTwoStepQuery qry) {
+    /**
+     * @param space Space name.
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();
 
-        r.tbls = new ArrayList<>();
+        r.tbls = new ArrayList<>(qry.mapQueries().size());
 
         try {
-            r.conn = h2.connectionForSpace(null);
+            r.conn = h2.connectionForSpace(space);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            return new GridFinishedFutureEx<>(e);
         }
 
         Collection<ClusterNode> nodes = ctx.grid().cluster().nodes(); // TODO filter nodes somehow?
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-            GridMergeTable tbl = createTable(r.conn, mapQry);
+            GridMergeTable tbl;
+
+            try {
+                tbl = createTable(r.conn, mapQry);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFutureEx<>(e);
+            }
 
             tbl.getScanIndex(null).setNumberOfSources(nodes.size());
 
@@ -144,14 +156,36 @@ public class GridReduceQueryExecutor {
 
             final ResultSet res = h2.executeSqlQueryWithTimer(r.conn, rdc.query(), F.asList(rdc.parameters()));
 
+            for (GridMergeTable tbl : r.tbls)
+                dropTable(r.conn, tbl.getName());
+
             return new GridFinishedFuture(ctx, new Iter(res));
         }
-        catch (IgniteCheckedException | InterruptedException e) {
+        catch (IgniteCheckedException | InterruptedException | SQLException e) {
+            U.closeQuiet(r.conn);
+
             return new GridFinishedFuture<>(ctx, e);
         }
     }
 
-    private GridMergeTable createTable(Connection conn, GridCacheSqlQuery qry) {
+    /**
+     * @param conn Connection.
+     * @param tblName Table name.
+     * @throws SQLException If failed.
+     */
+    private void dropTable(Connection conn, String tblName) throws SQLException {
+        try (Statement s = conn.createStatement()) {
+            s.execute("DROP TABLE " + tblName);
+        }
+    }
+
+    /**
+     * @param conn Connection.
+     * @param qry Query.
+     * @return Table.
+     * @throws IgniteCheckedException If failed.
+     */
+    private GridMergeTable createTable(Connection conn, GridCacheSqlQuery qry) throws IgniteCheckedException {
         try {
             try (PreparedStatement s = conn.prepareStatement(
                 "CREATE LOCAL TEMPORARY TABLE " + qry.alias() +
@@ -164,8 +198,10 @@ public class GridReduceQueryExecutor {
 
             return GridMergeTable.Engine.getCreated();
         }
-        catch (SQLException|IgniteCheckedException e) {
-            throw new IgniteException(e);
+        catch (SQLException e) {
+            U.closeQuiet(conn);
+
+            throw new IgniteCheckedException(e);
         }
     }
 

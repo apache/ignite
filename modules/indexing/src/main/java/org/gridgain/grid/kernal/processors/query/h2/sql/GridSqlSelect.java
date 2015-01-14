@@ -22,10 +22,16 @@ public class GridSqlSelect implements Cloneable {
     private boolean distinct;
 
     /** */
+    private List<GridSqlElement> allExprs;
+
+    /** */
     private List<GridSqlElement> select = new ArrayList<>();
 
     /** */
     private List<GridSqlElement> groups = new ArrayList<>();
+
+    /** */
+    private int[] grpCols;
 
     /** */
     private GridSqlElement from;
@@ -124,10 +130,34 @@ public class GridSqlSelect implements Cloneable {
     }
 
     /**
+     * @param expression Expression.
+     */
+    public void addExpression(GridSqlElement expression) {
+        if (allExprs == null)
+            allExprs = new ArrayList<>();
+
+        allExprs.add(expression);
+    }
+
+    /**
+     * @return All expressions in select, group by, order by.
+     */
+    public List<GridSqlElement> allExpressions() {
+        return allExprs;
+    }
+
+    /**
      * @return Expressions.
      */
     public List<GridSqlElement> select() {
         return select;
+    }
+
+    /**
+     * Clears select list.
+     */
+    public void clearSelect() {
+        select = new ArrayList<>();
     }
 
     /**
@@ -148,7 +178,8 @@ public class GridSqlSelect implements Cloneable {
      *
      */
     public void clearGroups() {
-        groups.clear();
+        groups = new ArrayList<>();
+        grpCols = null;
     }
 
     /**
@@ -156,6 +187,20 @@ public class GridSqlSelect implements Cloneable {
      */
     public void addGroupExpression(GridSqlElement expression) {
         groups.add(expression);
+    }
+
+    /**
+     * @return Group columns.
+     */
+    public int[] groupColumns() {
+        return grpCols;
+    }
+
+    /**
+     * @param grpCols Group columns.
+     */
+    public void groupColumns(int[] grpCols) {
+        this.grpCols = grpCols;
     }
 
     /**
@@ -211,7 +256,7 @@ public class GridSqlSelect implements Cloneable {
      *
      */
     public void clearSort() {
-        sort.clear();
+        sort = new LinkedHashMap<>();
     }
 
     /**
@@ -231,6 +276,7 @@ public class GridSqlSelect implements Cloneable {
             res.select = new ArrayList<>(select);
             res.groups = new ArrayList<>(groups);
             res.sort = new LinkedHashMap<>(sort);
+            res.allExprs = null;
 
             return res;
         }

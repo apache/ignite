@@ -44,8 +44,17 @@ public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
     public <R> GridCacheQuery<R> createSpiQuery();
 
     /**
+     * @param space Space name.
      * @param qry Query.
      * @return Future.
      */
-    public IgniteFuture<GridCacheSqlResult> execute(GridCacheTwoStepQuery qry);
+    public IgniteFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry);
+
+    /**
+     * @param space Space.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Result.
+     */
+    public IgniteFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object... params);
 }

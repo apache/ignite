@@ -221,9 +221,14 @@ public class GridSqlQueryParser {
 
         ArrayList<Expression> expressions = select.getExpressions();
 
+        for (Expression exp : expressions)
+            res.addExpression(parseExpression(exp));
+
         int[] grpIdx = GROUP_INDEXES.get(select);
 
         if (grpIdx != null) {
+            res.groupColumns(grpIdx);
+
             for (int idx : grpIdx)
                 res.addGroupExpression(parseExpression(expressions.get(idx)));
         }

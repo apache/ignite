@@ -28,6 +28,8 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
      * @param sqlText Text.
      */
     public GridSqlColumn(GridSqlElement from, String name, String sqlText) {
+        assert sqlText != null;
+
         expressionInFrom = from;
         colName = name;
         this.sqlText = sqlText;

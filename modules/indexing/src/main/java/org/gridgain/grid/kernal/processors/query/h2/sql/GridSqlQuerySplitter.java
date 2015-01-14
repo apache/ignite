@@ -18,48 +18,93 @@ import java.util.*;
  * Splits a single SQL query into two step map-reduce query.
  */
 public class GridSqlQuerySplitter {
+    /** */
+    private static final String TABLE_PREFIX = "__T";
+
+    /** */
+    private static final String COLUMN_PREFIX = "__C";
+
+    /**
+     * @param idx Index of table.
+     * @return Table name.
+     */
+    private static String table(int idx) {
+        return TABLE_PREFIX + idx;
+    }
+
+    /**
+     * @param idx Index of column.
+     * @return Column alias.
+     */
+    private static String column(int idx) {
+        return COLUMN_PREFIX + idx;
+    }
+
     /**
      * @param conn Connection.
      * @param query Query.
      * @param params Parameters.
      * @return Two step query.
      */
-    public GridCacheTwoStepQuery split(Connection conn, String query, Collection<?> params) {
-        GridSqlSelect qry = GridSqlQueryParser.parse(conn, query);
+    public static GridCacheTwoStepQuery split(Connection conn, String query, Object[] params) {
+        GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
 
-//        GridSqlSelect rdcQry = qry.clone();
+        if (srcQry.groups().isEmpty()) { // Simple case.
+            String tbl0 = table(0);
 
-        for (GridSqlElement el : qry.select()) {
+            GridCacheTwoStepQuery res = new GridCacheTwoStepQuery("select * from " + tbl0);
 
+            res.addMapQuery(tbl0, srcQry.getSQL(), params);
+
+            return res;
         }
 
-        if (qry.distinct()) {
+        // Map query.
+        GridSqlSelect mapQry = srcQry.clone();
 
+        mapQry.clearSelect();
+
+        List<GridSqlAlias> aliases = new ArrayList<>(srcQry.allExpressions().size());
+
+        int idx = 0;
+
+        for (GridSqlElement exp : srcQry.allExpressions()) { // Add all expressions to select clause.
+            if (exp instanceof GridSqlColumn)
+                exp = new GridSqlAlias(((GridSqlColumn)exp).columnName(), exp);
+            else if (!(exp instanceof GridSqlAlias))
+                exp = new GridSqlAlias(column(idx), exp);
+
+            aliases.add((GridSqlAlias)exp);
+
+            mapQry.addSelectExpression(exp);
+
+            idx++;
+
+            assert aliases.size() == idx;
         }
 
-        qry.from();
+        mapQry.clearGroups();
 
-        qry.where();
+        for (int col : srcQry.groupColumns())
+            mapQry.addGroupExpression(new GridSqlColumn(null, null, aliases.get(col).alias()));
 
-        qry.groups();
+        mapQry.clearSort(); // TODO sort support
 
-        qry.having();
+        // Reduce query.
+        GridSqlSelect rdcQry = new GridSqlSelect();
 
-        qry.sort();
-    }
+        for (int i = 0; i < srcQry.select().size(); i++)
+            rdcQry.addSelectExpression(new GridSqlColumn(null, null, aliases.get(i).alias()));
 
-    private boolean checkGroup(GridSqlSelect qry) {
-        if (qry.distinct())
-            return true;
+        rdcQry.from(new GridSqlTable(null, table(0)));
 
-        qry.from();
+        for (int col : srcQry.groupColumns())
+            rdcQry.addGroupExpression(new GridSqlColumn(null, null, aliases.get(col).alias()));
 
-        qry.where();
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL());
 
-        qry.groups();
+        res.addMapQuery(table(0), mapQry.getSQL(), params);
 
-        qry.having();
-
-        qry.sort();
+        return res;
     }
 }

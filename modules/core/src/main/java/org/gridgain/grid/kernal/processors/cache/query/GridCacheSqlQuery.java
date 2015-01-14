@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -25,9 +26,11 @@ public class GridCacheSqlQuery implements Externalizable {
     String alias;
 
     /** */
+    @GridToStringInclude
     String qry;
 
     /** */
+    @GridToStringInclude
     Object[] params;
 
     /**
@@ -87,5 +90,10 @@ public class GridCacheSqlQuery implements Externalizable {
 
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheSqlQuery.class, this);
     }
 }
