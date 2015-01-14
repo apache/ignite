@@ -47,6 +47,9 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public void setValue(V val) {
+        if (val == null)
+            throw new NullPointerException();
+
         this.val = val;
     }
 

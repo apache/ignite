@@ -802,6 +802,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             this.newVal = newVal;
         }
 
+        /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
             e.setValue(newVal);
 
