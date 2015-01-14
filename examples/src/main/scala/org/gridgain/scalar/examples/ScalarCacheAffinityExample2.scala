@@ -47,6 +47,9 @@ object ScalarCacheAffinityExample2 {
      */
     def main(args: Array[String]) {
         scalar(CONFIG) {
+            // Clean up caches on all nodes before run.
+            cache$(NAME).get.globalClearAll(0)
+
             var keys = Seq.empty[String]
 
             ('A' to 'Z').foreach(keys :+= _.toString)
