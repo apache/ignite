@@ -1479,6 +1479,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     invokeRes = new CacheInvokeResult<>(e);
                 }
+
+                if (!entry.modified())
+                    return new GridTuple3<>(false, null, invokeRes);
             }
             else
                 updated = (V)writeObj;
@@ -1831,6 +1834,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = old;
 
                     valBytes = oldBytes.getIfMarshaled();
+                }
+
+                if (!entry.modified()) {
+                    return new GridCacheUpdateAtomicResult<>(false,
+                        retval ? old : null,
+                        null,
+                        invokeRes,
+                        -1L,
+                        -1L,
+                        null,
+                        null,
+                        false);
                 }
             }
             else

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -667,8 +668,15 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         cache.put(key, 0);
 
-        for (int i = 0; i < UPDATES; i++)
-            cache.put(key, i + 1);
+        for (int i = 0; i < UPDATES; i++) {
+            if (i % 2 == 0)
+                cache.put(key, i + 1);
+            else
+                cache.invoke(key, new SetValueProcessor(i + 1));
+        }
+
+        // Invoke processor does not update value, should not trigger event.
+        assertEquals(String.valueOf(UPDATES), cache.invoke(key, new ToStringProcessor()));
 
         assertFalse(cache.putIfAbsent(key, -1));
 
@@ -941,4 +949,49 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 onEvent(evt);
         }
     }
+
+    /**
+     *
+     */
+    protected static class ToStringProcessor implements EntryProcessor<Integer, Integer, String> {
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<Integer, Integer> e, Object... arguments)
+            throws EntryProcessorException {
+            return String.valueOf(e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ToStringProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class SetValueProcessor implements EntryProcessor<Integer, Integer, String> {
+        /** */
+        private Integer val;
+
+        /**
+         * @param val Value to set.
+         */
+        public SetValueProcessor(Integer val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<Integer, Integer> e, Object... arguments)
+            throws EntryProcessorException {
+            e.setValue(val);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SetValueProcessor.class, this);
+        }
+    }
+
 }

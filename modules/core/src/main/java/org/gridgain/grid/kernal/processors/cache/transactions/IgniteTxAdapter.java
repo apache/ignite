@@ -23,6 +23,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -1199,9 +1200,26 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                         CU.<K, V>empty(),
                         null);
 
-                val = txEntry.applyEntryProcessors(val);
+                boolean modified = false;
 
-                GridCacheOperation op = val == null ? DELETE : UPDATE;
+                for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
+                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val);
+
+                    try {
+                        EntryProcessor processor = t.get1();
+
+                        processor.process(invokeEntry, t.get2());
+
+                        val = invokeEntry.getValue();
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+
+                    modified |= invokeEntry.modified();
+                }
+
+                GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                 return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }

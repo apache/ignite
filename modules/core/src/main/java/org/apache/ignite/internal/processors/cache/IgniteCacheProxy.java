@@ -850,7 +850,30 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return F.iterator(delegate, new C1<GridCacheEntry<K, V>, Entry<K, V>>() {
+                @Override public Entry<K, V> apply(final GridCacheEntry<K, V> e) {
+                    return new Entry<K, V>() {
+                        @Override public K getKey() {
+                            return e.getKey();
+                        }
+
+                        @Override public V getValue() {
+                            return e.getValue();
+                        }
+
+                        @Override public <T> T unwrap(Class<T> clazz) {
+                            throw new IllegalArgumentException();
+                        }
+                    };
+                }
+            }, false);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

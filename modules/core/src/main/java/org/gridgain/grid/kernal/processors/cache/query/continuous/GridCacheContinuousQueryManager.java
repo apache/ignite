@@ -584,10 +584,10 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
                 return fltr.evaluate(new org.apache.ignite.cache.CacheEntryEvent(cache, evtType, entry));
             }
-            catch (CacheEntryListenerException e) {
+            catch (Exception e) {
                 LT.warn(ignite.log(), e, "Cache entry event filter error: " + e);
 
-                return false;
+                return true;
             }
         }
 
