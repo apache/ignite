@@ -23,6 +23,8 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -96,6 +98,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
         GridCacheConfiguration cfg = defaultCacheConfiguration();
 
@@ -113,6 +116,10 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         cfg.setDistributionMode(distributionMode());
         cfg.setPortableEnabled(portableEnabled());
 
+        cfg.setCacheLoaderFactory(loaderFactory());
+
+        cfg.setCacheWriterFactory(writerFactory());
+
         cfg.setStore(cacheStore());
 
         if (cacheMode() == PARTITIONED)
@@ -125,6 +132,20 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache store.
      */
     protected GridCacheStore<?, ?> cacheStore() {
+        return null;
+    }
+
+    /**
+     * @return Cache loader factory.
+     */
+    protected Factory<? extends CacheLoader> loaderFactory() {
+        return null;
+    }
+
+    /**
+     * @return Cache writer factory.
+     */
+    protected Factory<? extends CacheWriter> writerFactory() {
         return null;
     }
 

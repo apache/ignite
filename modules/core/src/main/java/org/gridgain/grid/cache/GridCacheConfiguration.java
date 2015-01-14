@@ -370,6 +370,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
         indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
+        isReadThrough = cc.isReadThrough();
+        isWriteThrough = cc.isWriteThrough();
         keepPortableInStore = cc.isKeepPortableInStore();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();

@@ -25,9 +25,11 @@ import static org.gridgain.testframework.junits.GridAbstractTest.*;
  */
 public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
     /**
+     * @param ctx Context.
+     * @throws Exception If failed.
      */
     @SuppressWarnings("NullableProblems")
-    public GridCacheTestContext(GridTestKernalContext ctx) {
+    public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
             new GridCacheSharedContext<>(
@@ -42,7 +44,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             defaultCacheConfiguration(),
             new GridCacheEventManager<K, V>(),
             new GridCacheSwapManager<K, V>(false),
-            new GridCacheStoreManager<K, V>(null),
+            new GridCacheStoreManager<K, V>(null, null),
             new GridCacheEvictionManager<K, V>(),
             new GridCacheLocalQueryManager<K, V>(),
             new GridCacheContinuousQueryManager<K, V>(),

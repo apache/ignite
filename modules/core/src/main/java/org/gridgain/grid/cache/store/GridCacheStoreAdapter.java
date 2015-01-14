@@ -10,7 +10,9 @@
 package org.gridgain.grid.cache.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
@@ -32,6 +34,17 @@ import java.util.*;
  * specific arguments.
  */
 public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V> {
+    /** */
+    @IgniteCacheSessionResource
+    private CacheStoreSession ses;
+
+    /**
+     * @return Current session.
+     */
+    protected CacheStoreSession session() {
+        return ses;
+    }
+
     /**
      * Default empty implementation. This method needs to be overridden only if
      * {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method

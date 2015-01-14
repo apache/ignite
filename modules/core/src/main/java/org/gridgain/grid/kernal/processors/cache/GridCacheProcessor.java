@@ -223,7 +223,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheWriter writer = null;
 
-            if (cfg.isWriteBehindEnabled() && writerFactory != null)
+            if (cfg.isWriteThrough() && writerFactory != null)
                 writer = writerFactory.create();
 
             if (ldr != null || writer != null)
@@ -595,7 +595,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCacheStore store = cacheStore(ctx.gridName(), cfg);
 
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(store);
+            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, store);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
