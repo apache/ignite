@@ -12,7 +12,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.GridCacheQuery;
 import org.gridgain.grid.cache.query.GridCacheQueryFuture;
@@ -30,6 +32,7 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
@@ -90,10 +93,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        if (!clazz.equals(GridCacheConfiguration.class))
+        GridCacheConfiguration cfg = ctx.config();
+
+        if (!clazz.isAssignableFrom(cfg.getClass()))
             throw new IllegalArgumentException();
 
-        return (C)ctx.config();
+        return clazz.cast(cfg);
     }
 
     /** {@inheritDoc} */
@@ -117,16 +122,41 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(@Nullable IgniteBiPredicate p, @Nullable Object... args) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+
+                IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
+
+                comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoadCache(@Nullable IgniteBiPredicate p, @Nullable Object... args)
-        throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
+        try {
+            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+            try {
+                delegate.<K, V>cache().loadCache(p, 0, args);
+            }
+            finally {
+                gate.leave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -322,7 +352,17 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        if (peekModes.length != 0)
+            throw new UnsupportedOperationException();
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.size();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -428,8 +468,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.containsKey(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -649,13 +695,33 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public void removeAll() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.removeAll();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.globalClearAll(0);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -741,20 +807,27 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
+            IgniteCachingProvider.class.getName(),
+            IgniteCachingProvider.class.getClassLoader());
+
+        if (provider == null)
+            return null;
+
+        return provider.findManager(this);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        getCacheManager().destroyCache(getName());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        return getCacheManager() == null;
     }
 
     /** {@inheritDoc} */
@@ -923,6 +996,76 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
+    }
+
+    /**
+     *
+     */
+    private static class LoadCacheClosure<K, V> implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private IgniteBiPredicate<K, V> p;
+
+        /** */
+        private Object[] args;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public LoadCacheClosure() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param p Predicate.
+         * @param args Arguments.
+         */
+        private LoadCacheClosure(String cacheName, IgniteBiPredicate<K, V> p, Object[] args) {
+            this.cacheName = cacheName;
+            this.p = p;
+            this.args = args;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            IgniteCache<K, V> cache = ignite.jcache(cacheName);
+
+            assert cache != null : cacheName;
+
+            cache.localLoadCache(p, args);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(p);
+
+            out.writeObject(args);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            p = (IgniteBiPredicate<K, V>)in.readObject();
+
+            args = (Object[])in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(LoadCacheClosure.class, this);
+        }
     }
 
     /**

@@ -2342,7 +2342,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             putToStore(key, Integer.parseInt(key));
 
         for (int g = 0; g < gridCount(); g++)
-            grid(g).cache(null).loadCache(null, 0);
+            grid(g).jcache(null).localLoadCache(null);
 
         for (int g = 0; g < gridCount(); g++) {
             for (int i = 0; i < cnt; i++) {
