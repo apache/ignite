@@ -5260,6 +5260,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * Remove one element from the cache. Throws exception if cache is empty.
+     *
      * @param cache Cache.
      * @throws Exception
      */
@@ -5267,7 +5268,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
         if (iter.hasNext()) {
             iter.remove();
-        } else {
+        }
+        else {
             assert false;
         }
     }

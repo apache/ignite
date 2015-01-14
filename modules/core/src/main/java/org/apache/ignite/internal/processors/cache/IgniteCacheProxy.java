@@ -945,7 +945,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             try {
                 curIter = fut.next();
                 return curIter != null;
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw cacheException(e);
             }
         }
@@ -974,7 +975,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         @Override public void remove() {
             try {
                 delegate.remove(curIter.getKey(), curIter.getValue());
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw cacheException(e);
             }
         }
