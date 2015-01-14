@@ -14,6 +14,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.GridCacheQuery;
+import org.gridgain.grid.cache.query.GridCacheQueryFuture;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.tostring.*;
@@ -777,9 +779,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override
+    public Iterator<Cache.Entry<K, V>> iterator() {
+        return new IgniteCacheIterator();
     }
 
     /** {@inheritDoc} */
@@ -921,5 +923,63 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
+    }
+
+    /**
+     * Iterator over the IgniteCacheProxy
+     */
+    private class IgniteCacheIterator implements Iterator<Cache.Entry<K, V>> {
+
+        /** Cache query future for all entries in distributed ignite cache. */
+        private final GridCacheQueryFuture<Map.Entry<K, V>> fut;
+
+        /** Current element from all entries in distributed ignite cache. */
+        private Map.Entry<K, V> curIter;
+
+        public IgniteCacheIterator() {
+            fut = delegate.queries().createScanQuery(null).execute();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            try {
+                curIter = fut.next();
+                return curIter != null;
+            } catch (IgniteCheckedException e) {
+                e.printStackTrace();
+                //TODO: ????
+            }
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Entry<K, V> next() {
+            return new Cache.Entry<K, V>() {
+                /** {@inheritDoc} */
+                @Override public K getKey() {
+                    return curIter.getKey();
+                }
+
+                /** {@inheritDoc} */
+                @Override public V getValue() {
+                    return curIter.getValue();
+                }
+
+                /** {@inheritDoc} */
+                @Override public <T> T unwrap(Class<T> clazz) {
+                    throw new IllegalArgumentException();
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            try {
+                delegate.remove(curIter.getKey(), curIter.getValue());
+            } catch (IgniteCheckedException e) {
+                //TODO: ???
+                e.printStackTrace();
+            }
+        }
     }
 }
