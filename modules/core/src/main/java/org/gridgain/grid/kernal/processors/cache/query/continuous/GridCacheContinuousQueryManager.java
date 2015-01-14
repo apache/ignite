@@ -81,10 +81,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         Iterable<CacheEntryListenerConfiguration<K, V>> lsnrCfgs = cctx.config().getCacheEntryListenerConfigurations();
 
         if (lsnrCfgs != null) {
-            IgniteCacheProxy<K, V> cache = cctx.kernalContext().cache().jcache(cctx.name());
-
             for (CacheEntryListenerConfiguration<K, V> cfg : lsnrCfgs)
-                cache.registerCacheEntryListener(cfg);
+                registerCacheEntryListener(cfg, false);
         }
     }
 
@@ -210,9 +208,11 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
     /**
      * @param lsnrCfg Listener configuration.
+     * @param addToCfg If {@code true} adds listener configuration to cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg)
+    @SuppressWarnings("unchecked")
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg, boolean addToCfg)
         throws IgniteCheckedException {
         GridCacheContinuousQueryAdapter<K, V> qry = null;
 
@@ -258,6 +258,9 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
             qry.remoteFilter(fltr);
 
             qry.execute(null, false, true, lsnrCfg.isSynchronous(), lsnrCfg.isOldValueRequired());
+
+            if (addToCfg)
+                cctx.config().addCacheEntryListenerConfiguration(lsnrCfg);
         }
         catch (IgniteCheckedException e) {
             lsnrQrys.remove(lsnrCfg, qry); // Remove query if failed to execute it.
@@ -270,13 +273,17 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param lsnrCfg Listener configuration.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) throws IgniteCheckedException {
         A.notNull(lsnrCfg, "lsnrCfg");
 
         GridCacheContinuousQuery<K, V> qry = lsnrQrys.remove(lsnrCfg);
 
-        if (qry != null)
+        if (qry != null) {
+            cctx.config().removeCacheEntryListenerConfiguration(lsnrCfg);
+
             qry.close();
+        }
     }
 
     /**

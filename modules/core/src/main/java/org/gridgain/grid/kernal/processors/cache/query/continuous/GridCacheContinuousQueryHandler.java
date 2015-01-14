@@ -183,7 +183,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 if (notify) {
-                    if (!oldVal && e.getOldValue() != null) {
+                    if (!oldVal && e.hasOldValue()) {
                         e = new GridCacheContinuousQueryEntry<>(e.context(),
                             e.entry(),
                             e.getKey(),

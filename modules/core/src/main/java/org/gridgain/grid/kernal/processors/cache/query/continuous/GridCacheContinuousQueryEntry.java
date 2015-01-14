@@ -147,6 +147,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /**
+     * @return {@code True} if old value is set.
+     */
+    boolean hasOldValue() {
+        return oldVal != null || (oldValBytes != null && !oldValBytes.isNull());
+    }
+
+    /**
      * @return {@code True} if entry expired.
      */
     public EventType eventType() {
