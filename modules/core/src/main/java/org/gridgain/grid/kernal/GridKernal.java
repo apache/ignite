@@ -1693,10 +1693,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             // Font name "Small Slant"
             if (log.isQuiet()) {
                 U.quiet(false,
-                    "  _____     _     _______      _         ",
-                    " / ___/____(_)___/ / ___/___ _(_)___     ",
-                    "/ (_ // __/ // _  / (_ // _ `/ // _ \\   ",
-                    "\\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/",
+                    "   __________  ________________ ",
+                    "  /  _/ ___/ |/ /  _/_  __/ __/ ",
+                    " _/ // (_ /    // /  / / / _/   ",
+                    "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
                     COPYRIGHT,
@@ -1713,10 +1713,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             if (log.isInfoEnabled()) {
                 log.info(NL + NL +
-                    ">>>   _____     _     _______      _         " + NL +
-                    ">>>  / ___/____(_)___/ / ___/___ _(_)___     " + NL +
-                    ">>> / (_ // __/ // _  / (_ // _ `/ // _ \\   " + NL +
-                    ">>> \\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/" + NL +
+                    ">>>    __________  ________________  " + NL +
+                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                    ">>>  _/ // (_ /    // /  / / / _/    " + NL +
+                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                     ">>> " + NL +
                     ">>> " + ver + NL +
                     ">>> " + COPYRIGHT + NL
