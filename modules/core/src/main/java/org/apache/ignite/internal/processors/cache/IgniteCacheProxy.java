@@ -946,10 +946,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                 curIter = fut.next();
                 return curIter != null;
             } catch (IgniteCheckedException e) {
-                e.printStackTrace();
-                //TODO: ????
+                throw cacheException(e);
             }
-            return false;
         }
 
         /** {@inheritDoc} */
@@ -977,8 +975,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             try {
                 delegate.remove(curIter.getKey(), curIter.getValue());
             } catch (IgniteCheckedException e) {
-                //TODO: ???
-                e.printStackTrace();
+                throw cacheException(e);
             }
         }
     }
