@@ -16,8 +16,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.GridCacheQuery;
-import org.gridgain.grid.cache.query.GridCacheQueryFuture;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.tostring.*;
@@ -852,9 +851,15 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterator<Cache.Entry<K, V>> iterator() {
-        return new IgniteCacheIterator();
+    @Override public Iterator<Cache.Entry<K, V>> iterator() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return new IgniteCacheIterator();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1069,16 +1074,18 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /**
-     * Iterator over the IgniteCacheProxy
+     * Iterator over the cache.
      */
     private class IgniteCacheIterator implements Iterator<Cache.Entry<K, V>> {
-
         /** Cache query future for all entries in distributed ignite cache. */
         private final GridCacheQueryFuture<Map.Entry<K, V>> fut;
 
-        /** Current element from all entries in distributed ignite cache. */
+        /** Current element. */
         private Map.Entry<K, V> curIter;
 
+        /**
+         *
+         */
         public IgniteCacheIterator() {
             fut = delegate.queries().createScanQuery(null).execute();
         }
@@ -1087,6 +1094,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         @Override public boolean hasNext() {
             try {
                 curIter = fut.next();
+
                 return curIter != null;
             }
             catch (IgniteCheckedException e) {
@@ -1097,17 +1105,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         /** {@inheritDoc} */
         @Override public Entry<K, V> next() {
             return new Cache.Entry<K, V>() {
-                /** {@inheritDoc} */
                 @Override public K getKey() {
                     return curIter.getKey();
                 }
 
-                /** {@inheritDoc} */
                 @Override public V getValue() {
                     return curIter.getValue();
                 }
 
-                /** {@inheritDoc} */
                 @Override public <T> T unwrap(Class<T> clazz) {
                     throw new IllegalArgumentException();
                 }
@@ -1117,7 +1122,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         /** {@inheritDoc} */
         @Override public void remove() {
             try {
-                delegate.remove(curIter.getKey(), curIter.getValue());
+                delegate.removex(curIter.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw cacheException(e);

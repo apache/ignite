@@ -24,7 +24,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -5247,45 +5247,46 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
-        for (int i = 0; i < gridCount(); ++i) {
-            cache.put(Integer.toString(i), i);
-        }
 
-        checkIteratorCacheSize(cache, gridCount());
+        for (int i = 0; i < 100; ++i)
+            cache.put(Integer.toString(i), i);
+
+        checkIteratorCacheSize(cache, 100);
 
         removeCacheIterator(cache);
 
-        checkIteratorCacheSize(cache, gridCount() - 1);
+        checkIteratorCacheSize(cache, 100 - 1);
     }
 
     /**
      * Remove one element from the cache. Throws exception if cache is empty.
      *
      * @param cache Cache.
-     * @throws Exception
      */
-    private void removeCacheIterator(IgniteCache<String, Integer> cache) throws Exception {
+    private void removeCacheIterator(IgniteCache<String, Integer> cache) {
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
-        if (iter.hasNext()) {
+
+        if (iter.hasNext())
             iter.remove();
-        }
-        else {
-            assert false;
-        }
+        else
+            fail();
     }
 
     /**
      * @param cache Cache.
      * @param size Expected value of cache's size.
-     * @throws Exception if iteration size is not equal to expected value
      */
-    private void checkIteratorCacheSize(IgniteCache<String, Integer> cache, int size)  throws Exception {
+    private void checkIteratorCacheSize(IgniteCache<String, Integer> cache, int size) {
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
+
         int cnt = 0;
+
         while (iter.hasNext()) {
             iter.next();
+
             cnt++;
         }
-        assert cnt == size;
+
+        assertEquals(size, cnt);
     }
 }
