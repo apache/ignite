@@ -1583,7 +1583,12 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<GridHadoopJobId, GridHadoopJobMetadata> e, Object... args) {
-            e.setValue(apply(e.getValue()));
+            GridHadoopJobMetadata val = apply(e.getValue());
+
+            if (val != null)
+                e.setValue(val);
+            else
+                e.remove();;
 
             return null;
         }

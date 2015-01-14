@@ -331,9 +331,16 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Copy constructor.
      *
-     * @param cc Configuration to copy.
+     * @param cfg Configuration to copy.
      */
-    public GridCacheConfiguration(GridCacheConfiguration cc) {
+    public GridCacheConfiguration(CompleteConfiguration cfg) {
+        super(cfg);
+
+        if (!(cfg instanceof GridCacheConfiguration))
+            return;
+
+        GridCacheConfiguration cc = (GridCacheConfiguration)cfg;
+
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
          * ==============================================

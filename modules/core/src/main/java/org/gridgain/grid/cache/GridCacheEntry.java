@@ -15,6 +15,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.Map.*;
 
@@ -79,7 +80,7 @@ import java.util.Map.*;
  * @param <K> Key type.
  * @param <V> Value type.
  */
-public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware {
+public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware, Cache.Entry<K, V> {
     /**
      * Cache projection to which this entry belongs. Note that entry and its
      * parent projections have same flags and filters.
