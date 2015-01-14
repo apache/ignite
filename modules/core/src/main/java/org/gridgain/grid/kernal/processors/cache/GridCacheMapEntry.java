@@ -1655,7 +1655,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     op,
                     writeObj,
                     valBytes,
-                    expiryPlc != null ? (isNew() ? expiryPlc.forCreate() : expiryPlc.forUpdate()) : -1L,
+                    expiryPlc,
                     drTtl,
                     drExpireTime,
                     drVer);
