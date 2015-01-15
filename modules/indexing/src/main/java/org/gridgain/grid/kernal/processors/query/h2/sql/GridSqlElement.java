@@ -30,12 +30,15 @@ public abstract class GridSqlElement implements Cloneable {
 
     /**
      * @param expr Expr.
+     * @return {@code this}.
      */
-    public void addChild(GridSqlElement expr) {
+    public GridSqlElement addChild(GridSqlElement expr) {
         if (expr == null)
             throw new NullPointerException();
 
         children.add(expr);
+
+        return this;
     }
 
     /**

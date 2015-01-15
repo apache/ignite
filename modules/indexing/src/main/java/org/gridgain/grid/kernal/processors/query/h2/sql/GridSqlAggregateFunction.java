@@ -44,6 +44,13 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         this(distinct, TYPE_INDEX[typeId]);
     }
 
+    /**
+     * @return Distinct.
+     */
+    public boolean distinct() {
+        return distinct;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         String text;
