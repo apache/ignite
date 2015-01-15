@@ -83,10 +83,12 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testBasicLocks() throws Throwable {
+        final IgniteCache<Object, Object> cache = grid().jcache(null);
+
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                assert cache.lock(1, 1000L);
+                assert cache.lock(1).tryLock(1000L, TimeUnit.MILLISECONDS);
 
                 info("Locked key from thread: " + thread());
 
@@ -94,7 +96,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 info("Unlocking key from thread: " + thread());
 
-                cache.unlock(1);
+                cache.lock(1).unlock();
 
                 info("Unlocked key from thread: " + thread());
 
@@ -167,6 +169,8 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testSingleLockTimeout() throws Exception {
+        final IgniteCache<Object, Object> cache = grid().jcache(null);
+
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
@@ -175,7 +179,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
             @Override public Object call() throws Exception {
                 assert !cache.isLocked(1);
 
-                assert cache.lock(1, 0);
+                cache.lock(1).lock();
 
                 assert cache.isLockedByThread(1);
                 assert cache.isLocked(1);
@@ -184,7 +188,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 l2.await();
 
-                cache.unlock(1);
+                cache.lock(1).unlock();
 
                 assert !cache.isLockedByThread(1);
                 assert !cache.isLocked(1);
@@ -201,7 +205,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 assert cache.isLocked(1);
                 assert !cache.isLockedByThread(1);
 
-                assert !cache.lock(1, 100L);
+                assert !cache.lock(1).tryLock(100L, TimeUnit.MILLISECONDS);
 
                 assert cache.isLocked(1);
                 assert !cache.isLockedByThread(1);

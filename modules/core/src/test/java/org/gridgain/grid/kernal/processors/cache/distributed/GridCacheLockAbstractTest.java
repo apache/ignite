@@ -172,12 +172,15 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLockSingleThread() throws Exception {
+        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
+
         int k = 1;
         String v = String.valueOf(k);
 
         info("Before lock for key: " + k);
 
-        assert cache1.lock(k, 0L);
+        cache1.lock(k).lock();
 
         info("After lock for key: " + k);
 
@@ -191,7 +194,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             info("Put " + k + '=' + k + " key pair into cache.");
         }
         finally {
-            cache1.unlock(k);
+            cache1.lock(k).unlock();
 
             info("Unlocked key: " + k);
         }
@@ -205,6 +208,9 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
+        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
+
         final int kv = 1;
 
         final CountDownLatch l1 = new CountDownLatch(1);
@@ -214,7 +220,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                assert cache1.lock(kv, 0L);
+                cache1.lock(kv).lock();
 
                 info("After lock for key: " + kv);
 
@@ -233,7 +239,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.unlockAll(F.asList(kv));
+                    cache1.lockAll(Collections.singleton(kv)).unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
@@ -253,7 +259,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                assert cache2.lock(kv, 0L);
+                cache2.lock(kv).lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -263,7 +269,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.unlockAll(F.asList(kv));
+                    cache2.lockAll(Collections.singleton(kv)).unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }
@@ -293,12 +299,15 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Exception {
+        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
+
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                assert cache1.lock(1, 0L);
+                cache1.lock(1).lock();
 
                 info("Locked cache key: 1");
 
@@ -322,7 +331,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Woke up from sleep.");
                 }
                 finally {
-                    cache1.unlockAll(F.asList(1));
+                    cache1.lockAll(Collections.singleton(1)).unlock();
 
                     info("Unlocked cache key: 1");
                 }
