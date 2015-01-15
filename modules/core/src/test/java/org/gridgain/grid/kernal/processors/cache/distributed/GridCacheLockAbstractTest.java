@@ -49,10 +49,10 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     private static Ignite ignite2;
 
     /** (for convenience). */
-    private static GridCache<Integer, String> cache1;
+    private static IgniteCache<Integer, String> cache1;
 
     /** (for convenience). */
-    private static GridCache<Integer, String> cache2;
+    private static IgniteCache<Integer, String> cache2;
 
     /** Ip-finder. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -104,8 +104,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
+        cache1 = ignite1.jcache(null);
+        cache2 = ignite2.jcache(null);
     }
 
     /** {@inheritDoc} */
@@ -127,8 +127,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cache2.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
 
-        assert cache1.isEmpty() : "Cache is not empty: " + cache1.entrySet();
-        assert cache2.isEmpty() : "Cache is not empty: " + cache2.entrySet();
+        assert cache1.size() == 0 : "Cache is not empty: " + cache1;
+        assert cache2.size() == 0 : "Cache is not empty: " + cache2;
     }
 
     /**
@@ -172,9 +172,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLockSingleThread() throws Exception {
-        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
-
         int k = 1;
         String v = String.valueOf(k);
 
@@ -208,9 +205,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
-        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
-
         final int kv = 1;
 
         final CountDownLatch l1 = new CountDownLatch(1);
@@ -299,9 +293,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Exception {
-        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        final IgniteCache<Integer, String> cache2 = ignite1.jcache(null);
-
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
@@ -388,7 +379,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 
-        final Collection<Integer> keys = new ArrayList<>(keyCnt);
+        final Set<Integer> keys = new HashSet<>();
 
         for (int i = 1; i <= keyCnt; i++)
             keys.add(i);
@@ -400,7 +391,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 @Nullable @Override public Object call() throws Exception {
                     info("Before lock for keys.");
 
-                    assert cache1.lockAll(keys, 0);
+                    cache1.lockAll(keys).lock();
 
                     info("After lock for keys.");
 
@@ -428,7 +419,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                         info("Before unlock keys in thread 1: " + keys);
 
-                        cache1.unlockAll(keys);
+                        cache1.lockAll(keys).unlock();
 
                         info("Unlocked entry for keys.");
                     }
@@ -448,11 +439,11 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                         // This call should not acquire the lock since
                         // other thread is holding it.
-                        assert !cache1.lockAll(keys, -1);
+                        assert !cache1.lockAll(keys).tryLock();
 
                         info("Before unlock keys in thread 2: " + keys);
 
-                        cache1.unlockAll(keys);
+                        cache1.lockAll(keys).unlock();
 
                         // The keys should still be locked.
                         for (Integer key : keys)
