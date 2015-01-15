@@ -449,13 +449,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testMultiLocks() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        Collection<Integer> keys = new ArrayList<>(3);
+        Set<Integer> keys = new HashSet<>();
 
         Collections.addAll(keys, 1, 2, 3);
 
-        assert cache.lockAll(keys, 0);
+        cache.lockAll(keys).lock();
 
         assert cache.isLocked(1);
         assert cache.isLocked(2);
@@ -465,7 +465,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         assert cache.isLockedByThread(2);
         assert cache.isLockedByThread(3);
 
-        cache.unlockAll(keys);
+        cache.lockAll(keys).unlock();
 
         assert !cache.isLocked(1);
         assert !cache.isLocked(2);
