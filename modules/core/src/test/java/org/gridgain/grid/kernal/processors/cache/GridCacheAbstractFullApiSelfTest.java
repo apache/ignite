@@ -5257,10 +5257,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteCache<String, Integer> cache = jcache(0);
 
         final int cacheSz = 100;
+
         Map<String, Integer> entries = new HashMap();
 
         for (int i = 0; i < cacheSz; ++i) {
             cache.put(Integer.toString(i), i);
+
             entries.put(Integer.toString(i), i);
         }
 
@@ -5291,20 +5293,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param entries Expected entries in the cache.
      */
     private void checkIteratorRemove(IgniteCache<String, Integer> cache, Map<String, Integer> entries) {
-        //Check that we can remove element.
+        // Check that we can remove element.
         String rmvKey = Integer.toString(5);
+
         removeCacheIterator(cache, rmvKey);
+
         entries.remove(rmvKey);
+
         assertFalse(cache.containsKey(rmvKey));
 
         checkIteratorCache(entries);
 
-        //check that we cannot call Iterator.remove() without next().
+        // Check that we cannot call Iterator.remove() without next().
         Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
 
         assertTrue(iter.hasNext());
 
         iter.next();
+
         iter.remove();
 
         try {
@@ -5322,6 +5328,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void removeCacheIterator(IgniteCache<String, Integer> cache, String key) {
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
+
         int delCnt = 0;
 
         while (iter.hasNext()) {
@@ -5329,9 +5336,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             if (cur.getKey().equals(key)) {
                 iter.remove();
+
                 delCnt++;
             }
-
         }
 
         assertEquals(1, delCnt);

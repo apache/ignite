@@ -1154,7 +1154,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     private void onAccess() {
         try {
             queryStorage.onAccess();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
     }
@@ -1238,7 +1239,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * Iterator over the cache.
      */
     private class IgniteCacheIterator implements Iterator<Cache.Entry<K, V>> {
-
         /** Iterator over the cache*/
         IgniteQueryFutureStorage.Iterator<Map.Entry<K, V>> iter;
 

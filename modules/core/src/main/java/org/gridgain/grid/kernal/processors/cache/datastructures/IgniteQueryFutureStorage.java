@@ -75,8 +75,8 @@ public class IgniteQueryFutureStorage {
             catch (IgniteCheckedException e) {
                 log.error("Failed to close iterator.", e);
             }
-
         }
+
         futs.clear();
     }
 
@@ -104,6 +104,7 @@ public class IgniteQueryFutureStorage {
          */
         Iterator(GridCacheQueryFuture<T> fut) {
             this.fut = fut;
+
             this.weakRef = new WeakReference<Iterator<?>>(this, refQueue);
         }
 
