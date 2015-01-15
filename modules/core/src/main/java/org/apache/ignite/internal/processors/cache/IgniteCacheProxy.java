@@ -24,7 +24,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
@@ -63,8 +62,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** Projection. */
     private GridCacheProjectionImpl<K, V> prj;
 
-    /** Query future storage */
-    private final IgniteQueryFutureStorage queryStorage;
+    /** Query storage */
+    private final IgniteQueryStorage queryStorage;
 
     /**
      * @param ctx Context.
@@ -85,7 +84,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         this.delegate = delegate;
         this.prj = prj;
 
-        this.queryStorage = new IgniteQueryFutureStorage(ctx);
+        this.queryStorage = new IgniteQueryStorage(ctx);
 
         gate = ctx.gate();
     }
@@ -983,7 +982,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return new IgniteCacheIterator(delegate.queries().createScanQuery(null).execute(), queryStorage);
+            return queryStorage.iterator(delegate.queries().createScanQuery(null).execute());
         }
         finally {
             gate.leave(prev);
@@ -1236,55 +1235,37 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /**
-     * Iterator over the cache.
+     * Queries' storage
      */
-    private class IgniteCacheIterator implements Iterator<Cache.Entry<K, V>> {
-        /** Iterator over the cache*/
-        IgniteQueryFutureStorage.Iterator<Map.Entry<K, V>> iter;
-
-        IgniteCacheIterator(GridCacheQueryFuture<Map.Entry<K, V>> fut, IgniteQueryFutureStorage storage) {
-            iter = storage.iterator(fut);
+    private class IgniteQueryStorage extends IgniteQueryAbstractStorage<Entry<K, V>, Map.Entry<K, V>> {
+        /**
+         * @param ctx Cache context.
+         */
+        public IgniteQueryStorage(GridCacheContext ctx) {
+            super(ctx);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            try {
-                return iter.onHasNext();
-            } catch (IgniteCheckedException e) {
-                throw cacheException(e);
-            }
+        @Override protected Cache.Entry<K, V> convert(final Map.Entry<K, V> v) {
+            return new Cache.Entry<K, V>() {
+                @Override public K getKey() {
+                    return v.getKey();
+                }
+
+                @Override public V getValue() {
+                    return v.getValue();
+                }
+
+                @Override public <T> T unwrap(Class<T> clazz) {
+                    throw new IllegalArgumentException();
+                }
+            };
         }
 
         /** {@inheritDoc} */
-        @Override public Entry<K, V> next() {
+        @Override protected void remove(Entry<K, V> item) {
             try {
-                final Map.Entry<K, V> cur = iter.onNext();
-                return new Cache.Entry<K, V>() {
-                    @Override public K getKey() {
-                        return cur.getKey();
-                    }
-
-                    @Override public V getValue() {
-                        return cur.getValue();
-                    }
-
-                    @Override public <T> T unwrap(Class<T> clazz) {
-                        throw new IllegalArgumentException();
-                    }
-                };
-            }
-            catch (IgniteCheckedException e) {
-                throw cacheException(e);
-            }
-
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            Map.Entry<K, V> curEntry = iter.itemToRemove();
-            try {
-                delegate.removex(curEntry.getKey());
+                delegate.removex(item.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw cacheException(e);

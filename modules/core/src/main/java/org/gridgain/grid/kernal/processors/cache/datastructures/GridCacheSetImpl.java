@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -31,11 +30,9 @@ import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.lang.ref.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -54,9 +51,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** Cache. */
     private final GridCache<GridCacheSetItemKey, Boolean> cache;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Set name. */
     private final String name;
 
@@ -72,11 +66,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** Iterators weak references queue. */
-    private final ReferenceQueue<SetIterator<?>> itRefQueue = new ReferenceQueue<>();
-
-    /** Iterators futures. */
-    private final Map<WeakReference<SetIterator<?>>, GridCacheQueryFuture<?>> itFuts = new ConcurrentHashMap8<>();
+    /** Query storage */
+    private final IgniteQueryStorage queryStorage;
 
     /**
      * @param ctx Cache context.
@@ -92,9 +83,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
         cache = ctx.cache();
 
-        log = ctx.logger(GridCacheSetImpl.class);
-
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
+
+        queryStorage = new IgniteQueryStorage(ctx);
     }
 
     /** {@inheritDoc} */
@@ -349,16 +340,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            GridCacheQueryFuture<T> fut = qry.execute();
-
-            SetIterator<T> it = new SetIterator<>(fut);
-
-            itFuts.put(it.weakReference(), fut);
+            IgniteQueryAbstractStorage.IgniteIterator it = queryStorage.iterator(qry.execute());
 
             if (rmvd) {
-                itFuts.remove(it.weakReference());
-
-                it.close();
+               queryStorage.removeIterator(it);
 
                 checkRemoved();
             }
@@ -444,18 +429,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
         this.rmvd = rmvd;
 
-        if (rmvd) {
-            for (GridCacheQueryFuture<?> fut : itFuts.values()) {
-                try {
-                    fut.cancel();
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to close iterator.", e);
-                }
-            }
-
-            itFuts.clear();
-        }
+        if (rmvd)
+            queryStorage.clearQueries();
     }
 
     /**
@@ -467,29 +442,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /**
-     * Closes unreachable iterators.
-     */
-    private void checkWeakQueue() {
-        for (Reference<? extends SetIterator<?>> itRef = itRefQueue.poll(); itRef != null; itRef = itRefQueue.poll()) {
-            try {
-                WeakReference<SetIterator<?>> weakRef = (WeakReference<SetIterator<?>>)itRef;
-
-                GridCacheQueryFuture<?> fut = itFuts.remove(weakRef);
-
-                if (fut != null)
-                    fut.cancel();
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to close iterator.", e);
-            }
-        }
-    }
-
-    /**
      * Checks if set was removed and handles iterators weak reference queue.
      */
     private void onAccess() {
-        checkWeakQueue();
+        queryStorage.checkWeakQueue();
 
         checkRemoved();
     }
@@ -522,112 +478,24 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /**
-     *
+     * Queries' storage.
      */
-    private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
-        /** */
-        private static final long serialVersionUID = -1460570789166994846L;
-
-        /** Query future. */
-        private final GridCacheQueryFuture<T> fut;
-
-        /** Init flag. */
-        private boolean init;
-
-        /** Next item. */
-        private T next;
-
-        /** Current item. */
-        private T cur;
-
-        /** Weak reference. */
-        private final WeakReference<SetIterator<?>> weakRef;
-
+    private class IgniteQueryStorage extends IgniteQueryAbstractStorage<T, Map.Entry<T, ?>> {
         /**
-         * @param fut Query future.
+         * @param ctx Cache context.
          */
-        private SetIterator(GridCacheQueryFuture<T> fut) {
-            this.fut = fut;
-
-            weakRef = new WeakReference<SetIterator<?>>(this, itRefQueue);
+        public IgniteQueryStorage(GridCacheContext ctx) {
+            super(ctx);
         }
 
         /** {@inheritDoc} */
-        @Override protected T onNext() throws IgniteCheckedException {
-            init();
-
-            if (next == null) {
-                clearWeakReference();
-
-                throw new NoSuchElementException();
-            }
-
-            cur = next;
-
-            Map.Entry e = (Map.Entry)fut.next();
-
-            next = e != null ? (T)e.getKey() : null;
-
-            if (next == null)
-                clearWeakReference();
-
-            return cur;
+        @Override protected T convert(Map.Entry<T, ?> v) {
+            return v != null ? (T) v.getKey() : null;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            init();
-
-            boolean hasNext = next != null;
-
-            if (!hasNext)
-                clearWeakReference();
-
-            return hasNext;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
-            fut.cancel();
-
-            clearWeakReference();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onRemove() throws IgniteCheckedException {
-            if (cur == null)
-                throw new NoSuchElementException();
-
-            GridCacheSetImpl.this.remove(cur);
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void init() throws IgniteCheckedException {
-            if (!init) {
-                Map.Entry e = (Map.Entry)fut.next();
-
-                next = e != null ? (T)e.getKey() : null;
-
-                init = true;
-            }
-        }
-
-        /**
-         * @return Iterator weak reference.
-         */
-        WeakReference<SetIterator<?>> weakReference() {
-            return weakRef;
-        }
-
-        /**
-         * Clears weak reference.
-         */
-        private void clearWeakReference() {
-            weakRef.clear(); // Do not need to enqueue.
-
-            itFuts.remove(weakRef);
+        @Override protected void remove(T item) {
+            GridCacheSetImpl.this.remove(item);
         }
     }
 
