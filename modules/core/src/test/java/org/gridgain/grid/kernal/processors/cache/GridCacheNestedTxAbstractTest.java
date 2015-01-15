@@ -136,7 +136,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 
@@ -147,7 +147,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
-                    IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ);
+                    IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
                         int cntr = c.get(CNTR_KEY);
@@ -172,7 +172,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                 @Override public void run() {
 
                     try {
-                        c.lock(CNTR_KEY, 0);
+                        c.lock(CNTR_KEY).lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -184,12 +184,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        try {
-                            c.unlock(CNTR_KEY);
-                        }
-                        catch (IgniteCheckedException e) {
-                            error("Failed unlock", e);
-                        }
+                        c.lock(CNTR_KEY).unlock();
                     }
                 }
             }));
@@ -215,9 +210,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx1() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
-        final GridCache<Integer, Integer> c1 = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c1 = grid(0).jcache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 
@@ -230,13 +225,13 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                 @Override public void run() {
 
                     try {
-                        c.lock(CNTR_KEY, 0);
+                        c.lock(CNTR_KEY).lock();
 
                         int cntr = c.get(CNTR_KEY);
 
                         info("*** Cntr in lock thread: " + cntr);
 
-                        IgniteTx tx = c.txStart(OPTIMISTIC, READ_COMMITTED);
+                        IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED);
 
                         try {
 
@@ -262,12 +257,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        try {
-                            c.unlock(CNTR_KEY);
-                        }
-                        catch (IgniteCheckedException e) {
-                            error("Failed unlock", e);
-                        }
+                        c.lock(CNTR_KEY).unlock();
                     }
                 }
             }));

@@ -72,7 +72,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return g0.cache(null).lock(1, Long.MAX_VALUE);
+                return g0.jcache(null).lock(1).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             }
         }, IgniteCheckedException.class, "Locks are not supported");
 
