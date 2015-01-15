@@ -148,10 +148,7 @@ public class IgniteQueryFutureStorage {
             }
 
             cur = next;
-
-            Map.Entry e = (Map.Entry) fut.next();
-
-            next = e != null ? (T) e.getKey() : null;
+            next = fut.next();
 
             if (next == null)
                 clearWeakReference();
