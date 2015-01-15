@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -278,11 +279,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveInExplicitLocks() throws Exception {
         if (lockingEnabled()) {
-            GridCache<String, Integer> cache = cache();
+            IgniteCache<String, Integer> cache = jcache();
 
             cache.put("a", 1);
 
-            cache.lockAll(F.asList("a", "b", "c", "d"), 0);
+            Lock lock = cache.lockAll(ImmutableSet.of("a", "b", "c", "d"));
+
+            lock.lock();
 
             try {
                 cache.remove("a");
@@ -291,7 +294,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 cache.putAll(F.asMap("b", 2, "c", 3, "d", 4));
             }
             finally {
-                cache.unlockAll(F.asList("a", "b", "c", "d"));
+                lock.unlock();
             }
         }
     }
@@ -3693,109 +3696,47 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @SuppressWarnings("BusyWait")
     public void testLockUnlockAll() throws Exception {
         if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 2);
+            IgniteCache<String, Integer> cache = jcache();
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
+            cache.put("key1", 1);
+            cache.put("key2", 2);
 
-            cache().lockAll(F.asList("key1", "key2"), 0);
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
 
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
+            cache.lockAll(ImmutableSet.of("key1", "key2")).lock();
 
-            cache().unlockAll(F.asList("key1", "key2"));
+            assert cache.isLocked("key1");
+            assert cache.isLocked("key2");
+
+            cache.lockAll(ImmutableSet.of("key1", "key2")).unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key1") || cache().isLocked("key2"))
+                if (cache.isLocked("key1") || cache.isLocked("key2"))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
 
-            cache().lockAll(F.asList("key1", "key2"), 0);
+            Lock lock = cache.lockAll(ImmutableSet.of("key1", "key2"));
 
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
+            lock.lock();
 
-            cache().unlockAll(F.asList("key1", "key2"));
+            assert cache.isLocked("key1");
+            assert cache.isLocked("key2");
+
+            lock.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key1") || cache().isLocked("key2"))
+                if (cache.isLocked("key1") || cache.isLocked("key2"))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-        }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @SuppressWarnings("BusyWait")
-    public void testLockAllFiltered() throws Exception {
-        if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 2);
-            cache().put("key3", 100);
-            cache().put("key4", 101);
-
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-            assert !cache().isLocked("key3");
-            assert !cache().isLocked("key4");
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
-
-            assert !cache().projection(gte100).lockAll(F.asList("key2", "key3"), 0);
-
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-            assert !cache().isLocked("key3");
-            assert !cache().isLocked("key4");
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
-
-            assert cache().projection(F.<GridCacheEntry<String, Integer>>alwaysTrue()).lockAll(
-                F.asList("key1", "key2", "key3", "key4"), 0);
-
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
-            assert cache().isLocked("key3");
-            assert cache().isLocked("key4");
-
-            assert cache().isLockedByThread("key1");
-            assert cache().isLockedByThread("key2");
-            assert cache().isLockedByThread("key3");
-            assert cache().isLockedByThread("key4");
-
-            cache().unlockAll(F.asList("key1", "key2", "key3", "key4"),
-                F.<GridCacheEntry<String, Integer>>alwaysTrue());
-
-            for (String key : cache().primaryKeySet()) {
-                for (int i = 0; i < 100; i++)
-                    if (cache().isLocked(key))
-                        Thread.sleep(10);
-                    else
-                        break;
-
-                assert !cache().isLocked(key);
-            }
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
         }
     }
 
