@@ -15,41 +15,45 @@
  * limitations under the License.
  */
 
-package org.gridgain.client;
+package org.gridgain.testframework.junits.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Simple HashMap based cache store emulation.
+ *
  */
-public class GridHashMapStore extends CacheStoreAdapter {
-    /** Map for cache store. */
-    private final Map<Object, Object> map = new HashMap<>();
+public class TestCacheSession implements CacheStoreSession {
+    /** */
+    private IgniteTx tx;
 
-    /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
-        for (Map.Entry e : map.entrySet())
-            c.apply(e.getKey(), e.getValue());
+    /** */
+    private Map<Object, Object> props;
+
+    /**
+     *
+     * @param tx Transaction.
+     */
+    public void newSession(@Nullable IgniteTx tx) {
+        this.tx = tx;
+
+        props = null;
     }
 
     /** {@inheritDoc} */
-    @Override public Object load(Object key) {
-        return map.get(key);
+    @Nullable @Override public IgniteTx transaction() {
+        return tx;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Object key, @Nullable Object val) {
-        map.put(key, val);
-    }
+    @Override public Map<Object, Object> properties() {
+        if (props == null)
+            props = U.newHashMap(1);
 
-    /** {@inheritDoc} */
-    @Override public void remove(Object key) {
-        map.remove(key);
+        return props;
     }
 }

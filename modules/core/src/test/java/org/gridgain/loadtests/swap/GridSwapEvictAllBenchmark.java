@@ -18,12 +18,12 @@
 package org.gridgain.loadtests.swap;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -62,8 +62,8 @@ public class GridSwapEvictAllBenchmark {
         try {
             String outputFileName = args.length > 0 ? args[0] : null;
 
-            Ignite g = start(new GridCacheStoreAdapter<Long, String>() {
-                @Nullable @Override public String load(@Nullable IgniteTx tx, Long key) {
+            Ignite g = start(new CacheStoreAdapter<Long, String>() {
+                @Nullable @Override public String load(Long key) {
                     return null;
                 }
 
@@ -73,12 +73,11 @@ public class GridSwapEvictAllBenchmark {
                         c.apply((long)i, String.valueOf(i));
                 }
 
-                @Override public void put(@Nullable IgniteTx tx, Long key,
-                    @Nullable String val) {
+                @Override public void put(Long key, @Nullable String val) {
                     assert false;
                 }
 
-                @Override public void remove(@Nullable IgniteTx tx, Long key) {
+                @Override public void remove(Long key) {
                     assert false;
                 }
             });
@@ -248,7 +247,7 @@ public class GridSwapEvictAllBenchmark {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(GridCacheStore<Long, String> store) throws IgniteCheckedException {
+    private static Ignite start(CacheStore<Long, String> store) throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

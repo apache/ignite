@@ -17,9 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -47,8 +45,8 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     initStore(2);
 
                     try {
-                        store.put(null, 1, "val1");
-                        store.put(null, 2, "val2");
+                        store.put(1, "val1");
+                        store.put(2, "val2");
                     }
                     finally {
                         shutdownStore();
@@ -73,24 +71,18 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         initStore(2);
 
         try {
-            IgniteTx tx = null;
+            store.put(1, "v1");
+            store.put(2, "v2");
 
-            store.put(tx, 1, "v1");
-            store.put(tx, 2, "v2");
+            assertEquals("v1", store.load(1));
+            assertEquals("v2", store.load(2));
+            assertNull(store.load(3));
 
-            store.txEnd(tx, true);
+            store.remove(1);
 
-            assertEquals("v1", store.load(null, 1));
-            assertEquals("v2", store.load(null, 2));
-            assertNull(store.load(null, 3));
-
-            store.remove(tx, 1);
-
-            store.txEnd(tx, true);
-
-            assertNull(store.load(null, 1));
-            assertEquals("v2", store.load(null, 2));
-            assertNull(store.load(null, 3));
+            assertNull(store.load(1));
+            assertEquals("v2", store.load(2));
+            assertNull(store.load(3));
         }
         finally {
             shutdownStore();
@@ -109,12 +101,12 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         try {
             for (int i = 0; i < CACHE_SIZE * 2; i++)
-                store.put(null, i, "val" + i);
+                store.put(i, "val" + i);
 
             U.sleep(200);
 
             for (int i = 0; i < CACHE_SIZE; i++) {
-                String val = delegate.load(null, i);
+                String val = delegate.load(i);
 
                 assertNotNull("Value for [key= " + i + "] was not written in store", val);
                 assertEquals("Invalid value [key=" + i + "]", "val" + i, val);
@@ -123,7 +115,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             U.sleep(FLUSH_FREQUENCY + 300);
 
             for (int i = CACHE_SIZE; i < CACHE_SIZE * 2; i++) {
-                String val = delegate.load(null, i);
+                String val = delegate.load(i);
 
                 assertNotNull("Value for [key= " + i + "] was not written in store", val);
                 assertEquals("Invalid value [key=" + i + "]", "val" + i, val);
@@ -153,17 +145,17 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     try {
                         while (running.get()) {
                             for (int i = 0; i < CACHE_SIZE; i++) {
-                                store.put(null, i, "val-0");
+                                store.put(i, "val-0");
 
                                 actualPutCnt.incrementAndGet();
 
-                                store.put(null, i, "val" + i);
+                                store.put(i, "val" + i);
 
                                 actualPutCnt.incrementAndGet();
                             }
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         error("Unexpected exception in put thread", e);
 
                         assert false;
@@ -213,13 +205,13 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     try {
                         while (running.get()) {
                             for (int i = 0; i < CACHE_SIZE; i++) {
-                                store.put(null, i, "val-0");
+                                store.put(i, "val-0");
 
-                                store.put(null, i, "val" + i);
+                                store.put(i, "val" + i);
                             }
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         error("Unexpected exception in put thread", e);
 
                         assert false;
@@ -259,7 +251,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         try {
             for (int i = 0; i < CACHE_SIZE; i++) {
-                store.put(null, i, "val" + i);
+                store.put(i, "val" + i);
 
                 intList.add(i);
             }

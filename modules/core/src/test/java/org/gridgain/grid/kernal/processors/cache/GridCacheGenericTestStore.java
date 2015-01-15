@@ -18,21 +18,26 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static javax.cache.Cache.*;
 
 /**
  * Test store.
  */
 @SuppressWarnings({"TypeParameterExtendsFinalClass"})
-public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
+public class GridCacheGenericTestStore<K, V> implements CacheStore<K, V> {
     /** Store. */
     private final Map<K, V> map = new ConcurrentHashMap<>();
 
@@ -42,16 +47,16 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     /** */
     private long ts = System.currentTimeMillis();
 
-    /** {@link #put(IgniteTx, Object, Object)} method call counter .*/
+    /** {@link #write(Entry)} method call counter .*/
     private AtomicInteger putCnt = new AtomicInteger();
 
-    /** {@link #putAll(IgniteTx, Map)} method call counter .*/
+    /** {@link #writeAll(Collection)} method call counter .*/
     private AtomicInteger putAllCnt = new AtomicInteger();
 
-    /** {@link #remove(IgniteTx, Object)} method call counter. */
+    /** {@link #delete(Object)} method call counter. */
     private AtomicInteger rmvCnt = new AtomicInteger();
 
-    /** {@link #removeAll(IgniteTx, Collection)} method call counter. */
+    /** {@link #deleteAll(Collection)} method call counter. */
     private AtomicInteger rmvAllCnt = new AtomicInteger();
 
     /** Flag indicating if methods of this store should fail. */
@@ -141,35 +146,35 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /**
-     * @return Count of {@link #put(IgniteTx, Object, Object)} method calls since last reset.
+     * @return Count of {@link #write(Entry)} method calls since last reset.
      */
     public int getPutCount() {
         return putCnt.get();
     }
 
     /**
-     * @return Count of {@link #putAll(IgniteTx, Map)} method calls since last reset.
+     * @return Count of {@link #writeAll(Collection)} method calls since last reset.
      */
     public int getPutAllCount() {
         return putAllCnt.get();
     }
 
     /**
-     * @return Number of {@link #remove(IgniteTx, Object)} method calls since last reset.
+     * @return Number of {@link #delete(Object)} method calls since last reset.
      */
     public int getRemoveCount() {
         return rmvCnt.get();
     }
 
     /**
-     * @return Number of {@link #removeAll(IgniteTx, Collection)} method calls since last reset.
+     * @return Number of {@link #deleteAll(Collection)} method calls since last reset.
      */
     public int getRemoveAllCount() {
         return rmvAllCnt.get();
     }
 
     /** {@inheritDoc} */
-    @Override public V load(IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(K key) {
         lastMtd = "load";
 
         checkOperation();
@@ -178,54 +183,55 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object[] args)
-        throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object[] args) {
         lastMtd = "loadAllFull";
 
         checkOperation();
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(IgniteTx tx, Collection<? extends K> keys,
-        IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
+    @Override public Map<K, V> loadAll(Iterable<? extends K> keys) {
         lastMtd = "loadAll";
+
+        Map<K, V> loaded = new HashMap<>();
 
         for (K key : keys) {
             V val = map.get(key);
 
             if (val != null)
-                c.apply(key, val);
+                loaded.put(key, val);
         }
 
         checkOperation();
+
+        return loaded;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, V val)
-        throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends K, ? extends V> e) {
         lastMtd = "put";
 
         checkOperation();
 
-        map.put(key, val);
+        map.put(e.getKey(), e.getValue());
 
         putCnt.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(IgniteTx tx, Map<? extends K, ? extends V> map)
-        throws IgniteCheckedException {
+    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         lastMtd = "putAll";
 
         checkOperation();
 
-        this.map.putAll(map);
+        for (Cache.Entry<? extends K, ? extends V> e : entries)
+            this.map.put(e.getKey(), e.getValue());
 
         putAllCnt.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         lastMtd = "remove";
 
         checkOperation();
@@ -236,34 +242,37 @@ public class GridCacheGenericTestStore<K, V> implements GridCacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(IgniteTx tx, Collection<? extends K> keys)
-        throws IgniteCheckedException {
+    @Override public void deleteAll(Collection<?> keys) {
         lastMtd = "removeAll";
 
         checkOperation();
 
-        for (K key : keys)
+        for (Object key : keys)
             map.remove(key);
 
         rmvAllCnt.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) {
+    @Override public void txEnd(boolean commit) {
         // No-op.
     }
 
     /**
      * Checks the flag and throws exception if it is set. Checks operation delay and sleeps
      * for specified amount of time, if needed.
-     *
-     * @throws IgniteCheckedException Always if flag is set.
      */
-    private void checkOperation() throws IgniteCheckedException {
+    private void checkOperation() {
         if (shouldFail)
-            throw new IgniteCheckedException("Store exception");
+            throw new IgniteException("Store exception");
 
-        if (operationDelay > 0)
-            U.sleep(operationDelay);
+        if (operationDelay > 0) {
+            try {
+                U.sleep(operationDelay);
+            }
+            catch(GridInterruptedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }

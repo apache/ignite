@@ -9,7 +9,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.cache.store.*;
+import org.apache.ignite.cache.store.*;
 
 /**
  *
@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.store.*;
 public class IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest extends
     IgniteCacheAtomicPrimaryWriteOrderInvokeTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return new IgniteCacheAbstractTest.TestStore();
     }
 }

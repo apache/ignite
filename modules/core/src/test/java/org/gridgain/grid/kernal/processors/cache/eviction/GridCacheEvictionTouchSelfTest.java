@@ -69,14 +69,17 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         cc.setEvictionPolicy(plc);
 
         cc.setStore(new GridCacheGenericTestStore<Object, Object>() {
-            @Override public Object load(IgniteTx tx, Object key) {
+            @Override public Object load(Object key) {
                 return key;
             }
 
-            @Override public void loadAll(IgniteTx tx, Collection<?> keys,
-                IgniteBiInClosure<Object, Object> c) {
+            @Override public Map<Object, Object> loadAll(Iterable<?> keys) {
+                Map<Object, Object> loaded = new HashMap<>();
+
                 for (Object key : keys)
-                    c.apply(key, key);
+                    loaded.put(key, key);
+
+                return loaded;
             }
         });
 

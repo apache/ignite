@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
@@ -30,7 +31,6 @@ import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
@@ -601,7 +601,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
-            GridCacheStore store = cacheStore(ctx.gridName(), cfg);
+            CacheStore store = cacheStore(ctx.gridName(), cfg);
 
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, store);
 
@@ -1811,7 +1811,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *         or user-defined cache store.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCacheStore cacheStore(String gridName, GridCacheConfiguration cfg) {
+    private CacheStore cacheStore(String gridName, GridCacheConfiguration cfg) {
         if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
             return cfg.getStore();
 

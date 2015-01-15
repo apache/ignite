@@ -476,7 +476,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(null, i, "reloaded-" + i);
+            store.put(i, "reloaded-" + i);
 
         cache.reloadAll(vals.keySet());
 
@@ -543,7 +543,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(null, i, "reloaded-" + i);
+            store.put(i, "reloaded-" + i);
 
         store.resetLastMethod();
 

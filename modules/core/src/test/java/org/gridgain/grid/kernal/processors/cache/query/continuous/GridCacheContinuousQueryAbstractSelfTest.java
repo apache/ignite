@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -27,7 +28,6 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -1506,29 +1506,26 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * Store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            Object... args) throws IgniteCheckedException {
+            Object... args) {
             for (int i = 0; i < 10; i++)
                 clo.apply(i, i);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) throws IgniteCheckedException {
+        @Override public void put(Object key, @Nullable Object val) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public void remove(Object key) {
             // No-op.
         }
     }

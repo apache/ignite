@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store;
+package org.apache.ignite.cache.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
@@ -25,18 +25,20 @@ import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Cache store wrapper that ensures that there will be no more that one thread loading value from underlying store.
  */
-public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V> {
+public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     /** */
     public static final int DFLT_LOAD_ALL_THRESHOLD = 5;
 
     /** Delegate store. */
-    private GridCacheStore<K, V> delegate;
+    private CacheStore<K, V> delegate;
 
     /** Pending cache store loads. */
     private ConcurrentMap<K, LoadFuture> pendingLoads = new ConcurrentHashMap8<>();
@@ -47,7 +49,7 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     /**
      * @param delegate Delegate store.
      */
-    public GridCacheStoreBalancingWrapper(GridCacheStore<K, V> delegate) {
+    public CacheStoreBalancingWrapper(CacheStore<K, V> delegate) {
         this.delegate = delegate;
     }
 
@@ -55,27 +57,39 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
      * @param delegate Delegate store.
      * @param loadAllThreshold Load all threshold.
      */
-    public GridCacheStoreBalancingWrapper(GridCacheStore<K, V> delegate, int loadAllThreshold) {
+    public CacheStoreBalancingWrapper(CacheStore<K, V> delegate, int loadAllThreshold) {
         this.delegate = delegate;
         this.loadAllThreshold = loadAllThreshold;
     }
 
+    /**
+     * @return Load all threshold.
+     */
+    public int loadAllThreshold() {
+        return loadAllThreshold;
+    }
+
     /** {@inheritDoc} */
-    @Nullable @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Nullable @Override public V load(K key) {
         LoadFuture fut = pendingLoads.get(key);
 
-        if (fut != null)
-            return fut.get(key);
+        try {
+            if (fut != null)
+                return fut.get(key);
 
-        fut = new LoadFuture();
+            fut = new LoadFuture();
 
-        LoadFuture old = pendingLoads.putIfAbsent(key, fut);
+            LoadFuture old = pendingLoads.putIfAbsent(key, fut);
 
-        if (old != null)
-            return old.get(key);
+            if (old != null)
+                return old.get(key);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheLoaderException(e);
+        }
 
         try {
-            V val = delegate.load(tx, key);
+            V val = delegate.load(key);
 
             fut.onComplete(key, val);
 
@@ -89,18 +103,21 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) {
         delegate.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys, final IgniteBiInClosure<K, V> c)
-        throws IgniteCheckedException {
-        if (keys.size() > loadAllThreshold) {
-            delegate.loadAll(tx, keys, c);
+    @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
+        return delegate.loadAll(keys);
+    }
 
-            return;
-        }
+    /**
+     * @param keys Keys to load.
+     * @param c Closure for loaded values.
+     */
+    public void loadAll(Collection<? extends K> keys, final IgniteBiInClosure<K, V> c) {
+        assert keys.size() < loadAllThreshold;
 
         Collection<K> needLoad = null;
         Map<K, LoadFuture> pending = null;
@@ -141,18 +158,11 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
             assert !needLoad.isEmpty();
             assert span != null;
 
-            final ConcurrentMap<K, V> loaded = new ConcurrentHashMap8<>();
-
             try {
-                delegate.loadAll(tx, needLoad, new CI2<K, V>() {
-                    @Override public void apply(K k, V v) {
-                        if (v != null) {
-                            loaded.put(k, v);
+                Map<K, V> loaded = delegate.loadAll(needLoad);
 
-                            c.apply(k, v);
-                        }
-                    }
-                });
+                for (Map.Entry<K, V> e : loaded.entrySet())
+                    c.apply(e.getKey(), e.getValue());
 
                 span.onComplete(needLoad, loaded);
             }
@@ -164,37 +174,42 @@ public class GridCacheStoreBalancingWrapper<K, V> implements GridCacheStore<K, V
         }
 
         if (pending != null) {
-            for (Map.Entry<K, LoadFuture> e : pending.entrySet()) {
-                K key = e.getKey();
+            try {
+                for (Map.Entry<K, LoadFuture> e : pending.entrySet()) {
+                    K key = e.getKey();
 
-                c.apply(key, e.getValue().get(key));
+                    c.apply(key, e.getValue().get(key));
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheLoaderException(e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
-        delegate.put(tx, key, val);
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
+        delegate.write(entry);
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable IgniteTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException {
-        delegate.putAll(tx, map);
+    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
+        delegate.writeAll(entries);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
-        delegate.remove(tx, key);
+    @Override public void delete(Object key) throws CacheWriterException {
+        delegate.delete(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
-        delegate.removeAll(tx, keys);
+    @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+        delegate.deleteAll(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
-        delegate.txEnd(tx, commit);
+    @Override public void txEnd(boolean commit) {
+        delegate.txEnd(commit);
     }
 
     /**

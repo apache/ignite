@@ -23,14 +23,15 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import sun.nio.cs.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -41,13 +42,16 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private static final String SES_ATTR = "STORE_SES";
 
     /** */
-    private final GridCacheStore<K, Object> store;
+    private final CacheStore<K, Object> store;
 
     /** */
-    private final GridCacheStoreBalancingWrapper<K, Object> singleThreadGate;
+    private final CacheStoreBalancingWrapper<K, Object> singleThreadGate;
 
     /** */
     private final ThreadLocal<SessionData> sesHolder = new ThreadLocal<>();
+
+    /** */
+    private final boolean sesEnabled;
 
     /** */
     private final boolean locStore;
@@ -61,19 +65,24 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheStoreManager(GridKernalContext ctx, @Nullable GridCacheStore<K, Object> store)
+    public GridCacheStoreManager(GridKernalContext ctx, @Nullable CacheStore<K, Object> store)
         throws IgniteCheckedException {
         this.store = store;
 
-        singleThreadGate = store == null ? null : new GridCacheStoreBalancingWrapper<>(store);
+        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
         if (store instanceof GridCacheWriteBehindStore)
             store = ((GridCacheWriteBehindStore)store).store();
 
-        if (store != null)
+        if (store != null) {
             ctx.resource().injectBasicResource(store, IgniteCacheSessionResource.class, new ThreadLocalSession());
 
-        locStore = U.hasAnnotation(store, GridCacheLocalStore.class);
+            sesEnabled = true; // TODO IGNITE-42.
+        }
+        else
+            sesEnabled = false;
+
+        locStore = U.hasAnnotation(store, CacheLocalStore.class);
     }
 
     /** {@inheritDoc} */
@@ -162,7 +171,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             boolean ses = initSession(tx);
 
             try {
-                val = convert(singleThreadGate.load(tx, key));
+                val = convert(singleThreadGate.load(key));
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -236,9 +245,13 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 boolean ses = initSession(tx);
 
                 try {
-                    singleThreadGate.loadAll(tx, keys0, new CI2<K, Object>() {
-                        @Override public void apply(K k, Object o) {
-                            V v = convert(o);
+                    if (keys.size() > singleThreadGate.loadAllThreshold()) {
+                        Map<K, Object> map = singleThreadGate.loadAll(keys0);
+
+                        for (Map.Entry<K, Object> e : map.entrySet()) {
+                            K k = e.getKey();
+
+                            V v = convert(e.getValue());
 
                             if (cctx.portableEnabled()) {
                                 k = (K)cctx.marshalToPortable(k);
@@ -247,7 +260,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                             vis.apply(k, v);
                         }
-                    });
+                    }
+                    else {
+                        singleThreadGate.loadAll(keys0, new CI2<K, Object>() {
+                            @Override public void apply(K k, Object o) {
+                                V v = convert(o);
+
+                                if (cctx.portableEnabled()) {
+                                    k = (K)cctx.marshalToPortable(k);
+                                    v = (V)cctx.marshalToPortable(v);
+                                }
+
+                                vis.apply(k, v);
+                            }
+                        });
+                    }
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
@@ -256,7 +283,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     throw U.cast(e);
                 }
                 finally {
-                    sesHolder.set(null);
+                    if (ses)
+                        sesHolder.set(null);
                 }
 
                 if (log.isDebugEnabled())
@@ -354,7 +382,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             boolean ses = initSession(tx);
 
             try {
-                store.put(tx, key, locStore ? F.t(val, ver) : val);
+                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -414,18 +442,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 boolean ses = initSession(tx);
 
                 try {
-                    store.putAll(tx, locStore ? map0 : F.viewReadOnly(map0,
-                        new C1<IgniteBiTuple<V, GridCacheVersion>, Object>() {
-                            @Override public Object apply(IgniteBiTuple<V, GridCacheVersion> t) {
-                                return t.get1();
+                    C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>> c =
+                        new C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>>() {
+                            @Override public Cache.Entry<? extends K, ?> apply(Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e) {
+                                return new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1());
                             }
-                    }));
+                        };
+
+                    store.writeAll(F.viewReadOnly(map.entrySet(), c));
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
                 }
                 finally {
-                    sesHolder.set(null);
+                    if (ses)
+                        sesHolder.set(null);
                 }
 
                 if (log.isDebugEnabled())
@@ -459,7 +490,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             boolean ses = initSession(tx);
 
             try {
-                store.remove(tx, key);
+                store.delete(key);
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -509,7 +540,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             boolean ses = initSession(tx);
 
             try {
-                store.removeAll(tx, keys0);
+                store.deleteAll(keys0);
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
@@ -531,7 +562,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @return Store.
      */
-    public GridCacheStore<K, Object> store() {
+    public CacheStore<K, Object> store() {
         return store;
     }
 
@@ -551,9 +582,18 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         assert store != null;
 
-        tx.removeMeta(SES_ATTR);
+        boolean ses = initSession(tx);
 
-        store.txEnd(tx, commit);
+        try {
+            store.txEnd(commit);
+        }
+        finally {
+            if (ses) {
+                sesHolder.set(null);
+
+                tx.removeMeta(SES_ATTR);
+            }
+        }
     }
 
     /**
@@ -577,7 +617,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if
      */
     private boolean initSession(@Nullable IgniteTx tx) {
-        if (tx == null)
+        if (!sesEnabled || tx == null)
             return false;
 
         SessionData ses = tx.meta(SES_ATTR);

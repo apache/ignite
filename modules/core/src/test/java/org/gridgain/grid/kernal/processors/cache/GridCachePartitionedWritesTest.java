@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
@@ -39,7 +39,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 @SuppressWarnings({"unchecked"})
 public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     /** Cache store. */
-    private GridCacheStore store;
+    private CacheStore store;
 
     /** {@inheritDoc} */
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -78,19 +78,18 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         final AtomicInteger putCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
 
-        store = new GridCacheStoreAdapter() {
-            @Override public Object load(@Nullable IgniteTx tx, Object key) {
+        store = new CacheStoreAdapter() {
+            @Override public Object load(Object key) {
                 info(">>> Get [key=" + key + ']');
 
                 return null;
             }
 
-            @Override public void put(@Nullable IgniteTx tx, Object key,
-                @Nullable Object val) {
+            @Override public void put(Object key, @Nullable Object val) {
                 putCnt.incrementAndGet();
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, Object key) {
+            @Override public void remove(Object key) {
                 rmvCnt.incrementAndGet();
             }
         };

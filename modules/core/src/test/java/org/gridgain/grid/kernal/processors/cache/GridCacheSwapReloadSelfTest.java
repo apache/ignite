@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -28,7 +29,6 @@ import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -210,7 +210,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
         private Map<Object, Object> map = new ConcurrentHashMap<>();
 
@@ -220,19 +220,17 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val)
-            throws IgniteCheckedException {
+        @Override public void put(Object key, Object val) {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Override public void remove(Object key) {
             map.remove(key);
         }
     }

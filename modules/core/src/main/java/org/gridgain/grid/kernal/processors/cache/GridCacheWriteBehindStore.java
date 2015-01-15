@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.typedef.*;
@@ -34,13 +34,14 @@ import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 /**
- * Internal wrapper for a {@link GridCacheStore} that enables write-behind logic.
+ * Internal wrapper for a {@link org.apache.ignite.cache.store.CacheStore} that enables write-behind logic.
  * <p/>
  * The general purpose of this approach is to reduce cache store load under high
  * store update rate. The idea is to cache all write and remove operations in a pending
@@ -55,7 +56,7 @@ import java.util.concurrent.locks.*;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, LifecycleAware, GridInteropAware {
+public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware, GridInteropAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -93,7 +94,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     private String cacheName;
 
     /** Underlying store. */
-    private GridCacheStore<K, V> store;
+    private CacheStore<K, V> store;
 
     /** Write cache. */
     private ConcurrentLinkedHashMap<K, StatefulValue<V>> writeCache;
@@ -241,7 +242,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      * @param log Grid logger.
      * @param store {@code GridCacheStore} that need to be wrapped.
      */
-    public GridCacheWriteBehindStore(String gridName, String cacheName, IgniteLogger log, GridCacheStore<K, V> store) {
+    public GridCacheWriteBehindStore(String gridName, String cacheName, IgniteLogger log, CacheStore<K, V> store) {
         this.gridName = gridName;
         this.cacheName = cacheName;
         this.log = log;
@@ -251,7 +252,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
     /**
      * @return Underlying store.
      */
-    public GridCacheStore<K, V> store() {
+    public CacheStore<K, V> store() {
         return store;
     }
 
@@ -377,19 +378,16 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
      *
      * @param clo {@inheritDoc}
      * @param args {@inheritDoc}
-     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args)
-        throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) {
         store.loadCache(clo, args);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems"})
-    @Override public void loadAll(@Nullable IgniteTx tx,
-        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
+    @Override public void loadAll(@Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) {
         if (log.isDebugEnabled())
-            log.debug("Store load all [keys=" + keys + ", tx=" + tx + ']');
+            log.debug("Store load all [keys=" + keys + ']');
 
         Collection<K> remaining = new LinkedList<>();
 
@@ -425,13 +423,13 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
         // For items that were not found in queue.
         if (!remaining.isEmpty())
-            store.loadAll(null, remaining, c);
+            store.loadAll(remaining, c);
     }
 
     /** {@inheritDoc} */
-    @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(K key) {
         if (log.isDebugEnabled())
-            log.debug("Store load [key=" + key + ", tx=" + tx + ']');
+            log.debug("Store load [key=" + key + ']');
 
         StatefulValue<V> val = writeCache.get(key);
 
@@ -455,41 +453,49 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
             }
         }
 
-        return store.load(null, key);
+        return store.load(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map<? extends K, ? extends V> map)
-        throws IgniteCheckedException {
+    @Override public void putAll(Map<? extends K, ? extends V> map) {
         for (Map.Entry<? extends K, ? extends V> e : map.entrySet())
-            put(tx, e.getKey(), e.getValue());
+            put(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+    @Override public void put(K key, V val) {
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Store put [key=" + key + ", val=" + val + ']');
 
-        updateCache(key, val, StoreOperation.PUT);
+            updateCache(key, val, StoreOperation.PUT);
+        }
+        catch (GridInterruptedException e) {
+            throw new CacheWriterException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgniteTx tx, @Nullable Collection<? extends K> keys)
-        throws IgniteCheckedException {
+    @Override public void removeAll(Collection<? extends K> keys) {
         for (K key : keys)
-            remove(tx, key);
+            remove(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
+    @Override public void remove(K key) {
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Store remove [key=" + key + ']');
 
-        updateCache(key, null, StoreOperation.RMV);
+            updateCache(key, null, StoreOperation.RMV);
+        }
+        catch (GridInterruptedException e) {
+            throw new CacheWriterException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(boolean commit) {
         // No-op.
     }
 
@@ -678,12 +684,12 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
         try {
             switch (operation) {
                 case PUT:
-                    store.putAll(null, vals);
+                    store.putAll(vals);
 
                     break;
 
                 case RMV:
-                    store.removeAll(null, vals.keySet());
+                    store.removeAll(vals.keySet());
 
                     break;
 
@@ -693,7 +699,7 @@ public class GridCacheWriteBehindStore<K, V> implements GridCacheStore<K, V>, Li
 
             return true;
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             LT.warn(log, e, "Unable to update underlying store: " + store);
 
             if (writeCache.sizex() > cacheCriticalSize || stopping.get()) {

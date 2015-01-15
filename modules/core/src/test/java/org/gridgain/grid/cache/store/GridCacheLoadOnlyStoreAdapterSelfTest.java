@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -67,10 +68,9 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     /**
      *
      */
-    private static class TestStore extends GridCacheLoadOnlyStoreAdapter<Integer, String, String> {
+    private static class TestStore extends CacheLoadOnlyStoreAdapter<Integer, String, String> {
         /** {@inheritDoc} */
-        @Override protected Iterator<String> inputIterator(@Nullable Object... args)
-            throws IgniteCheckedException {
+        @Override protected Iterator<String> inputIterator(@Nullable Object... args) {
             assertNotNull(args);
             assertTrue(Arrays.equals(EXP_ARGS, args));
 

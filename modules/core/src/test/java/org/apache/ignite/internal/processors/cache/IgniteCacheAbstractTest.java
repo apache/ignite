@@ -10,6 +10,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -18,7 +19,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -131,7 +131,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache store.
      */
-    protected GridCacheStore<?, ?> cacheStore() {
+    protected CacheStore<?, ?> cacheStore() {
         return null;
     }
 
@@ -210,7 +210,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    public class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : storeMap.entrySet())
@@ -218,17 +218,17 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(IgniteTx tx, Object key) {
+        @Override public Object load(Object key) {
             return storeMap.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val) {
+        @Override public void put(Object key, @Nullable Object val) {
             storeMap.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) {
+        @Override public void remove(Object key) {
             storeMap.remove(key);
         }
     }

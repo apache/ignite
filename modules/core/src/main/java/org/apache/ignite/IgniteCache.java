@@ -22,7 +22,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -95,20 +94,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadCache(IgniteBiInClosure, Object...)} method.
+     *      {@link org.apache.ignite.cache.store.CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
-     * Delegates to {@link GridCacheStore#loadCache(IgniteBiInClosure,Object...)} method
+     * Delegates to {@link org.apache.ignite.cache.store.CacheStore#loadCache(IgniteBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
      * all loaded values will be stored in cache.
      * <p>
      * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link GridCacheStore} implementation to provide all the data to be loaded.
+     * {@link org.apache.ignite.cache.store.CacheStore} implementation to provide all the data to be loaded.
      * <p>
      * This method is not transactional and may end up loading a stale value into
      * cache if another thread has updated the value immediately after it has been
@@ -118,7 +117,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadCache(IgniteBiInClosure, Object...)} method.
+     *      {@link org.apache.ignite.cache.store.CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
@@ -130,14 +129,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * storage, {@link org.apache.ignite.cache.store.CacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * If write-through is enabled, the stored value will be persisted to {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -164,8 +163,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * are acquired in undefined order, so it may cause a deadlock when used with
      * other concurrent transactional updates.
      * <p>
-     * If write-through is enabled, the values will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#removeAll(IgniteTx, java.util.Collection)} method.
+     * If write-through is enabled, the values will be removed from {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#removeAll(IgniteTx, java.util.Collection)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -319,13 +318,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage,  {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * storage,  {@link org.apache.ignite.cache.store.CacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putIf(Object, Object, IgnitePredicate)} should
      * always be used instead of this one to avoid the overhead associated with returning of the previous value.
      * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * If write-through is enabled, the stored value will be persisted to {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -356,8 +355,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * value and, therefore, does not have any overhead associated with returning a value. It
      * should be used whenever return value is not required.
      * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * If write-through is enabled, the stored value will be persisted to {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -384,14 +383,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the disk-based swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * storage, {@link org.apache.ignite.cache.store.CacheStore#load(IgniteTx, Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #removeIf(Object, IgnitePredicate)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
-     * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
+     * If write-through is enabled, the value will be removed from {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -416,8 +415,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method will return {@code true} if remove did occur, which means that all optionally
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
-     * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
+     * If write-through is enabled, the value will be removed from {@link org.apache.ignite.cache.store.CacheStore}
+     * via {@link org.apache.ignite.cache.store.CacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.

@@ -15,41 +15,43 @@
  * limitations under the License.
  */
 
-package org.gridgain.client;
+package org.gridgain.testframework.junits.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Simple HashMap based cache store emulation.
+ *
  */
-public class GridHashMapStore extends CacheStoreAdapter {
-    /** Map for cache store. */
-    private final Map<Object, Object> map = new HashMap<>();
+public class TestThreadLocalCacheSession implements CacheStoreSession {
+    /** */
+    private final ThreadLocal<TestCacheSession> sesHolder = new ThreadLocal<>();
 
-    /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
-        for (Map.Entry e : map.entrySet())
-            c.apply(e.getKey(), e.getValue());
+    /**
+     * @param tx Transaction.
+     */
+    public void newSession(@Nullable IgniteTx tx) {
+        TestCacheSession ses = new TestCacheSession();
+
+        ses.newSession(tx);
+
+        sesHolder.set(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public Object load(Object key) {
-        return map.get(key);
+    @Nullable @Override public IgniteTx transaction() {
+        TestCacheSession ses = sesHolder.get();
+
+        return ses != null ? ses.transaction() : null;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Object key, @Nullable Object val) {
-        map.put(key, val);
-    }
+    @Override public Map<Object, Object> properties() {
+        TestCacheSession ses = sesHolder.get();
 
-    /** {@inheritDoc} */
-    @Override public void remove(Object key) {
-        map.remove(key);
+        return ses != null ? ses.properties() : null;
     }
 }

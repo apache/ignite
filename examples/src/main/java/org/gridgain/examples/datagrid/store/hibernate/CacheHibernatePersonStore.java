@@ -17,22 +17,22 @@
 
 package org.gridgain.examples.datagrid.store.hibernate;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.cache.store.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.integration.*;
 import java.util.*;
 
 /**
- * Example of {@link GridCacheStore} implementation that uses Hibernate
+ * Example of {@link CacheStore} implementation that uses Hibernate
  * and deals with maps {@link UUID} to {@link Person}.
  */
-public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Person> {
+public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     /** Default hibernate configuration resource path. */
     private static final String DFLT_HIBERNATE_CFG = "/org/gridgain/examples/datagrid/store/hibernate/hibernate.cfg.xml";
 
@@ -50,7 +50,9 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Override public Person load(Long key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
@@ -61,7 +63,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new IgniteCheckedException("Failed to load value from cache store with key: " + key, e);
+            throw new CacheLoaderException("Failed to load value from cache store with key: " + key, e);
         }
         finally {
             end(ses, tx);
@@ -69,12 +71,13 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, Long key, @Nullable Person val)
-        throws IgniteCheckedException {
+    @Override public void put(Long key, @Nullable Person val) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         if (val == null) {
-            remove(tx, key);
+            remove(key);
 
             return;
         }
@@ -87,7 +90,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new IgniteCheckedException("Failed to put value to cache store [key=" + key + ", val" + val + "]", e);
+            throw new CacheWriterException("Failed to put value to cache store [key=" + key + ", val" + val + "]", e);
         }
         finally {
             end(ses, tx);
@@ -96,7 +99,9 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
-    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Override public void remove(Long key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Session ses = session(tx);
@@ -108,7 +113,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
         catch (HibernateException e) {
             rollback(ses, tx);
 
-            throw new IgniteCheckedException("Failed to remove value from cache store with key: " + key, e);
+            throw new CacheWriterException("Failed to remove value from cache store with key: " + key, e);
         }
         finally {
             end(ses, tx);
@@ -116,9 +121,9 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) {
         if (args == null || args.length == 0 || args[0] == null)
-            throw new IgniteCheckedException("Expected entry count parameter is not provided.");
+            throw new CacheLoaderException("Expected entry count parameter is not provided.");
 
         final int entryCnt = (Integer)args[0];
 
@@ -144,7 +149,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
             System.out.println(">>> Loaded " + cnt + " values into cache.");
         }
         catch (HibernateException e) {
-            throw new IgniteCheckedException("Failed to load values from cache store.", e);
+            throw new CacheLoaderException("Failed to load values from cache store.", e);
         }
         finally {
             end(ses, null);
@@ -188,8 +193,14 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
-        Session ses = tx.removeMeta(ATTR_SES);
+    @Override public void txEnd(boolean commit) {
+        CacheStoreSession storeSes = session();
+
+        IgniteTx tx = storeSes.transaction();
+
+        Map<Object, Object> props = storeSes.properties();
+
+        Session ses = (Session)props.remove(ATTR_SES);
 
         if (ses != null) {
             Transaction hTx = ses.getTransaction();
@@ -207,7 +218,7 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
                     System.out.println("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
                 }
                 catch (HibernateException e) {
-                    throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() +
+                    throw new CacheWriterException("Failed to end transaction [xid=" + tx.xid() +
                         ", commit=" + commit + ']', e);
                 }
                 finally {
@@ -227,16 +238,18 @@ public class CacheHibernatePersonStore extends GridCacheStoreAdapter<Long, Perso
         Session ses;
 
         if (tx != null) {
-            ses = tx.meta(ATTR_SES);
+            Map<Object, Object> props = session().properties();
+
+            ses = (Session)props.get(ATTR_SES);
 
             if (ses == null) {
                 ses = sesFactory.openSession();
 
                 ses.beginTransaction();
 
-                // Store session in transaction metadata, so it can be accessed
+                // Store session in session properties, so it can be accessed
                 // for other operations on the same transaction.
-                tx.addMeta(ATTR_SES, ses);
+                props.put(ATTR_SES, ses);
 
                 System.out.println("Hibernate session open [ses=" + ses + ", tx=" + tx.xid() + "]");
             }

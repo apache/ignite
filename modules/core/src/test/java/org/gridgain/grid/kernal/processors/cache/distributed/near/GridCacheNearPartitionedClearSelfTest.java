@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
@@ -50,7 +50,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private static GridCacheStore<Object, Object> store = new GridCacheGenericTestStore<>();
+    private static CacheStore<Object, Object> store = new GridCacheGenericTestStore<>();
 
     /** Shared IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

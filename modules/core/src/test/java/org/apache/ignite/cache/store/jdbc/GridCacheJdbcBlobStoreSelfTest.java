@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store.jdbc;
+package org.apache.ignite.cache.store.jdbc;
 
 import org.gridgain.testframework.junits.cache.*;
 
@@ -25,7 +25,7 @@ import java.sql.*;
  * Cache store test.
  */
 public class GridCacheJdbcBlobStoreSelfTest
-    extends GridAbstractCacheStoreSelfTest<GridCacheJdbcBlobStore<Object, Object>> {
+    extends GridAbstractCacheStoreSelfTest<CacheJdbcBlobStore<Object, Object>> {
     /**
      * @throws Exception If failed.
      */
@@ -37,7 +37,7 @@ public class GridCacheJdbcBlobStoreSelfTest
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        try (Connection c = DriverManager.getConnection(GridCacheJdbcBlobStore.DFLT_CONN_URL, null, null)) {
+        try (Connection c = DriverManager.getConnection(CacheJdbcBlobStore.DFLT_CONN_URL, null, null)) {
             try (Statement s = c.createStatement()) {
                 s.executeUpdate("drop table ENTRIES");
             }
@@ -45,7 +45,7 @@ public class GridCacheJdbcBlobStoreSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheJdbcBlobStore<Object, Object> store() {
-        return new GridCacheJdbcBlobStore<>();
+    @Override protected CacheJdbcBlobStore<Object, Object> store() {
+        return new CacheJdbcBlobStore<>();
     }
 }

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.gridgain.grid.cache.store.*;
+import org.apache.ignite.cache.store.*;
 
 /**
  *
@@ -17,7 +17,7 @@ import org.gridgain.grid.cache.store.*;
 public class IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest extends
     IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest{
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return new TestStore();
     }
 }

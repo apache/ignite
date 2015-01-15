@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store;
+package org.apache.ignite.cache.store;
 
 import java.lang.annotation.*;
 
 /**
- * Annotation for local {@link GridCacheStore} implementation. "Local" here means that there is no global
+ * Annotation for local {@link CacheStore} implementation. "Local" here means that there is no global
  * database behind the grid but each node has an independent one.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridCacheLocalStore {
+public @interface CacheLocalStore {
     // No-op.
 }

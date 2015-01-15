@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -56,7 +56,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return null;
     }
 

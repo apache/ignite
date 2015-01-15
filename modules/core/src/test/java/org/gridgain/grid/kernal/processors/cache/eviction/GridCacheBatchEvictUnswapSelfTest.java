@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -64,8 +64,8 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
         GridCacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
-        cacheCfg.setStore(new GridCacheStoreAdapter<Long, String>() {
-            @Nullable @Override public String load(@Nullable IgniteTx tx, Long key) {
+        cacheCfg.setStore(new CacheStoreAdapter<Long, String>() {
+            @Nullable @Override public String load(Long key) {
                 return null;
             }
 
@@ -75,11 +75,12 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                     c.apply((long)i, String.valueOf(i));
             }
 
-            @Override public void put(@Nullable IgniteTx tx, Long key,
-                @Nullable String val) {
+            @Override public void put(Long key, @Nullable String val) {
+                // No-op.
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, Long key) {
+            @Override public void remove(Long key) {
+                // No-op.
             }
         });
 

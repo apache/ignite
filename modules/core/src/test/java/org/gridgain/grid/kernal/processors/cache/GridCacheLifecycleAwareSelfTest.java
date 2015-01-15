@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -28,10 +29,11 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -52,7 +54,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestStore extends TestLifecycleAware implements GridCacheStore {
+    private static class TestStore extends TestLifecycleAware implements CacheStore {
         /**
          */
         TestStore() {
@@ -60,7 +62,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) {
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
@@ -70,35 +72,32 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable IgniteTx tx, @Nullable Collection keys,
-            IgniteBiInClosure c) {
+        @Override public Map loadAll(Iterable keys) throws CacheLoaderException {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) {
+        @Override public void writeAll(Collection collection) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map map) {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key) {
+        @Override public void deleteAll(Collection keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable IgniteTx tx,
-            @Nullable Collection keys) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void txEnd(IgniteTx tx, boolean commit) {
+        @Override public void txEnd(boolean commit) {
             // No-op.
         }
     }

@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
@@ -36,7 +36,7 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  */
 public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridCommonAbstractTest {
     /** Cache store. */
-    private GridCacheStore<Integer, Integer> store;
+    private CacheStore<Integer, Integer> store;
 
     /**
      *
@@ -89,18 +89,18 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
     public void testConcurrentGet() throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
-        store = new GridCacheStoreAdapter<Integer, Integer>() {
-            @Override public Integer load(@Nullable IgniteTx tx, Integer key) {
+        store = new CacheStoreAdapter<Integer, Integer>() {
+            @Override public Integer load(Integer key) {
                 return cntr.incrementAndGet();
             }
 
             /** {@inheritDoc} */
-            @Override public void put(IgniteTx tx, Integer key, @Nullable Integer val) {
+            @Override public void put(Integer key, @Nullable Integer val) {
                 assert false;
             }
 
             /** {@inheritDoc} */
-            @Override public void remove(IgniteTx tx, Integer key) {
+            @Override public void remove(Integer key) {
                 assert false;
             }
         };

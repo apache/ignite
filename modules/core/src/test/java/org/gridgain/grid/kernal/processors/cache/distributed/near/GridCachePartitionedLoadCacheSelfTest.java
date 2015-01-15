@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -115,10 +115,9 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
+    private static class TestStore extends CacheStoreAdapter<Integer, String> {
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, String> clo,
-            @Nullable Object... args) throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Integer, String> clo, @Nullable Object... args) {
             assert clo != null;
             assert args != null;
 
@@ -131,19 +130,19 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(Integer key) {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, String val) throws IgniteCheckedException {
+        @Override public void put(Integer key, String val) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(Integer key) {
             // No-op.
         }
     }

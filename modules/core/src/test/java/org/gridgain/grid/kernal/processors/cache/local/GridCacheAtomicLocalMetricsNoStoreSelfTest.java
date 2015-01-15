@@ -17,13 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
-import org.gridgain.grid.cache.store.*;
+import org.apache.ignite.cache.store.*;
 
 /**
  * Local atomic cache metrics test.
  */
 public class GridCacheAtomicLocalMetricsNoStoreSelfTest extends GridCacheAtomicLocalMetricsSelfTest {
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return null; // Test cache without store.
     }
 }

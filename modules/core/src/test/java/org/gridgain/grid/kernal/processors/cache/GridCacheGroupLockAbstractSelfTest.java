@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -25,7 +26,6 @@ import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -1247,7 +1247,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Test store that accumulates values into map. */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
         private ConcurrentMap<Object, Object> storeMap = new ConcurrentHashMap8<>();
 
@@ -1255,30 +1255,26 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         private AtomicInteger putCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(IgniteTx tx,
-            Map<?, ?> map) throws IgniteCheckedException {
+        @Override public void putAll(Map<?, ?> map) {
             storeMap.putAll(map);
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) throws IgniteCheckedException {
+        @Override public void put(Object key, @Nullable Object val) {
             storeMap.put(key, val);
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public void remove(Object key) {
             storeMap.remove(key);
         }
 

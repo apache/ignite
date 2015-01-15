@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store.jdbc;
+package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -53,7 +53,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     private static final int TX_CNT = 1000;
 
     /** Cache store. */
-    private static GridCacheStore<Integer, String> store;
+    private static CacheStore<Integer, String> store;
 
     /** Distribution mode. */
     private GridCacheDistributionMode mode;
@@ -229,8 +229,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * @return New store.
      * @throws Exception In case of error.
      */
-    private GridCacheStore<Integer, String> store() throws Exception {
-        GridCacheStore<Integer, String> store = new GridCacheJdbcBlobStore<>();
+    private CacheStore<Integer, String> store() throws Exception {
+        CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();
 
         Field f = store.getClass().getDeclaredField("testMode");
 

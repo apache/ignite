@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.expiry.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.cache.store.jdbc.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;

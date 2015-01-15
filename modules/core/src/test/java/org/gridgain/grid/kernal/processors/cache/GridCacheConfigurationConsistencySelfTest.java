@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -31,7 +32,6 @@ import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.gridgain.grid.cache.eviction.random.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -41,6 +41,8 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -991,51 +993,44 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     }
 
     /** */
-    private static class TestStore implements GridCacheStore<Object,Object> {
+    private static class TestStore implements CacheStore<Object,Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            @Nullable Object... args) throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable IgniteTx tx,
-            @Nullable Collection<?> keys, IgniteBiInClosure<Object, Object> c) throws IgniteCheckedException {
+        @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) throws IgniteCheckedException {
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map<?, ?> map)
-            throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public void deleteAll(Collection<?> keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable IgniteTx tx,
-            @Nullable Collection<?> keys) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+        @Override public void txEnd(boolean commit) {
             // No-op.
         }
     }

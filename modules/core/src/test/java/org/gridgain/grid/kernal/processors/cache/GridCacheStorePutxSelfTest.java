@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -25,10 +26,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -108,52 +110,46 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestStore implements GridCacheStore<Integer, Integer> {
+    private static class TestStore implements CacheStore<Integer, Integer> {
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(@Nullable IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Nullable @Override public Integer load(Integer key) {
             loads.incrementAndGet();
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args)
-            throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
+        @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Integer key,
-            @Nullable Integer val) throws IgniteCheckedException {
+        @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable IgniteTx tx,
-            Map<? extends Integer, ? extends Integer> map) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Integer key)
-            throws IgniteCheckedException {
+        @Override public void deleteAll(Collection<?> keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable IgniteTx tx, Collection<? extends Integer> keys)
-            throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+        @Override public void txEnd(boolean commit) {
             // No-op.
         }
     }

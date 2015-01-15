@@ -17,14 +17,15 @@
 
 package org.gridgain.grid.cache.store;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -43,8 +44,8 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cycles = new AtomicInteger();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        final GridCacheStoreBalancingWrapper<Integer, Integer> w =
-            new GridCacheStoreBalancingWrapper<>(new VerifyStore(range));
+        final CacheStoreBalancingWrapper<Integer, Integer> w =
+            new CacheStoreBalancingWrapper<>(new VerifyStore(range));
 
         final AtomicBoolean finish = new AtomicBoolean();
 
@@ -54,12 +55,12 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!finish.get()) {
-                        int cnt = rnd.nextInt(GridCacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD) + 1;
+                        int cnt = rnd.nextInt(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD) + 1;
 
                         if (cnt == 1) {
                             int key = rnd.nextInt(range);
 
-                            assertEquals((Integer)key, w.load(null, key));
+                            assertEquals((Integer)key, w.load(key));
                         }
                         else {
                             Collection<Integer> keys = new HashSet<>(cnt);
@@ -69,7 +70,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
                             final Map<Integer, Integer> loaded = new HashMap<>();
 
-                            w.loadAll(null, keys, new CI2<Integer, Integer>() {
+                            w.loadAll(keys, new CI2<Integer, Integer>() {
                                 @Override public void apply(Integer k, Integer v) {
                                     loaded.put(k, v);
                                 }
@@ -113,7 +114,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class VerifyStore implements GridCacheStore<Integer, Integer> {
+    private static class VerifyStore implements CacheStore<Integer, Integer> {
         /** */
         private Lock[] locks;
 
@@ -128,7 +129,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer load(@Nullable IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Nullable @Override public Integer load(Integer key) {
             boolean res = locks[key].tryLock();
 
             if (res) {
@@ -146,20 +147,20 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args)
-            throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, @Nullable Object... args) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) throws IgniteCheckedException {
+        @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) {
+            Map<Integer, Integer> loaded = new HashMap<>();
+
             for (Integer key : keys) {
                 boolean res = locks[key].tryLock();
 
                 if (res) {
                     try {
-                        c.apply(key, key);
+                        loaded.put(key, key);
                     }
                     finally {
                         locks[key].unlock();
@@ -168,32 +169,32 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
                 else
                     fail("Failed to acquire lock for key: " + key);
             }
+
+            return loaded;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Integer key, Integer val) throws IgniteCheckedException {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable IgniteTx tx, Map<? extends Integer, ? extends Integer> map)
-            throws IgniteCheckedException {
+        @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable IgniteTx tx, Collection<? extends Integer> keys)
-            throws IgniteCheckedException {
+        @Override public void deleteAll(Collection<?> keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+        @Override public void txEnd(boolean commit) {
             // No-op.
         }
     }

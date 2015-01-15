@@ -18,12 +18,12 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -761,7 +761,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        GridCacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
+        CacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
 
         assertEquals(map, ((GridCacheTestStore)store).getMap());
     }
@@ -773,7 +773,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            GridCacheStore store = grid(i).configuration().getCacheConfiguration()[0].getStore();
+            CacheStore store = grid(i).configuration().getCacheConfiguration()[0].getStore();
 
             ((GridCacheTestStore)store).reset();
         }

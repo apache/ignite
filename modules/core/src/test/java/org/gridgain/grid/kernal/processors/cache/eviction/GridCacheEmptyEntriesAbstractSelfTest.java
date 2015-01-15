@@ -18,14 +18,14 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
-import org.gridgain.grid.cache.store.GridCacheStore;
-import org.gridgain.grid.cache.store.GridCacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -50,7 +50,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private GridCacheEvictionPolicy<?, ?> nearPlc;
 
     /** Test store. */
-    private GridCacheStore<String, String> testStore;
+    private CacheStore<String, String> testStore;
 
     /** Tx concurrency to use. */
     private IgniteTxConcurrency txConcurrency;
@@ -131,17 +131,16 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         checkPolicy0();
 
-        testStore = new GridCacheStoreAdapter<String, String>() {
-            @Override public String load(@Nullable IgniteTx tx, String key) {
+        testStore = new CacheStoreAdapter<String, String>() {
+            @Override public String load(String key) {
                 return null;
             }
 
-            @Override public void put(@Nullable IgniteTx tx, String key,
-                @Nullable String val) {
+            @Override public void put(String key, @Nullable String val) {
                 // No-op.
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, String key) {
+            @Override public void remove(String key) {
                 // No-op.
             }
         };

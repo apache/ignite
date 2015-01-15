@@ -15,41 +15,46 @@
  * limitations under the License.
  */
 
-package org.gridgain.client;
+package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import javax.cache.*;
 
 /**
- * Simple HashMap based cache store emulation.
+ *
  */
-public class GridHashMapStore extends CacheStoreAdapter {
-    /** Map for cache store. */
-    private final Map<Object, Object> map = new HashMap<>();
+public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
+    /** */
+    private final K key;
 
-    /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
-        for (Map.Entry e : map.entrySet())
-            c.apply(e.getKey(), e.getValue());
+    /** */
+    private final V val;
+
+    /**
+     * @param key Key.
+     * @param val Value.
+     */
+    public CacheEntryImpl(K key, V val) {
+        this.key = key;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public Object load(Object key) {
-        return map.get(key);
+    @Override public K getKey() {
+        return key;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Object key, @Nullable Object val) {
-        map.put(key, val);
+    @Override public V getValue() {
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Object key) {
-        map.remove(key);
+    @Override public <T> T unwrap(Class<T> clazz) {
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return "CacheEntry [key=" + key + ", val=" + val + ']';
     }
 }

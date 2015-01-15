@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
@@ -28,7 +29,6 @@ import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -236,7 +236,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
     private GridCacheWriteSynchronizationMode writeSync;
 
     /** */
-    private GridCacheStore<?, ?> store;
+    private CacheStore<?, ?> store;
 
     /** Node group resolver. */
     private GridCacheAffinityFunction aff;
@@ -794,8 +794,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
      * @return Underlying persistent storage for read-through and write-through operations.
      */
     @SuppressWarnings({"unchecked"})
-    public <K, V> GridCacheStore<K, V> getStore() {
-        return (GridCacheStore<K, V>)store;
+    public <K, V> CacheStore<K, V> getStore() {
+        return (CacheStore<K, V>)store;
     }
 
     /**
@@ -803,7 +803,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
      *
      * @param store Persistent cache store.
      */
-    public <K, V> void setStore(GridCacheStore<K, V> store) {
+    public <K, V> void setStore(CacheStore<K, V> store) {
         this.store = store;
     }
 
@@ -1241,8 +1241,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Maximum batch size for write-behind cache store operations. Store operations (get or remove)
      * are combined in a batch of this size to be passed to
-     * {@link GridCacheStore#putAll(IgniteTx, Map)} or
-     * {@link GridCacheStore#removeAll(IgniteTx, Collection)} methods.
+     * {@link org.apache.ignite.cache.store.CacheStore#putAll(IgniteTx, Map)} or
+     * {@link org.apache.ignite.cache.store.CacheStore#removeAll(IgniteTx, Collection)} methods.
      * <p/>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_BATCH_SIZE}.
      *
@@ -1659,7 +1659,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Flag indicating that {@link GridCacheStore} implementation
+     * Flag indicating that {@link org.apache.ignite.cache.store.CacheStore} implementation
      * is working with portable objects instead of Java objects
      * if portable mode for this cache is enabled ({@link #isPortableEnabled()}
      * flag is {@code true}). Default value of this flag is {@code true},

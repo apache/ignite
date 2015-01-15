@@ -18,22 +18,19 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
+import javax.cache.Cache;
 import javax.cache.integration.*;
 import java.util.*;
 
 /**
  * Store implementation wrapping {@link CacheLoader} and {@link CacheWriter}.
  */
-class GridCacheLoaderWriterStore<K, V> implements GridCacheStore<K, V>, LifecycleAware {
+class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** */
     private final CacheLoader<K, V> ldr;
 
@@ -75,7 +72,7 @@ class GridCacheLoaderWriterStore<K, V> implements GridCacheStore<K, V>, Lifecycl
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Nullable @Override public V load(K key) {
         if (ldr == null)
             return null;
 
@@ -83,46 +80,31 @@ class GridCacheLoaderWriterStore<K, V> implements GridCacheStore<K, V>, Lifecycl
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
-        throws IgniteCheckedException {
+    @Override public Map<K, V> loadAll(Iterable<? extends K> keys) {
         if (ldr == null)
-            return;
+            return Collections.emptyMap();
 
-        Map<K, V> map = ldr.loadAll(keys);
-
-        if (map != null) {
-            for (Map.Entry<K, V> e : map.entrySet())
-                c.apply(e.getKey(), e.getValue());
-        }
+        return ldr.loadAll(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
         if (writer == null)
             return;
 
-        writer.write(new KeyValueEntry<>(key, val));
+        writer.write(entry);
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable IgniteTx tx, Map<? extends K, ? extends V> map)
-        throws IgniteCheckedException {
+    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         if (writer == null)
             return;
 
-        Collection<Cache.Entry<? extends K, ? extends V>> col =
-            F.viewReadOnly(map.entrySet(), new C1<Map.Entry<? extends K, ? extends V>, Cache.Entry<? extends K, ? extends V>>() {
-                @Override
-                public Cache.Entry<? extends K, ? extends V> apply(Map.Entry<? extends K, ? extends V> e) {
-                    return new MapEntry<>(e);
-                }
-            });
-
-        writer.writeAll(col);
+        writer.writeAll(entries);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         if (writer == null)
             return;
 
@@ -130,7 +112,7 @@ class GridCacheLoaderWriterStore<K, V> implements GridCacheStore<K, V>, Lifecycl
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
+    @Override public void deleteAll(Collection<?> keys) {
         if (writer == null)
             return;
 
@@ -138,82 +120,7 @@ class GridCacheLoaderWriterStore<K, V> implements GridCacheStore<K, V>, Lifecycl
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(boolean commit) {
         // No-op.
-    }
-
-    /**
-     *
-     */
-    private static class KeyValueEntry<K, V> implements Cache.Entry<K, V> {
-        /** */
-        private final K key;
-
-        /** */
-        private final V val;
-
-        /**
-         * @param key Key.
-         * @param val Value.
-         */
-        KeyValueEntry(K key, V val) {
-            this.key = key;
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public K getKey() {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public V getValue() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T unwrap(Class<T> clazz) {
-            throw new IllegalArgumentException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(KeyValueEntry.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    static class MapEntry<K, V> implements Cache.Entry<K, V> {
-        /** */
-        private final Map.Entry<K, V> e;
-
-        /**
-         * @param e Entry.
-         */
-        MapEntry(Map.Entry<K, V> e) {
-            this.e = e;
-        }
-
-        /** {@inheritDoc} */
-        @Override public K getKey() {
-            return e.getKey();
-        }
-
-        /** {@inheritDoc} */
-        @Override public V getValue() {
-            return e.getValue();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T unwrap(Class<T> clazz) {
-            throw new IllegalArgumentException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(MapEntry.class, this);
-        }
     }
 }

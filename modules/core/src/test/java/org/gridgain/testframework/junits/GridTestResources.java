@@ -123,6 +123,13 @@ public class GridTestResources {
     }
 
     /**
+     * @return Resource processor.
+     */
+    public GridResourceProcessor resources() {
+        return rsrcProc;
+    }
+
+    /**
      * @return Local host.
      */
     @Nullable private String localHost() {

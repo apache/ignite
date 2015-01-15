@@ -18,12 +18,12 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -311,7 +311,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
+    private static class TestStore extends CacheStoreAdapter<Integer, String> {
         /** Map. */
         private ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
@@ -359,7 +359,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(Integer key) {
             if (!create)
                 return map.get(key);
 
@@ -369,13 +369,12 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
-            throws IgniteCheckedException {
+        @Override public void put(Integer key, @Nullable String val) {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(Integer key) {
             map.remove(key);
         }
     }
