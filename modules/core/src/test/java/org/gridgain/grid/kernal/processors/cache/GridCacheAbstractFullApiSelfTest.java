@@ -5291,19 +5291,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkIteratorCache(entries);
 
+        //check that we cannot call Iterator.remove() without next().
+        Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+
+        assertTrue(iter.hasNext());
+
+        iter.next();
+        iter.remove();
+
         try {
-            //check that we cannot call Iterator.remove() without next().
-            Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
-
-            assertTrue(iter.hasNext());
-
-            iter.next();
-            iter.remove();
             iter.remove();
 
             fail();
         }
-        catch (Exception e) {
+        catch (IllegalStateException e) {
         }
     }
 

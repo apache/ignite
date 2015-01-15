@@ -1078,57 +1078,49 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      */
     private class IgniteCacheIterator implements Iterator<Cache.Entry<K, V>> {
         /** Cache query future for all entries in distributed ignite cache. */
-        private final GridCacheQueryFuture<Map.Entry<K, V>> fut;
+        private GridCacheQueryFuture<Map.Entry<K, V>> fut;
 
         /** Current element. */
-        private Map.Entry<K, V> curIter;
+        private Map.Entry<K, V> curEntry;
 
         /** Next element. */
-        private Map.Entry<K,V> nextIter;
+        private Map.Entry<K,V> nextEntry;
 
-        /**
-         * No-arg constructor.
-         */
-        public IgniteCacheIterator() {
-            fut = delegate.queries().createScanQuery(null).execute();
-
-            try {
-                nextIter = fut.next();
-            }
-            catch (IgniteCheckedException e) {
-                throw cacheException(e);
-            }
-        }
+        /** Init first time. */
+        private boolean firstTime = true;
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return nextIter != null;
+            initFirstTime();
+
+            return nextEntry != null;
         }
 
         /** {@inheritDoc} */
         @Override public Entry<K, V> next() {
-            curIter = nextIter;
+            initFirstTime();
 
-            if (curIter == null) {
+            curEntry = nextEntry;
+
+            if (curEntry == null)
                 throw new NoSuchElementException();
-            }
 
             try {
-                nextIter = fut.next();
+                nextEntry = fut.next();
             }
             catch (IgniteCheckedException e) {
-                curIter = null;
+                curEntry = null;
 
                 throw cacheException(e);
             }
 
             return new Cache.Entry<K, V>() {
                 @Override public K getKey() {
-                    return curIter.getKey();
+                    return curEntry.getKey();
                 }
 
                 @Override public V getValue() {
-                    return curIter.getValue();
+                    return curEntry.getValue();
                 }
 
                 @Override public <T> T unwrap(Class<T> clazz) {
@@ -1139,16 +1131,36 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
         /** {@inheritDoc} */
         @Override public void remove() {
-            if (curIter == null)
+            if (curEntry == null)
                 throw new IllegalStateException();
 
             try {
-                delegate.removex(curIter.getKey());
+                delegate.removex(curEntry.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw cacheException(e);
             }
-            curIter = null;
+
+            curEntry = null;
+        }
+
+        /**
+         * Initialize fields at first call
+         */
+        private void initFirstTime() {
+            if (!firstTime) {
+                return;
+            }
+
+            firstTime = false;
+            fut = delegate.queries().createScanQuery(null).execute();
+
+            try {
+                nextEntry = fut.next();
+            }
+            catch (IgniteCheckedException e) {
+                throw cacheException(e);
+            }
         }
     }
 }
