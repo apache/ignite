@@ -159,11 +159,26 @@ public class GridSqlQuerySplitter {
 
                     break;
 
-                case COUNT_ALL:
-                case COUNT:
+                case SUM:
                 case MAX:
                 case MIN:
-                case SUM:
+                    GridSqlElement map = aggregate(agg.distinct(), agg.type()).addChild(agg.child());
+
+                    map = alias(columnName(idx), map);
+
+                    mapSelect.set(idx, map);
+
+                    rdc = aggregate(agg.distinct(), agg.type()).addChild(column(((GridSqlAlias)map).alias()));
+
+                    if (alias != null) // Add initial alias if it was set.
+                        rdc = alias(alias.alias(), rdc);
+
+                    rdcSelect[idx] = rdc;
+
+                    break;
+
+                case COUNT_ALL:
+                case COUNT:
                 default:
                     throw new IgniteException("Unsupported aggregate: " + agg.type());
             }

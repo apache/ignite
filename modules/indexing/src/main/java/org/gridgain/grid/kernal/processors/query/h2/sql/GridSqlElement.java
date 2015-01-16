@@ -57,8 +57,8 @@ public abstract class GridSqlElement implements Cloneable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CloneCallsConstructors")
-    @Override protected GridSqlElement clone() throws CloneNotSupportedException {
+    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
+    @Override protected GridSqlElement clone() {
         try {
             GridSqlElement res = (GridSqlElement)super.clone();
 
@@ -67,7 +67,7 @@ public abstract class GridSqlElement implements Cloneable {
             return res;
         }
         catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 }
