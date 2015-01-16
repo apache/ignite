@@ -238,7 +238,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 assert mem != null;
 
                 if (val != null || valBytes != null) {
-                    boolean valIsByteArr = val != null && val instanceof byte[];
+                    boolean valIsByteArr = val instanceof byte[];
 
                     if (valBytes == null && !valIsByteArr)
                         valBytes = CU.marshal(cctx.shared(), val);
