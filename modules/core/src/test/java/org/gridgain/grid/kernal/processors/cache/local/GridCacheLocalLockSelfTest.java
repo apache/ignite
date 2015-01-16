@@ -293,7 +293,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 info("Put key-value pair into cache: 1='2'");
 
-                assert "2".equals(cache.remove(1));
+                assert "2".equals(cache.getAndRemove(1));
 
                 info("Removed key from cache: 1");
 

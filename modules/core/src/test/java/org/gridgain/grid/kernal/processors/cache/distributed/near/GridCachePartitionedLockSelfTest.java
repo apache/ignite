@@ -28,6 +28,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -76,13 +77,13 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
             @Override public Object call() throws Exception {
                 return cache.lock(1).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             }
-        }, IgniteCheckedException.class, "Locks are not supported");
+        }, CacheException.class, "Locks are not supported");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return cache.lockAll(Collections.singleton(1)).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             }
-        }, IgniteCheckedException.class, "Locks are not supported");
+        }, CacheException.class, "Locks are not supported");
 
         final IgniteFuture<Boolean> lockFut1 = g0.cache(null).lockAsync(1, Long.MAX_VALUE);
 

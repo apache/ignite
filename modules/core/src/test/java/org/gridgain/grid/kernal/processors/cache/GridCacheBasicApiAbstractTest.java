@@ -41,6 +41,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Test cases for multi-threaded tests.
  */
+@SuppressWarnings("LockAcquiredButNotSafelyReleased")
 public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTest {
     /** Grid. */
     private Ignite ignite;
@@ -129,6 +130,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         Lock lock = cache.lock(1);
 
+        lock.lock();
+
         assert cache.isLocked(1);
         assert cache.isLockedByThread(1);
 
@@ -182,7 +185,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert cache.isLockedByThread(key);
 
             try {
-                assert "1".equals(cache.remove(key));
+                assert "1".equals(cache.getAndRemove(key));
             }
             finally {
                 cache.lock(key).unlock();
@@ -432,7 +435,6 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Stop latch wait 3");
 
-            assert cache.containsKey(key);
             assert cache.isLocked(key);
         }
         finally {

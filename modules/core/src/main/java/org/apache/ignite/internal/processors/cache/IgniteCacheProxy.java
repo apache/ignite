@@ -273,7 +273,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw new CacheException(e.getMessage(), e);
                 }
             }
 
@@ -291,7 +291,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                     throw new InterruptedException();
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw new CacheException(e.getMessage(), e);
                 }
             }
 
@@ -300,7 +300,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                     return delegate.lockAll(keys, -1);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw new CacheException(e.getMessage(), e);
                 }
             }
 
@@ -315,7 +315,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                     throw new InterruptedException();
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw new CacheException(e.getMessage(), e);
                 }
             }
 
@@ -324,7 +324,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                     delegate.unlockAll(keys);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                    throw new CacheException(e.getMessage(), e);
                 }
             }
 
