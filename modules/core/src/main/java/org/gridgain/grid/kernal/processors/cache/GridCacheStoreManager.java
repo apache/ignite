@@ -18,12 +18,14 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.lang.*;
@@ -34,6 +36,8 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+
 /**
  * Store manager.
  */
@@ -43,6 +47,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** */
     private final CacheStore<K, Object> store;
+
+    /** */
+    private final CacheStore<?, ?> cfgStore;
 
     /** */
     private final CacheStoreBalancingWrapper<K, Object> singleThreadGate;
@@ -61,28 +68,62 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param ctx Kernal context.
-     * @param store Store.
+     * @param cfgStore Store provided in configuration.
+     * @param cfg Cache configuration.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheStoreManager(GridKernalContext ctx, @Nullable CacheStore<K, Object> store)
-        throws IgniteCheckedException {
-        this.store = store;
+    public GridCacheStoreManager(GridKernalContext ctx,
+        @Nullable CacheStore<K, Object> cfgStore,
+        CacheConfiguration cfg) throws IgniteCheckedException {
+        this.cfgStore = cfgStore;
+
+        store = cacheStoreWrapper(ctx.gridName(), cfgStore, cfg);
 
         singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
-        if (store instanceof GridCacheWriteBehindStore)
-            store = ((GridCacheWriteBehindStore)store).store();
+        boolean sesEnabled0 = false;
 
-        if (store != null) {
-            ctx.resource().injectBasicResource(store, IgniteCacheSessionResource.class, new ThreadLocalSession());
+        if (cfgStore != null && cfg.getAtomicityMode() == TRANSACTIONAL)
+            sesEnabled0 = ctx.resource().injectStoreSession(cfgStore, new ThreadLocalSession());
 
-            sesEnabled = true; // TODO IGNITE-42.
-        }
-        else
-            sesEnabled = false;
+        sesEnabled = sesEnabled0;
 
-        locStore = U.hasAnnotation(store, CacheLocalStore.class);
+        locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
+    }
+
+    /**
+     * @return Unwrapped store provided in configuration.
+     */
+    public CacheStore<?, ?> configuredStore() {
+        return cfgStore;
+    }
+
+    /**
+     * Creates a wrapped cache store if write-behind cache is configured.
+     *
+     * @param gridName Grid name.
+     * @param cfgStore Store provided in configuration.
+     * @param cfg Cache configuration.
+     * @return Instance if {@link GridCacheWriteBehindStore} if write-behind store is configured,
+     *         or user-defined cache store.
+     */
+    @SuppressWarnings({"unchecked"})
+    private CacheStore cacheStoreWrapper(String gridName, @Nullable CacheStore cfgStore, CacheConfiguration cfg) {
+        if (cfgStore == null || !cfg.isWriteBehindEnabled())
+            return cfgStore;
+
+        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName,
+            cfg.getName(),
+            log,
+            cfgStore);
+
+        store.setFlushSize(cfg.getWriteBehindFlushSize());
+        store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
+        store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
+        store.setBatchSize(cfg.getWriteBehindBatchSize());
+
+        return store;
     }
 
     /** {@inheritDoc} */

@@ -1892,7 +1892,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     }
                 }
 
-                if (misses != null && ctx.isStoreEnabled()) {
+                if (misses != null && ctx.readThrough()) {
                     final Map<K, GridCacheVersion> loadKeys = misses;
 
                     final Collection<K> redos = new LinkedList<>();

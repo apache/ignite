@@ -130,9 +130,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Initializes cache configuration with proper defaults.
+     * @throws IgniteCheckedException If configuration is not valid.
      */
     @SuppressWarnings("unchecked")
-    private void initialize(CacheConfiguration cfg) {
+    private void initialize(CacheConfiguration cfg) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -220,7 +221,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (cfg.getStore() == null) {
+        if (cfg.getCacheStoreFactory() == null) {
             Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
 
             CacheLoader ldr = null;
@@ -235,15 +236,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cfg.isWriteThrough() && writerFactory != null)
                 writer = writerFactory.create();
 
-            if (ldr != null || writer != null)
-                cfg.setStore(new GridCacheLoaderWriterStore(ldr, writer));
+            if (ldr != null || writer != null) {
+                final GridCacheLoaderWriterStore store = new GridCacheLoaderWriterStore(ldr, writer);
+
+                cfg.setCacheStoreFactory(new Factory<CacheStore<? super Object, ? super Object>>() {
+                    @Override public CacheStore<? super Object, ? super Object> create() {
+                        return store;
+                    }
+                });
+            }
+        }
+        else {
+            if (cfg.getCacheLoaderFactory() != null)
+                throw new IgniteCheckedException("Cannot set both cache loaded factory and cache store factory " +
+                    "for cache: " + cfg.getName());
+
+            if (cfg.getCacheWriterFactory() != null)
+                throw new IgniteCheckedException("Cannot set both cache writer factory and cache store factory " +
+                    "for cache: " + cfg.getName());
         }
     }
 
     /**
      * @param cfg Configuration to check for possible performance issues.
+     * @param hasStore {@code True} if store is configured.
      */
-    private void suggestOptimizations(CacheConfiguration cfg) {
+    private void suggestOptimizations(CacheConfiguration cfg, boolean hasStore) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
@@ -276,7 +294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Suppress warning if at least one swap is disabled.
         perf.add("Disable swap store (set 'swapEnabled' to false)", !cfg.isSwapEnabled());
 
-        if (cfg.getStore() != null)
+        if (hasStore && cfg.isWriteThrough())
             perf.add("Enable write-behind to persistent store (set 'writeBehindEnabled' to true)",
                 cfg.isWriteBehindEnabled());
 
@@ -286,9 +304,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param c Grid configuration.
      * @param cc Configuration to validate.
+     * @param cfgStore Cache store.
      * @throws IgniteCheckedException If failed.
      */
-    private void validate(IgniteConfiguration c, CacheConfiguration cc) throws IgniteCheckedException {
+    private void validate(IgniteConfiguration c,
+        CacheConfiguration cc,
+        @Nullable CacheStore cfgStore) throws IgniteCheckedException {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getAffinity() instanceof GridCachePartitionFairAffinity)
                 throw new IgniteCheckedException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
@@ -351,9 +372,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "for cache: " + cc.getName());
 
         if (cc.isWriteBehindEnabled()) {
-            if (cc.getStore() == null)
-                throw new IgniteCheckedException("Cannot enable write-behind cache (cache store is not provided) for cache: " +
-                    cc.getName());
+            if (cfgStore == null)
+                throw new IgniteCheckedException("Cannot enable write-behind (write or store is not provided) " +
+                    "for cache: " + cc.getName());
 
             assertParameter(cc.getWriteBehindBatchSize() > 0, "writeBehindBatchSize > 0");
             assertParameter(cc.getWriteBehindFlushSize() >= 0, "writeBehindFlushSize >= 0");
@@ -364,6 +385,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Cannot set both 'writeBehindFlushFrequency' and " +
                     "'writeBehindFlushSize' parameters to 0 for cache: " + cc.getName());
         }
+
+        if (cc.isReadThrough() && cfgStore == null)
+            throw new IgniteCheckedException("Cannot enable read-through (loader or store is not provided) " +
+                "for cache: " + cc.getName());
+
+        if (cc.isWriteThrough() && cfgStore == null)
+            throw new IgniteCheckedException("Cannot enable read-through (writer or store is not provided) " +
+                "for cache: " + cc.getName());
 
         long delay = cc.getPreloadPartitionedDelay();
 
@@ -470,7 +499,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getCloner(), false);
-        prepare(cfg, cfg.getStore(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
 
@@ -506,7 +534,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.jta().tmLookup(), false);
         cleanup(cfg, cfg.getCloner(), false);
-        cleanup(cfg, cfg.getStore(), false);
+        cleanup(cfg, cctx.store().configuredStore(), false);
 
         cctx.cleanup();
     }
@@ -576,19 +604,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             // Initialize defaults.
             initialize(cfg);
 
-            // Skip suggestions for system caches.
-            if (!sysCaches.contains(cfg.getName()))
-                suggestOptimizations(cfg);
+            CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
-            validate(ctx.config(), cfg);
+            validate(ctx.config(), cfg, cfgStore);
 
             GridCacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
 
             jta.createTmLookup(cfg);
 
-            prepare(cfg, jta.tmLookup());
+            // Skip suggestions for system caches.
+            if (!sysCaches.contains(cfg.getName()))
+                suggestOptimizations(cfg, cfgStore != null);
 
-            U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup()));
+            prepare(cfg, jta.tmLookup(), cfgStore);
+
+            U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
 
             cfgs[i] = cfg; // Replace original configuration value.
 
@@ -602,9 +632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
-            CacheStore store = cacheStore(ctx.gridName(), cfg);
-
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, store);
+            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, cfgStore, cfg);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
@@ -923,7 +951,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int i = 0;
 
         for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-            attrVals[i++] = new GridCacheAttributes(cfg);
+            assert caches.containsKey(cfg.getName()) : cfg.getName();
+
+            GridCacheContext ctx = caches.get(cfg.getName()).context();
+
+            attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
 
             attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
 
@@ -1801,30 +1833,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 break;
             }
         }
-    }
-
-    /**
-     * Creates a wrapped cache store if write-behind cache is configured.
-     *
-     * @param gridName Grid name.
-     * @param cfg Cache configuration.
-     * @return Instance if {@link GridCacheWriteBehindStore} if write-behind store is configured,
-     *         or user-defined cache store.
-     */
-    @SuppressWarnings({"unchecked"})
-    private CacheStore cacheStore(String gridName, CacheConfiguration cfg) {
-        if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
-            return cfg.getStore();
-
-        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName, cfg.getName(), log,
-            cfg.getStore());
-
-        store.setFlushSize(cfg.getWriteBehindFlushSize());
-        store.setFlushThreadCount(cfg.getWriteBehindFlushThreadCount());
-        store.setFlushFrequency(cfg.getWriteBehindFlushFrequency());
-        store.setBatchSize(cfg.getWriteBehindBatchSize());
-
-        return store;
     }
 
     /**

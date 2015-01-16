@@ -762,7 +762,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        CacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
+        String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
+
+        GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+        CacheStore store = ctx.store().configuredStore();
 
         assertEquals(map, ((GridCacheTestStore)store).getMap());
     }
@@ -774,7 +778,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            CacheStore store = grid(i).configuration().getCacheConfiguration()[0].getStore();
+            String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
+
+            GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+            CacheStore store = ctx.store().configuredStore();
 
             ((GridCacheTestStore)store).reset();
         }

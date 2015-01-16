@@ -45,7 +45,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
 
         return cfg;
     }

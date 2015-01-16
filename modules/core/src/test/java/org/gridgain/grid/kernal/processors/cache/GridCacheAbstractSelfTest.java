@@ -39,6 +39,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -228,10 +229,19 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setStore(cacheStore());
+        CacheStore<?, ?> store = cacheStore();
+
+        if (store != null) {
+            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+
+            cfg.setReadThrough(true);
+            cfg.setWriteThrough(true);
+        }
+
         cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());

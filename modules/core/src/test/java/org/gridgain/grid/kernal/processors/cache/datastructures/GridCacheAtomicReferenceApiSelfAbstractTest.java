@@ -26,6 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.mockito.*;
 
@@ -183,6 +185,8 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         cache.dataStructures().removeAtomicReference(atomicName);
 
-        Mockito.verifyZeroInteractions(cache.configuration().getStore()); // Store shouldn't be ever called.
+        GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache().context();
+
+        Mockito.verifyZeroInteractions(ctx.store().configuredStore()); // Store shouldn't be ever called.
     }
 }

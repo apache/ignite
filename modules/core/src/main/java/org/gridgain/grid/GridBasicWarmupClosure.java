@@ -356,7 +356,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
                 else if (ccfgCp.getDistributionMode() == GridCacheDistributionMode.NEAR_ONLY)
                     ccfgCp.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
 
-                ccfgCp.setStore(null);
+                ccfgCp.setCacheStoreFactory(null);
                 ccfgCp.setWriteBehindEnabled(false);
 
                 reduced.add(ccfgCp);

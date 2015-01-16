@@ -673,7 +673,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
-        if (readThrough && !cctx.isStoreEnabled())
+        if (readThrough && !cctx.readThrough())
             readThrough = false;
 
         GridCacheMvccCandidate<K> owner;
@@ -1705,7 +1705,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (drRes == null) { // Perform version check only in case there will be no explicit conflict resolution.
                 if (verCheck) {
                     if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
-                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.isStoreEnabled() && primary) {
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.writeThrough() && primary) {
                             if (log.isDebugEnabled())
                                 log.debug("Received entry update with same version as current (will update store) " +
                                     "[entry=" + this + ", newVer=" + newVer + ']');

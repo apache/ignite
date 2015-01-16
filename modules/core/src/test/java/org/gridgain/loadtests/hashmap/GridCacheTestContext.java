@@ -17,6 +17,7 @@
 
 package org.gridgain.loadtests.hashmap;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.os.*;
@@ -52,7 +53,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             defaultCacheConfiguration(),
             new GridCacheEventManager<K, V>(),
             new GridCacheSwapManager<K, V>(false),
-            new GridCacheStoreManager<K, V>(null, null),
+            new GridCacheStoreManager<K, V>(null, null, new CacheConfiguration()),
             new GridCacheEvictionManager<K, V>(),
             new GridCacheLocalQueryManager<K, V>(),
             new GridCacheContinuousQueryManager<K, V>(),

@@ -42,6 +42,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -736,10 +737,18 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
+            @SuppressWarnings("unchecked")
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new GridCacheConsistentHashAffinityFunction() {/*No-op.*/});
+
                 cfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy());
-                cfg.setStore(new TestStore());
+
+                cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+
+                cfg.setReadThrough(true);
+
+                cfg.setWriteThrough(true);
+
                 return null;
             }
         };
@@ -750,8 +759,11 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new GridCacheConsistentHashAffinityFunction());
+
                 cfg.setEvictionPolicy(new GridCacheLruEvictionPolicy());
-                cfg.setStore(null);
+
+                cfg.setCacheStoreFactory(null);
+
                 return null;
             }
         };
@@ -768,10 +780,15 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = PARTITIONED;
 
         initCache = new C1<CacheConfiguration, Void>() {
+            @SuppressWarnings("unchecked")
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
+
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(new TestStore());
+
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
 
                 return null;
             }
@@ -783,7 +800,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
                 cc.setDistributionMode(CLIENT_ONLY);
-                cc.setStore(null);
+                cc.setCacheStoreFactory(null);
 
                 return null;
             }
@@ -801,10 +818,17 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = PARTITIONED;
 
         initCache = new C1<CacheConfiguration, Void>() {
+            @SuppressWarnings("unchecked")
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
+
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(new TestStore());
+
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+
+                cc.setReadThrough(true);
+
+                cc.setWriteThrough(true);
 
                 return null;
             }
@@ -816,7 +840,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(ATOMIC);
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(null);
+                cc.setCacheStoreFactory(null);
 
                 return null;
             }
@@ -840,10 +864,15 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = PARTITIONED;
 
         initCache = new C1<CacheConfiguration, Void>() {
+            @SuppressWarnings("unchecked")
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
+
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(new TestStore());
+
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
 
                 return null;
             }
@@ -854,8 +883,10 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
+
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(null);
+
+                cc.setCacheStoreFactory(null);
 
                 return null;
             }
@@ -879,10 +910,15 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = PARTITIONED;
 
         initCache = new C1<CacheConfiguration, Void>() {
+            @SuppressWarnings("unchecked")
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
+
                 cc.setDistributionMode(PARTITIONED_ONLY);
-                cc.setStore(new TestStore());
+
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
 
                 return null;
             }
@@ -893,8 +929,10 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             @Override public Void apply(CacheConfiguration cc) {
                 cc.setAtomicityMode(TRANSACTIONAL);
+
                 cc.setDistributionMode(CLIENT_ONLY);
-                cc.setStore(null);
+
+                cc.setCacheStoreFactory(null);
 
                 return null;
             }

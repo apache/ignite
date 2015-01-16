@@ -30,6 +30,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
+import javax.cache.configuration.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -82,6 +83,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -100,7 +102,9 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         cc.setBackups(1);
         cc.setDistributionMode(mode);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

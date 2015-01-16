@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -155,8 +156,9 @@ public class GridCacheAttributes implements Externalizable {
 
     /**
      * @param cfg Cache configuration.
+     * @param store Cache store.
      */
-    public GridCacheAttributes(CacheConfiguration cfg) {
+    public GridCacheAttributes(CacheConfiguration cfg, @Nullable CacheStore<?, ?> store) {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
@@ -171,7 +173,7 @@ public class GridCacheAttributes implements Externalizable {
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         seqReserveSize = cfg.getAtomicSequenceReserveSize();
-        storeEnabled = cfg.getStore() != null;
+        storeEnabled = store != null;
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
@@ -206,7 +208,7 @@ public class GridCacheAttributes implements Externalizable {
         evictFilterClsName = className(cfg.getEvictionFilter());
         evictPlcClsName = className(cfg.getEvictionPolicy());
         nearEvictPlcClsName = className(cfg.getNearEvictionPolicy());
-        storeClsName = className(cfg.getStore());
+        storeClsName = className(store);
         tmLookupClsName = cfg.getTransactionManagerLookupClassName();
     }
 

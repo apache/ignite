@@ -33,6 +33,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 /**
@@ -236,7 +237,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private GridCacheWriteSynchronizationMode writeSync;
 
     /** */
-    private CacheStore<?, ?> store;
+    private Factory storeFactory;
 
     /** Node group resolver. */
     private GridCacheAffinityFunction aff;
@@ -400,7 +401,7 @@ public class CacheConfiguration extends MutableConfiguration {
         qryIdxEnabled = cc.isQueryIndexEnabled();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
-        store = cc.getStore();
+        storeFactory = cc.getCacheStoreFactory();
         storeValBytes = cc.isStoreValueBytes();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
@@ -795,7 +796,7 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     @SuppressWarnings({"unchecked"})
     public <K, V> CacheStore<K, V> getStore() {
-        return (CacheStore<K, V>)store;
+        return null;//(CacheStore<K, V>)store;
     }
 
     /**
@@ -804,7 +805,23 @@ public class CacheConfiguration extends MutableConfiguration {
      * @param store Persistent cache store.
      */
     public <K, V> void setStore(CacheStore<K, V> store) {
-        this.store = store;
+        //this.store = store;
+    }
+
+    /**
+     * @return Cache store factory.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
+        return (Factory<CacheStore<? super K, ? super V>>)storeFactory;
+    }
+
+    /**
+     * @param storeFactory Cache store factory.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
+        this.storeFactory = storeFactory;
     }
 
     /**

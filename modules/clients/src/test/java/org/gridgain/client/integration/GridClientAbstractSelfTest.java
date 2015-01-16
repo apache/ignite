@@ -39,6 +39,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -248,6 +249,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
@@ -261,7 +263,9 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         if (cacheStore == null)
             cacheStores.put(cacheName, cacheStore = new HashMapStore());
 
-        cfg.setStore(cacheStore);
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(cacheStore));
+        cfg.setWriteThrough(true);
+        cfg.setReadThrough(true);
 
         cfg.setSwapEnabled(true);
 

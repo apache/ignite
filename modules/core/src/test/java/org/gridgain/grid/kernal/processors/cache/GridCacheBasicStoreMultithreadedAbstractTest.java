@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -61,6 +62,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -76,7 +78,9 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

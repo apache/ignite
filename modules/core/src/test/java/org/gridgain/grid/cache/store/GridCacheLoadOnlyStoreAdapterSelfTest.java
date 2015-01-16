@@ -24,6 +24,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 /**
@@ -42,10 +43,13 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setStore(new TestStore());
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
 
         return cfg;
     }

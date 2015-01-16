@@ -534,8 +534,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @return {@code True} if store enabled.
      */
-    private boolean storeEnabled() {
-        return ctx.isStoreEnabled() && ctx.config().getStore() != null;
+    private boolean writeThrough() {
+        return ctx.writeThrough() && ctx.store().configured();
     }
 
     /**
@@ -1077,7 +1077,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (plc != null)
                             expiry = new UpdateExpiryPolicy(plc);
 
-                        if (storeEnabled() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
+                        if (writeThrough() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node,
                                 hasNear,
@@ -1650,7 +1650,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     writeVal,
                     newValBytes,
                     req.invokeArguments(),
-                    primary && storeEnabled(),
+                    primary && writeThrough(),
                     req.returnValue(),
                     expiry,
                     true,
@@ -2500,7 +2500,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest<K, V> req,
         List<GridDhtCacheEntry<K, V>> locked) {
-        if (ctx.isStoreEnabled() && req.operation() == TRANSFORM) {
+        if (ctx.writeThrough() && req.operation() == TRANSFORM) {
             for (int i = 0; i < locked.size(); i++) {
                 if (!locked.get(i).hasValue()) {
                     req.forceTransformBackups(false);

@@ -343,7 +343,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         IgniteFuture<Map<K, V>> fut;
 
         if (txFut == null || txFut.isDone()) {
-            if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+            if (reload && cctx.readThrough() && cctx.store().configured()) {
                 fut = cache().reloadAllAsync(keys.keySet(),
                     true,
                     subjId,
@@ -379,7 +379,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e != null)
                             throw new GridClosureException(e);
 
-                        if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+                        if (reload && cctx.readThrough() && cctx.store().configured()) {
                             return cache().reloadAllAsync(keys.keySet(),
                                 true,
                                 subjId,

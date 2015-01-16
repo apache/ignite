@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -27,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.concurrent.*;
@@ -70,6 +72,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -88,7 +91,9 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setDistributionMode(distributionMode());
         cc.setPreloadMode(SYNC);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

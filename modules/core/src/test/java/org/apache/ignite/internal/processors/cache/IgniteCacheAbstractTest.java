@@ -120,7 +120,14 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         cfg.setCacheWriterFactory(writerFactory());
 
-        cfg.setStore(cacheStore());
+        CacheStore<?, ?> store = cacheStore();
+
+        if (store != null) {
+            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+
+            cfg.setReadThrough(true);
+            cfg.setWriteThrough(true);
+        }
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
