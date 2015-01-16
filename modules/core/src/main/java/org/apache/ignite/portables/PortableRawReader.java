@@ -112,7 +112,7 @@ public interface PortableRawReader {
      * @return Object.
      * @throws PortableException In case of error.
      */
-    @Nullable public Object readObject() throws PortableException;
+    @Nullable public <T> T readObject() throws PortableException;
 
     /**
      * @return Byte array.
