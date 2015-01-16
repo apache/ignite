@@ -761,7 +761,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             try {
                 assertEquals(val, near.get(key));
-                assertEquals(val, near.remove(key));
+                assertEquals(val, near.getAndRemove(key));
 
                 assertNull(near.localPeek(key));
                 assertNull(dht(primaryGrid(key)).peek(key));

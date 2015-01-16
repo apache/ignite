@@ -213,7 +213,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("1", dht().peek(1));
 
             assertEquals("1", near.get(1));
-            assertEquals("1", near.remove(1));
+            assertEquals("1", near.getAndRemove(1));
 
             assertNull(near.localPeek(1));
             assertNull(dht().peek(1));
@@ -248,7 +248,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
             try {
                 assertEquals("1", near.get(1));
-                assertEquals("1", near.remove(1));
+                assertEquals("1", near.getAndRemove(1));
 
                 assertNull(near.localPeek(1));
                 assertNull(dht().peek(1));

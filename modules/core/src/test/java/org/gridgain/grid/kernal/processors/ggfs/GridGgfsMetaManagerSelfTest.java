@@ -161,7 +161,8 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
             GridGgfsFileInfo info = mgr.info(fileId);
 
             assertNull("Expects empty properties are not stored: " + info, getFieldValue(info, "props"));
-            assertEquals("Expects empty properties are not stored: " + info, Collections.emptyMap(), info.properties());
+            assertEquals("Expects empty properties are not stored: " + info, Collections.<String, String>emptyMap(),
+                info.properties());
 
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.asMap(key1, "1"));
 
@@ -178,7 +179,8 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.<String, String>asMap(key2, null));
 
             assertNull("Expects empty properties are not stored: " + info, getFieldValue(info, "props"));
-            assertEquals("Expects empty properties are not stored: " + info, Collections.emptyMap(), info.properties());
+            assertEquals("Expects empty properties are not stored: " + info, Collections.<String, String>emptyMap(),
+                info.properties());
 
             assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
