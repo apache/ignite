@@ -24,6 +24,7 @@ import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -418,6 +419,9 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         Collection<ClusterNode> nodes = nodes();
 
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
+        if (nodes.isEmpty())
+            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyException());
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
