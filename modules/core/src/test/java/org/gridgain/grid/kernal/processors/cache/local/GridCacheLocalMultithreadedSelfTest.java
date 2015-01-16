@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -70,7 +71,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(LOCAL);
 

@@ -29,6 +29,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import javax.sql.*;
 import java.sql.*;
@@ -239,10 +240,13 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(K key, V val) {
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
         init();
 
         IgniteTx tx = transaction();
+
+        K key = entry.getKey();
+        V val = entry.getValue();
 
         if (log.isDebugEnabled())
             log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
@@ -279,7 +283,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(K key) {
+    @Override public void delete(Object key) {
         init();
 
         IgniteTx tx = transaction();

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -94,7 +95,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgniteLogger log;
 
     /** Cache configuration. */
-    private GridCacheConfiguration cacheCfg;
+    private CacheConfiguration cacheCfg;
 
     /** Unsafe memory object for direct memory allocation. */
     private GridUnsafeMemory unsafeMemory;
@@ -213,7 +214,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
-        GridCacheConfiguration cacheCfg,
+        CacheConfiguration cacheCfg,
 
         /*
          * Managers in starting order!
@@ -774,7 +775,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache configuration for given cache instance.
      */
-    public GridCacheConfiguration config() {
+    public CacheConfiguration config() {
         return cacheCfg;
     }
 

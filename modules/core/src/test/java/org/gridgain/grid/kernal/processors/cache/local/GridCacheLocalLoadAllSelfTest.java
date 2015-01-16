@@ -18,14 +18,15 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -63,7 +64,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setName("test-cache");
         cache.setCacheMode(LOCAL);
@@ -79,14 +80,10 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
      */
     private static class TestStore extends CacheStoreAdapter<Integer, Integer> {
         /** {@inheritDoc} */
-        @SuppressWarnings({"TypeParameterExtendsFinalClass"})
-        @Override public void loadAll(Collection<? extends Integer> keys,
-            IgniteBiInClosure<Integer, Integer> c) {
+        @Override public Map<Integer, Integer> loadAll(Iterable<? extends Integer> keys) {
             assert keys != null;
 
-            c.apply(1, 1);
-            c.apply(2, 2);
-            c.apply(3, 3);
+            return F.asMap(1, 1, 2, 2, 3, 3);
         }
 
         /** {@inheritDoc} */
@@ -97,12 +94,12 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Integer key, Integer val) {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Integer key) {
+        @Override public void delete(Object key) {
             // No-op.
         }
     }

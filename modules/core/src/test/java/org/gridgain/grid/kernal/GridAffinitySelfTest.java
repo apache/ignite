@@ -18,11 +18,10 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -57,7 +56,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         else {
             assert gridName.endsWith("2");
 
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setBackups(1);
@@ -109,9 +108,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Non-system caches.
      */
-    private Collection<GridCacheConfiguration> caches(Ignite g) {
-        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<GridCacheConfiguration>() {
-            @Override public boolean apply(GridCacheConfiguration c) {
+    private Collection<CacheConfiguration> caches(Ignite g) {
+        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
+            @Override public boolean apply(CacheConfiguration c) {
                 return c.getName() == null || !c.getName().equals(CU.UTILITY_CACHE_NAME);
             }
         });

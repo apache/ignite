@@ -88,7 +88,7 @@
                 <!--
                     Partitioned cache example configuration (Atomic mode).
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -133,7 +133,7 @@
                 <!--
                     Partitioned cache example configuration (Transactional mode).
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -182,7 +182,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <!--
@@ -220,7 +220,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'local'. -->
                     <property name="name" value="local"/>
 

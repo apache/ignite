@@ -49,9 +49,10 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Object, Object> properties() {
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> Map<K, V> properties() {
         TestCacheSession ses = sesHolder.get();
 
-        return ses != null ? ses.properties() : null;
+        return ses != null ? (Map<K, V>)ses.properties() : null;
     }
 }

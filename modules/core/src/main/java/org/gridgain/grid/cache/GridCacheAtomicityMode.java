@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * used whenever transactions and explicit locking are not needed. Note that in {@link #ATOMIC}
  * mode cache will still maintain full data consistency across all cache nodes.
  * <p>
- * Cache atomicity may be set via {@link GridCacheConfiguration#getAtomicityMode()}
+ * Cache atomicity may be set via {@link org.apache.ignite.cache.CacheConfiguration#getAtomicityMode()}
  * configuration property.
  */
 public enum GridCacheAtomicityMode {

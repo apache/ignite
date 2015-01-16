@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -81,8 +82,8 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);

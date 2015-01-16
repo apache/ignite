@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -35,7 +36,6 @@ import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -1111,7 +1111,7 @@ public class GridGainEx {
         private static final String[] EMPTY_STR_ARR = new String[0];
 
         /** Empty array of caches. */
-        private static final GridCacheConfiguration[] EMPTY_CACHE_CONFIGS = new GridCacheConfiguration[0];
+        private static final CacheConfiguration[] EMPTY_CACHE_CONFIGS = new CacheConfiguration[0];
 
         /** Grid name. */
         private final String name;
@@ -1715,10 +1715,10 @@ public class GridGainEx {
             if (swapspaceSpi == null) {
                 boolean needSwap = false;
 
-                GridCacheConfiguration[] caches = cfg.getCacheConfiguration();
+                CacheConfiguration[] caches = cfg.getCacheConfiguration();
 
                 if (caches != null) {
-                    for (GridCacheConfiguration c : caches) {
+                    for (CacheConfiguration c : caches) {
                         if (c.isSwapEnabled()) {
                             needSwap = true;
 
@@ -1816,11 +1816,11 @@ public class GridGainEx {
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
 
-            GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
+            CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
             boolean hasHadoop = GridComponentType.HADOOP.inClassPath();
 
-            GridCacheConfiguration[] copies;
+            CacheConfiguration[] copies;
 
             if (cacheCfgs != null && cacheCfgs.length > 0) {
                 if (!U.discoOrdered(discoSpi) && !U.relaxDiscoveryOrdered())
@@ -1828,7 +1828,7 @@ public class GridGainEx {
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
                         "like GridTcpDiscoverySpi)");
 
-                for (GridCacheConfiguration ccfg : cacheCfgs) {
+                for (CacheConfiguration ccfg : cacheCfgs) {
                     if (CU.isHadoopSystemCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
@@ -1838,24 +1838,24 @@ public class GridGainEx {
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                copies = new GridCacheConfiguration[cacheCfgs.length + (hasHadoop ? 2 : 1)];
+                copies = new CacheConfiguration[cacheCfgs.length + (hasHadoop ? 2 : 1)];
 
                 int cloneIdx = 1;
 
                 if (hasHadoop)
                     copies[cloneIdx++] = CU.hadoopSystemCache();
 
-                for (GridCacheConfiguration ccfg : cacheCfgs)
-                    copies[cloneIdx++] = new GridCacheConfiguration(ccfg);
+                for (CacheConfiguration ccfg : cacheCfgs)
+                    copies[cloneIdx++] = new CacheConfiguration(ccfg);
             }
             else if (hasHadoop) {
                 // Populate system caches
-                copies = new GridCacheConfiguration[hasHadoop ? 2 : 1];
+                copies = new CacheConfiguration[hasHadoop ? 2 : 1];
 
                 copies[1] = CU.hadoopSystemCache();
             }
             else
-                copies = new GridCacheConfiguration[1];
+                copies = new CacheConfiguration[1];
 
             // Always add utility cache.
             copies[0] = utilitySystemCache(discoSpi instanceof TcpClientDiscoverySpi);
@@ -2031,8 +2031,8 @@ public class GridGainEx {
          *
          * @return Utility system cache configuration.
          */
-        private GridCacheConfiguration utilitySystemCache(boolean client) {
-            GridCacheConfiguration cache = new GridCacheConfiguration();
+        private CacheConfiguration utilitySystemCache(boolean client) {
+            CacheConfiguration cache = new CacheConfiguration();
 
             cache.setName(CU.UTILITY_CACHE_NAME);
             cache.setCacheMode(REPLICATED);

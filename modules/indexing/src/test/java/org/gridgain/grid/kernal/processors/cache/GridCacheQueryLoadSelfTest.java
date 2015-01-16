@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -34,6 +34,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -61,7 +62,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(REPLICATED);
         cache.setStore(new TestStore());
@@ -407,15 +408,16 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Integer key, ValueObject val) {
-            assert key != null;
-            assert val != null;
+        @Override public void write(Cache.Entry<? extends Integer, ? extends ValueObject> e) {
+            assert e != null;
+            assert e.getKey() != null;
+            assert e.getValue() != null;
 
-            STORE_MAP.put(key, val);
+            STORE_MAP.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Integer key) {
+        @Override public void delete(Object key) {
             assert key != null;
 
             STORE_MAP.remove(key);

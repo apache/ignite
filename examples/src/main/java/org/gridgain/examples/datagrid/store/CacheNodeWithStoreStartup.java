@@ -18,10 +18,9 @@
 package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.examples.datagrid.store.dummy.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -64,7 +63,7 @@ public class CacheNodeWithStoreStartup {
 
         discoSpi.setIpFinder(ipFinder);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

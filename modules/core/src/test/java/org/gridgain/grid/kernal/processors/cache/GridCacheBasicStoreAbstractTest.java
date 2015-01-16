@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -79,7 +80,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -476,7 +477,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(i, "reloaded-" + i);
+            store.write(new CacheEntryImpl<>(i, "reloaded-" + i));
 
         cache.reloadAll(vals.keySet());
 
@@ -543,7 +544,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(i, "reloaded-" + i);
+            store.write(new CacheEntryImpl<>(i, "reloaded-" + i));
 
         store.resetLastMethod();
 

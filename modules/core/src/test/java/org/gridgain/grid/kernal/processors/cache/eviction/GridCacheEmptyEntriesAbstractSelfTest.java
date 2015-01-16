@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -32,7 +33,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+
+import javax.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
@@ -68,7 +70,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         txCfg.setDefaultTxIsolation(txIsolation);
         txCfg.setTxSerializableEnabled(true);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -136,11 +138,11 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
                 return null;
             }
 
-            @Override public void put(String key, @Nullable String val) {
+            @Override public void write(Cache.Entry<? extends String, ? extends String> e) {
                 // No-op.
             }
 
-            @Override public void remove(String key) {
+            @Override public void delete(Object key) {
                 // No-op.
             }
         };

@@ -18,10 +18,9 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -83,7 +82,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         if (getTestGridName(1).equals(gridName))
             c.setCacheConfiguration(/* no configured caches */);
         else {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
             cc.setBackups(1);

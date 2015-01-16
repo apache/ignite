@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -82,8 +83,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);

@@ -17,15 +17,15 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -70,7 +70,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -95,12 +95,12 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
             }
 
             /** {@inheritDoc} */
-            @Override public void put(Integer key, @Nullable Integer val) {
+            @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
                 assert false;
             }
 
             /** {@inheritDoc} */
-            @Override public void remove(Integer key) {
+            @Override public void delete(Object key) {
                 assert false;
             }
         };

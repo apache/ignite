@@ -18,10 +18,10 @@
 package org.gridgain.loadtests.swap;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -33,6 +33,7 @@ import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -73,11 +74,11 @@ public class GridSwapEvictAllBenchmark {
                         c.apply((long)i, String.valueOf(i));
                 }
 
-                @Override public void put(Long key, @Nullable String val) {
+                @Override public void write(Cache.Entry<? extends Long, ? extends String> e) {
                     assert false;
                 }
 
-                @Override public void remove(Long key) {
+                @Override public void delete(Object key) {
                     assert false;
                 }
             });
@@ -260,7 +261,7 @@ public class GridSwapEvictAllBenchmark {
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);

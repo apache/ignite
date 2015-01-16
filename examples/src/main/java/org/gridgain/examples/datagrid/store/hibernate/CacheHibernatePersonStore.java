@@ -25,6 +25,7 @@ import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.util.*;
 
@@ -71,13 +72,17 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Long key, @Nullable Person val) {
+    @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends Person> entry) {
         IgniteTx tx = transaction();
+
+        Long key = entry.getKey();
+
+        Person val = entry.getValue();
 
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         if (val == null) {
-            remove(key);
+            delete(key);
 
             return;
         }
@@ -99,7 +104,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
-    @Override public void remove(Long key) {
+    @Override public void delete(Object key) {
         IgniteTx tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
@@ -25,8 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -74,8 +75,8 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
@@ -140,12 +141,12 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Integer key, @Nullable Integer val) {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Integer key) {
+        @Override public void delete(Object key) {
             // No-op
         }
 

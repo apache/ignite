@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
@@ -49,8 +50,8 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
      * @return Cache configuration.
      * @throws Exception If failed.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);

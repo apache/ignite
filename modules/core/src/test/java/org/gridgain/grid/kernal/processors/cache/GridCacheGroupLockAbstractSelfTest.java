@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -35,8 +36,8 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -75,7 +76,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
@@ -1260,21 +1261,21 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(Map<?, ?> map) {
-            storeMap.putAll(map);
+        @Override public void writeAll(Collection<Cache.Entry<? extends Object, ? extends Object>> entries) {
+            super.writeAll(entries);
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Object key, @Nullable Object val) {
-            storeMap.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+            storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Object key) {
+        @Override public void delete(Object key) {
             storeMap.remove(key);
         }
 

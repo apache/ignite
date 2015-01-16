@@ -30,6 +30,7 @@ import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.io.*;
 import java.net.*;
@@ -224,16 +225,19 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(K key, @Nullable V val) {
+    @Override public void write(javax.cache.Cache.Entry<? extends K, ? extends V> entry) {
         init();
 
         IgniteTx tx = transaction();
+
+        K key = entry.getKey();
+        V val = entry.getValue();
 
         if (log.isDebugEnabled())
             log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
 
         if (val == null) {
-            remove(key);
+            delete(key);
 
             return;
         }
@@ -241,9 +245,9 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses = session(tx);
 
         try {
-            GridCacheHibernateBlobStoreEntry entry = new GridCacheHibernateBlobStoreEntry(toBytes(key), toBytes(val));
+            GridCacheHibernateBlobStoreEntry entry0 = new GridCacheHibernateBlobStoreEntry(toBytes(key), toBytes(val));
 
-            ses.saveOrUpdate(entry);
+            ses.saveOrUpdate(entry0);
         }
         catch (IgniteCheckedException | HibernateException e) {
             rollback(ses, tx);
@@ -257,7 +261,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection", "JpaQlInspection"})
-    @Override public void remove(K key) {
+    @Override public void delete(Object key) {
         init();
 
         IgniteTx tx = transaction();

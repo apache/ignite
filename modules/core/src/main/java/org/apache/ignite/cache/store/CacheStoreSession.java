@@ -34,5 +34,5 @@ public interface CacheStoreSession {
     /**
      * @return Session properties.
      */
-    public Map<Object, Object> properties();
+    public <K, V> Map<K, V> properties();
 }

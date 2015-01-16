@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -27,7 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -40,6 +40,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -116,10 +117,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridCacheConfiguration[] ccs = new GridCacheConfiguration[2];
+        CacheConfiguration[] ccs = new CacheConfiguration[2];
 
         for (int i = 0; i < ccs.length; i++) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             if (i > 0)
                 cc.setName("c" + i);
@@ -2009,12 +2010,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Object key, @Nullable Object val) {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Object key) {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

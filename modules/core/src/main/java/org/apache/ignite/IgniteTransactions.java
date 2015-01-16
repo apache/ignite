@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 public interface IgniteTransactions {
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link GridCacheConfiguration} at startup.
+     * All defaults are set in {@link org.apache.ignite.cache.CacheConfiguration} at startup.
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.

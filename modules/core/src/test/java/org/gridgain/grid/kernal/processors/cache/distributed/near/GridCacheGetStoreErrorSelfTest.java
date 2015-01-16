@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -26,8 +27,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -58,7 +59,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode);
         cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
@@ -69,11 +70,11 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
                 throw new IgniteException("Failed to get key from store: " + key);
             }
 
-            @Override public void put(Object key,@Nullable Object val) {
+            @Override public void write(Cache.Entry<?, ?> entry) {
                 // No-op.
             }
 
-            @Override public void remove(Object key) {
+            @Override public void delete(Object key) {
                 // No-op.
             }
         });

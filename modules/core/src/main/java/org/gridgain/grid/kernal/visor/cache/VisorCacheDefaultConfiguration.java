@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -52,7 +52,7 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for default cache configuration properties.
      */
-    public static VisorCacheDefaultConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheDefaultConfiguration from(CacheConfiguration ccfg) {
         // TODO GG-9141 Update Visor.
 
         VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();

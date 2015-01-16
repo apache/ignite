@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -30,7 +30,6 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -53,7 +52,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = new GridCacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(TRANSACTIONAL);

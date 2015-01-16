@@ -17,12 +17,10 @@
 
 package org.gridgain.client;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -44,12 +42,12 @@ public class GridHashMapStore extends CacheStoreAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Object key, @Nullable Object val) {
-        map.put(key, val);
+    @Override public void write(Cache.Entry e) {
+        map.put(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Object key) {
+    @Override public void delete(Object key) {
         map.remove(key);
     }
 }

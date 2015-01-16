@@ -59,7 +59,7 @@
                 Note that absolutely all configuration properties are optional.
             -->
             <list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned1"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -81,7 +81,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned2"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -103,7 +103,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned3"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -125,7 +125,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned4"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -147,7 +147,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned5"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -170,7 +170,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned6"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -192,7 +192,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned7"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -214,7 +214,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned8"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>

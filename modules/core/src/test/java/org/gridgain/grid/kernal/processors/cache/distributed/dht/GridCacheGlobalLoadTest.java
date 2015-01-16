@@ -19,6 +19,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -150,12 +151,12 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Integer key, Integer val) {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
             fail();
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Integer key) {
+        @Override public void delete(Object key) {
             fail();
         }
     }

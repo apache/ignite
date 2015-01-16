@@ -10,6 +10,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -17,12 +18,11 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -99,8 +99,8 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
@@ -223,12 +223,12 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Object key, @Nullable Object val) {
-            storeMap.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
+            storeMap.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Object key) {
+        @Override public void delete(Object key) {
             storeMap.remove(key);
         }
     }

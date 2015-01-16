@@ -109,6 +109,8 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
 
     /** {@inheritDoc} */
     @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
+        assert false;
+
         return delegate.loadAll(keys);
     }
 
@@ -117,7 +119,7 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
      * @param c Closure for loaded values.
      */
     public void loadAll(Collection<? extends K> keys, final IgniteBiInClosure<K, V> c) {
-        assert keys.size() < loadAllThreshold;
+        assert keys.size() <= loadAllThreshold : loadAllThreshold;
 
         Collection<K> needLoad = null;
         Map<K, LoadFuture> pending = null;
@@ -161,8 +163,10 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
             try {
                 Map<K, V> loaded = delegate.loadAll(needLoad);
 
-                for (Map.Entry<K, V> e : loaded.entrySet())
-                    c.apply(e.getKey(), e.getValue());
+                if (loaded != null) {
+                    for (Map.Entry<K, V> e : loaded.entrySet())
+                        c.apply(e.getKey(), e.getValue());
+                }
 
                 span.onComplete(needLoad, loaded);
             }

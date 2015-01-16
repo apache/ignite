@@ -35,7 +35,7 @@ import static javax.cache.Cache.*;
 
 /**
  * API for cache persistent storage for read-through and write-through behavior.
- * Persistent store is configured via {@link GridCacheConfiguration#getStore()}
+ * Persistent store is configured via {@link org.apache.ignite.cache.CacheConfiguration#getStore()}
  * configuration property. If not provided, values will be only kept in cache memory
  * or swap storage without ever being persisted to a persistent storage.
  * <p>
@@ -70,7 +70,7 @@ import static javax.cache.Cache.*;
  * }
  * </pre>
  * <h1 class="header">Working With Portable Objects</h1>
- * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
+ * When portables are enabled for cache by setting {@link org.apache.ignite.cache.CacheConfiguration#isPortableEnabled()} to
  * {@code true}), all portable keys and values are converted to instances of {@link PortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
@@ -85,7 +85,7 @@ import static javax.cache.Cache.*;
  *     ...
  * }
  * </pre>
- * This behavior can be overridden by setting {@link GridCacheConfiguration#setKeepPortableInStore(boolean)}
+ * This behavior can be overridden by setting {@link org.apache.ignite.cache.CacheConfiguration#setKeepPortableInStore(boolean)}
  * flag value to {@code false}. In this case, GridGain will deserialize keys and values stored in portable
  * format before they are passed to cache store, so that you can use the following cache store signature instead:
  * <pre name="code" class="java">

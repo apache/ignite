@@ -50,10 +50,11 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Object, Object> properties() {
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> Map<K, V> properties() {
         if (props == null)
             props = U.newHashMap(1);
 
-        return props;
+        return (Map<K, V>)props;
     }
 }

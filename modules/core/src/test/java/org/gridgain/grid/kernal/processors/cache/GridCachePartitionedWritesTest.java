@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -24,8 +25,8 @@ import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -51,7 +52,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
@@ -78,18 +79,18 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         final AtomicInteger putCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
 
-        store = new CacheStoreAdapter() {
+        store = new CacheStoreAdapter<Object, Object>() {
             @Override public Object load(Object key) {
                 info(">>> Get [key=" + key + ']');
 
                 return null;
             }
 
-            @Override public void put(Object key, @Nullable Object val) {
+            @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
                 putCnt.incrementAndGet();
             }
 
-            @Override public void remove(Object key) {
+            @Override public void delete(Object key) {
                 rmvCnt.incrementAndGet();
             }
         };

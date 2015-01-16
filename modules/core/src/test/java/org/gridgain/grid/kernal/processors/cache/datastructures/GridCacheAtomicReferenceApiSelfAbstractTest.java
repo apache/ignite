@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -68,8 +69,8 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
     /**
      * @return Cache configuration for the test.
      */
-    protected GridCacheConfiguration getCacheConfiguration() {
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+    protected CacheConfiguration getCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setDistributionMode(NEAR_PARTITIONED);

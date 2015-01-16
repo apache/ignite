@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Cache key affinity which maps keys to nodes. This interface is utilized for
  * both, replicated and partitioned caches. Cache affinity can be configured
- * for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
+ * for individual caches via {@link org.apache.ignite.cache.CacheConfiguration#getAffinity()} method.
  * <p>
  * Whenever a key is given to cache, it is first passed to a pluggable
  * {@link GridCacheAffinityKeyMapper} which may potentially map this key to an alternate

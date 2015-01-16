@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -37,6 +38,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -226,8 +228,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setStore(cacheStore());
         cfg.setSwapEnabled(swapEnabled());
@@ -247,7 +249,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Default cache mode.
      */
     protected GridCacheMode cacheMode() {
-        return GridCacheConfiguration.DFLT_CACHE_MODE;
+        return CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -286,11 +288,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 return map.get(key);
             }
 
-            @Override public void put(Object key, @Nullable Object val) {
-                map.put(key, val);
+            @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+                map.put(e.getKey(), e.getValue());
             }
 
-            @Override public void remove(Object key) {
+            @Override public void delete(Object key) {
                 map.remove(key);
             }
         };

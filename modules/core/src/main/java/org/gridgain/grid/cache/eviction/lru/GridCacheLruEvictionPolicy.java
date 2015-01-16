@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.eviction.lru;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.jdk8.backport.*;
@@ -37,7 +38,7 @@ public class GridCacheLruEvictionPolicy<K, V> implements GridCacheEvictionPolicy
     private final String meta = UUID.randomUUID().toString();
 
     /** Maximum size. */
-    private volatile int max = GridCacheConfiguration.DFLT_CACHE_SIZE;
+    private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
     /** Queue. */
     private final ConcurrentLinkedDeque8<GridCacheEntry<K, V>> queue =

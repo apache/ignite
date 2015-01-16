@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -64,7 +64,7 @@ public class VisorCacheEvictionConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for eviction configuration properties.
      */
-    public static VisorCacheEvictionConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheEvictionConfiguration from(CacheConfiguration ccfg) {
         VisorCacheEvictionConfiguration cfg = new VisorCacheEvictionConfiguration();
 
         final GridCacheEvictionPolicy policy = ccfg.getEvictionPolicy();

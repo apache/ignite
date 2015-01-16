@@ -18,17 +18,17 @@
 package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -61,12 +61,12 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Object key, @Nullable Object val) {
+        @Override public void write(Cache.Entry e) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Object key) {
+        @Override public void delete(Object key) {
             // No-op.
         }
     };
@@ -104,7 +104,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);

@@ -18,13 +18,12 @@
 package org.apache.ignite.resources;
 
 import java.lang.annotation.*;
-import org.gridgain.grid.cache.*;
 
 /**
  * Annotates a field or a setter method for injection of grid cache name.
- * Grid cache name is provided to cache via {@link GridCacheConfiguration#getName()} method.
+ * Grid cache name is provided to cache via {@link org.apache.ignite.cache.CacheConfiguration#getName()} method.
  * <p>
- * Cache name can be injected into components provided in the {@link GridCacheConfiguration},
+ * Cache name can be injected into components provided in the {@link org.apache.ignite.cache.CacheConfiguration},
  * if {@link IgniteCacheNameResource} annotation is used in another classes it is no-op.
  * <p>
  * Here is how injection would typically happen:
@@ -50,7 +49,7 @@ import org.gridgain.grid.cache.*;
  * }
  * </pre>
  * <p>
- * See {@link GridCacheConfiguration#getName()} for cache configuration details.
+ * See {@link org.apache.ignite.cache.CacheConfiguration#getName()} for cache configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

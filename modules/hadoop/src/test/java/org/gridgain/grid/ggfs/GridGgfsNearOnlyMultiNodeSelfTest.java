@@ -20,6 +20,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -110,8 +111,8 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);

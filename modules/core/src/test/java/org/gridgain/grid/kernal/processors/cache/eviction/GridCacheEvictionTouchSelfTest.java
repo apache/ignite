@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -58,7 +58,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         txCfg.setDefaultTxConcurrency(PESSIMISTIC);
         txCfg.setDefaultTxIsolation(REPEATABLE_READ);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(REPLICATED);
 

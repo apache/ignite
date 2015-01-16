@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 /**
  * This enum defines mode in which partitioned cache operates.
  * <p>
- * Partitioned distribution mode can be configured via {@link GridCacheConfiguration#getDistributionMode()}
+ * Partitioned distribution mode can be configured via {@link org.apache.ignite.cache.CacheConfiguration#getDistributionMode()}
  * configuration property.
  */
 public enum GridCacheDistributionMode {
@@ -37,14 +37,14 @@ public enum GridCacheDistributionMode {
      * recently accessed keys in a smaller near cache. Amount of recently accessed keys to cache is
      * controlled by near eviction policy.
      *
-     * @see GridCacheConfiguration#getNearEvictionPolicy()
+     * @see org.apache.ignite.cache.CacheConfiguration#getNearEvictionPolicy()
      */
     NEAR_ONLY,
 
     /**
      * Mode in which local node may store primary and/or backup keys, and also will cache recently accessed keys.
      * Amount of recently accessed keys to cache is controlled by near eviction policy.
-     * @see GridCacheConfiguration#getNearEvictionPolicy()
+     * @see org.apache.ignite.cache.CacheConfiguration#getNearEvictionPolicy()
      */
     NEAR_PARTITIONED,
 

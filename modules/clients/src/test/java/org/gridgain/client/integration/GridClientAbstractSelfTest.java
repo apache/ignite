@@ -20,6 +20,7 @@ package org.gridgain.client.integration;
 import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -28,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
@@ -38,6 +38,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -247,8 +248,8 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(cacheName == null || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
             REPLICATED : PARTITIONED);
@@ -1581,12 +1582,12 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void put(Object key, @Nullable Object val) {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(Object key) {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

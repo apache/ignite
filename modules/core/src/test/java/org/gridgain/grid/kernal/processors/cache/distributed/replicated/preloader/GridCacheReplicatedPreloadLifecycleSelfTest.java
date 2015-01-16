@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
@@ -53,7 +54,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
 
-        GridCacheConfiguration cc1 = defaultCacheConfiguration();
+        CacheConfiguration cc1 = defaultCacheConfiguration();
 
         cc1.setName("one");
         cc1.setCacheMode(REPLICATED);
@@ -64,7 +65,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setStore(null);
 
         // Identical configuration.
-        GridCacheConfiguration cc2 = new GridCacheConfiguration(cc1);
+        CacheConfiguration cc2 = new CacheConfiguration(cc1);
 
         cc2.setName("two");
 

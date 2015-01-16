@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -59,7 +60,7 @@ import java.util.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheConfiguration.*;
+import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
@@ -131,7 +132,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Initializes cache configuration with proper defaults.
      */
     @SuppressWarnings("unchecked")
-    private void initialize(GridCacheConfiguration cfg) {
+    private void initialize(CacheConfiguration cfg) {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -242,7 +243,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridCacheConfiguration cfg) {
+    private void suggestOptimizations(CacheConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         String msg = "Disable eviction policy (remove from configuration)";
@@ -287,7 +288,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cc Configuration to validate.
      * @throws IgniteCheckedException If failed.
      */
-    private void validate(IgniteConfiguration c, GridCacheConfiguration cc) throws IgniteCheckedException {
+    private void validate(IgniteConfiguration c, CacheConfiguration cc) throws IgniteCheckedException {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getAffinity() instanceof GridCachePartitionFairAffinity)
                 throw new IgniteCheckedException("REPLICATED cache can not be started with GridCachePartitionFairAffinity" +
@@ -463,7 +464,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param objs Extra components.
      * @throws IgniteCheckedException If failed to inject.
      */
-    private void prepare(GridCacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
+    private void prepare(CacheConfiguration cfg, Object... objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
         prepare(cfg, cfg.getNearEvictionPolicy(), true);
         prepare(cfg, cfg.getAffinity(), false);
@@ -483,7 +484,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void prepare(GridCacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
+    private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
         if (rsrc != null) {
             ctx.resource().injectGeneric(rsrc);
 
@@ -497,7 +498,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private void cleanup(GridCacheContext cctx) {
-        GridCacheConfiguration cfg = cctx.config();
+        CacheConfiguration cfg = cctx.config();
 
         cleanup(cfg, cfg.getEvictionPolicy(), false);
         cleanup(cfg, cfg.getNearEvictionPolicy(), true);
@@ -515,7 +516,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param rsrc Resource.
      * @param near Near flag.
      */
-    private void cleanup(GridCacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
+    private void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
         if (rsrc != null) {
             unregisterMbean(rsrc, cfg.getName(), near);
 
@@ -560,7 +561,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);
 
-        GridCacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
+        CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         sharedCtx = createSharedContext(ctx);
 
@@ -570,7 +571,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
 
         for (int i = 0; i < cfgs.length; i++) {
-            GridCacheConfiguration cfg = new GridCacheConfiguration(cfgs[i]);
+            CacheConfiguration cfg = new CacheConfiguration(cfgs[i]);
 
             // Initialize defaults.
             initialize(cfg);
@@ -818,7 +819,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : startSeq) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            GridCacheConfiguration cfg = cacheCtx.config();
+            CacheConfiguration cfg = cacheCtx.config();
 
             // Start managers.
             for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
@@ -921,7 +922,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         int i = 0;
 
-        for (GridCacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             attrVals[i++] = new GridCacheAttributes(cfg);
 
             attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
@@ -947,10 +948,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Maximum detected preload order.
      * @throws IgniteCheckedException If validation failed.
      */
-    private int validatePreloadOrder(GridCacheConfiguration[] cfgs) throws IgniteCheckedException {
+    private int validatePreloadOrder(CacheConfiguration[] cfgs) throws IgniteCheckedException {
         int maxOrder = 0;
 
-        for (GridCacheConfiguration cfg : cfgs) {
+        for (CacheConfiguration cfg : cfgs) {
             int preloadOrder = cfg.getPreloadOrder();
 
             if (preloadOrder > 0) {
@@ -984,7 +985,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteSpiNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         for (GridCacheAdapter cache : ctx.cache().internalCaches()) {
-            GridCacheConfiguration cfg = cache.configuration();
+            CacheConfiguration cfg = cache.configuration();
 
             if (cfg.getAffinity() instanceof GridCacheConsistentHashAffinityFunction) {
                 GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cfg.getAffinity();
@@ -1286,7 +1287,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheAdapter cache = e.getValue();
 
             if (maxPreloadOrder > 0) {
-                GridCacheConfiguration cfg = cache.configuration();
+                CacheConfiguration cfg = cache.configuration();
 
                 int order = cfg.getPreloadOrder();
 
@@ -1316,7 +1317,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Wait for caches in SYNC preload mode.
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            GridCacheConfiguration cfg = cache.configuration();
+            CacheConfiguration cfg = cache.configuration();
 
             if (cfg.getPreloadMode() == SYNC) {
                 if (cfg.getCacheMode() == REPLICATED ||
@@ -1505,7 +1506,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Cache configuration.
      * @return Query manager.
      */
-    private GridCacheQueryManager queryManager(GridCacheConfiguration cfg) {
+    private GridCacheQueryManager queryManager(CacheConfiguration cfg) {
         return cfg.getCacheMode() == LOCAL ? new GridCacheLocalQueryManager() : new GridCacheDistributedQueryManager();
     }
 
@@ -1811,7 +1812,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *         or user-defined cache store.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheStore cacheStore(String gridName, GridCacheConfiguration cfg) {
+    private CacheStore cacheStore(String gridName, CacheConfiguration cfg) {
         if (cfg.getStore() == null || !cfg.isWriteBehindEnabled())
             return cfg.getStore();
 
@@ -1831,7 +1832,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param objs Extra components.
      * @return Components provided in cache configuration which can implement {@link LifecycleAware} interface.
      */
-    private Iterable<Object> lifecycleAwares(GridCacheConfiguration ccfg, Object...objs) {
+    private Iterable<Object> lifecycleAwares(CacheConfiguration ccfg, Object...objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
         ret.add(ccfg.getAffinity());

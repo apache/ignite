@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.cache.GridCacheConfiguration.*;
+import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
@@ -155,7 +156,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @param cfg Cache configuration.
      */
-    public GridCacheAttributes(GridCacheConfiguration cfg) {
+    public GridCacheAttributes(CacheConfiguration cfg) {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();

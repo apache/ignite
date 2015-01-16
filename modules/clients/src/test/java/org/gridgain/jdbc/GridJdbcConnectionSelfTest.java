@@ -17,8 +17,8 @@
 
 package org.gridgain.jdbc;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -77,8 +77,8 @@ public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String name) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String name) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
 

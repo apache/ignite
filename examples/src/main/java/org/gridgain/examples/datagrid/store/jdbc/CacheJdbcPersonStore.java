@@ -24,6 +24,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.sql.*;
 import java.util.*;
@@ -116,8 +117,12 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Long key, Person val) {
+    @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
         IgniteTx tx = transaction();
+
+        Long key = entry.getKey();
+
+        Person val = entry.getValue();
 
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -158,7 +163,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Long key) {
+    @Override public void delete(Object key) {
         IgniteTx tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
@@ -169,7 +174,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             conn = connection(tx);
 
             try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
-                st.setLong(1, key);
+                st.setLong(1, (Long)key);
 
                 st.executeUpdate();
             }

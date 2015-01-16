@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -65,7 +66,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *
      * @return Configuration bean for this cache.
      */
-    public GridCacheConfiguration configuration();
+    public CacheConfiguration configuration();
 
     /**
      * Registers transactions synchronizations for all transactions started by this cache.
@@ -251,7 +252,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
-     * {@link GridCacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
+     * {@link org.apache.ignite.cache.CacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
      * preloading until the node topology is stable to make sure that no redundant re-partitioning
      * happens.
@@ -259,12 +260,12 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * In case of{@link GridCacheMode#PARTITIONED} caches, for better efficiency user should
      * usually make sure that new nodes get placed on the same place of consistent hash ring as
      * the left nodes, and that nodes are restarted before
-     * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
+     * {@link org.apache.ignite.cache.CacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
      * {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
+     * See {@link org.apache.ignite.cache.CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
      * preload re-partition delay.
      * <p>
      * @return Future that will be completed when preloading is finished.

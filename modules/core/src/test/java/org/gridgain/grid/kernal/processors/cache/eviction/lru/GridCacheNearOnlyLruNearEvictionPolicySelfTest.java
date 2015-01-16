@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.eviction.lru;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
@@ -65,7 +66,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cc = new GridCacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration();
 
         cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(cacheMode);

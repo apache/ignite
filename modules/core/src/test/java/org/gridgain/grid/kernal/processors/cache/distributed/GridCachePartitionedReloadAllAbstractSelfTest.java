@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -30,8 +30,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -68,7 +68,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
 
@@ -158,11 +158,11 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                 return map.get(key);
             }
 
-            @Override public void put(Integer key, @Nullable String val) {
+            @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
                 fail("Should not be called within the test.");
             }
 
-            @Override public void remove(Integer key) {
+            @Override public void delete(Object key) {
                 fail("Should not be called within the test.");
             }
         };

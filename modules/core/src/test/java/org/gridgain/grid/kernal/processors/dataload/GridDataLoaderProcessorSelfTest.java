@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -84,7 +85,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         if (useCache) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
             cc.setAtomicityMode(TRANSACTIONAL);

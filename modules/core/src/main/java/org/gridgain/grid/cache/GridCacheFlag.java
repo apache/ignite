@@ -60,7 +60,7 @@ public enum GridCacheFlag {
      * automatic cloning of values prior to returning so they can be directly
      * updated.
      *
-     * @see GridCacheConfiguration#getCloner()
+     * @see org.apache.ignite.cache.CacheConfiguration#getCloner()
      */
     CLONE,
 
@@ -82,7 +82,7 @@ public enum GridCacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see GridCacheConfiguration#isInvalidate()
+     * @see org.apache.ignite.cache.CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 

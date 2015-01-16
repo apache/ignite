@@ -24,8 +24,8 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.cache.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -54,8 +54,11 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Long key, Person val) {
+    @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
         IgniteTx tx = transaction();
+
+        Long key = entry.getKey();
+        Person val = entry.getValue();
 
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
@@ -63,7 +66,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(Long key) {
+    @Override public void delete(Object key) {
         IgniteTx tx = transaction();
 
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');

@@ -20,8 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -39,7 +37,7 @@ import java.lang.reflect.*;
  * conjunction with this mapper to automatically provide custom affinity keys for cache keys.
  * <p>
  * If non-default affinity mapper is used, is should be provided via
- * {@link GridCacheConfiguration#getAffinityMapper()} configuration property.
+ * {@link org.apache.ignite.cache.CacheConfiguration#getAffinityMapper()} configuration property.
  */
 public class GridCacheDefaultAffinityKeyMapper implements GridCacheAffinityKeyMapper {
     /** */

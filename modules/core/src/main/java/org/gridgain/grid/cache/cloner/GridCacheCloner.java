@@ -34,7 +34,7 @@ import org.jetbrains.annotations.*;
  * and will affect the cached values returned to other threads even before
  * the transaction commits.
  * <p>
- * Cache cloner can be set in cache configuration via {@link GridCacheConfiguration#getCloner()}
+ * Cache cloner can be set in cache configuration via {@link org.apache.ignite.cache.CacheConfiguration#getCloner()}
  * method. By default, cache uses {@link GridCacheBasicCloner} implementation
  * which will clone only objects implementing {@link Cloneable} interface. You
  * can also configure cache to use {@link GridCacheDeepCloner} which will perform
@@ -44,8 +44,8 @@ import org.jetbrains.annotations.*;
  *
  * @see GridCacheBasicCloner
  * @see GridCacheDeepCloner
- * @see GridCacheConfiguration#getCloner()
- * @see GridCacheConfiguration#setCloner(GridCacheCloner)
+ * @see org.apache.ignite.cache.CacheConfiguration#getCloner()
+ * @see org.apache.ignite.cache.CacheConfiguration#setCloner(GridCacheCloner)
  *
  */
 public interface GridCacheCloner {

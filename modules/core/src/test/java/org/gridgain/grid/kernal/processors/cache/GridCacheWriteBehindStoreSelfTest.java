@@ -45,8 +45,8 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     initStore(2);
 
                     try {
-                        store.put(1, "val1");
-                        store.put(2, "val2");
+                        store.write(new CacheEntryImpl<>(1, "val1"));
+                        store.write(new CacheEntryImpl<>(2, "val2"));
                     }
                     finally {
                         shutdownStore();
@@ -71,14 +71,14 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         initStore(2);
 
         try {
-            store.put(1, "v1");
-            store.put(2, "v2");
+            store.write(new CacheEntryImpl<>(1, "v1"));
+            store.write(new CacheEntryImpl<>(2, "v2"));
 
             assertEquals("v1", store.load(1));
             assertEquals("v2", store.load(2));
             assertNull(store.load(3));
 
-            store.remove(1);
+            store.delete(1);
 
             assertNull(store.load(1));
             assertEquals("v2", store.load(2));
@@ -101,7 +101,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         try {
             for (int i = 0; i < CACHE_SIZE * 2; i++)
-                store.put(i, "val" + i);
+                store.write(new CacheEntryImpl<>(i, "val" + i));
 
             U.sleep(200);
 
@@ -145,11 +145,11 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     try {
                         while (running.get()) {
                             for (int i = 0; i < CACHE_SIZE; i++) {
-                                store.put(i, "val-0");
+                                store.write(new CacheEntryImpl<>(i, "val-0"));
 
                                 actualPutCnt.incrementAndGet();
 
-                                store.put(i, "val" + i);
+                                store.write(new CacheEntryImpl<>(i, "val" + i));
 
                                 actualPutCnt.incrementAndGet();
                             }
@@ -205,9 +205,9 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                     try {
                         while (running.get()) {
                             for (int i = 0; i < CACHE_SIZE; i++) {
-                                store.put(i, "val-0");
+                                store.write(new CacheEntryImpl<>(i, "val-0"));
 
-                                store.put(i, "val" + i);
+                                store.write(new CacheEntryImpl<>(i, "val" + i));
                             }
                         }
                     }
@@ -251,7 +251,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         try {
             for (int i = 0; i < CACHE_SIZE; i++) {
-                store.put(i, "val" + i);
+                store.write(new CacheEntryImpl<>(i, "val" + i));
 
                 intList.add(i);
             }

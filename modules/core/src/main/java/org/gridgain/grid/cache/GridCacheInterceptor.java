@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * operations. The {@code onBefore} callbacks can also be used to change the values
  * stored in cache or preventing entries from being removed from cache.
  * <p>
- * Cache interceptor is configured via {@link GridCacheConfiguration#getInterceptor()}
+ * Cache interceptor is configured via {@link org.apache.ignite.cache.CacheConfiguration#getInterceptor()}
  * configuration property.
  * <p>
  * Any grid resource from {@code org.gridgain.grid.resources} package can be injected

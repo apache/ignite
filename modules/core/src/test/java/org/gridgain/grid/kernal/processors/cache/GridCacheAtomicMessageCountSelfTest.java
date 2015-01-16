@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.*;
@@ -64,7 +65,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration cCfg = new GridCacheConfiguration();
+        CacheConfiguration cCfg = new CacheConfiguration();
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);

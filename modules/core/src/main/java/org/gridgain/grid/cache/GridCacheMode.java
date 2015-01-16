@@ -21,7 +21,7 @@ import org.gridgain.grid.cache.affinity.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration of all supported caching modes. Cache mode is specified in {@link GridCacheConfiguration}
+ * Enumeration of all supported caching modes. Cache mode is specified in {@link org.apache.ignite.cache.CacheConfiguration}
  * and cannot be changed after cache has started.
  */
 public enum GridCacheMode {
@@ -54,7 +54,7 @@ public enum GridCacheMode {
      * <p>
      * Note that partitioned cache is always fronted by local
      * {@code 'near'} cache which stores most recent data. You
-     * can configure the size of near cache via {@link GridCacheConfiguration#getNearEvictionPolicy()}
+     * can configure the size of near cache via {@link org.apache.ignite.cache.CacheConfiguration#getNearEvictionPolicy()}
      * configuration property.
      */
     PARTITIONED;

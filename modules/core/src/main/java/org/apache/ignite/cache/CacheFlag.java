@@ -45,7 +45,7 @@ public enum CacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see org.gridgain.grid.cache.GridCacheConfiguration#isInvalidate()
+     * @see CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 

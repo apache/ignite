@@ -126,7 +126,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
                         switch (op) {
                             case 0:
-                                store.put(key, "val" + key);
+                                store.write(new CacheEntryImpl<>(key, "val" + key));
                                 set.add(key);
 
                                 operations.incrementAndGet();
@@ -134,7 +134,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
                                 break;
 
                             case 1:
-                                store.remove(key);
+                                store.delete(key);
                                 set.remove(key);
 
                                 operations.incrementAndGet();
@@ -143,13 +143,13 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
                             case 2:
                             default:
-                                store.put(key, "broken");
+                                store.write(new CacheEntryImpl<>(key, "broken"));
 
                                 String val = store.load(key);
 
                                 assertEquals("Invalid intermediate value: " + val, "broken", val);
 
-                                store.put(key, "val" + key);
+                                store.write(new CacheEntryImpl<>(key, "val" + key));
 
                                 set.add(key);
 

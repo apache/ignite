@@ -222,7 +222,7 @@ public interface GridCacheMBean {
      * <p/>
      * If this value is {@code 0}, then flush is performed only on time-elapsing basis. However,
      * when this value is {@code 0}, the cache critical size is set to
-     * {@link GridCacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
+     * {@link org.apache.ignite.cache.CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
      *
      * @return Buffer size that triggers flush procedure.
      */

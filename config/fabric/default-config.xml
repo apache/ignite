@@ -40,7 +40,7 @@
                 <!--
                     Local cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.GridCacheConfiguration">
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                 </bean>
@@ -48,7 +48,7 @@
                 <!--
                     Replicated cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.GridCacheConfiguration">
                     <property name="name" value="replicated"/>
                     <property name="cacheMode" value="REPLICATED"/>
                 </bean>
@@ -56,7 +56,7 @@
                 <!--
                     Partitioned cache configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.GridCacheConfiguration">
                     <property name="name" value="local"/>
                     <property name="cacheMode" value="LOCAL"/>
                 </bean>

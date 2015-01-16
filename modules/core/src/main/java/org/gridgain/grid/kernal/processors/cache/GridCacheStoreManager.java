@@ -23,13 +23,13 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
-import sun.nio.cs.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -246,19 +246,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 try {
                     if (keys.size() > singleThreadGate.loadAllThreshold()) {
-                        Map<K, Object> map = singleThreadGate.loadAll(keys0);
+                        Map<K, Object> map = store.loadAll(keys0);
 
-                        for (Map.Entry<K, Object> e : map.entrySet()) {
-                            K k = e.getKey();
+                        if (map != null) {
+                            for (Map.Entry<K, Object> e : map.entrySet()) {
+                                K k = e.getKey();
 
-                            V v = convert(e.getValue());
+                                V v = convert(e.getValue());
 
-                            if (cctx.portableEnabled()) {
-                                k = (K)cctx.marshalToPortable(k);
-                                v = (V)cctx.marshalToPortable(v);
+                                if (cctx.portableEnabled()) {
+                                    k = (K)cctx.marshalToPortable(k);
+                                    v = (V)cctx.marshalToPortable(v);
+                                }
+
+                                vis.apply(k, v);
                             }
-
-                            vis.apply(k, v);
                         }
                     }
                     else {
@@ -591,7 +593,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (ses) {
                 sesHolder.set(null);
 
-                tx.removeMeta(SES_ATTR);
+                ((GridMetadataAware)tx).removeMeta(SES_ATTR);
             }
         }
     }
@@ -620,12 +622,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         if (!sesEnabled || tx == null)
             return false;
 
-        SessionData ses = tx.meta(SES_ATTR);
+        SessionData ses = ((GridMetadataAware)tx).meta(SES_ATTR);
 
         if (ses == null) {
             ses = new SessionData(tx);
 
-            tx.addMeta(SES_ATTR, ses);
+            ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
         }
 
         sesHolder.set(ses);
@@ -680,10 +682,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<Object, Object> properties() {
+        @SuppressWarnings("unchecked")
+        @Override public <K, V> Map<K, V> properties() {
             SessionData ses0 = sesHolder.get();
 
-            return ses0 != null ? ses0.properties() : null;
+            return ses0 != null ? (Map<K, V>)ses0.properties() : null;
         }
     }
 }

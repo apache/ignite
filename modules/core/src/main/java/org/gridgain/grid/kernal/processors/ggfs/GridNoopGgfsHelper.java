@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
 /**
  * No-op utils processor adapter.
@@ -26,12 +26,12 @@ import org.gridgain.grid.cache.*;
 public class GridNoopGgfsHelper implements GridGgfsHelper {
 
     /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
+    @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws IgniteCheckedException {
+    @Override public void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException {
         // No-op.
     }
 

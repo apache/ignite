@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -71,8 +72,8 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);

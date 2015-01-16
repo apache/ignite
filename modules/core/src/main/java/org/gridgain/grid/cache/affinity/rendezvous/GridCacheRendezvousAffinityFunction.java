@@ -22,8 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
@@ -53,7 +51,7 @@ import java.util.*;
  * </li>
  * </ul>
  * <p>
- * Cache affinity can be configured for individual caches via {@link GridCacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link org.apache.ignite.cache.CacheConfiguration#getAffinity()} method.
  */
 public class GridCacheRendezvousAffinityFunction implements GridCacheAffinityFunction, Externalizable {
     /** */

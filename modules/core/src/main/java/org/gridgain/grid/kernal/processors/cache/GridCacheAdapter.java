@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -139,7 +140,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** Cache configuration. */
     @GridToStringExclude
-    protected GridCacheConfiguration cacheCfg;
+    protected CacheConfiguration cacheCfg;
 
     /** Grid configuration. */
     @GridToStringExclude
@@ -529,7 +530,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheConfiguration configuration() {
+    @Override public CacheConfiguration configuration() {
         return ctx.config();
     }
 

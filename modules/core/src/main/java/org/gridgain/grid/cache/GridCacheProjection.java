@@ -311,7 +311,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link GridCacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.cache.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.
@@ -1138,7 +1138,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link GridCacheConfiguration} at startup.
+     * All defaults are set in {@link org.apache.ignite.cache.CacheConfiguration} at startup.
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.
@@ -1271,7 +1271,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
      * <p>
-     * If {@link GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1288,7 +1288,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * evicted only if it's not used (not participating in any locks or
      * transactions).
      * <p>
-     * If {@link GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1302,7 +1302,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1317,7 +1317,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
      * <p>
-     * If {@link GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -1334,7 +1334,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>

@@ -226,7 +226,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link org.gridgain.grid.cache.GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -273,7 +273,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.gridgain.grid.cache.GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.cache.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -477,7 +477,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link org.gridgain.grid.cache.GridCacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.cache.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.

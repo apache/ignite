@@ -25,6 +25,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.jdk8.backport.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.util.concurrent.*;
 
@@ -123,12 +124,12 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(GridTestKey key, Long val) {
+    @Override public void write(Cache.Entry<? extends GridTestKey, ? extends Long> e) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(GridTestKey key) {
+    @Override public void delete(Object key) {
         // No-op.
     }
 }
