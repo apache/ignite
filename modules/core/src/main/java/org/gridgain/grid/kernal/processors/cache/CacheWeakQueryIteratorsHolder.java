@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.datastructures;
+package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
 
@@ -27,25 +26,25 @@ import java.lang.ref.*;
 import java.util.*;
 
 /**
- * Storage for GridCacheQueryFuture.
  * @param <T> Type for iterator.
  * @param <V> Type for cache query future.
  */
-public abstract class IgniteQueryAbstractStorage<T, V> {
+public abstract class CacheWeakQueryIteratorsHolder<T, V> {
     /** Iterators weak references queue. */
-    private final ReferenceQueue<IgniteIterator> refQueue = new ReferenceQueue<>();
+    private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
 
     /** Iterators futures. */
-    private final Map<WeakReference<IgniteIterator>, GridCacheQueryFuture<V>> futs = new ConcurrentHashMap8<>();
+    private final Map<WeakReference<WeakQueryFutureIterator>, GridCacheQueryFuture<V>> futs =
+        new ConcurrentHashMap8<>();
 
     /** Logger. */
     private final IgniteLogger log;
 
     /**
-     * @param ctx Cache context.
+     * @param log Logger.
      */
-    public IgniteQueryAbstractStorage(GridCacheContext ctx) {
-        log = ctx.logger(IgniteQueryAbstractStorage.class);
+    public CacheWeakQueryIteratorsHolder(IgniteLogger log) {
+        this.log = log;
     }
 
     /**
@@ -53,15 +52,20 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
      * @param fut Query to iterate
      * @return iterator
      */
-    public IgniteIterator iterator(GridCacheQueryFuture<V> fut) {
-        IgniteIterator it = new IgniteIterator(fut);
+    public WeakQueryFutureIterator iterator(GridCacheQueryFuture<V> fut) {
+        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut);
 
         futs.put(it.weakReference(), fut);
 
         return it;
     }
 
-    public void removeIterator(IgniteIterator it) throws IgniteCheckedException {
+    /**
+     * @param it Iterator.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeIterator(WeakQueryFutureIterator it) throws IgniteCheckedException {
         futs.remove(it.weakReference());
 
         it.close();
@@ -71,9 +75,9 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
      * Closes unreachable iterators.
      */
     public void checkWeakQueue() {
-        for (Reference<? extends IgniteIterator> itRef = refQueue.poll(); itRef != null; itRef = refQueue.poll()) {
+        for (Reference<? extends WeakQueryFutureIterator> itRef = refQueue.poll(); itRef != null; itRef = refQueue.poll()) {
             try {
-                WeakReference<IgniteIterator> weakRef = (WeakReference<IgniteIterator>)itRef;
+                WeakReference<WeakQueryFutureIterator> weakRef = (WeakReference<WeakQueryFutureIterator>)itRef;
 
                 GridCacheQueryFuture<?> fut = futs.remove(weakRef);
 
@@ -87,16 +91,9 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
     }
 
     /**
-     * Checks if set was removed and handles iterators weak reference queue.
-     */
-    public void onAccess() throws IgniteCheckedException {
-        checkWeakQueue();
-    }
-
-    /**
      * Cancel all cache queries
      */
-    protected void clearQueries(){
+    public void clearQueries(){
         for (GridCacheQueryFuture<?> fut : futs.values()) {
             try {
                 fut.cancel();
@@ -110,27 +107,29 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
     }
 
     /**
-     * Convert class V to class T.
+     * Converts class V to class T.
+     *
      * @param v Item to convert.
      * @return Converted item.
      */
     protected abstract T convert(V v);
 
     /**
-     * Remove item from the cache.
+     * Removes item.
+     *
      * @param item Item to remove.
      */
     protected abstract void remove(T item);
 
     /**
-     * Iterator over the cache.
+     * Iterator based of {@link GridCacheQueryFuture}.
      */
-    public class IgniteIterator extends GridCloseableIteratorAdapter<T> {
+    public class WeakQueryFutureIterator extends GridCloseableIteratorAdapter<T> {
         /** Query future. */
         private final GridCacheQueryFuture<V> fut;
 
         /** Weak reference. */
-        private final WeakReference<IgniteIterator> weakRef;
+        private final WeakReference<WeakQueryFutureIterator> weakRef;
 
         /** Init flag. */
         private boolean init;
@@ -142,19 +141,12 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
         private T cur;
 
         /**
-         * @param fut GridCacheQueryFuture to iterate
+         * @param fut GridCacheQueryFuture to iterate.
          */
-        IgniteIterator(GridCacheQueryFuture<V> fut) {
+        WeakQueryFutureIterator(GridCacheQueryFuture<V> fut) {
             this.fut = fut;
 
-            this.weakRef = new WeakReference<IgniteIterator>(this, refQueue);
-        }
-
-        /**
-         * @return Iterator weak reference.
-         */
-        public WeakReference<IgniteIterator> weakReference() {
-            return weakRef;
+            this.weakRef = new WeakReference<>(this, refQueue);
         }
 
         /** {@inheritDoc} */
@@ -203,9 +195,16 @@ public abstract class IgniteQueryAbstractStorage<T, V> {
             if (cur == null)
                 throw new IllegalStateException();
 
-            IgniteQueryAbstractStorage.this.remove(cur);
+            CacheWeakQueryIteratorsHolder.this.remove(cur);
 
             cur = null;
+        }
+
+        /**
+         * @return Iterator weak reference.
+         */
+        private WeakReference<WeakQueryFutureIterator> weakReference() {
+            return weakRef;
         }
 
         /**

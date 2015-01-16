@@ -5256,11 +5256,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
-        final int cacheSz = 100;
+        assertFalse(cache.iterator().hasNext());
 
-        Map<String, Integer> entries = new HashMap();
+        final int SIZE = 100;
 
-        for (int i = 0; i < cacheSz; ++i) {
+        Map<String, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < SIZE; ++i) {
             cache.put(Integer.toString(i), i);
 
             entries.put(Integer.toString(i), i);
@@ -5301,11 +5303,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         entries.remove(rmvKey);
 
         assertFalse(cache.containsKey(rmvKey));
+        assertNull(cache.get(rmvKey));
 
         checkIteratorCache(entries);
 
         // Check that we cannot call Iterator.remove() without next().
-        Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+        final Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -5313,13 +5316,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         iter.remove();
 
-        try {
-            iter.remove();
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Void call() throws Exception {
+                iter.remove();
 
-            fail();
-        }
-        catch (IllegalStateException e) {
-        }
+                return null;
+            }
+        }, IllegalStateException.class, null);
     }
 
     /**

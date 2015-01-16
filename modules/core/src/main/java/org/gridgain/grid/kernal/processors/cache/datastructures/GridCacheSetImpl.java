@@ -66,8 +66,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** Query storage */
-    private final IgniteQueryStorage queryStorage;
+    /** Iterator holder. */
+    private final CacheWeakQueryIteratorsHolder<T, Map.Entry<T, ?>> itHolder;
 
     /**
      * @param ctx Cache context.
@@ -85,7 +85,15 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
 
-        queryStorage = new IgniteQueryStorage(ctx);
+        itHolder = new CacheWeakQueryIteratorsHolder<T, Map.Entry<T, ?>>(ctx.logger(GridCacheSetImpl.class)) {
+            @Override protected T convert(Map.Entry<T, ?> e) {
+                return e.getKey();
+            }
+
+            @Override protected void remove(T item) {
+                GridCacheSetImpl.this.remove(item);
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -340,10 +348,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            IgniteQueryAbstractStorage.IgniteIterator it = queryStorage.iterator(qry.execute());
+            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it = itHolder.iterator(qry.execute());
 
             if (rmvd) {
-               queryStorage.removeIterator(it);
+                itHolder.removeIterator(it);
 
                 checkRemoved();
             }
@@ -430,7 +438,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         this.rmvd = rmvd;
 
         if (rmvd)
-            queryStorage.clearQueries();
+            itHolder.clearQueries();
     }
 
     /**
@@ -445,7 +453,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * Checks if set was removed and handles iterators weak reference queue.
      */
     private void onAccess() {
-        queryStorage.checkWeakQueue();
+        itHolder.checkWeakQueue();
 
         checkRemoved();
     }
@@ -475,28 +483,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSetImpl.class, this);
-    }
-
-    /**
-     * Queries' storage.
-     */
-    private class IgniteQueryStorage extends IgniteQueryAbstractStorage<T, Map.Entry<T, ?>> {
-        /**
-         * @param ctx Cache context.
-         */
-        public IgniteQueryStorage(GridCacheContext ctx) {
-            super(ctx);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected T convert(Map.Entry<T, ?> v) {
-            return v != null ? (T) v.getKey() : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void remove(T item) {
-            GridCacheSetImpl.this.remove(item);
-        }
     }
 
     /**
