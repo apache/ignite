@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.gridgain.grid.util.typedef.*;
 
 import java.sql.*;
 import java.util.*;
@@ -75,31 +76,26 @@ public class GridSqlQuerySplitter {
 
         mapQry.clearSelect();
 
-        int idx = 0;
-
-        for (GridSqlElement exp : mapExps) { // Add all expressions to select clause.
+        for (GridSqlElement exp : mapExps)
             mapQry.addSelectExpression(exp);
-
-            idx++;
-        }
 
         mapQry.clearGroups();
 
         for (int col : srcQry.groupColumns())
-            mapQry.addGroupExpression(column(aliases.get(col).alias()));
+            mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
-        mapQry.clearSort(); // TODO sort support
+        // TODO sort support
 
         // Reduce query.
         GridSqlSelect rdcQry = new GridSqlSelect();
 
-        for (int i = 0; i < srcQry.select().size(); i++)
-            rdcQry.addSelectExpression(column(aliases.get(i).alias()));
+        for (GridSqlElement rdcExp : rdcExps)
+            rdcQry.addSelectExpression(rdcExp);
 
         rdcQry.from(new GridSqlTable(null, table(0)));
 
         for (int col : srcQry.groupColumns())
-            rdcQry.addGroupExpression(column(aliases.get(col).alias()));
+            rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL());
 
@@ -109,28 +105,11 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param exp Expression.
-     * @param idx Index in select.
-     * @return Natural or generated alias.
-     */
-    private static String alias(GridSqlElement exp, int idx) {
-        if (exp instanceof GridSqlColumn)
-            return ((GridSqlColumn)exp).columnName();
-
-        if (exp instanceof GridSqlAlias)
-            return ((GridSqlAlias)exp).alias();
-
-        return columnName(idx);
-    }
-
-    /**
      * @param mapSelect Selects for map query.
      * @param rdcSelect Selects for reduce query.
      * @param idx Index.
      */
     private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect, int idx) {
-        assert idx < rdcSelect.length;
-
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -196,7 +175,8 @@ public class GridSqlQuerySplitter {
                 mapSelect.set(idx, alias);
             }
 
-            rdcSelect[idx] = column(alias.alias());
+            if (idx < rdcSelect.length)
+                rdcSelect[idx] = column(alias.alias());
         }
     }
 

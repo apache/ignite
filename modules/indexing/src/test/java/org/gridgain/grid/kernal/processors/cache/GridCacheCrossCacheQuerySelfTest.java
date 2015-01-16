@@ -124,13 +124,26 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTwoStepGroup() throws Exception {
+    public void testTwoStepGroupAndAggregates() throws Exception {
         fillCaches();
 
         GridCacheQueriesEx<Integer, FactPurchase> qx =
             (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
 
+        Set<Integer> set1 = new HashSet<>();
+
+        X.println("___ simple");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select f.productId, p.name, f.price " +
+            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ").get()) {
+            X.println("___ -> " + o);
+
+            set1.add((Integer)o.get(0));
+        }
+
         Set<Integer> set0 = new HashSet<>();
+
+        X.println("___ GROUP BY");
 
         for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase group by productId")
             .get()) {
@@ -139,19 +152,16 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             assertTrue(set0.add((Integer) o.get(0)));
         }
 
-        X.println("___ ");
-
-        Set<Integer> set1 = new HashSet<>();
-
-        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase")
-            .get()) {
-            X.println("___ -> " + o);
-
-            set1.add((Integer)o.get(0));
-        }
-
         assertFalse(set1.isEmpty());
         assertEquals(set0, set1);
+
+        X.println("___ AVG");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned",
+            "select p.name, avg(f.price) from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId " +
+                "group by f.productId, p.name").get()) {
+            X.println("___ -> " + o);
+        }
     }
 
     /** @throws Exception If failed. */
@@ -217,7 +227,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             DimStore store = dimStores.get(i % dimStores.size());
             DimProduct prod = dimProds.get(i % dimProds.size());
 
-            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId()));
+            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
         }
     }
 
@@ -279,10 +289,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimProduct {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @GridCacheQuerySqlField
         private int id;
 
         /** Product name. */
+        @GridCacheQuerySqlField
         private String name;
 
         /**
@@ -375,6 +386,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         @GridCacheQuerySqlField
         private int productId;
 
+        @GridCacheQuerySqlField
+        private int price;
+
         /**
          * Constructs a purchase record.
          *
@@ -382,10 +396,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
          * @param productId Purchased product ID.
          * @param storeId Store ID.
          */
-        FactPurchase(int id, int productId, int storeId) {
+        FactPurchase(int id, int productId, int storeId, int price) {
             this.id = id;
             this.productId = productId;
             this.storeId = storeId;
+            this.price = price;
         }
 
         /**
