@@ -352,7 +352,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 info("Put key-value pair into cache: 1='2'");
 
-                assertEquals("2", cache1.remove(1));
+                assertEquals("2", cache1.getAndRemove(1));
 
                 l2.countDown();
 
