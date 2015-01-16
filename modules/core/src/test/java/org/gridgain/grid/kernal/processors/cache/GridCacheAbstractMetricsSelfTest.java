@@ -41,10 +41,10 @@ import static org.gridgain.grid.util.GridUtils.*;
  */
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
-    private static final int KEY_CNT = 50;
+    public static final String CACHE_NAME = "metric_test";
 
     /** */
-    private static final String CACHE_NAME = "mbean_test";
+    private static final int KEY_CNT = 50;
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {

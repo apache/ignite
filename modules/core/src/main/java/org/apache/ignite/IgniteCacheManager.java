@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.CacheMetricsMXBean;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -293,25 +293,16 @@ public class IgniteCacheManager implements CacheManager {
             tuple = igniteMap.get(cacheName);
         }
 
-        ObjectName objName = getObjectName(cacheName, false);
         MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
 
-        try {
-            if (enabled) {
-                if(mBeanSrv.queryNames(objName, null).isEmpty())
-                    mBeanSrv.registerMBean(tuple.get2(), objName);
-            }
-            else {
-                for (ObjectName n : mBeanSrv.queryNames(objName, null))
-                    mBeanSrv.unregisterMBean(n);
+        if (enabled) {
+            registerCacheObject(mBeanSrv, tuple.get2(), cacheName, false);
 
-            }
-        }
-        catch (InstanceAlreadyExistsException | InstanceNotFoundException ignored) {
+            tuple.get1().cache(cacheName).configuration().setManagementEnabled(true);
+        } else {
+            unregisterCacheObject(mBeanSrv, cacheName, false);
 
-        }
-        catch (MBeanRegistrationException | NotCompliantMBeanException e) {
-            throw new CacheException(e);
+            tuple.get1().cache(cacheName).configuration().setManagementEnabled(false);
         }
     }
 

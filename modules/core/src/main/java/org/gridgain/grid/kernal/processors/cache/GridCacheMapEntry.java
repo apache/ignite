@@ -1427,6 +1427,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 update(old, null, 0, 0, ver);
             }
 
+            // Apply metrics.
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
+                // PutIfAbsent methods mustn't update hit/miss statistics
+                if (op != UPDATE || F.isEmpty(filter) || filter != cctx.noPeekArray())
+                    cctx.cache().metrics0().onRead(old != null);
+            }
+
             // Check filter inside of synchronization.
             if (!F.isEmpty(filter)) {
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
@@ -1442,10 +1449,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     return new T3<>(false, retval ? old : null, null);
                 }
             }
-
-            // Apply metrics.
-            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal)
-                cctx.cache().metrics0().onRead(old != null);
 
             String transformCloClsName = null;
 
@@ -1588,7 +1591,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 res = hadVal;
             }
 
-            updateMetrics(op, metrics);
+            if (res)
+                updateMetrics(op, metrics);
 
             cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
 
@@ -1769,6 +1773,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     deletedUnlocked(false);
             }
 
+            // Apply metrics.
+            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal) {
+                // PutIfAbsent methods mustn't update hit/miss statistics
+                if (op != UPDATE || F.isEmpty(filter) || filter != cctx.noPeekArray())
+                    cctx.cache().metrics0().onRead(old != null);
+            }
+
             // Check filter inside of synchronization.
             if (!F.isEmptyOrNulls(filter)) {
                 boolean pass = cctx.isAll(wrapFilterLocked(), filter);
@@ -1798,10 +1809,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         false);
                 }
             }
-
-            // Apply metrics.
-            if (metrics && cctx.cache().configuration().isStatisticsEnabled() && needVal)
-                cctx.cache().metrics0().onRead(old != null);
 
             // Calculate new value.
             if (op == GridCacheOperation.TRANSFORM) {
@@ -2056,7 +2063,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 newDrExpireTime = -1L;
             }
 
-            updateMetrics(op, metrics);
+            if (res)
+                updateMetrics(op, metrics);
 
             if (primary || cctx.isReplicated())
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);

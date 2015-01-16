@@ -97,22 +97,22 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param m Metrics to copy from.
      */
     public GridCacheMetricsAdapter(GridCacheMetricsAdapter m) {
-        createTime = m.createTime();
-        readTime = m.readTime();
-        writeTime = m.writeTime();
-        commitTime = m.commitTime();
-        rollbackTime = m.rollbackTime();
-        reads = m.reads();
-        writes = m.writes();
-        hits = m.hits();
-        misses = m.misses();
-        txCommits = m.txCommits();
-        txRollbacks = m.txRollbacks();
-        rmCnt = m.getCacheRemovals();
-        evictCnt = m.getCacheEvictions();
-        getTimeNanos = m.getTimeNanos();
-        putTimeNanos = m.putTimeNanos();
-        removeTimeNanos = m.removeTimeNanos();
+        createTime = m.createTime;
+        readTime = m.readTime;
+        writeTime = m.writeTime;
+        commitTime = m.commitTime;
+        rollbackTime = m.rollbackTime;
+        reads = m.reads;
+        writes = m.writes;
+        hits = m.hits;
+        misses = m.misses;
+        txCommits = m.txCommits;
+        txRollbacks = m.txRollbacks;
+        rmCnt = m.rmCnt;
+        evictCnt = m.evictCnt;
+        getTimeNanos = m.getTimeNanos;
+        putTimeNanos = m.putTimeNanos;
+        removeTimeNanos = m.removeTimeNanos;
     }
 
     /**
