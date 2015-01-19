@@ -144,13 +144,13 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param cb Local callback.
-     * @deprecated Deprecated in favor of {@link #localCallback(org.apache.ignite.lang.IgniteBiPredicate)} method.
+     * @deprecated Deprecated in favor of {@link #localCallback(IgniteBiPredicate)} method.
      */
     @Deprecated
     public void callback(@Nullable IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
 
     /**
-     * Gets local callback. See {@link #callback(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      * @deprecated Deprecated in favor of {@link #localCallback()} method.
@@ -175,7 +175,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void filter(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      * @deprecated Deprecated in favor of {@link #remoteFilter()} method.
@@ -205,7 +205,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void localCallback(IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb);
 
     /**
-     * Gets local callback. See {@link #callback(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      */
@@ -226,7 +226,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void remoteFilter(@Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      */

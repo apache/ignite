@@ -783,9 +783,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 ret = old;
             }
 
-            if (evt && expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
-                cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_EXPIRED, null, false, expiredVal,
-                    expiredVal != null || hasOldBytes, subjId, null, taskName);
+            if (evt && expired) {
+                if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+                    cctx.events().addEvent(partition(),
+                        key,
+                        tx,
+                        owner,
+                        EVT_CACHE_OBJECT_EXPIRED,
+                        null,
+                        false,
+                        expiredVal,
+                        expiredVal != null || hasOldBytes,
+                        subjId,
+                        null,
+                        taskName);
+                }
+
+                cctx.continuousQueries().onEntryExpired(this, key, expiredVal, null);
 
                 // No more notifications.
                 evt = false;
@@ -1155,7 +1169,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                 (tx != null && tx.local() && !isNear()))
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
+                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
             cctx.dataStructures().onEntryUpdated(key, false);
         }
@@ -1317,7 +1331,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
                     (tx != null && tx.local() && !isNear()))
-                    cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes);
+                    cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes, false);
 
                 cctx.dataStructures().onEntryUpdated(key, true);
             }
@@ -1591,7 +1605,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (metrics)
                 cctx.cache().metrics0().onWrite();
 
-            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
+            cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
 
@@ -2061,7 +2075,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 cctx.cache().metrics0().onWrite();
 
             if (primary || cctx.isReplicated())
-                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes);
+                cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
             cctx.dataStructures().onEntryUpdated(key, op == DELETE);
 
@@ -2982,8 +2996,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public boolean initialValue(V val, byte[] valBytes, GridCacheVersion ver, long ttl, long expireTime,
-        boolean preload, long topVer, GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public boolean initialValue(V val,
+        byte[] valBytes,
+        GridCacheVersion ver,
+        long ttl,
+        long expireTime,
+        boolean preload,
+        long topVer,
+        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException {
         if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
@@ -3019,8 +3039,15 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, val, valBytes, ver);
 
                 if (!skipQryNtf) {
-                    if (cctx.affinity().primary(cctx.localNode(), key, topVer) || cctx.isReplicated())
-                        cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), null, null);
+                    if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+                        cctx.continuousQueries().onEntryUpdate(this,
+                            key,
+                            val,
+                            valueBytesUnlocked(),
+                            null,
+                            null,
+                            preload);
+                    }
 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }
@@ -3338,12 +3365,23 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             obsolete = true; // Success, will return "true".
                     }
 
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED))
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, EVT_CACHE_OBJECT_EXPIRED,
-                            null, false, expiredVal, expiredVal != null || hasOldBytes, null, null, null);
+                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+                        cctx.events().addEvent(partition(),
+                            key,
+                            cctx.localNodeId(),
+                            null,
+                            EVT_CACHE_OBJECT_EXPIRED,
+                            null,
+                            false,
+                            expiredVal,
+                            expiredVal != null || hasOldBytes,
+                            null,
+                            null,
+                            null);
+                    }
+
+                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal, null);
                 }
-
-
             }
         }
         catch (IgniteCheckedException e) {

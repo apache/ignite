@@ -150,7 +150,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                     }
                                 }
 
-                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null);
+                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);

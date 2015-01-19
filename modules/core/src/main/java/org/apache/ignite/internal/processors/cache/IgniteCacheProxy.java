@@ -72,8 +72,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     public IgniteCacheProxy(GridCacheContext<K, V> ctx,
         GridCacheProjectionEx<K, V> delegate,
         @Nullable GridCacheProjectionImpl<K, V> prj,
-        boolean async
-    ) {
+        boolean async) {
         super(async);
 
         assert ctx != null;

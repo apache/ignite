@@ -377,6 +377,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         keepPortableInStore = cc.isKeepPortableInStore();
+        listenerConfigurations = cc.listenerConfigurations;
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
