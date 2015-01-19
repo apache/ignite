@@ -168,14 +168,14 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testInterruptLock() throws InterruptedException {
         final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-//        cache.put(1, "a");
-
         cache.lock(1).lock();
 
         final AtomicBoolean isOk = new AtomicBoolean(false);
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
+                assertFalse(cache.lock(1).isLockedByThread());
+
                 cache.lock(1).lock();
 
                 try {
@@ -205,11 +205,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      *
      */
-    public void _testInterruptLockWithTimeout() throws InterruptedException {
+    public void testInterruptLockWithTimeout() throws InterruptedException {
         final IgniteCache<Integer, String> cache = ignite.jcache(null);
-
-//        cache.put(1, "a");
-//        cache.put(2, "b");
 
         cache.lock(2).lock();
 
