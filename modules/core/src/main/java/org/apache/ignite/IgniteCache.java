@@ -180,8 +180,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public void removeAll(IgnitePredicate<Entry<K, V>> filter) throws CacheException;
 
+    /**
+     * Return a {@link CacheLock} instance associated with passed key.
+     * This method does not acquire lock immediately, you have to call something like {@link CacheLock#lock()} on
+     * returned instance.
+     *
+     * @param key Key for lock.
+     * @return New lock instance associated with passed key.
+     */
     public CacheLock lock(K key);
 
+    /**
+     * Return a {@link CacheLock} instance associated with passed keys.
+     * This method does not acquire lock immediately, you have to call something like {@link CacheLock#lock()} on
+     * returned instance.
+     *
+     * @param keys Keys for lock.
+     * @return New lock instance associated with passed key.
+     */
     public CacheLock lockAll(Collection<? extends K> keys);
 
     /**

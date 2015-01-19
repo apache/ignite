@@ -29,7 +29,7 @@ import java.util.concurrent.locks.*;
  */
 public interface CacheLock extends Lock {
     /**
-     * Checks if any node owns a lock for the keys associated this lock.
+     * Checks if any node holds lock on at least one key associated with this {@code CacheLock}.
      * <p>
      * This is a local in-VM operation and does not involve any network trips
      * or access to persistent storage in any way.
@@ -40,7 +40,7 @@ public interface CacheLock extends Lock {
     public boolean isLocked();
 
     /**
-     * Checks if current thread owns a lock the keys associated this lock.
+     * Checks if current thread holds lock on at least one key associated with this {@code CacheLock}.
      * <p>
      * This is a local in-VM operation and does not involve any network trips
      * or access to persistent storage in any way.
@@ -51,7 +51,7 @@ public interface CacheLock extends Lock {
     public boolean isLockedByThread();
 
     /**
-     * Asynchronously acquires lock on a cached object with given keys associated this lock.
+     * Asynchronously acquires lock on a cached object with keys associated with this {@code CacheLock}.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -66,7 +66,7 @@ public interface CacheLock extends Lock {
     public IgniteFuture<Boolean> lockAsync();
 
     /**
-     * Asynchronously acquires lock on a cached object with given keys associated this lock.
+     * Asynchronously acquires lock on a cached object with given keys associated with this {@code CacheLock}.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -76,10 +76,9 @@ public interface CacheLock extends Lock {
      * This method is not available if any of the following flags are set on projection:
      * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
      *
-     * @param timeout Timeout in milliseconds to wait for lock to be acquired
-     *      ({@code '0'} for no expiration, {@code -1} for immediate failure if
-     *      lock cannot be acquired immediately).
-     * @param unit the time unit of the {@code timeout} argument.
+     * @param timeout The maximum time to wait for the lock. If the time is less than or equal to zero, the method will
+     *      not wait at all.
+     * @param unit The time unit of the {@code timeout} argument.
      * @return Future for the lock operation. The future will return {@code true} whenever locks are acquired before
      *      timeout is expired, {@code false} otherwise.
      */
