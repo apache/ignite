@@ -31,7 +31,7 @@ public class CacheMetricsMXBean implements CacheStatisticsMXBean {
     /**
      * Constructor.
      *
-     * @param cache GridCache
+     * @param cache Cache.
      */
     public CacheMetricsMXBean(GridCache cache) {
         this.cache = cache;

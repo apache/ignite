@@ -21,7 +21,6 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.management.*;
 
-
 /**
  * Implementation of {@link CacheMXBean}.
  *
