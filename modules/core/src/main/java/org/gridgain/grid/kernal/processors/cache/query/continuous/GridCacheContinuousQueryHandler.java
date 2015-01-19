@@ -82,7 +82,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Task name hash code. */
     private int taskHash;
 
-    /** */
+    /** Keep portable flag. */
     private boolean keepPortable;
 
     /**
