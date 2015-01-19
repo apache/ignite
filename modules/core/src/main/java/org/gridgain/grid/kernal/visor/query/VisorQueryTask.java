@@ -129,6 +129,11 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         /** Flag indicating that this furure was read from last check. */
         private Boolean accessed;
 
+        /**
+         * @param fut Future.
+         * @param next Next value.
+         * @param accessed {@code true} if query was accessed before remove timeout expired.
+         */
         public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {
             this.fut = fut;
             this.next = next;
@@ -188,15 +193,19 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
-                String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" + UUID.randomUUID();
+                String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" +
+                    UUID.randomUUID();
 
                 GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
                 if (c == null)
-                    return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " + escapeName(arg.cacheName())), null);
+                    return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " +
+                        escapeName(arg.cacheName())), null);
+
+                GridCacheProjection<Object, Object> cp = c.keepPortable();
 
                 if (scan) {
-                    GridCacheQueryFuture<Map.Entry<Object, Object>> fut = c.queries().createScanQuery(null)
+                    GridCacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
                         .projection(g.forNodeIds(arg.proj()))
                         .execute();
@@ -221,7 +230,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
-                    GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)c.queries())
+                    GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
                         .createSqlFieldsQuery(arg.queryTxt(), true)
                         .pageSize(arg.pageSize())
                         .projection(g.forNodeIds(arg.proj()))
@@ -245,7 +254,8 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                         long start = U.currentTimeMillis();
 
-                        IgniteBiTuple<List<Object[]>, List<?>> rows = VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
+                        IgniteBiTuple<List<Object[]>, List<?>> rows =
+                            VisorQueryUtils.fetchSqlQueryRows(fut, firstRow, arg.pageSize());
 
                         long fetchDuration = U.currentTimeMillis() - start;
 
@@ -271,24 +281,25 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * @param id Uniq query result id.
          */
         private void scheduleResultSetHolderRemoval(final String id) {
-            ((GridKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
-                @Override public void onTimeout() {
-                    ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();
+            ((GridKernal)g).context().timeout()
+                .addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
+                    @Override public void onTimeout() {
+                        ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();
 
-                    VisorFutureResultSetHolder<?> t = storage.get(id);
+                        VisorFutureResultSetHolder<?> t = storage.get(id);
 
-                    if (t != null) {
-                        // If future was accessed since last scheduling,  set access flag to false and reschedule.
-                        if (t.accessed()) {
-                            t.accessed(false);
+                        if (t != null) {
+                            // If future was accessed since last scheduling,  set access flag to false and reschedule.
+                            if (t.accessed()) {
+                                t.accessed(false);
 
-                            scheduleResultSetHolderRemoval(id);
+                                scheduleResultSetHolderRemoval(id);
+                            }
+                            else
+                                storage.remove(id); // Remove stored future otherwise.
                         }
-                        else
-                            storage.remove(id); // Remove stored future otherwise.
                     }
-                }
-            });
+                });
         }
 
         /** {@inheritDoc} */
