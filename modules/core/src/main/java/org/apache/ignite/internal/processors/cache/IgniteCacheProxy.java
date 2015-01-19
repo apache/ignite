@@ -295,30 +295,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                 try {
                     delegate.lockAll(keys, 0);
                 }
-                catch (GridInterruptedException ignored) {
-
-                }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e.getMessage(), e);
                 }
             }
 
             @Override public void lockInterruptibly() throws InterruptedException {
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                try {
-                    delegate.lockAll(keys, 0);
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
-                    throw new InterruptedException();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
+                tryLock(-1, TimeUnit.MILLISECONDS);
             }
 
             @Override public boolean tryLock() {
@@ -331,14 +314,38 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             }
 
             @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-                try {
-                    return delegate.lockAll(keys, unit.toMillis(time));
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
+                if (Thread.interrupted())
                     throw new InterruptedException();
+
+                try {
+                    IgniteFuture<Boolean> fut = null;
+
+                    try {
+                        if (time <= 0)
+                            return delegate.lockAll(keys, -1);
+
+                        fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
+
+                        return fut.get();
+                    }
+                    catch (GridInterruptedException e) {
+                        if (fut != null) {
+                            if (!fut.cancel()) {
+                                if (fut.isDone()) {
+                                    Boolean res = fut.get();
+
+                                    Thread.currentThread().interrupt();
+
+                                    return res;
+                                }
+                            }
+                        }
+
+                        if (e.getCause() instanceof InterruptedException)
+                            throw (InterruptedException)e.getCause();
+
+                        throw new InterruptedException();
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e.getMessage(), e);

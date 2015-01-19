@@ -33,6 +33,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -159,6 +160,84 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         assert !cache.isLocked(1);
         assert !cache.isLockedByThread(1);
+    }
+
+    /**
+     *
+     */
+    public void testInterruptLock() throws InterruptedException {
+        final IgniteCache<Integer, String> cache = ignite.jcache(null);
+
+//        cache.put(1, "a");
+
+        cache.lock(1).lock();
+
+        final AtomicBoolean isOk = new AtomicBoolean(false);
+
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                cache.lock(1).lock();
+
+                try {
+                    assertTrue(cache.lock(1).isLockedByThread());
+                }
+                finally {
+                    cache.lock(1).unlock();
+                }
+
+                assertTrue(Thread.currentThread().isInterrupted());
+
+                isOk.set(true);
+            }
+        });
+
+        t.start();
+
+        t.interrupt();
+
+        cache.lock(1).unlock();
+
+        t.join();
+
+        assertTrue(isOk.get());
+    }
+
+    /**
+     *
+     */
+    public void _testInterruptLockWithTimeout() throws InterruptedException {
+        final IgniteCache<Integer, String> cache = ignite.jcache(null);
+
+//        cache.put(1, "a");
+//        cache.put(2, "b");
+
+        cache.lock(2).lock();
+
+        final AtomicBoolean isOk = new AtomicBoolean(false);
+
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    cache.lockAll(Arrays.asList(1, 2)).tryLock(5000, MILLISECONDS);
+                }
+                catch (InterruptedException ignored) {
+                    isOk.set(true);
+                }
+            }
+        });
+
+        t.start();
+
+        t.interrupt();
+
+        cache.lock(2).unlock();
+
+        t.join();
+
+        assertFalse(cache.lock(1).isLocked());
+        assertFalse(cache.lock(2).isLocked());
+
+        assertTrue(isOk.get());
     }
 
     /**
