@@ -17,25 +17,16 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
+
+import org.apache.ignite.lang.*;
+
 /**
- * Continuous query listener.
+ * Extended continuous query filter.
  */
-interface GridCacheContinuousQueryListener<K, V> {
+public interface GridCacheContinuousQueryFilterEx<K, V> extends
+        IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> {
     /**
-     * Query execution callback.
+     * Callback for query unregister event.
      */
-    public void onExecution();
-
-    /**
-     * Entry update callback.
-     *
-     * @param e Entry.
-     * @param recordEvt Whether to record event.
-     */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
-
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
+    public void onQueryUnregister();
 }
