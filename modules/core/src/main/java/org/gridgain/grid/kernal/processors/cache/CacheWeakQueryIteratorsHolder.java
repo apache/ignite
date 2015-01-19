@@ -55,7 +55,9 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
     public WeakQueryFutureIterator iterator(GridCacheQueryFuture<V> fut) {
         WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut);
 
-        futs.put(it.weakReference(), fut);
+        GridCacheQueryFuture<V> old = futs.put(it.weakReference(), fut);
+
+        assert old == null;
 
         return it;
     }
@@ -75,7 +77,8 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
      * Closes unreachable iterators.
      */
     public void checkWeakQueue() {
-        for (Reference<? extends WeakQueryFutureIterator> itRef = refQueue.poll(); itRef != null; itRef = refQueue.poll()) {
+        for (Reference<? extends WeakQueryFutureIterator> itRef = refQueue.poll(); itRef != null;
+            itRef = refQueue.poll()) {
             try {
                 WeakReference<WeakQueryFutureIterator> weakRef = (WeakReference<WeakQueryFutureIterator>)itRef;
 

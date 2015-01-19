@@ -74,7 +74,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     public IgniteCacheProxy(GridCacheContext<K, V> ctx,
         GridCacheProjectionEx<K, V> delegate,
         @Nullable GridCacheProjectionImpl<K, V> prj,
-        boolean async) {
+        boolean async
+    ) {
         super(async);
 
         assert ctx != null;
@@ -84,7 +85,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         this.delegate = delegate;
         this.prj = prj;
 
-        this.itHolder = new CacheWeakQueryIteratorsHolder<Entry<K, V>, Map.Entry<K, V>>(ctx.logger(IgniteCacheProxy.class)) {
+        itHolder = new CacheWeakQueryIteratorsHolder<Entry<K, V>, Map.Entry<K, V>>(ctx.logger(IgniteCacheProxy.class)) {
             @Override protected Entry<K, V> convert(Map.Entry<K, V> e) {
                 return new CacheEntryImpl<>(e.getKey(), e.getValue());
             }

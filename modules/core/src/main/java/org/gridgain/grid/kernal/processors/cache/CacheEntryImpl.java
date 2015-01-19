@@ -52,7 +52,7 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (!cls.equals(getClass()))
-            throw new IllegalArgumentException("Unwrapping is not supported: " + cls);
+            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
 
         return (T)this;
     }
