@@ -382,6 +382,7 @@ public class CacheConfiguration extends MutableConfiguration {
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
         keepPortableInStore = cc.isKeepPortableInStore();
+        listenerConfigurations = cc.listenerConfigurations;
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
