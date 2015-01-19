@@ -82,6 +82,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Task name hash code. */
     private int taskHash;
 
+    /** */
+    private boolean keepPortable;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -112,7 +115,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         boolean entryLsnr,
         boolean sync,
         boolean oldVal,
-        int taskHash) {
+        int taskHash,
+        boolean keepPortable) {
         assert topic != null;
         assert cb != null;
         assert !sync || entryLsnr;
@@ -127,6 +131,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.sync = sync;
         this.oldVal = oldVal;
         this.taskHash = taskHash;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -292,7 +297,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
         if (!entryLsnr)
-            manager(ctx).iterate(internal, routineId, keepPortable());
+            manager(ctx).iterate(internal, routineId, keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -425,6 +430,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         out.writeBoolean(oldVal);
 
         out.writeInt(taskHash);
+
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -456,6 +463,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         oldVal = in.readBoolean();
 
         taskHash = in.readInt();
+
+        keepPortable = in.readBoolean();
     }
 
     /**
@@ -466,13 +475,6 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
 
         return ctx.cache().<K, V>internalCache(cacheName).context();
-    }
-
-    /**
-     * @return Keep portable flag.
-     */
-    protected boolean keepPortable() {
-        return false;
     }
 
     /**

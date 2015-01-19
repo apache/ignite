@@ -303,7 +303,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
                 entryLsnr,
                 sync,
                 oldVal,
-                taskNameHash);
+                taskNameHash,
+                keepPortable);
 
             routineId = ctx.kernalContext().continuous().startRoutine(hnd,
                 bufSize,
