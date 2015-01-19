@@ -56,6 +56,9 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /** Projection predicate */
     private final IgnitePredicate<GridCacheEntry<K, V>> prjPred;
 
+    /** Keep portable flag. */
+    private final boolean keepPortable;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -97,6 +100,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         this.ctx = ctx;
         this.topic = topic;
         this.prjPred = prjPred;
+
+        keepPortable = ctx.keepPortable();
 
         log = ctx.logger(getClass());
     }

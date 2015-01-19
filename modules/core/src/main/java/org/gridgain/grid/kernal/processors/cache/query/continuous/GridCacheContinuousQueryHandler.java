@@ -90,6 +90,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /**
+     * Constructor.
+     *
      * @param cacheName Cache name.
      * @param topic Topic for ordered messages.
      * @param cb Local callback.
@@ -253,6 +255,12 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
             }
 
+            /** {@inheritDoc} */
+            @Override public void onUnregister() {
+                if (filter != null && filter instanceof GridCacheContinuousQueryFilterEx)
+                    ((GridCacheContinuousQueryFilterEx)filter).onQueryUnregister();
+            }
+
             private boolean checkProjection(GridCacheContinuousQueryEntry<K, V> e) {
                 GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
 
@@ -284,7 +292,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
         if (!entryLsnr)
-            manager(ctx).iterate(internal, routineId);
+            manager(ctx).iterate(internal, routineId, keepPortable());
     }
 
     /** {@inheritDoc} */
@@ -458,6 +466,13 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
 
         return ctx.cache().<K, V>internalCache(cacheName).context();
+    }
+
+    /**
+     * @return Keep portable flag.
+     */
+    protected boolean keepPortable() {
+        return false;
     }
 
     /**
