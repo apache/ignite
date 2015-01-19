@@ -1667,10 +1667,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         V val = get(key, true, null);
 
         if (ctx.config().getInterceptor() != null)
             val = (V)ctx.config().getInterceptor().onGet(key, val);
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         return val;
     }
@@ -1691,10 +1698,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         Map<K, V> map = getAll(keys, true, null);
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         return map;
     }
@@ -2074,6 +2088,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Nullable @Override public V put(final K key, final V val, @Nullable final GridCacheEntryEx<K, V> cached,
         final long ttl, @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statisticsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2083,15 +2101,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
-            @Override public V op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+        V prevValue = ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
+            @Override
+            public V op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
             }
 
-            @Override public String toString() {
+            @Override
+            public String toString() {
                 return "put [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));
+
+        if (statisticsEnabled) {
+            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+        }
+
+        return prevValue;
     }
 
     /** {@inheritDoc} */
@@ -2154,6 +2181,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean putx(final K key, final V val,
         final IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2163,7 +2194,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return syncOp(new SyncOp<Boolean>(true) {
+        Boolean stored = syncOp(new SyncOp<Boolean>(true) {
             @Override
             public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, filter).get().success();
@@ -2174,6 +2205,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "putx [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+
+        return stored;
     }
 
     /** {@inheritDoc} */
@@ -2504,6 +2540,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public boolean putxIfAbsent(final K key, final V val) throws IgniteCheckedException {
+        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statisticsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2513,15 +2553,22 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return syncOp(new SyncOp<Boolean>(true) {
-            @Override public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+        Boolean stored = syncOp(new SyncOp<Boolean>(true) {
+            @Override
+            public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.noPeekArray()).get().success();
             }
 
-            @Override public String toString() {
+            @Override
+            public String toString() {
                 return "putxIfAbsent [key=" + key + ", val=" + val + ']';
             }
         });
+
+        if (statisticsEnabled && stored)
+            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+
+        return stored;
     }
 
     /** {@inheritDoc} */
@@ -2705,6 +2752,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m,
         final IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         if (F.isEmpty(m))
             return;
 
@@ -2724,6 +2775,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "putAll [map=" + m + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -2759,6 +2813,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public V remove(final K key, @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key");
@@ -2766,7 +2824,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKey(key);
 
-        return ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
+        V prevVal = ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 V ret = tx.removeAllAsync(ctx, Collections.singletonList(key), entry, true, filter).get().value();
 
@@ -2780,6 +2838,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "remove [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
+
+        return prevVal;
     }
 
     /** {@inheritDoc} */
@@ -2813,6 +2876,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable final Collection<? extends K> keys,
         final IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(keys))
@@ -2841,6 +2908,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "removeAll [keys=" + keys + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statsEnabled)
+            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -2874,6 +2944,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean removex(final K key, @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statisticsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key");
@@ -2881,15 +2955,22 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKey(key);
 
-        return syncOp(new SyncOp<Boolean>(true) {
-            @Override public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+        boolean removed = syncOp(new SyncOp<Boolean>(true) {
+            @Override
+            public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).get().success();
             }
 
-            @Override public String toString() {
+            @Override
+            public String toString() {
                 return "removex [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statisticsEnabled && removed)
+            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+        return removed;
     }
 
     /** {@inheritDoc} */
@@ -3070,6 +3151,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public boolean remove(final K key, final V val) throws IgniteCheckedException {
+        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statisticsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key", val, "val");
@@ -3079,7 +3164,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheValue(val);
 
-        return syncOp(new SyncOp<Boolean>(true) {
+        boolean removed = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled())
@@ -3098,6 +3183,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "remove [key=" + key + ", val=" + val + ']';
             }
         });
+
+        if (statisticsEnabled && removed)
+            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+        return removed;
     }
 
     /** {@inheritDoc} */

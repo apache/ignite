@@ -57,14 +57,4 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     @Override protected int gridCount() {
         return GRID_CNT;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testGetAllAvgTime() throws Exception {
-        //TODO: GG-7578
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGetAvgTime() throws Exception {
-        //TODO: GG-7578
-    }
 }

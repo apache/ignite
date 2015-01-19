@@ -33,7 +33,7 @@ public class GridCacheMetricsSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Metrics Test Suite");
 
-//        suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMetricsSelfTest.class));

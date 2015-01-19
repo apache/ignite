@@ -269,6 +269,16 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         removeTimeNanos += duration;
     }
 
+    /**
+     * Increments the remove and get time accumulators.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAndGetTimeNanos(long duration) {
+        removeTimeNanos += duration;
+        getTimeNanos += duration;
+    }
+
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
         long timeNanos = getTimeNanos;

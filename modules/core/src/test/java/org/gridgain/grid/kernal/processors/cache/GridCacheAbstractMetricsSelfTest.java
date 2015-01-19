@@ -104,10 +104,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -131,10 +127,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveAllAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -160,10 +152,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testGetAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -191,10 +179,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testGetAllAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -222,10 +206,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -251,10 +231,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPutAllAvgTime() throws Exception {
-        // TODO: GG-7578.
-        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
@@ -373,10 +349,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testMisses() throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
-        // TODO: GG-7578.
-        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
-
         int keyCnt = keyCount();
 
         int expReads = 0;
@@ -417,10 +389,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testMissesOnEmptyCache() throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        // TODO: GG-7578.
-        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
-            return;
 
         Integer key =  null;
 
