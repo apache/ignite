@@ -119,6 +119,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(LOCAL);
         cfg.setName(cacheName);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setStatisticsEnabled(true);
 
         return cfg;
     }
