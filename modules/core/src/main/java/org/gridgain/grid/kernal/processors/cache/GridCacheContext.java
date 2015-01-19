@@ -1082,7 +1082,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param prj Flags to set.
      */
-    void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    public void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
         if (nearContext())
             dht().near().context().prjPerCall.set(prj);
         else

@@ -68,6 +68,7 @@ public class GridDotNetPortableTypeConfiguration implements PortableMarshalAware
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
         metadataEnabled = cfg.getMetadataEnabled();
+        keepDeserialized = cfg.isKeepDeserialized();
     }
 
     /**
@@ -187,19 +188,12 @@ public class GridDotNetPortableTypeConfiguration implements PortableMarshalAware
         PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeString(assemblyName);
-
         rawWriter.writeString(typeName);
-
         rawWriter.writeString(nameMapper);
-
         rawWriter.writeString(idMapper);
-
         rawWriter.writeString(serializer);
-
         rawWriter.writeString(affinityKeyFieldName);
-
         rawWriter.writeObject(metadataEnabled);
-
         rawWriter.writeObject(keepDeserialized);
     }
 
@@ -208,19 +202,12 @@ public class GridDotNetPortableTypeConfiguration implements PortableMarshalAware
         PortableRawReader rawReader = reader.rawReader();
 
         assemblyName = rawReader.readString();
-
         typeName = rawReader.readString();
-
         nameMapper = rawReader.readString();
-
         idMapper = rawReader.readString();
-
         serializer = rawReader.readString();
-
         affinityKeyFieldName = rawReader.readString();
-
         metadataEnabled = (Boolean)rawReader.readObject();
-
         keepDeserialized = (Boolean)rawReader.readObject();
     }
 

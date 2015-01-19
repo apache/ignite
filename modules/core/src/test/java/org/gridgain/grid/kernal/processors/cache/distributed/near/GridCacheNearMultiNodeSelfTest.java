@@ -742,35 +742,35 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         if (!transactional())
             return;
 
-        GridCache<Integer, String> near = cache(0);
+        IgniteCache<Integer, String> near = jcache(0);
 
         String val = Integer.toString(key);
 
-        near.lock(key, 0);
+        near.lock(key).lock();
 
         try {
             near.put(key, val);
 
-            assertEquals(val, near.peek(key));
+            assertEquals(val, near.localPeek(key));
             assertEquals(val, dht(primaryGrid(key)).peek(key));
 
             assertTrue(near.isLocked(key));
             assertTrue(near.isLockedByThread(key));
 
-            near.lock(key, 0); // Reentry.
+            near.lock(key).lock(); // Reentry.
 
             try {
                 assertEquals(val, near.get(key));
-                assertEquals(val, near.remove(key));
+                assertEquals(val, near.getAndRemove(key));
 
-                assertNull(near.peek(key));
+                assertNull(near.localPeek(key));
                 assertNull(dht(primaryGrid(key)).peek(key));
 
                 assertTrue(near.isLocked(key));
                 assertTrue(near.isLockedByThread(key));
             }
             finally {
-                near.unlock(key);
+                near.lock(key).unlock();
             }
 
             assertTrue(near.isLocked(key));
@@ -782,7 +782,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             throw t;
         }
         finally {
-            near.unlock(key);
+            near.lock(key).unlock();
         }
 
         assertFalse(near(0).isLockedNearOnly(key));
