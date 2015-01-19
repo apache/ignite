@@ -553,7 +553,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public void loadAll(Set<? extends K> keys,
         boolean replaceExistingValues,
-        CompletionListener completionLsnr) {
+        @Nullable CompletionListener completionLsnr) {
         // TODO IGNITE-1.
         throw new UnsupportedOperationException();
     }

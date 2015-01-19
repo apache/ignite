@@ -335,7 +335,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 catch (ClassCastException e) {
                     handleClassCastException(e);
                 }
-                catch (IgniteException e) {
+                catch (Exception e) {
                     throw U.cast(e);
                 }
                 finally {
@@ -391,7 +391,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
                 }, args);
             }
-            catch (IgniteException e) {
+            catch (Exception e) {
                 throw U.cast(e);
             }
             catch (AssertionError e) {
@@ -442,6 +442,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
             }
             finally {
                 if (ses)
@@ -495,29 +498,31 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Storing values in cache store [map=" + map0 + ']');
 
+                // TODO IGNITE-42.
+                Collection<Cache.Entry<? extends K, ? extends Object>> entries = new ArrayList<>(map.size());
+
+                for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
+                    entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
+
                 boolean ses = initSession(tx);
 
                 try {
-                    /*
-                    C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>> c =
-                        new C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>>() {
-                            @Override public Cache.Entry<? extends K, ?> apply(Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e) {
-                                return new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1());
-                            }
-                        };
-
-
-                    Collection<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>> col = map.entrySet();
-                    */
-                    Collection<Cache.Entry<? extends K, ? extends Object>> entries = new ArrayList<>(map.size());
-
-                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
-                        entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
-
                     store.writeAll(entries);
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
+                }
+                catch (Exception e) {
+                    if (!entries.isEmpty()) {
+                        List<Object> keys = new ArrayList<>(entries.size());
+
+                        for (Cache.Entry<?, ?> entry : entries)
+                            keys.add(entry.getKey());
+
+                        throw new CacheStorePartialUpdateException(keys, e);
+                    }
+
+                    throw new IgniteCheckedException(e);
                 }
                 finally {
                     if (ses)
@@ -560,6 +565,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (ClassCastException e) {
                 handleClassCastException(e);
             }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
             finally {
                 if (ses)
                     sesHolder.set(null);
@@ -580,24 +588,20 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeAllFromStore(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked")
+    public boolean removeAllFromStore(@Nullable IgniteTx tx, Collection<?> keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
         if (keys.size() == 1) {
-            K key = keys.iterator().next();
+            Object key = keys.iterator().next();
 
-            return removeFromStore(tx, key);
+            return removeFromStore(tx, (K)key);
         }
 
         if (store != null) {
-            Collection<? extends K> keys0 = convertPortable ?
-                F.viewReadOnly(keys, new C1<K, K>() {
-                    @Override public K apply(K k) {
-                        return (K)cctx.unwrapPortableIfNeeded(k, false);
-                    }
-                }) :
-                keys;
+            Collection<Object> keys0 = convertPortable ?
+                cctx.unwrapPortablesIfNeeded((Collection<Object>)keys, false) : (Collection<Object>)keys;
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -611,8 +615,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 handleClassCastException(e);
             }
             catch (Exception e) {
-                //if (!keys.isEmpty())
-                    //throw new CacheStorePartialUpdateException(keys0, e);
+                if (!keys0.isEmpty())
+                    throw new CacheStorePartialUpdateException(keys0, e);
 
                 throw new IgniteCheckedException(e);
             }

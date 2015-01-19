@@ -1270,18 +1270,30 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         assert putMap == null ^ rmvKeys == null;
         GridCacheOperation op;
 
+        CacheStorePartialUpdateException storeErr = null;
+
         try {
             if (putMap != null) {
-                ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
-                    @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
-                        return F.t(v, ver);
-                    }
-                }));
+                try {
+                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
+                        @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
+                            return F.t(v, ver);
+                        }
+                    }));
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    storeErr = e;
+                }
 
                 op = UPDATE;
             }
             else {
-                ctx.store().removeAllFromStore(null, rmvKeys);
+                try {
+                    ctx.store().removeAllFromStore(null, rmvKeys);
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    storeErr = e;
+                }
 
                 op = DELETE;
             }
@@ -1302,7 +1314,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             assert Thread.holdsLock(entry);
 
-            if (entry.obsolete())
+            if (entry.obsolete() || (storeErr != null && storeErr.failedKeys().contains(entry.key())))
                 continue;
 
             try {

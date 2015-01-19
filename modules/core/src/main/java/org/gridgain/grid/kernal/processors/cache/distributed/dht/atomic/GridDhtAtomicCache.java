@@ -1838,6 +1838,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
 
+        CacheStorePartialUpdateException storeErr = null;
+
         try {
             GridCacheOperation op;
 
@@ -1851,11 +1853,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }) :
                     putMap;
 
-                ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
-                    @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
-                        return F.t(v, ver);
-                    }
-                }));
+                try {
+                    ctx.store().putAllToStore(null, F.viewReadOnly(storeMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
+                        @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
+                            return F.t(v, ver);
+                        }
+                    }));
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    storeErr = e;
+                }
 
                 op = UPDATE;
             }
@@ -1869,16 +1876,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }) :
                     rmvKeys;
 
-                ctx.store().removeAllFromStore(null, storeKeys);
-                /*
                 try {
                     ctx.store().removeAllFromStore(null, storeKeys);
                 }
                 catch (CacheStorePartialUpdateException e) {
-                    if (e.failedKeys().size() == storeKeys.size())
-
+                    storeErr = e;
                 }
-                */
 
                 op = DELETE;
             }
@@ -1896,6 +1899,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     continue;
                 }
+
+                if (storeErr != null && storeErr.failedKeys().contains(entry.key()))
+                    continue;
 
                 try {
                     // We are holding java-level locks on entries at this point.
@@ -2031,6 +2037,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         catch (IgniteCheckedException e) {
             res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e);
         }
+
+        if (storeErr != null)
+            res.addFailedKeys((Collection<K>)storeErr.failedKeys(), storeErr.getCause());
 
         return dhtFut;
     }
