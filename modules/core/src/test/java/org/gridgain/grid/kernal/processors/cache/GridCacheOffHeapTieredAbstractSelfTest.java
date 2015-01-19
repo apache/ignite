@@ -524,51 +524,23 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void checkLockUnlock(Integer key) throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         Integer val = key;
 
         c.put(key, val);
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key));
 
-        assertTrue(c.lock(key, 0));
-
-        assertTrue(c.isLocked(key));
-
-        c.unlock(key);
-
-        assertFalse(c.isLocked(key));
-
-        assertNull(c.peek(key));
-
-        checkValue(key, val);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    public void _testLockUnlockFiltered() throws Exception { // TODO: 9288, enable when fixed.
-        if (atomicityMode() == ATOMIC)
-            return;
-
-        GridCache<Integer, Integer> c = grid(0).cache(null);
-
-        Integer key = primaryKey(c);
-        Integer val = key;
-
-        c.put(key, val);
-
-        assertTrue(c.lock(key, 0, new TestEntryPredicate(val)));
+        c.lock(key).lock();
 
         assertTrue(c.isLocked(key));
 
-        c.unlock(key);
+        c.lock(key).unlock();
 
         assertFalse(c.isLocked(key));
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key));
 
         checkValue(key, val);
     }

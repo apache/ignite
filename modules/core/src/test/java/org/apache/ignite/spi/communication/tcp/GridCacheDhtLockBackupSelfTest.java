@@ -114,8 +114,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         // Now, grid1 is always primary node for key 1.
-        final GridCache<Integer, String> cache1 = ignite1.cache(null);
-        final GridCache<Integer, String> cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        final IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
         info(">>> Primary: " + ignite1.cluster().localNode().id());
         info(">>>  Backup: " + ignite2.cluster().localNode().id());
@@ -126,7 +126,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                assert cache1.lock(kv, 0L);
+                cache1.lock(kv).lock();
 
                 info("After lock for key: " + kv);
 
@@ -145,7 +145,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.unlockAll(Collections.singleton(kv));
+                    cache1.lockAll(Collections.singleton(kv)).unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
@@ -162,7 +162,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                assert cache2.lock(kv, 0L);
+                cache2.lock(kv).lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -171,7 +171,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.unlockAll(Collections.singleton(kv));
+                    cache2.lockAll(Collections.singleton(kv)).unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }
@@ -194,12 +194,12 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         info("Remove all completed");
 
-        if (!cache2.isEmpty()) {
-            String failMsg = cache2.entrySet().toString();
+        if (cache2.size() > 0) {
+            String failMsg = cache2.toString();
 
             long start = System.currentTimeMillis();
 
-            while (!cache2.isEmpty())
+            while (cache2.size() > 0)
                 U.sleep(100);
 
             long clearDuration = System.currentTimeMillis() - start;

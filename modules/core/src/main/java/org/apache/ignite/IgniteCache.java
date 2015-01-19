@@ -179,9 +179,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public void removeAll(IgnitePredicate<Entry<K, V>> filter) throws CacheException;
 
-    public Lock lock(K key) throws CacheException;
+    public Lock lock(K key);
 
-    public Lock lockAll(Set<? extends K> keys) throws CacheException;
+    public Lock lockAll(Set<? extends K> keys);
 
     /**
      * Checks if any node owns a lock for this key.

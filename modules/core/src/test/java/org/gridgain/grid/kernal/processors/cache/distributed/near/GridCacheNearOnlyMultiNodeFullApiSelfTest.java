@@ -418,48 +418,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
-    @Override public void testUnlockFiltered() throws Exception {
-        if (lockingEnabled()) {
-            List<String> keys = primaryKeysForCache(fullCache(), 2);
-
-            String key1 = keys.get(0);
-            String key2 = keys.get(1);
-
-            cache().put(key1, 1);
-            cache().put(key2, 100);
-
-            assert !cache().isLocked(key1);
-            assert !cache().isLocked(key2);
-            assert !fullCache().isLocked(key1);
-            assert !fullCache().isLocked(key2);
-
-            cache().lock(key1, 0L);
-            cache().lock(key2, 0L);
-
-            assert cache().isLocked(key1);
-            assert cache().isLocked(key2);
-
-            cache().unlock(key1, gte100);
-            cache().unlock(key2, gte100);
-
-            for (int i = 0; i < 100; i++) {
-                if (fullCache().isLocked(key2))
-                    Thread.sleep(10);
-                else
-                    break;
-            }
-
-            assert cache().isLocked(key1);
-            assert fullCache().isLocked(key1);
-            assert !cache().isLocked(key2);
-            assert !fullCache().isLocked(key2);
-
-            cache().unlockAll(F.asList(key1, key2));
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void testPrimaryData() throws Exception {
         // Not needed for near-only cache.
     }

@@ -238,7 +238,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 assert mem != null;
 
                 if (val != null || valBytes != null) {
-                    boolean valIsByteArr = val != null && val instanceof byte[];
+                    boolean valIsByteArr = val instanceof byte[];
 
                     if (valBytes == null && !valIsByteArr)
                         valBytes = CU.marshal(cctx.shared(), val);
@@ -1473,6 +1473,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     invokeRes = new CacheInvokeResult<>(e);
                 }
+
+                if (!entry.modified())
+                    return new GridTuple3<>(false, null, invokeRes);
             }
             else
                 updated = (V)writeObj;
@@ -1825,6 +1828,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = old;
 
                     valBytes = oldBytes.getIfMarshaled();
+                }
+
+                if (!entry.modified()) {
+                    return new GridCacheUpdateAtomicResult<>(false,
+                        retval ? old : null,
+                        null,
+                        invokeRes,
+                        -1L,
+                        -1L,
+                        null,
+                        null,
+                        false);
                 }
             }
             else

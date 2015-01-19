@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -258,14 +259,79 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        return lockAll(Collections.<K>singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lockAll(Set<? extends K> keys) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public Lock lockAll(final Set<? extends K> keys) {
+        return new Lock() {
+            @Override public void lock() {
+                try {
+                    delegate.lockAll(keys, 0);
+                }
+                catch (GridInterruptedException ignored) {
+
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public void lockInterruptibly() throws InterruptedException {
+                if (Thread.interrupted())
+                    throw new InterruptedException();
+
+                try {
+                    delegate.lockAll(keys, 0);
+                }
+                catch (GridInterruptedException e) {
+                    if (e.getCause() instanceof InterruptedException)
+                        throw (InterruptedException)e.getCause();
+
+                    throw new InterruptedException();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public boolean tryLock() {
+                try {
+                    return delegate.lockAll(keys, -1);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+                try {
+                    return delegate.lockAll(keys, unit.toMillis(time));
+                }
+                catch (GridInterruptedException e) {
+                    if (e.getCause() instanceof InterruptedException)
+                        throw (InterruptedException)e.getCause();
+
+                    throw new InterruptedException();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public void unlock() {
+                try {
+                    delegate.unlockAll(keys);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @NotNull @Override public Condition newCondition() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /** {@inheritDoc} */
