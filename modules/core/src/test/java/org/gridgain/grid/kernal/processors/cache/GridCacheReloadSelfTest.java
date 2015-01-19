@@ -38,7 +38,6 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * Checks that GridCacheProjection.reload() operations are performed correctly.
  */
 public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
-
     /** Maximum allowed number of cache entries. */
     public static final int MAX_CACHE_ENTRIES = 500;
 

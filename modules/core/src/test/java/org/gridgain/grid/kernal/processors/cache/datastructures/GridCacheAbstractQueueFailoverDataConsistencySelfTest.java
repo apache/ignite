@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -81,6 +82,11 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         cfg.setMetricsLogFrequency(0);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheStore<?, ?> cacheStore() {
+        return null;
     }
 
     /** {@inheritDoc} */

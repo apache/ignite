@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -67,6 +68,14 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteCheckedException {
             lifecycleAware.stop();
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        @IgniteCacheNameResource
+        public void setCacheName(String cacheName) {
+            lifecycleAware.cacheName(cacheName);
         }
 
         /** {@inheritDoc} */

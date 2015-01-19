@@ -689,19 +689,25 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param tx Current transaction.
-     * @return {@code True} if
+     * @return {@code True} if thread local session was initialized.
      */
     private boolean initSession(@Nullable IgniteTx tx) {
-        if (!sesEnabled || tx == null)
+        if (!sesEnabled)
             return false;
 
-        SessionData ses = ((GridMetadataAware)tx).meta(SES_ATTR);
+        SessionData ses;
 
-        if (ses == null) {
-            ses = new SessionData(tx);
+        if (tx != null) {
+            ses = ((GridMetadataAware)tx).meta(SES_ATTR);
 
-            ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
+            if (ses == null) {
+                ses = new SessionData(tx);
+
+                ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
+            }
         }
+        else
+            ses = new SessionData(null);
 
         sesHolder.set(ses);
 
