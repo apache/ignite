@@ -1269,7 +1269,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public void writeAll(Collection<Cache.Entry<? extends Object, ? extends Object>> entries) {
-            super.writeAll(entries);
+            for (Cache.Entry<? extends Object, ? extends Object> e : entries)
+                storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();
         }

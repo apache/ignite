@@ -293,4 +293,13 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     private Person person(Long id, String firstName, String lastName) {
         return new Person(id, firstName, lastName);
     }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
+    }
 }

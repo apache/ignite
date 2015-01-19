@@ -267,4 +267,13 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
         return ses;
     }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
+    }
 }

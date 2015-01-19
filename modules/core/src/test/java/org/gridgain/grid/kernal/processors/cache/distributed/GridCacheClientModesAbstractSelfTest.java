@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -49,6 +50,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         gridCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheStore<?, ?> cacheStore() {
+        return null;
     }
 
     /** {@inheritDoc} */
