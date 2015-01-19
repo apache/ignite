@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -147,6 +148,9 @@ public class IgniteCacheManager implements CacheManager {
         if (((CompleteConfiguration)cacheCfg).isManagementEnabled())
             enableManagement(cacheName, true);
 
+        if (((CompleteConfiguration)cacheCfg).isStatisticsEnabled())
+            enableStatistics(cacheName, true);
+
         return res;
     }
 
@@ -250,26 +254,21 @@ public class IgniteCacheManager implements CacheManager {
 
             }
 
-            ObjectName objName = getObjectName(cacheName);
-
             MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
 
-            for (ObjectName n : mBeanSrv.queryNames(objName, null)) {
-                try {
-                    mBeanSrv.unregisterMBean(n);
-                }
-                catch (Exception ignored) {
+            unregisterCacheObject(mBeanSrv, cacheName, true);
 
-                }
-            }
+            unregisterCacheObject(mBeanSrv, cacheName, false);
         }
     }
 
     /**
      * @param cacheName Cache name.
      */
-    private ObjectName getObjectName(String cacheName) {
-        String mBeanName = "javax.cache:type=CacheConfiguration,CacheManager="
+    private ObjectName getObjectName(String cacheName, boolean isStatistic) {
+        String mbType = isStatistic ? "CacheStatistics" : "CacheConfiguration";
+
+        String mBeanName = "javax.cache:type=" + mbType + ",CacheManager="
             + uri.toString().replaceAll(",|:|=|\n", ".")
             + ",Cache=" + cacheName.replaceAll(",|:|=|\n", ".");
 
@@ -294,27 +293,19 @@ public class IgniteCacheManager implements CacheManager {
             tuple = igniteMap.get(cacheName);
         }
 
-        ObjectName objName = getObjectName(cacheName);
         MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
 
-        try {
-            if (enabled) {
-                if(mBeanSrv.queryNames(objName, null).isEmpty())
-                    mBeanSrv.registerMBean(tuple.get2(), objName);
-            }
-            else {
-                for (ObjectName n : mBeanSrv.queryNames(objName, null))
-                    mBeanSrv.unregisterMBean(n);
+        if (enabled) {
+            registerCacheObject(mBeanSrv, tuple.get2(), cacheName, false);
 
-            }
-        }
-        catch (InstanceAlreadyExistsException | InstanceNotFoundException ignored) {
+            tuple.get1().cache(cacheName).configuration().setManagementEnabled(true);
+        } else {
+            unregisterCacheObject(mBeanSrv, cacheName, false);
 
-        }
-        catch (MBeanRegistrationException | NotCompliantMBeanException e) {
-            throw new CacheException(e);
+            tuple.get1().cache(cacheName).configuration().setManagementEnabled(false);
         }
     }
+
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
@@ -323,7 +314,81 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        throw new UnsupportedOperationException();
+        IgniteBiTuple<Ignite, IgniteCacheMXBean> tuple;
+
+        synchronized (igniteMap) {
+            tuple = igniteMap.get(cacheName);
+        }
+
+        Ignite ignite = tuple.get1();
+
+        GridCache cache = ignite.cache(cacheName);
+
+        GridCacheConfiguration configuration = ignite.jcache(cacheName).getConfiguration(GridCacheConfiguration.class);
+
+        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
+
+        if (enabled) {
+            CacheMetricsMXBean mxBean = new CacheMetricsMXBean(cache);
+
+            registerCacheObject(mBeanSrv, mxBean, cacheName, true);
+
+            configuration.setStatisticsEnabled(true);
+        }
+        else {
+            unregisterCacheObject(mBeanSrv, cacheName, true);
+
+            configuration.setStatisticsEnabled(false);
+        }
+    }
+
+    /**
+     * @param mxbean MXBean.
+     * @param name cache name.
+     */
+    public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, boolean isStatistic) {
+        ObjectName registeredObjectName = getObjectName(name, isStatistic);
+
+        try {
+            if (!isRegistered(mBeanServer, registeredObjectName))
+                mBeanServer.registerMBean(mxbean, registeredObjectName);
+        }
+        catch (Exception e) {
+            throw new CacheException("Error registering cache MXBeans for CacheManager "
+                + registeredObjectName.toString() + " . Error was " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @return {@code True} if MBean registered.
+     */
+    private static boolean isRegistered(MBeanServer mBeanServer, ObjectName objectName) {
+        return !mBeanServer.queryNames(objectName, null).isEmpty();
+    }
+
+    /**
+     * UnRegisters the mxbean if registered already.
+     *
+     * @param mBeanSrv MBean server
+     * @param name cache name.
+     * @param stats is mxbean, a statistics mxbean.
+     */
+    public void unregisterCacheObject(MBeanServer mBeanSrv, String name, boolean stats) {
+        Set<ObjectName> registeredObjectNames;
+
+        ObjectName objectName = getObjectName(name, stats);
+
+        registeredObjectNames = mBeanSrv.queryNames(objectName, null);
+
+        //should just be one
+        for (ObjectName registeredObjectName : registeredObjectNames) {
+            try {
+                mBeanSrv.unregisterMBean(registeredObjectName);
+            } catch (Exception e) {
+                throw new CacheException("Error unregistering object instance " + registeredObjectName
+                        + " . Error was " + e.getMessage(), e);
+            }
+        }
     }
 
     /**

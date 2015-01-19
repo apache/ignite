@@ -18,12 +18,25 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
+
+import javax.cache.expiry.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Cache metrics test.
  */
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
+    /** */
+    public static final String CACHE_NAME = "metric_test";
+
     /** */
     private static final int KEY_CNT = 50;
 
@@ -74,6 +87,192 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             g.transactions().resetMetrics();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            g.cache(null).configuration().setStatisticsEnabled(true);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+
+        assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
+
+        jcache.remove(1);
+
+        float avgRmvTime = cache.metrics().getAverageRemoveTime();
+
+        assert avgRmvTime > 0;
+
+        jcache.remove(2);
+
+        assert cache.metrics().getAverageRemoveTime() > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAllAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+        jcache.put(3, 3);
+
+        assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
+
+        Set<Integer> keys = new HashSet<>(4, 1);
+        keys.add(1);
+        keys.add(2);
+        keys.add(3);
+
+        jcache.removeAll(keys);
+
+        float averageRemoveTime = cache.metrics().getAverageRemoveTime();
+
+        assert averageRemoveTime >= 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+
+        assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
+        assertEquals(0, cache.metrics().reads());
+
+        long start = System.nanoTime();
+
+        jcache.get(1);
+
+        float averageGetTime = cache.metrics().getAverageGetTime();
+
+        assert averageGetTime >= 0;
+
+        assertEquals(1, cache.metrics().reads());
+
+        jcache.get(2);
+
+        assert cache.metrics().getAverageGetTime() >= 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        jcache.put(1, 1);
+        jcache.put(2, 2);
+        jcache.put(3, 3);
+
+        assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
+        assertEquals(0, cache.metrics().reads());
+
+        Set<Integer> keys = new HashSet<>();
+        keys.add(1);
+        keys.add(2);
+        keys.add(3);
+
+        jcache.getAll(keys);
+
+        float averageGetTime = cache.metrics().getAverageGetTime();
+
+        assert averageGetTime >= 0;
+        assertEquals(3, cache.metrics().reads());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.metrics().writes());
+
+        long start = System.nanoTime();
+
+        jcache.put(1, 1);
+
+        float avgPutTime = cache.metrics().getAveragePutTime();
+
+        assert avgPutTime >= 0;
+
+        assertEquals(1, cache.metrics().writes());
+
+        jcache.put(2, 2);
+
+        assert cache.metrics().getAveragePutTime() >= 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllAvgTime() throws Exception {
+        // TODO: GG-7578.
+        if (cache().configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
+        IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.metrics().writes());
+
+        Map<Integer, Integer> values = new HashMap<>();
+
+        values.put(1, 1);
+        values.put(2, 2);
+        values.put(3, 3);
+
+        jcache.putAll(values);
+
+        float averagePutTime = cache.metrics().getAveragePutTime();
+
+        assert averagePutTime >= 0;
+        assertEquals(values.size(), cache.metrics().writes());
     }
 
     /**
@@ -132,6 +331,40 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(expReads, reads);
         assertEquals(keyCnt, hits);
         assertEquals(expMisses, misses);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMissHitPercentage() throws Exception {
+        GridCache<Integer, Integer> cache0 = grid(0).cache(null);
+
+        int keyCnt = keyCount();
+
+        // Put and get a few keys.
+        for (int i = 0; i < keyCnt; i++) {
+            cache0.put(i, i); // +1 read
+
+            info("Writes: " + cache0.metrics().writes());
+
+            for (int j = 0; j < gridCount(); j++) {
+                GridCache<Integer, Integer> cache = grid(j).cache(null);
+
+                int cacheWrites = cache.metrics().writes();
+
+                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+            }
+
+            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+        }
+
+        // Check metrics for the whole cache.
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheMetrics m = grid(i).cache(null).metrics();
+
+            assertEquals(m.getCacheHits() * 100f / m.getCacheGets(), m.getCacheHitPercentage(), 0.1f);
+            assertEquals(m.getCacheMisses() * 100f / m.getCacheGets(), m.getCacheMissPercentage(), 0.1f);
+        }
     }
 
     /**
@@ -214,5 +447,284 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals("Expected 3 reads", 3, cache.metrics().reads());
         assertEquals("Expected 2 misses", 2, cache.metrics().misses());
         assertEquals("Expected 1 hit", 1, cache.metrics().hits());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoves() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        cache.put(1, 1);
+
+        // +1 remove
+        cache.remove(1);
+
+        assertEquals(1L, cache.metrics().getCacheRemovals());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testManualEvictions() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        if (cache.configuration().getCacheMode() == GridCacheMode.PARTITIONED)
+            return;
+
+        cache.put(1, 1);
+
+        cache.evict(1);
+
+        assertEquals(0L, cache.metrics().getCacheRemovals());
+        assertEquals(1L, cache.metrics().getCacheEvictions());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxEvictions() throws Exception {
+        if (grid(0).cache(null).configuration().getAtomicityMode() != GridCacheAtomicityMode.ATOMIC)
+            checkTtl(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonTxEvictions() throws Exception {
+        if (grid(0).cache(null).configuration().getAtomicityMode() == GridCacheAtomicityMode.ATOMIC)
+            checkTtl(false);
+    }
+
+    /**
+     * @param inTx
+     * @throws Exception If failed.
+     */
+    private void checkTtl(boolean inTx) throws Exception {
+        int ttl = 1000;
+
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+
+        final GridCache<Integer, Integer> c = grid(0).cache(null);
+
+        final Integer key = primaryKeysForCache(c, 1, 0).get(0);
+
+        c.put(key, 1);
+
+        GridCacheEntry<Integer, Integer> entry = c.entry(key);
+
+        assert entry != null;
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+
+        long startTime = System.currentTimeMillis();
+
+        if (inTx) {
+            // Rollback transaction for the first time.
+            IgniteTx tx = grid(0).transactions().txStart();
+
+            try {
+                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+            }
+            finally {
+                tx.rollback();
+            }
+
+            assertEquals(0, entry.timeToLive());
+            assertEquals(0, entry.expirationTime());
+        }
+
+        // Now commit transaction and check that ttl and expire time have been saved.
+        IgniteTx tx = inTx ? c.txStart() : null;
+
+        try {
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        long[] expireTimes = new long[gridCount()];
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+
+            if (curEntry.primary() || curEntry.backup()) {
+                assertEquals(ttl, curEntry.timeToLive());
+
+                assert curEntry.expirationTime() > startTime;
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // One more update from the same cache entry to ensure that expire time is shifted forward.
+        U.sleep(100);
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 2);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+
+            if (curEntry.primary() || curEntry.backup()) {
+                assertEquals(ttl, curEntry.timeToLive());
+
+                assert curEntry.expirationTime() > expireTimes[i];
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // And one more direct update to ensure that expire time is shifted forward.
+        U.sleep(100);
+
+        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 3);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+
+            if (curEntry.primary() || curEntry.backup()) {
+                assertEquals(ttl, curEntry.timeToLive());
+
+                assert curEntry.expirationTime() > expireTimes[i];
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
+        U.sleep(100);
+
+        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+
+        log.info("Put 4");
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            grid(0).jcache(null).put(key, 4);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        log.info("Put 4 done");
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+
+            if (curEntry.primary() || curEntry.backup()) {
+                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(expireTimes[i], curEntry.expirationTime());
+            }
+        }
+
+        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+
+        // Avoid reloading from store.
+        map.remove(key);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public boolean applyx() throws IgniteCheckedException {
+                try {
+                    if (c.get(key) != null)
+                        return false;
+
+                    // Get "cache" field from GridCacheProxyImpl.
+                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
+
+                    if (!c0.context().deferredDelete()) {
+                        GridCacheEntryEx e0 = c0.peekEx(key);
+
+                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
+                    } else
+                        return true;
+                } catch (GridCacheEntryRemovedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, Math.min(ttl * 10, getTestTimeout())));
+
+        // Ensure that old TTL and expire time are not longer "visible".
+        entry = c.entry(key);
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+
+        // Ensure that next update will not pick old expire time.
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            entry.set(10);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        U.sleep(2000);
+
+        entry = c.entry(key);
+
+        assertEquals((Integer)10, entry.get());
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+
+        if (c.configuration().getCacheMode() != GridCacheMode.PARTITIONED && inTx)
+            assertEquals(1, grid(0).cache(null).metrics().getCacheEvictions());
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected List<Integer> primaryKeysForCache(GridCacheProjection<Integer, Integer> cache, int cnt, int startFrom)
+            throws IgniteCheckedException {
+        List<Integer> found = new ArrayList<>(cnt);
+
+        for (int i = startFrom; i < startFrom + 100_000; i++) {
+            if (cache.entry(i).primary()) {
+                found.add(i);
+
+                if (found.size() == cnt)
+                    return found;
+            }
+        }
+
+        throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TimeUnit.MINUTES.toMillis(10L);
     }
 }
