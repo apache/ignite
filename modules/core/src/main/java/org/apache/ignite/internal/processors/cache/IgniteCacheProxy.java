@@ -318,12 +318,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
                     throw new InterruptedException();
 
                 try {
+                    if (time <= 0)
+                        return delegate.lockAll(keys, -1);
+
                     IgniteFuture<Boolean> fut = null;
 
                     try {
-                        if (time <= 0)
-                            return delegate.lockAll(keys, -1);
-
                         fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
 
                         return fut.get();

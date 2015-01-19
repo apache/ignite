@@ -193,6 +193,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         t.start();
 
+        Thread.sleep(100);
+
         t.interrupt();
 
         cache.lock(1).unlock();
@@ -225,11 +227,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         t.start();
 
+        Thread.sleep(100);
+
         t.interrupt();
 
-        cache.lock(2).unlock();
-
         t.join();
+
+        cache.lock(2).unlock();
 
         assertFalse(cache.lock(1).isLocked());
         assertFalse(cache.lock(2).isLocked());
