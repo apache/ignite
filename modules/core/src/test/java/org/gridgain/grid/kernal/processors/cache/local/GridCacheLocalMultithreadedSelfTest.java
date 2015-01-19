@@ -346,6 +346,8 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test failed.
      */
     public void testLockOrder() throws Exception {
+        final IgniteCache<Object, Object> cache = grid().jcache(null);
+
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
         final CountDownLatch l3 = new CountDownLatch(1);
@@ -353,7 +355,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         Thread t1 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                assert cache.lock(1, 0L);
+                cache.lock(1).lock();
 
                 l1.countDown();
 
@@ -362,7 +364,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 l2.await();
 
-                cache.unlock(1);
+                cache.lock(1).unlock();
 
                 l3.countDown();
 
@@ -378,7 +380,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 try {
                     l1.await();
 
-                    IgniteFuture<Boolean> f1 = cache.lockAsync(1, 0L);
+                    CacheLock lock1 = cache.enableAsync().lock(1);
+
+                    IgniteFuture<Boolean> f1 = cache.enableAsync().future();
 
                     try {
                         f1.get(100, TimeUnit.MILLISECONDS);
@@ -389,7 +393,11 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                         info("Correctly received timeout exception: " + e);
                     }
 
-                    IgniteFuture<Boolean> f2 = cache.lockAsync(2, 0L);
+                    CacheLock lock2 = cache.lock(2);
+
+                    lock2.lock();
+
+                    IgniteFuture<Boolean> f2 = lock2.future();
 
                     try {
                         // Can't acquire f2 because f1 is held.
@@ -402,8 +410,8 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                         info("Correctly received timeout exception: " + e);
                     }
 
-                    assert cache.isLocked(1);
-                    assert !cache.isLockedByThread(1);
+                    assert lock1.isLocked();
+                    assert !lock1.isLockedByThread();
 
                     // TODO uncomment after GG-3756 fix
                     //assert cache.isLocked(2);
@@ -423,8 +431,8 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                     assert cache.isLocked(2);
                     assert cache.isLockedByThread(2);
 
-                    cache.unlock(1);
-                    cache.unlock(2);
+                    lock1.unlock();
+                    lock2.unlock();
 
                     assert !cache.isLocked(1);
                     assert !cache.isLockedByThread(1);

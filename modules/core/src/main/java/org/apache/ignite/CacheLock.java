@@ -18,8 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -27,7 +25,7 @@ import java.util.concurrent.locks.*;
 /**
  * Lock associated with some cache keys.
  */
-public interface CacheLock extends Lock {
+public interface CacheLock extends Lock, IgniteAsyncSupport {
     /**
      * Checks if any node holds lock on at least one key associated with this {@code CacheLock}.
      * <p>
@@ -50,37 +48,14 @@ public interface CacheLock extends Lock {
      */
     public boolean isLockedByThread();
 
-    /**
-     * Asynchronously acquires lock on a cached object with keys associated with this {@code CacheLock}.
-     * <h2 class="header">Transactions</h2>
-     * Locks are not transactional and should not be used from within transactions. If you do
-     * need explicit locking within transaction, then you should use
-     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
-     * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @return Future for the lock operation. The future will return {@code true}.
-     */
-    public IgniteFuture<Boolean> lockAsync();
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void lock();
 
-    /**
-     * Asynchronously acquires lock on a cached object with given keys associated with this {@code CacheLock}.
-     * <h2 class="header">Transactions</h2>
-     * Locks are not transactional and should not be used from within transactions. If you do
-     * need explicit locking within transaction, then you should use
-     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
-     * which will acquire explicit locks for relevant cache operations.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param timeout The maximum time to wait for the lock. If the time is less than or equal to zero, the method will
-     *      not wait at all.
-     * @param unit The time unit of the {@code timeout} argument.
-     * @return Future for the lock operation. The future will return {@code true} whenever locks are acquired before
-     *      timeout is expired, {@code false} otherwise.
-     */
-    public IgniteFuture<Boolean> lockAsync(long timeout, TimeUnit unit);
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException;
+
+    /** {@inheritDoc} */
+    @Override public CacheLock enableAsync();
 }

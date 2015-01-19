@@ -32,21 +32,21 @@ import java.util.concurrent.locks.*;
  *
  * @param <K>
  */
-class CacheLockImpl<K> implements CacheLock {
+class CacheLockAsyncImpl<K> implements CacheLock {
     /** */
     private final GridCacheProjectionEx<K, ?> delegate;
 
     /** */
     private final Collection<? extends K> keys;
 
-    /** */
-    private volatile CacheLockAsyncImpl<K> async;
+    /** Future for previous asynchronous operation. */
+    protected ThreadLocal<IgniteFuture<?>> curFut;
 
     /**
      * @param delegate Delegate.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheProjectionEx<K, ?> delegate, Collection<? extends K> keys) {
+    CacheLockAsyncImpl(GridCacheProjectionEx<K, ?> delegate, Collection<? extends K> keys) {
         this.delegate = delegate;
         this.keys = keys;
     }
@@ -73,12 +73,9 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        try {
-            delegate.lockAll(keys, 0);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e.getMessage(), e);
-        }
+        IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, 0);
+
+        curFut.set(fut);
     }
 
     /** {@inheritDoc} */
@@ -97,43 +94,15 @@ class CacheLockImpl<K> implements CacheLock {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        if (Thread.interrupted())
-            throw new InterruptedException();
+    @Override public boolean tryLock(long time, TimeUnit unit) {
+        if (time <= 0)
+            return tryLock();
 
-        try {
-            if (time <= 0)
-                return delegate.lockAll(keys, -1);
+        IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
-            IgniteFuture<Boolean> fut = null;
+        curFut.set(fut);
 
-            try {
-                fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
-
-                return fut.get();
-            }
-            catch (GridInterruptedException e) {
-                if (fut != null) {
-                    if (!fut.cancel()) {
-                        if (fut.isDone()) {
-                            Boolean res = fut.get();
-
-                            Thread.currentThread().interrupt();
-
-                            return res;
-                        }
-                    }
-                }
-
-                if (e.getCause() instanceof InterruptedException)
-                    throw (InterruptedException)e.getCause();
-
-                throw new InterruptedException();
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e.getMessage(), e);
-        }
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -153,24 +122,23 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** {@inheritDoc} */
     @Override public CacheLock enableAsync() {
-        CacheLockAsyncImpl<K> async = this.async;
-
-        if (async == null) {
-            async = new CacheLockAsyncImpl<>(delegate, keys);
-
-            this.async = async;
-        }
-
-        return async;
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        throw new IllegalStateException("Asynchronous mode is not enabled.");
+        IgniteFuture<?> fut = curFut.get();
+
+        if (fut == null)
+            throw new IllegalStateException("Asynchronous operation not started.");
+
+        curFut.set(null);
+
+        return (IgniteFuture<R>)fut;
     }
 }
