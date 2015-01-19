@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -121,10 +122,10 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < gridCnt; i++) {
                 reset();
 
-                GridCache<Object, Object> cache = cache(i);
+                IgniteCache<Object, Object> cache = jcache(i);
 
-                cache.lock("key", 0L);
-                cache.unlock("key");
+                cache.lock("key").lock();
+                cache.lock("key").unlock();
 
                 assertTrue(evictLatch.await(3, SECONDS));
 
