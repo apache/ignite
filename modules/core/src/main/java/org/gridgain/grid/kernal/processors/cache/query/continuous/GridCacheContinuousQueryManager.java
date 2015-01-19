@@ -129,6 +129,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param internal Internal flag.
      * @return Whether listener was actually registered.
      */
+    @SuppressWarnings("UnusedParameters")
     boolean registerListener(UUID nodeId, UUID lsnrId, GridCacheContinuousQueryListener<K, V> lsnr, boolean internal) {
         ListenerInfo<K, V> info = new ListenerInfo<>(lsnr);
 
@@ -158,13 +159,21 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param id Listener ID.
      */
     void unregisterListener(boolean internal, UUID id) {
+        ListenerInfo info;
+
         if (internal) {
-            if (intLsnrs.remove(id) != null)
+            if ((info = intLsnrs.remove(id)) != null) {
                 intLsnrCnt.decrementAndGet();
+
+                info.lsnr.onUnregister();
+            }
         }
         else {
-            if (lsnrs.remove(id) != null)
+            if ((info = lsnrs.remove(id)) != null) {
                 lsnrCnt.decrementAndGet();
+
+                info.lsnr.onUnregister();
+            }
         }
     }
 
@@ -173,27 +182,43 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      *
      * @param internal Internal flag.
      * @param id Listener ID.
+     * @param keepPortable Keep portable flag.
      */
-    void iterate(boolean internal, UUID id) {
+    @SuppressWarnings("unchecked")
+    void iterate(boolean internal, UUID id, boolean keepPortable) {
         ListenerInfo<K, V> info = internal ? intLsnrs.get(id) : lsnrs.get(id);
 
         assert info != null;
 
-        Set<GridCacheEntry<K, V>> entries;
+        GridCacheProjectionImpl<K, V> oldPrj = null;
 
-        if (cctx.isReplicated())
-            entries = internal ? cctx.cache().entrySetx() :
-                cctx.cache().entrySet();
-        else
-            entries = internal ? cctx.cache().primaryEntrySetx() :
-                cctx.cache().primaryEntrySet();
+        try {
+            if (keepPortable) {
+                oldPrj = cctx.projectionPerCall();
 
-        for (GridCacheEntry<K, V> e : entries) {
-            info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null),
-                !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
+                cctx.projectionPerCall(cctx.cache().<K, V>keepPortable0());
+            }
+
+            Set<GridCacheEntry<K, V>> entries;
+
+            if (cctx.isReplicated())
+                entries = internal ? cctx.cache().entrySetx() :
+                    cctx.cache().entrySet();
+            else
+                entries = internal ? cctx.cache().primaryEntrySetx() :
+                    cctx.cache().primaryEntrySet();
+
+            for (GridCacheEntry<K, V> e : entries) {
+                info.onIterate(new GridCacheContinuousQueryEntry<>(cctx, e, e.getKey(), e.getValue(), null, null, null),
+                    !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ));
+            }
+
+            info.flushPending();
         }
-
-        info.flushPending();
+        finally {
+            if (keepPortable)
+                cctx.projectionPerCall(oldPrj);
+        }
     }
 
     /**
