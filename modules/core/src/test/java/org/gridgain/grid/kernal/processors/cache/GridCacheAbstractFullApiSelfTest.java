@@ -1,14 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -29,6 +38,7 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -269,11 +279,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveInExplicitLocks() throws Exception {
         if (lockingEnabled()) {
-            GridCache<String, Integer> cache = cache();
+            IgniteCache<String, Integer> cache = jcache();
 
             cache.put("a", 1);
 
-            cache.lockAll(F.asList("a", "b", "c", "d"), 0);
+            Lock lock = cache.lockAll(ImmutableSet.of("a", "b", "c", "d"));
+
+            lock.lock();
 
             try {
                 cache.remove("a");
@@ -282,7 +294,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 cache.putAll(F.asMap("b", 2, "c", 3, "d", 4));
             }
             finally {
-                cache.unlockAll(F.asList("a", "b", "c", "d"));
+                lock.unlock();
             }
         }
     }
@@ -3300,7 +3312,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             }, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            GridCache<String, Integer> cache = cache();
+            IgniteCache<String, Integer> cache = jcache();
 
             String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -3308,13 +3320,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !cache.isLocked(key);
 
-            cache.lock(key, 0);
+            cache.lock(key).lock();
 
             lockCnt.await();
 
             assert cache.isLocked(key);
 
-            cache.unlock(key);
+            cache.lock(key).unlock();
 
             unlockCnt.await();
 
@@ -3389,22 +3401,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testLockWithTimeout() throws Exception {
         if (lockingEnabled()) {
-            cache().put("key", 1);
+            jcache().put("key", 1);
 
-            assert !cache().isLocked("key");
+            assert !jcache().isLocked("key");
 
-            cache().lock("key", 2000);
+            final Lock lock = jcache().lock("key");
 
-            assert cache().isLocked("key");
-            assert cache().isLockedByThread("key");
+            lock.tryLock(2000, MILLISECONDS);
+
+            assert jcache().isLocked("key");
+            assert jcache().isLockedByThread("key");
 
             assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
-                @Override public Boolean call() throws IgniteCheckedException {
-                    return cache().lock("key", 100);
+                @Override public Boolean call() throws InterruptedException {
+                    return lock.tryLock(100, MILLISECONDS);
                 }
             });
 
-            cache().unlock("key");
+            lock.unlock();
         }
     }
 
@@ -3586,61 +3600,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
-    public void testLockFiltered() throws Exception {
-        if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 100);
-
-            for (int i = 0; i < gridCount(); i++) {
-                assert !cache(i).isLocked("key1");
-                assert !cache(i).isLocked("key2");
-            }
-
-            cache().projection(F.<GridCacheEntry<String, Integer>>alwaysFalse()).lock("key1", 0);
-            cache().projection(F.<GridCacheEntry<String, Integer>>alwaysTrue()).lock("key2", 0);
-
-            boolean passed = false;
-
-            for (int i = 0; i < gridCount(); i++) {
-                assertFalse("key1 is locked for cache: " + i, cache(i).isLocked("key1"));
-
-                if (cache(i).isLocked("key2"))
-                    passed = true;
-            }
-
-            assert passed;
-
-            // Must pass keys as lock() was called with keys.
-            cache().unlockAll(F.asList("key2"), F.<GridCacheEntry<String, Integer>>alwaysTrue());
-
-            for (int i = 0; i < 100; i++) {
-                boolean sleep = false;
-
-                for (int j = 0; j < gridCount(); j++) {
-                    if (cache(j).isLocked("key1") || cache(j).isLocked("key2")) {
-                        sleep = true;
-
-                        break;
-                    }
-                }
-
-                if (sleep)
-                    Thread.sleep(10);
-                else
-                    break;
-            }
-
-            for (int i = 0; i < gridCount(); i++) {
-                assert !cache(i).isLocked("key1");
-                assert !cache(i).isLocked("key2");
-            }
-        }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @SuppressWarnings("BusyWait")
     public void testLockFilteredEntry() throws Exception {
         if (lockingEnabled()) {
             cache().put("key1", 1);
@@ -3695,69 +3654,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
-    public void testUnlockFiltered() throws Exception {
-        if (lockingEnabled()) {
-            List<String> keys = primaryKeysForCache(cache(), 2);
-
-            info("Keys: " + keys);
-
-            final String key1 = keys.get(0);
-            final String key2 = keys.get(1);
-
-            cache().put(key1, 1);
-            cache().put(key2, 100);
-
-            assert !cache().isLocked(key1);
-            assert !cache().isLocked(key2);
-
-            cache().lock(key1, 0);
-            cache().lock(key2, 0);
-
-            assert cache().isLocked(key1);
-            assert cache().isLocked(key2);
-
-            cache().unlock(key1, gte100);
-            cache().unlock(key2, gte100);
-
-            GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    for (int g = 0; g < gridCount(); g++) {
-                        if (cache(g).isLocked(key2)) {
-                            info(key2 + " is locked on grid: " + g);
-
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-            }, 2000);
-
-            assert cache().isLocked(key1);
-            assert !cache().isLocked(key2);
-
-            cache().unlockAll(F.asList(key1, key2));
-
-            GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    for (int g = 0; g < gridCount(); g++) {
-                        if (cache(g).isLocked(key1))
-                            info(key1 + " is locked on grid: " + g);
-
-                        if (cache(g).isLocked(key2))
-                            info(key2 + " is locked on grid: " + g);
-                    }
-
-                    return true;
-                }
-            }, 2000);
-        }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @SuppressWarnings("BusyWait")
     public void testUnlockFilteredEntry() throws Exception {
         if (lockingEnabled()) {
             cache().put("key1", 1);
@@ -3800,109 +3696,47 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @SuppressWarnings("BusyWait")
     public void testLockUnlockAll() throws Exception {
         if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 2);
+            IgniteCache<String, Integer> cache = jcache();
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
+            cache.put("key1", 1);
+            cache.put("key2", 2);
 
-            cache().lockAll(F.asList("key1", "key2"), 0);
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
 
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
+            cache.lockAll(ImmutableSet.of("key1", "key2")).lock();
 
-            cache().unlockAll(F.asList("key1", "key2"));
+            assert cache.isLocked("key1");
+            assert cache.isLocked("key2");
+
+            cache.lockAll(ImmutableSet.of("key1", "key2")).unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key1") || cache().isLocked("key2"))
+                if (cache.isLocked("key1") || cache.isLocked("key2"))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
 
-            cache().lockAll(F.asList("key1", "key2"), 0);
+            Lock lock = cache.lockAll(ImmutableSet.of("key1", "key2"));
 
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
+            lock.lock();
 
-            cache().unlockAll(F.asList("key1", "key2"));
+            assert cache.isLocked("key1");
+            assert cache.isLocked("key2");
+
+            lock.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key1") || cache().isLocked("key2"))
+                if (cache.isLocked("key1") || cache.isLocked("key2"))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-        }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @SuppressWarnings("BusyWait")
-    public void testLockAllFiltered() throws Exception {
-        if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 2);
-            cache().put("key3", 100);
-            cache().put("key4", 101);
-
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-            assert !cache().isLocked("key3");
-            assert !cache().isLocked("key4");
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
-
-            assert !cache().projection(gte100).lockAll(F.asList("key2", "key3"), 0);
-
-            assert !cache().isLocked("key1");
-            assert !cache().isLocked("key2");
-            assert !cache().isLocked("key3");
-            assert !cache().isLocked("key4");
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
-
-            assert cache().projection(F.<GridCacheEntry<String, Integer>>alwaysTrue()).lockAll(
-                F.asList("key1", "key2", "key3", "key4"), 0);
-
-            assert cache().isLocked("key1");
-            assert cache().isLocked("key2");
-            assert cache().isLocked("key3");
-            assert cache().isLocked("key4");
-
-            assert cache().isLockedByThread("key1");
-            assert cache().isLockedByThread("key2");
-            assert cache().isLockedByThread("key3");
-            assert cache().isLockedByThread("key4");
-
-            cache().unlockAll(F.asList("key1", "key2", "key3", "key4"),
-                F.<GridCacheEntry<String, Integer>>alwaysTrue());
-
-            for (String key : cache().primaryKeySet()) {
-                for (int i = 0; i < 100; i++)
-                    if (cache().isLocked(key))
-                        Thread.sleep(10);
-                    else
-                        break;
-
-                assert !cache().isLocked(key);
-            }
-
-            assert !cache().isLockedByThread("key1");
-            assert !cache().isLockedByThread("key2");
-            assert !cache().isLockedByThread("key3");
-            assert !cache().isLockedByThread("key4");
+            assert !cache.isLocked("key1");
+            assert !cache.isLocked("key2");
         }
     }
 
@@ -5239,5 +5073,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
+        throws IgniteCheckedException {
+        GridCacheProjection<String, Integer> prj = GridTestUtils.getFieldValue(cache, "delegate");
+
+        return primaryKeysForCache(prj, cnt);
     }
 }

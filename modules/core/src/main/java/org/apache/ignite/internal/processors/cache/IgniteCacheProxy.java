@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.processors.cache;
@@ -15,6 +23,7 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -91,10 +100,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        if (!clazz.equals(GridCacheConfiguration.class))
+        GridCacheConfiguration cfg = ctx.config();
+
+        if (!clazz.isAssignableFrom(cfg.getClass()))
             throw new IllegalArgumentException();
 
-        return (C)ctx.config();
+        return clazz.cast(cfg);
     }
 
     /** {@inheritDoc} */
@@ -248,14 +259,79 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        return lockAll(Collections.<K>singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lockAll(Set<? extends K> keys) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public Lock lockAll(final Set<? extends K> keys) {
+        return new Lock() {
+            @Override public void lock() {
+                try {
+                    delegate.lockAll(keys, 0);
+                }
+                catch (GridInterruptedException ignored) {
+
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public void lockInterruptibly() throws InterruptedException {
+                if (Thread.interrupted())
+                    throw new InterruptedException();
+
+                try {
+                    delegate.lockAll(keys, 0);
+                }
+                catch (GridInterruptedException e) {
+                    if (e.getCause() instanceof InterruptedException)
+                        throw (InterruptedException)e.getCause();
+
+                    throw new InterruptedException();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public boolean tryLock() {
+                try {
+                    return delegate.lockAll(keys, -1);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+                try {
+                    return delegate.lockAll(keys, unit.toMillis(time));
+                }
+                catch (GridInterruptedException e) {
+                    if (e.getCause() instanceof InterruptedException)
+                        throw (InterruptedException)e.getCause();
+
+                    throw new InterruptedException();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @Override public void unlock() {
+                try {
+                    delegate.unlockAll(keys);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e.getMessage(), e);
+                }
+            }
+
+            @NotNull @Override public Condition newCondition() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -464,8 +540,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.containsKey(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -685,13 +767,33 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public void removeAll() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.removeAll();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            delegate.globalClearAll(0);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -777,20 +879,27 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
+            IgniteCachingProvider.class.getName(),
+            IgniteCachingProvider.class.getClassLoader());
+
+        if (provider == null)
+            return null;
+
+        return provider.findManager(this);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        getCacheManager().destroyCache(getName());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        // TODO IGNITE-45 (Support start/close/destroy cache correctly)
+        return getCacheManager() == null;
     }
 
     /** {@inheritDoc} */

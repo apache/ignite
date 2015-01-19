@@ -26,6 +26,9 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     @GridToStringInclude
     private V val;
 
+    /** */
+    private boolean modified;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -43,11 +46,18 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** {@inheritDoc} */
     @Override public void remove() {
         val = null;
+
+        modified = true;
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(V val) {
+        if (val == null)
+            throw new NullPointerException();
+
         this.val = val;
+
+        modified = true;
     }
 
     /** {@inheritDoc} */
@@ -63,6 +73,13 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
         throw new IllegalArgumentException();
+    }
+
+    /**
+     * @return {@code True} if {@link #setValue} or {@link #remove was called}.
+     */
+    public boolean modified() {
+        return modified;
     }
 
     /** {@inheritDoc} */

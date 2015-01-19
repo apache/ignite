@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -734,35 +742,35 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         if (!transactional())
             return;
 
-        GridCache<Integer, String> near = cache(0);
+        IgniteCache<Integer, String> near = jcache(0);
 
         String val = Integer.toString(key);
 
-        near.lock(key, 0);
+        near.lock(key).lock();
 
         try {
             near.put(key, val);
 
-            assertEquals(val, near.peek(key));
+            assertEquals(val, near.localPeek(key));
             assertEquals(val, dht(primaryGrid(key)).peek(key));
 
             assertTrue(near.isLocked(key));
             assertTrue(near.isLockedByThread(key));
 
-            near.lock(key, 0); // Reentry.
+            near.lock(key).lock(); // Reentry.
 
             try {
                 assertEquals(val, near.get(key));
-                assertEquals(val, near.remove(key));
+                assertEquals(val, near.getAndRemove(key));
 
-                assertNull(near.peek(key));
+                assertNull(near.localPeek(key));
                 assertNull(dht(primaryGrid(key)).peek(key));
 
                 assertTrue(near.isLocked(key));
                 assertTrue(near.isLockedByThread(key));
             }
             finally {
-                near.unlock(key);
+                near.lock(key).unlock();
             }
 
             assertTrue(near.isLocked(key));
@@ -774,7 +782,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             throw t;
         }
         finally {
-            near.unlock(key);
+            near.lock(key).unlock();
         }
 
         assertFalse(near(0).isLockedNearOnly(key));

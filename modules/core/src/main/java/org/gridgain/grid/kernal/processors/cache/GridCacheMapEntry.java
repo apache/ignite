@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -230,7 +238,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 assert mem != null;
 
                 if (val != null || valBytes != null) {
-                    boolean valIsByteArr = val != null && val instanceof byte[];
+                    boolean valIsByteArr = val instanceof byte[];
 
                     if (valBytes == null && !valIsByteArr)
                         valBytes = CU.marshal(cctx.shared(), val);
@@ -1465,6 +1473,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                     invokeRes = new CacheInvokeResult<>(e);
                 }
+
+                if (!entry.modified())
+                    return new GridTuple3<>(false, null, invokeRes);
             }
             else
                 updated = (V)writeObj;
@@ -1655,7 +1666,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     op,
                     writeObj,
                     valBytes,
-                    expiryPlc != null ? (isNew() ? expiryPlc.forCreate() : expiryPlc.forUpdate()) : -1L,
+                    expiryPlc,
                     drTtl,
                     drExpireTime,
                     drVer);
@@ -1817,6 +1828,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     updated = old;
 
                     valBytes = oldBytes.getIfMarshaled();
+                }
+
+                if (!entry.modified()) {
+                    return new GridCacheUpdateAtomicResult<>(false,
+                        retval ? old : null,
+                        null,
+                        invokeRes,
+                        -1L,
+                        -1L,
+                        null,
+                        null,
+                        false);
                 }
             }
             else

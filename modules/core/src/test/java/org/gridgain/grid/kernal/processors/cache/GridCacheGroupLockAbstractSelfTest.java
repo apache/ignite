@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -29,6 +37,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -347,7 +356,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
         final GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
 
-        final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        final IgniteCache<GridCacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         // Populate cache.
         cache.put(key1, "val1");
@@ -367,17 +376,17 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    assertTrue(cache.lock(key1, 0));
+                    cache.lock(key1).lock();
 
                     try {
                         lockLatch.countDown();
                         unlockLatch.await();
                     }
                     finally {
-                        cache.unlock(key1);
+                        cache.lock(key1).unlock();
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (CacheException e) {
                     fail(e.getMessage());
                 }
                 catch (InterruptedException ignored) {
@@ -391,7 +400,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+                    try (IgniteTx tx = grid(0).transactions().txStartAffinity(null, affinityKey, concurrency,
+                        READ_COMMITTED, 0, 1)) {
                         cache.put(key1, "val01");
 
                         tx.commit();
@@ -428,11 +438,13 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
-        final UUID affinityKey = primaryKeyForCache(grid(0));
+        GridEx grid = grid(0);
+
+        final UUID affinityKey = primaryKeyForCache(grid);
 
         final GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
 
-        final GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        final IgniteCache<GridCacheAffinityKey<String>, String> cache = grid.jcache(null);
 
         // Populate cache.
         cache.put(key1, "val1");
@@ -446,10 +458,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
         }
 
-        assertTrue(cache.lock(key1, 0));
+        cache.lock(key1).lock();
 
         try {
-            try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
+            try (IgniteTx tx = grid.transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
                 cache.put(key1, "val01");
 
                 tx.commit();
@@ -465,7 +477,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             }
         }
         finally {
-            cache.unlock(key1);
+            cache.lock(key1).unlock();
         }
     }
 
