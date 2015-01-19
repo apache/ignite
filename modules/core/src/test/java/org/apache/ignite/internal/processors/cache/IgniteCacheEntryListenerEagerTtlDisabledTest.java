@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.cache;
+
+import org.gridgain.grid.cache.*;
 
 /**
- * Continuous query listener.
+ * Tests expire events when {@link GridCacheConfiguration#isEagerTtl()} is disabled.
  */
-interface GridCacheContinuousQueryListener<K, V> {
-    /**
-     * Query execution callback.
-     */
-    public void onExecution();
-
-    /**
-     * Entry update callback.
-     *
-     * @param e Entry.
-     * @param recordEvt Whether to record event.
-     */
-    public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
-
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
+public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
+    /** {@inheritDoc} */
+    @Override protected boolean eagerTtl() {
+        return false;
+    }
 }

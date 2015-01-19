@@ -15,17 +15,35 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.interop;
+package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.*;
+import org.gridgain.grid.cache.*;
+
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Interop processor adapter.
+ *
  */
-public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter implements GridInteropProcessor {
+public class IgniteCacheEntryListenerTxTest extends IgniteCacheEntryListenerAbstractTest {
     /** {@inheritDoc} */
-    protected GridInteropProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
+    @Override protected int gridCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

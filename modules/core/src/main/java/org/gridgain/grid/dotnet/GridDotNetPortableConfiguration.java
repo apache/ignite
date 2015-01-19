@@ -45,7 +45,7 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     private boolean dfltMetadataEnabled = true;
 
     /** Whether to cache deserialized value in IGridPortableObject */
-    private boolean keepDeserialized = true;
+    private boolean dfltKeepDeserialized = true;
 
     /**
      * Default constructor.
@@ -73,7 +73,7 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         dfltIdMapper = cfg.getDefaultIdMapper();
         dfltSerializer = cfg.getDefaultSerializer();
         dfltMetadataEnabled = cfg.getDefaultMetadataEnabled();
-        keepDeserialized = cfg.getKeepDeserialized();
+        dfltKeepDeserialized = cfg.getDefaultKeepDeserialized();
     }
 
     /**
@@ -163,15 +163,15 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     /**
      * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
      */
-    public boolean getKeepDeserialized() {
-        return keepDeserialized;
+    public boolean getDefaultKeepDeserialized() {
+        return dfltKeepDeserialized;
     }
 
     /**
      * @param keepDeserialized Keep deserialized flag.
      */
-    public void setKeepDeserialized(boolean keepDeserialized) {
-        this.keepDeserialized = keepDeserialized;
+    public void setDefaultKeepDeserialized(boolean keepDeserialized) {
+        this.dfltKeepDeserialized = keepDeserialized;
     }
 
     /** {@inheritDoc} */
@@ -179,18 +179,12 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeCollection(typesCfg);
-
         rawWriter.writeCollection(types);
-
         rawWriter.writeString(dfltNameMapper);
-
         rawWriter.writeString(dfltIdMapper);
-
         rawWriter.writeString(dfltSerializer);
-
         rawWriter.writeBoolean(dfltMetadataEnabled);
-
-        rawWriter.writeBoolean(keepDeserialized);
+        rawWriter.writeBoolean(dfltKeepDeserialized);
     }
 
     /** {@inheritDoc} */
@@ -198,18 +192,12 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         PortableRawReader rawReader = reader.rawReader();
 
         typesCfg = rawReader.readCollection();
-
         types = rawReader.readCollection();
-
         dfltNameMapper = rawReader.readString();
-
         dfltIdMapper = rawReader.readString();
-
         dfltSerializer = rawReader.readString();
-
         dfltMetadataEnabled = rawReader.readBoolean();
-
-        keepDeserialized = rawReader.readBoolean();
+        dfltKeepDeserialized = rawReader.readBoolean();
     }
 
     /** {@inheritDoc} */
