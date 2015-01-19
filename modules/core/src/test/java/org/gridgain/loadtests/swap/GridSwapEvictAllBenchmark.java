@@ -34,6 +34,7 @@ import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -248,6 +249,7 @@ public class GridSwapEvictAllBenchmark {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     private static Ignite start(CacheStore<Long, String> store) throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -266,7 +268,12 @@ public class GridSwapEvictAllBenchmark {
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);
         ccfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
-        ccfg.setStore(store);
+
+        if (store != null) {
+            ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            ccfg.setReadThrough(true);
+            ccfg.setWriteThrough(true);
+        }
 
         FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 

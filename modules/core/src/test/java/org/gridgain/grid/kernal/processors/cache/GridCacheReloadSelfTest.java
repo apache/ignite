@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -60,6 +61,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -79,7 +81,8 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(new GridCacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-        cacheCfg.setStore(new CacheStoreAdapter<Integer, Integer>() {
+
+        final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
             @Override public Integer load(Integer key) {
                 return key;
             }
@@ -91,7 +94,11 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
             @Override public void delete(Object key) {
                 //No-op.
             }
-        });
+        };
+
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         if (cacheMode == PARTITIONED)
             cacheCfg.setBackups(1);

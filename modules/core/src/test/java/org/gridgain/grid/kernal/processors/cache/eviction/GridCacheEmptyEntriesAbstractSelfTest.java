@@ -35,6 +35,7 @@ import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
@@ -61,6 +62,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private IgniteTxIsolation txIsolation;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -87,7 +89,13 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setEvictNearSynchronized(true);
         cc.setEvictSynchronized(true);
 
-        cc.setStore(testStore);
+        if (testStore != null) {
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(testStore));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+        }
+        else
+            cc.setCacheStoreFactory(null);
 
         c.setCacheConfiguration(cc);
 

@@ -45,7 +45,7 @@ public class VisorCacheStoreConfiguration implements Serializable {
     public static VisorCacheStoreConfiguration from(CacheConfiguration ccfg) {
         VisorCacheStoreConfiguration cfg = new VisorCacheStoreConfiguration();
 
-        cfg.store(compactClass(ccfg.getStore()));
+        cfg.store(compactClass(ccfg.getCacheStoreFactory()));
         cfg.valueBytes(ccfg.isStoreValueBytes());
 
         return cfg;

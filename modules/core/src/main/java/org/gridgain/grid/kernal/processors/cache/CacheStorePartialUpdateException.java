@@ -15,15 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.resources;
+package org.gridgain.grid.kernal.processors.cache;
 
-import java.lang.annotation.*;
+import org.apache.ignite.*;
+
+import java.util.*;
 
 /**
- * TODO
+ *
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteCacheSessionResource {
-    // No-op.
+public class CacheStorePartialUpdateException extends IgniteCheckedException {
+    /** */
+    private Collection<Object> failedKeys;
+
+    /**
+     * @param failedKeys Keys that were not successfully updated.
+     * @param cause Cause.
+     */
+    @SuppressWarnings("unchecked")
+    CacheStorePartialUpdateException(Collection failedKeys, Exception cause) {
+        super(cause);
+
+        this.failedKeys = failedKeys;
+    }
+
+    /**
+     * @return Keys that were not successfully updated.
+     */
+    public Collection<Object> failedKeys() {
+        return failedKeys;
+    }
 }

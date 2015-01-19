@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.IgnitePortables;
-import org.apache.ignite.cache.CacheConfiguration;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
@@ -121,7 +121,10 @@ import static javax.cache.Cache.*;
  * @see IgnitePortables
  * @see CacheStoreSession
  */
-public interface CacheStore<K, V> extends CacheLoader<K, V>, CacheWriter<K, V> {
+public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter<K, V> {
+    /** */
+    private CacheStoreSession ses;
+
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
      * passed, so it is up to implementation to figure out what to load. This method
@@ -141,7 +144,7 @@ public interface CacheStore<K, V> extends CacheLoader<K, V>, CacheWriter<K, V> {
      *      {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
      * @throws CacheLoaderException If loading failed.
      */
-    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException;
+    public abstract void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException;
 
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
@@ -152,5 +155,14 @@ public interface CacheStore<K, V> extends CacheLoader<K, V>, CacheWriter<K, V> {
      *      may bring cache transaction into {@link IgniteTxState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
-    public void txEnd(boolean commit) throws CacheWriterException;
+    public abstract void txEnd(boolean commit) throws CacheWriterException;
+
+    /**
+     * Gets session for current cache operation. Returns {@code null} if store is used with atomic cache.
+     *
+     * @return Session for current cache operation.
+     */
+    @Nullable public CacheStoreSession session() {
+        return ses;
+    }
 }

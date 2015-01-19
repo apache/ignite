@@ -37,6 +37,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -81,6 +82,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -94,7 +96,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinity(aff);
         cacheCfg.setAtomicityMode(atomicityMode());

@@ -95,7 +95,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         }
 
         if (!storeEnabled())
-            ccfg.setStore(null);
+            ccfg.setCacheStoreFactory(null);
 
         return ccfg;
     }

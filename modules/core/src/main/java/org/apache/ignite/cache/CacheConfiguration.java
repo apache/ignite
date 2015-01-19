@@ -789,26 +789,8 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Gets underlying persistent storage for read-through and write-through operations.
-     * If not provided, cache will not exhibit read-through or write-through behavior.
+     * Gets factory for underlying persistent storage for read-through and write-through operations.
      *
-     * @return Underlying persistent storage for read-through and write-through operations.
-     */
-    @SuppressWarnings({"unchecked"})
-    public <K, V> CacheStore<K, V> getStore() {
-        return null;//(CacheStore<K, V>)store;
-    }
-
-    /**
-     * Sets persistent storage for cache data.
-     *
-     * @param store Persistent cache store.
-     */
-    public <K, V> void setStore(CacheStore<K, V> store) {
-        //this.store = store;
-    }
-
-    /**
      * @return Cache store factory.
      */
     @SuppressWarnings("unchecked")
@@ -817,6 +799,8 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
+     * Sets factory fpr persistent storage for cache data.
+
      * @param storeFactory Cache store factory.
      */
     @SuppressWarnings("unchecked")

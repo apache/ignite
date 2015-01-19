@@ -581,4 +581,13 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
         return marsh.unmarshal(bytes, getClass().getClassLoader());
     }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
+    }
 }

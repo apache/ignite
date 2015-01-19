@@ -31,6 +31,7 @@ import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -72,10 +73,13 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
 
         return ccfg;
     }
@@ -593,7 +597,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      *
      */
-    private static class TestStore implements CacheStore<Object, Object> {
+    private static class TestStore extends CacheStore<Object, Object> {
         /** Fail flag. */
         private volatile boolean fail;
 

@@ -18,10 +18,7 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -36,15 +33,11 @@ import java.util.*;
  * it maybe more preferable to take advantage of database batch update functionality, and therefore
  * default adapter implementation may not be the best option.
  * <p>
- * Note that method {@link #loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} has empty
+ * Note that method {@link #loadCache(IgniteBiInClosure, Object...)} has empty
  * implementation because it is essentially up to the user to invoke it with
  * specific arguments.
  */
-public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
-    /** */
-    @IgniteCacheSessionResource
-    private CacheStoreSession ses;
-
+public abstract class CacheStoreAdapter<K, V> extends CacheStore<K, V> {
     /**
      * Default empty implementation. This method needs to be overridden only if
      * {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method
@@ -98,19 +91,5 @@ public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
      */
     @Override public void txEnd(boolean commit) {
         // No-op.
-    }
-
-    /**
-     * @return Current session.
-     */
-    @Nullable protected CacheStoreSession session() {
-        return ses;
-    }
-
-    /**
-     * @return Current transaction.
-     */
-    @Nullable protected IgniteTx transaction() {
-        return ses != null ? ses.transaction() : null;
     }
 }

@@ -1870,6 +1870,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     rmvKeys;
 
                 ctx.store().removeAllFromStore(null, storeKeys);
+                /*
+                try {
+                    ctx.store().removeAllFromStore(null, storeKeys);
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    if (e.failedKeys().size() == storeKeys.size())
+
+                }
+                */
 
                 op = DELETE;
             }

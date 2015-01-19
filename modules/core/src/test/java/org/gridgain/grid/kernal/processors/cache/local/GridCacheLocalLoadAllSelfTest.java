@@ -27,6 +27,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -55,6 +56,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
@@ -64,13 +66,15 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cache.setName("test-cache");
-        cache.setCacheMode(LOCAL);
-        cache.setStore(new TestStore());
+        ccfg.setName("test-cache");
+        ccfg.setCacheMode(LOCAL);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }

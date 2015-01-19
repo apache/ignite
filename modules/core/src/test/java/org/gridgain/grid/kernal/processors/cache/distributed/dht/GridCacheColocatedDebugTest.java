@@ -34,6 +34,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -58,6 +59,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     private boolean storeEnabled;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -76,10 +78,13 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
 
-        if (storeEnabled)
-            cacheCfg.setStore(new GridCacheTestStore());
+        if (storeEnabled) {
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new GridCacheTestStore()));
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+        }
         else
-            cacheCfg.setStore(null);
+            cacheCfg.setCacheStoreFactory(null);
 
         cfg.setCacheConfiguration(cacheCfg);
 

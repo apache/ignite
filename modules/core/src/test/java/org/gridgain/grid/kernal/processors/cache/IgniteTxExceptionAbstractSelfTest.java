@@ -76,7 +76,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setQueryIndexEnabled(true);
-        ccfg.setStore(null);
+        ccfg.setCacheStoreFactory(null);
 
         return ccfg;
     }

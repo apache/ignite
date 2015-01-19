@@ -29,6 +29,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -110,7 +111,9 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         cc.setWriteBehindEnabled(true);
         cc.setWriteBehindFlushFrequency(WRITE_FROM_BEHIND_FLUSH_FREQUENCY);

@@ -29,6 +29,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
@@ -55,6 +56,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         store.reset();
+
         cache().removeAll();
 
         assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
@@ -63,6 +65,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -81,7 +84,9 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
 
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 

@@ -237,7 +237,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         if (store != null) {
             cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
-
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
         }

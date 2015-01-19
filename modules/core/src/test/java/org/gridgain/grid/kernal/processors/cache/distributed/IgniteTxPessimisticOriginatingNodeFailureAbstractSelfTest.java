@@ -443,7 +443,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
 
         return cfg;
     }

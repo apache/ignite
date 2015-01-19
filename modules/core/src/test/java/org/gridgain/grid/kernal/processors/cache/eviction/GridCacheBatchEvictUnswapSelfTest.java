@@ -27,6 +27,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -61,11 +62,13 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
-        cacheCfg.setStore(new CacheStoreAdapter<Long, String>() {
+
+        CacheStore store = new CacheStoreAdapter<Long, String>() {
             @Nullable @Override public String load(Long key) {
                 return null;
             }
@@ -83,7 +86,11 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
             @Override public void delete(Object key) {
                 // No-op.
             }
-        });
+        };
+
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         cacheCfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
         cacheCfg.setSwapEnabled(true);

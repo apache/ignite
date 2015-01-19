@@ -99,10 +99,8 @@ class GridResourceIoc {
      * @param dep Deployment.
      * @param depCls Deployment class.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
-     * @return {@code True} if resource was injected.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
-    boolean inject(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
+    void inject(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
         @Nullable GridDeployment dep, @Nullable Class<?> depCls) throws IgniteCheckedException {
         assert target != null;
         assert annCls != null;
@@ -110,9 +108,7 @@ class GridResourceIoc {
 
         if (isAnnotationPresent(target, annCls, dep))
             // Use identity hash set to compare via referential equality.
-            return injectInternal(target, annCls, injector, dep, depCls, new GridIdentityHashSet<>(3));
-
-        return false;
+            injectInternal(target, annCls, injector, dep, depCls, new GridIdentityHashSet<>(3));
     }
 
     /**
@@ -123,9 +119,8 @@ class GridResourceIoc {
      * @param depCls Deployment class.
      * @param checkedObjs Set of already inspected objects to avoid indefinite recursion.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
-     * @return {@code True} if resource was injected.
      */
-    private boolean injectInternal(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
+    private void injectInternal(Object target, Class<? extends Annotation> annCls, GridResourceInjector injector,
         @Nullable GridDeployment dep, @Nullable Class<?> depCls, Set<Object> checkedObjs) throws IgniteCheckedException {
         assert target != null;
         assert annCls != null;
@@ -138,17 +133,15 @@ class GridResourceIoc {
 
         // Skip this class if it does not need to be injected.
         if (skipClss != null && skipClss.contains(targetCls))
-            return false;
+            return;
 
         // Check if already inspected to avoid indefinite recursion.
         if (checkedObjs.contains(target))
-            return false;
+            return;
 
         checkedObjs.add(target);
 
         int annCnt = 0;
-
-        boolean injected = false;
 
         for (GridResourceField field : getFieldsWithAnnotation(dep, targetCls, annCls)) {
             Field f = field.getField();
@@ -159,31 +152,23 @@ class GridResourceIoc {
                 try {
                     Object obj = f.get(target);
 
-                    if (obj != null) {
+                    if (obj != null)
                         // Recursion.
-                        boolean injected0 = injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
-
-                        injected |= injected0;
-                    }
+                        injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
                 }
                 catch (IllegalAccessException e) {
                     throw new IgniteCheckedException("Failed to inject resource [field=" + f.getName() +
                         ", target=" + target + ']', e);
                 }
             }
-            else {
+            else
                 injector.inject(field, target, depCls, dep);
-
-                injected = true;
-            }
 
             annCnt++;
         }
 
         for (GridResourceMethod mtd : getMethodsWithAnnotation(dep, targetCls, annCls)) {
             injector.inject(mtd, target, depCls, dep);
-
-            injected = true;
 
             annCnt++;
         }
@@ -196,8 +181,6 @@ class GridResourceIoc {
 
             skipClss.add(targetCls);
         }
-
-        return injected;
     }
 
     /**

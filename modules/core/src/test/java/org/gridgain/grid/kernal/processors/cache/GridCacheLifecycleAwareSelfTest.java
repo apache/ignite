@@ -33,6 +33,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 
@@ -54,11 +55,18 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestStore extends TestLifecycleAware implements CacheStore {
-        /**
-         */
-        TestStore() {
-            super(CACHE_NAME);
+    private static class TestStore extends CacheStore implements LifecycleAware {
+        /** */
+        private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            lifecycleAware.start();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() throws IgniteCheckedException {
+            lifecycleAware.stop();
         }
 
         /** {@inheritDoc} */
@@ -247,6 +255,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -266,9 +275,11 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         TestStore store = new TestStore();
 
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
 
-        lifecycleAwares.add(store);
+        lifecycleAwares.add(store.lifecycleAware);
 
         TestAffinityFunction affinity = new TestAffinityFunction();
 

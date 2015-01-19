@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 /**
  * Cache store wrapper that ensures that there will be no more that one thread loading value from underlying store.
  */
-public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
+public class CacheStoreBalancingWrapper<K, V> extends CacheStore<K, V> {
     /** */
     public static final int DFLT_LOAD_ALL_THRESHOLD = 5;
 

@@ -70,7 +70,7 @@ import static java.util.concurrent.TimeUnit.*;
  * @param <V> Value type.
  * @param <I> Input type.
  */
-public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K, V> {
+public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V> {
     /**
      * Default batch size (number of records read with {@link #inputIterator(Object...)}
      * and then submitted to internal pool at a time).

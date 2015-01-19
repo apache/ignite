@@ -926,7 +926,45 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            final Iterator<GridCacheEntry<K, V>> it = delegate.iterator();
+
+            return new Iterator<Entry<K, V>>() {
+                private CacheEntryImpl e;
+
+                @Override
+                public boolean hasNext() {
+                    return it.hasNext();
+                }
+
+                @Override
+                public Entry<K, V> next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+
+                    GridCacheEntry<K, V> e0 = it.next();
+
+                    e = new CacheEntryImpl(e0.getKey(), e0.getValue());
+
+                    return e;
+                }
+
+                @Override
+                public void remove() {
+                    if (e == null)
+                        throw new IllegalStateException();
+
+                    IgniteCacheProxy.this.remove((K) e.getKey());
+
+                    e = null;
+                }
+            };
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1038,6 +1076,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
+        Throwable[] suppressed = e.getSuppressed();
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
+
         if (e instanceof GridCachePartialUpdateException)
             return new CachePartialUpdateException((GridCachePartialUpdateException)e);
 

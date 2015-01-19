@@ -24,6 +24,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.cache.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -99,5 +100,15 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
                 clo.apply(p.getId(), p);
             }
         }
+    }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable
+    private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
     }
 }

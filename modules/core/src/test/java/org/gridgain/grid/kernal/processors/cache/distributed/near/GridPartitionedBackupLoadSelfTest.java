@@ -28,6 +28,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -75,12 +76,15 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
+    @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfiguration() {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setStore(store);
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;

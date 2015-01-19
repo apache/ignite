@@ -61,7 +61,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
             nearOnlyGridName = gridName;
         }
 
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
         cfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 32));
         cfg.setBackups(1);
 

@@ -75,7 +75,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setStore(null);
+        ccfg.setCacheStoreFactory(null);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setDistributionMode(PARTITIONED_ONLY);
 

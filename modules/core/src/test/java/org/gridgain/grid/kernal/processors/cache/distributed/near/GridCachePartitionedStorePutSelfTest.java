@@ -30,6 +30,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -80,11 +81,14 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     /**
      * @return Cache configuration.
      */
+    @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfiguration() {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStore(new TestStore());
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
         cfg.setAffinity(new GridCacheModuloAffinityFunction(3, 1));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 

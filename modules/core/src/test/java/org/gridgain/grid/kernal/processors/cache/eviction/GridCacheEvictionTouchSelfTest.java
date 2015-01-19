@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -32,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -50,6 +52,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     private GridCacheEvictionPolicy<?, ?> plc;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -68,7 +71,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
         cc.setEvictionPolicy(plc);
 
-        cc.setStore(new GridCacheGenericTestStore<Object, Object>() {
+        CacheStore store = new GridCacheGenericTestStore<Object, Object>() {
             @Override public Object load(Object key) {
                 return key;
             }
@@ -81,7 +84,11 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
                 return loaded;
             }
-        });
+        };
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

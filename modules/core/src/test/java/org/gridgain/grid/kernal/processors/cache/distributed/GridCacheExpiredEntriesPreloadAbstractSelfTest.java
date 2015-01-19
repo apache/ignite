@@ -65,7 +65,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setPreloadMode(SYNC);
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
 
         return cfg;
     }

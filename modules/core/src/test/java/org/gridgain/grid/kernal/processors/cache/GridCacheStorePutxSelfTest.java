@@ -30,6 +30,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -49,17 +50,20 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     private static AtomicInteger loads;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-        cache.setCacheMode(PARTITIONED);
-        cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setStore(new TestStore());
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -109,7 +113,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestStore implements CacheStore<Integer, Integer> {
+    private static class TestStore extends CacheStore<Integer, Integer> {
         /** {@inheritDoc} */
         @Nullable @Override public Integer load(Integer key) {
             loads.incrementAndGet();

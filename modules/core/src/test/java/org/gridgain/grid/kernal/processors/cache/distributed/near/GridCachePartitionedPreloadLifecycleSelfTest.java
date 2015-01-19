@@ -59,7 +59,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setPreloadMode(preloadMode);
         cc1.setEvictionPolicy(null);
         cc1.setSwapEnabled(false);
-        cc1.setStore(null);
+        cc1.setCacheStoreFactory(null);
         cc1.setEvictionPolicy(null);
         cc1.setNearEvictionPolicy(null);
 

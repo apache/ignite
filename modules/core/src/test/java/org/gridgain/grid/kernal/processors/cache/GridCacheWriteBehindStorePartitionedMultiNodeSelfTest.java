@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
@@ -28,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -55,6 +57,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private int idx;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -69,9 +72,14 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setWriteBehindEnabled(true);
         cc.setWriteBehindFlushFrequency(WRITE_BEHIND_FLUSH_FREQ);
-        cc.setStore(stores[idx] = new GridCacheTestStore());
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
+
+        CacheStore store = stores[idx] = new GridCacheTestStore();
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

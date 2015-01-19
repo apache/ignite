@@ -35,6 +35,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -59,16 +60,19 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cache.setCacheMode(REPLICATED);
-        cache.setStore(new TestStore());
-        cache.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

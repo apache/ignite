@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -75,6 +76,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -92,7 +94,9 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setBackups(1);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

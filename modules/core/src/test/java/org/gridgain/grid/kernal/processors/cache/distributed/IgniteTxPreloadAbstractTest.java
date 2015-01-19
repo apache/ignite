@@ -212,7 +212,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
 
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
 
         return cfg;
     }

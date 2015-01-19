@@ -32,6 +32,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -59,6 +60,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private List<GridCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -80,7 +82,15 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setStore(cacheStore());
+        CacheStore store = cacheStore();
+
+        if (store != null) {
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+        }
+        else
+            cc.setCacheStoreFactory(null);
 
         cc.setAtomicWriteOrderMode(atomicWriteOrderMode());
 

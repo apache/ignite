@@ -41,6 +41,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -97,6 +98,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -127,9 +129,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
-            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY :distributionMode());
+            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setStore(store);
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);

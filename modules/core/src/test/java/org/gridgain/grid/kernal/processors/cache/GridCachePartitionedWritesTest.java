@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -60,7 +61,11 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
-        cc.setStore(store);
+        assert store != null;
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

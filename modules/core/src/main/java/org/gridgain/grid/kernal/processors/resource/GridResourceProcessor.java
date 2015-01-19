@@ -18,7 +18,6 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
@@ -280,25 +279,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         ioc.inject(obj, IgniteCacheNameResource.class, new GridResourceBasicInjector<>(cacheName), null, null);
-    }
-
-    /**
-     * Injects cache store session into given object.
-     *
-     * @param obj Object.
-     * @param ses Session to inject.
-     * @throws IgniteCheckedException If failed to inject.
-     */
-    public boolean injectStoreSession(Object obj, CacheStoreSession ses) throws IgniteCheckedException {
-        assert obj != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Injecting cache store session: " + ses);
-
-        // Unwrap Proxy object.
-        obj = unwrapTarget(obj);
-
-        return ioc.inject(obj, IgniteCacheSessionResource.class, new GridResourceBasicInjector<>(ses), null, null);
     }
 
     /**

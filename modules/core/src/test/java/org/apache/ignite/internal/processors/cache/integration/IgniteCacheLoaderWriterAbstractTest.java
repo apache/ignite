@@ -48,6 +48,9 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
      *
      */
     static class TestLoader implements CacheLoader<Integer, Integer> {
+        /** */
+        private volatile Map<String, Object> lastOp;
+
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) {
             return null;

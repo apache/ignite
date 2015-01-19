@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
@@ -96,6 +97,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     protected abstract boolean batchUpdate();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -115,7 +117,9 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 

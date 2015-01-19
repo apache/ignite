@@ -30,6 +30,8 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
+
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -87,7 +89,9 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         ccfg.setPreloadMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(BACKUP_CNT);
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
 
         cfg.setCacheConfiguration(ccfg);
 

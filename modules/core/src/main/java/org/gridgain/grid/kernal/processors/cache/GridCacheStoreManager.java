@@ -22,18 +22,19 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.integration.*;
+import java.lang.reflect.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -78,16 +79,26 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         CacheConfiguration cfg) throws IgniteCheckedException {
         this.cfgStore = cfgStore;
 
-        store = cacheStoreWrapper(ctx.gridName(), cfgStore, cfg);
+        store = cacheStoreWrapper(ctx, cfgStore, cfg);
 
         singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
-        boolean sesEnabled0 = false;
+        if (cfgStore != null && cfg.getAtomicityMode() == TRANSACTIONAL) {
+            try {
+                Field sesField = CacheStore.class.getDeclaredField("ses");
 
-        if (cfgStore != null && cfg.getAtomicityMode() == TRANSACTIONAL)
-            sesEnabled0 = ctx.resource().injectStoreSession(cfgStore, new ThreadLocalSession());
+                sesField.setAccessible(true);
 
-        sesEnabled = sesEnabled0;
+                sesField.set(cfgStore, new ThreadLocalSession());
+
+                sesEnabled = true;
+            }
+            catch (IllegalAccessException | NoSuchFieldException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+        else
+            sesEnabled = true;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
     }
@@ -102,20 +113,22 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * Creates a wrapped cache store if write-behind cache is configured.
      *
-     * @param gridName Grid name.
+     * @param ctx Kernal context.
      * @param cfgStore Store provided in configuration.
      * @param cfg Cache configuration.
      * @return Instance if {@link GridCacheWriteBehindStore} if write-behind store is configured,
      *         or user-defined cache store.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheStore cacheStoreWrapper(String gridName, @Nullable CacheStore cfgStore, CacheConfiguration cfg) {
+    private CacheStore cacheStoreWrapper(GridKernalContext ctx,
+        @Nullable CacheStore cfgStore,
+        CacheConfiguration cfg) {
         if (cfgStore == null || !cfg.isWriteBehindEnabled())
             return cfgStore;
 
-        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(gridName,
+        GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(ctx.gridName(),
             cfg.getName(),
-            log,
+            ctx.log(GridCacheWriteBehindStore.class),
             cfgStore);
 
         store.setFlushSize(cfg.getWriteBehindFlushSize());
@@ -485,6 +498,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 boolean ses = initSession(tx);
 
                 try {
+                    /*
                     C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>> c =
                         new C1<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>, Cache.Entry<? extends K, ?>>() {
                             @Override public Cache.Entry<? extends K, ?> apply(Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e) {
@@ -492,7 +506,15 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                             }
                         };
 
-                    store.writeAll(F.viewReadOnly(map.entrySet(), c));
+
+                    Collection<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>> col = map.entrySet();
+                    */
+                    Collection<Cache.Entry<? extends K, ? extends Object>> entries = new ArrayList<>(map.size());
+
+                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
+                        entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
+
+                    store.writeAll(entries);
                 }
                 catch (ClassCastException e) {
                     handleClassCastException(e);
@@ -587,6 +609,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
+            }
+            catch (Exception e) {
+                //if (!keys.isEmpty())
+                    //throw new CacheStorePartialUpdateException(keys0, e);
+
+                throw new IgniteCheckedException(e);
             }
             finally {
                 if (ses)
@@ -705,7 +733,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
          */
         private Map<Object, Object> properties() {
             if (props == null)
-                props = U.newHashMap(1);
+                props = new GridLeanMap<>();
 
             return props;
         }
@@ -724,10 +752,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public <K, V> Map<K, V> properties() {
+        @Override public <K1, V1> Map<K1, V1> properties() {
             SessionData ses0 = sesHolder.get();
 
-            return ses0 != null ? (Map<K, V>)ses0.properties() : null;
+            return ses0 != null ? (Map<K1, V1>)ses0.properties() : null;
         }
     }
 }

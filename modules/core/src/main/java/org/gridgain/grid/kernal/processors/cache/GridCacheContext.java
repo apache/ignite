@@ -1399,13 +1399,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if store is enabled.
-     */
-    public boolean isStoreEnabled() {
-        return cacheCfg.getStore() != null && !hasFlag(SKIP_STORE);
-    }
-
-    /**
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {

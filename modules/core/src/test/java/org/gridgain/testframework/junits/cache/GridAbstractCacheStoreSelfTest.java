@@ -20,19 +20,18 @@ package org.gridgain.testframework.junits.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Abstract cache store test.
@@ -411,7 +410,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     protected void inject(T store) throws Exception {
         getTestResources().inject(store);
 
-        getTestResources().resources().injectBasicResource(store, IgniteCacheSessionResource.class, ses);
+        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
     }
 
     /** {@inheritDoc} */

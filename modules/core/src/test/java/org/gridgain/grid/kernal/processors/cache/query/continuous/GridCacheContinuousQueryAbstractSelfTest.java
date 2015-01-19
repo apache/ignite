@@ -42,6 +42,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -67,6 +68,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -79,7 +81,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setDistributionMode(distributionMode());
         cacheCfg.setPreloadMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setStore(new TestStore());
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
         cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);

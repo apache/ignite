@@ -29,6 +29,7 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -50,6 +51,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     private GridCacheMode cacheMode;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -65,7 +67,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setStore(new CacheStoreAdapter<Object, Object>() {
+        CacheStore store = new CacheStoreAdapter<Object, Object>() {
             @Override public Object load(Object key) {
                 throw new IgniteException("Failed to get key from store: " + key);
             }
@@ -77,7 +79,11 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
             @Override public void delete(Object key) {
                 // No-op.
             }
-        });
+        };
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
 
         c.setCacheConfiguration(cc);
 

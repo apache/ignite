@@ -91,7 +91,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setSwapEnabled(false);
         ccfg.setQueryIndexEnabled(false);
-        ccfg.setStore(null);
+        ccfg.setCacheStoreFactory(null);
 
         return ccfg;
     }

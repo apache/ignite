@@ -744,9 +744,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy());
 
                 cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
-
                 cfg.setReadThrough(true);
-
                 cfg.setWriteThrough(true);
 
                 return null;
@@ -825,9 +823,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setDistributionMode(PARTITIONED_ONLY);
 
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
-
                 cc.setReadThrough(true);
-
                 cc.setWriteThrough(true);
 
                 return null;
@@ -1031,7 +1027,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     }
 
     /** */
-    private static class TestStore implements CacheStore<Object,Object> {
+    private static class TestStore extends CacheStore<Object,Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {
             return null;

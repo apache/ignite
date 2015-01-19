@@ -33,6 +33,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -69,7 +70,9 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setStore(new TestStore());
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 

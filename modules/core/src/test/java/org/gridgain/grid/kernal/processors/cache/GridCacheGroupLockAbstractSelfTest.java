@@ -38,6 +38,7 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -73,6 +74,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -83,7 +85,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setCacheSanityCheckEnabled(sanityCheckEnabled());

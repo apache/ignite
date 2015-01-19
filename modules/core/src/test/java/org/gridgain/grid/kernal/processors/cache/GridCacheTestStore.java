@@ -37,11 +37,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Test store.
  */
-public final class GridCacheTestStore implements CacheStore<Integer, String> {
-    /** */
-    @IgniteCacheSessionResource
-    private CacheStoreSession ses;
-
+public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** Store. */
     private final Map<Integer, String> map;
 
@@ -336,12 +332,5 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
 
         if (tx0.dht())
             throw new IgniteException("Tx is DHT: " + tx);
-    }
-
-    /**
-     * @return Current session.
-     */
-    @Nullable private CacheStoreSession session() {
-        return ses;
     }
 }
