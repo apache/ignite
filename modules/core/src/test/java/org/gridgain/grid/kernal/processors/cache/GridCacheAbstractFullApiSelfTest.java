@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import com.google.common.collect.*;
+import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -25,8 +26,10 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -5084,7 +5087,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
-        final int SIZE = 100;
+        final int SIZE = 1000;
 
         Map<String, Integer> entries = new HashMap<>();
 
@@ -5099,6 +5102,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         checkIteratorCache(entries);
 
         checkIteratorRemove(cache, entries);
+
+        checkIteratorEmpty(cache);
 
     }
 
@@ -5200,6 +5205,54 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         assertEquals(entries.size(), cnt);
+    }
+
+    /**
+     * Checks iterators are cleared.
+     */
+    private void checkIteratorsCleared() {
+        for (int j = 0; j < gridCount(); j++) {
+
+            GridCacheQueryManager queries = context(j).queries();
+
+            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
+
+            for (Object obj : map.values())
+                assertEquals("Iterators not removed for grid " + j, 0, ((Map) obj).size());
+        }
+    }
+
+    /**
+     * Checks iterators are cleared after using.
+     */
+    private void checkIteratorEmpty(IgniteCache<String, Integer> cache) throws GridInterruptedException, InterruptedException {
+        int cnt = 5;
+
+        for (int i = 0; i < cnt; ++i) {
+            Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
+
+            iter.next();
+
+            assert iter.hasNext();
+        }
+
+        System.gc();
+
+        for (int i = 0; i < 10; i++) {
+            try {
+                cache.size(); // Trigger weak queue poll.
+
+                checkIteratorsCleared();
+            }
+            catch (AssertionFailedError e) {
+                if (i == 9)
+                    throw e;
+
+                log.info("Set iterators not cleared, will wait");
+
+                Thread.sleep(500);
+            }
+        }
     }
 
     /**
