@@ -258,13 +258,39 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lock(K key) throws CacheException {
+    @Override public CacheLock lock(K key) throws CacheException {
         return lockAll(Collections.<K>singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lockAll(final Set<? extends K> keys) {
-        return new Lock() {
+    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
+        return new CacheLock() {
+            @Override public boolean isLocked() {
+                for (K key : keys) {
+                    if (!delegate.isLocked(key))
+                        return false;
+                }
+
+                return true;
+            }
+
+            @Override public boolean isLockedByThread() {
+                for (K key : keys) {
+                    if (!delegate.isLockedByThread(key))
+                        return false;
+                }
+
+                return true;
+            }
+
+            @Override public IgniteFuture<Boolean> lockAsync() {
+                return delegate.lockAllAsync(keys, 0);
+            }
+
+            @Override public IgniteFuture<Boolean> lockAsync(long timeout, TimeUnit unit) {
+                return delegate.lockAllAsync(keys, unit.toMillis(timeout));
+            }
+
             @Override public void lock() {
                 try {
                     delegate.lockAll(keys, 0);
