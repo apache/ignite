@@ -25,10 +25,7 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
-import javax.cache.*;
 import javax.cache.expiry.*;
-import javax.cache.spi.*;
-import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -128,7 +125,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assert avgRmvTime > 0;
 
-        assertEquals(times, avgRmvTime, times / 10);
+        assertEquals(times, avgRmvTime, times / 3);
 
         jcache.remove(2);
 
@@ -162,7 +159,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         float averageRemoveTime = cache.metrics().getAverageRemoveTime();
 
         assert averageRemoveTime > 0;
-        assertEquals(times, averageRemoveTime, times / 10);
+        assertEquals(times, averageRemoveTime, times / 3);
     }
 
     /**
@@ -193,19 +190,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         jcache.get(2);
 
         assert cache.metrics().getAverageGetTime() > 0;
-    }
-
-    private String getUriForMbean() throws Exception {
-        String uri;
-
-        try{
-            uri = resolveGridGainUrl(GridGainEx.DFLT_CFG).toURI().toString();
-        }
-        catch (Exception e){
-            uri = URI.create("ignite://default").toString();
-        }
-
-        return uri.replaceAll(",|:|=|\n", ".");
     }
 
     /**
