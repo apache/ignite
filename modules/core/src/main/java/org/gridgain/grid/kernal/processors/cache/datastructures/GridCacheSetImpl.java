@@ -66,9 +66,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** Iterator holder. */
-    private final CacheWeakQueryIteratorsHolder<T, Map.Entry<T, ?>> itHolder;
-
     /**
      * @param ctx Cache context.
      * @param name Set name.
@@ -84,16 +81,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         cache = ctx.cache();
 
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
-
-        itHolder = new CacheWeakQueryIteratorsHolder<T, Map.Entry<T, ?>>(ctx.logger(GridCacheSetImpl.class)) {
-            @Override protected T convert(Map.Entry<T, ?> e) {
-                return e.getKey();
-            }
-
-            @Override protected void remove(T item) {
-                GridCacheSetImpl.this.remove(item);
-            }
-        };
     }
 
     /** {@inheritDoc} */
@@ -348,10 +335,21 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it = itHolder.iterator(qry.execute());
+            GridCacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
+
+            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it =
+                ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+                    @Override protected T convert(Map.Entry<T, ?> e) {
+                        return e.getKey();
+                    }
+
+                    @Override protected void remove(T item) {
+                        GridCacheSetImpl.this.remove(item);
+                    }
+                });
 
             if (rmvd) {
-                itHolder.removeIterator(it);
+                ctx.itHolder().removeIterator(it);
 
                 checkRemoved();
             }
@@ -438,7 +436,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         this.rmvd = rmvd;
 
         if (rmvd)
-            itHolder.clearQueries();
+            ctx.itHolder().clearQueries();
     }
 
     /**
@@ -453,7 +451,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
      * Checks if set was removed and handles iterators weak reference queue.
      */
     private void onAccess() {
-        itHolder.checkWeakQueue();
+        ctx.itHolder().checkWeakQueue();
 
         checkRemoved();
     }

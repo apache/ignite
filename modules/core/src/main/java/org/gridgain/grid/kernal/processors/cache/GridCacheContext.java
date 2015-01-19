@@ -186,6 +186,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** Cache weak query iterator holder. */
+    private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -300,6 +303,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;
+
+        itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
     /**
@@ -834,6 +839,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
+    }
+
+    /**
+     * @return Iterators Holder.
+     */
+    public CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder() {
+        return itHolder;
     }
 
     /**

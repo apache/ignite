@@ -25,6 +25,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.tostring.*;
@@ -62,9 +63,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** Projection. */
     private GridCacheProjectionImpl<K, V> prj;
 
-    /** Iterator holder. */
-    private final CacheWeakQueryIteratorsHolder<Entry<K, V>, Map.Entry<K, V>> itHolder;
-
     /**
      * @param ctx Context.
      * @param delegate Delegate.
@@ -84,16 +82,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         this.ctx = ctx;
         this.delegate = delegate;
         this.prj = prj;
-
-        itHolder = new CacheWeakQueryIteratorsHolder<Entry<K, V>, Map.Entry<K, V>>(ctx.logger(IgniteCacheProxy.class)) {
-            @Override protected Entry<K, V> convert(Map.Entry<K, V> e) {
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
-            }
-
-            @Override protected void remove(Entry<K, V> item) {
-                IgniteCacheProxy.this.remove(item.getKey());
-            }
-        };
 
         gate = ctx.gate();
     }
@@ -942,9 +930,19 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            itHolder.checkWeakQueue();
+            ctx.itHolder().checkWeakQueue();
 
-            return itHolder.iterator(delegate.queries().createScanQuery(null).execute());
+            GridCacheQueryFuture<Map.Entry<K, V>> fut =  delegate.queries().createScanQuery(null).execute();
+
+            return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Entry<K, V>, Map.Entry<K, V>>() {
+                @Override protected Entry<K, V> convert(Map.Entry<K, V> e) {
+                    return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                }
+
+                @Override protected void remove(Entry<K, V> item) {
+                    IgniteCacheProxy.this.remove(item.getKey());
+                }
+            });
         }
         finally {
             gate.leave(prev);

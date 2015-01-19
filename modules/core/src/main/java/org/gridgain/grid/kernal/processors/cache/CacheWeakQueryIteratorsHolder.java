@@ -26,10 +26,9 @@ import java.lang.ref.*;
 import java.util.*;
 
 /**
- * @param <T> Type for iterator.
  * @param <V> Type for cache query future.
  */
-public abstract class CacheWeakQueryIteratorsHolder<T, V> {
+public class CacheWeakQueryIteratorsHolder<V> {
     /** Iterators weak references queue. */
     private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
 
@@ -48,12 +47,13 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
     }
 
     /**
-     * Iterator over the cache.
-     * @param fut Query to iterate
-     * @return iterator
+     * @param fut Query to iterate.
+     * @param convert Cache iterator converter.
+     * @param <T> Type for the iterator.
+     * @return Iterator over the cache.
      */
-    public WeakQueryFutureIterator iterator(GridCacheQueryFuture<V> fut) {
-        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut);
+    public <T> WeakQueryFutureIterator iterator(GridCacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
+        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
 
         GridCacheQueryFuture<V> old = futs.put(it.weakReference(), fut);
 
@@ -94,7 +94,7 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
     }
 
     /**
-     * Cancel all cache queries
+     * Cancel all cache queries.
      */
     public void clearQueries(){
         for (GridCacheQueryFuture<?> fut : futs.values()) {
@@ -109,30 +109,20 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
         futs.clear();
     }
 
-    /**
-     * Converts class V to class T.
-     *
-     * @param v Item to convert.
-     * @return Converted item.
-     */
-    protected abstract T convert(V v);
-
-    /**
-     * Removes item.
-     *
-     * @param item Item to remove.
-     */
-    protected abstract void remove(T item);
 
     /**
      * Iterator based of {@link GridCacheQueryFuture}.
+     *
+     * @param <T> Type for iterator.
      */
-    public class WeakQueryFutureIterator extends GridCloseableIteratorAdapter<T> {
+    public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T> {
         /** Query future. */
         private final GridCacheQueryFuture<V> fut;
 
         /** Weak reference. */
-        private final WeakReference<WeakQueryFutureIterator> weakRef;
+        private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
+
+        CacheIteratorConverter<T, V> convert;
 
         /** Init flag. */
         private boolean init;
@@ -146,10 +136,12 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
         /**
          * @param fut GridCacheQueryFuture to iterate.
          */
-        WeakQueryFutureIterator(GridCacheQueryFuture<V> fut) {
+        WeakQueryFutureIterator(GridCacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
             this.fut = fut;
 
             this.weakRef = new WeakReference<>(this, refQueue);
+
+            this.convert = convert;
         }
 
         /** {@inheritDoc} */
@@ -169,7 +161,7 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
             if (futNext == null)
                 clearWeakReference();
 
-            next = futNext != null ? convert(futNext) : null;
+            next = futNext != null ? convert.convert(futNext) : null;
 
             return cur;
         }
@@ -198,7 +190,7 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
             if (cur == null)
                 throw new IllegalStateException();
 
-            CacheWeakQueryIteratorsHolder.this.remove(cur);
+            convert.remove(cur);
 
             cur = null;
         }
@@ -206,7 +198,7 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
         /**
          * @return Iterator weak reference.
          */
-        private WeakReference<WeakQueryFutureIterator> weakReference() {
+        private WeakReference<WeakQueryFutureIterator<T>> weakReference() {
             return weakRef;
         }
 
@@ -226,7 +218,7 @@ public abstract class CacheWeakQueryIteratorsHolder<T, V> {
             if (!init) {
                 V futNext = fut.next();
 
-                next = futNext != null ? convert(futNext) : null;
+                next = futNext != null ? convert.convert(futNext) : null;
 
                 init = true;
             }
