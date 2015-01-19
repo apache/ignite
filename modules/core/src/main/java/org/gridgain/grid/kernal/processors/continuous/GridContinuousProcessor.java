@@ -696,7 +696,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     throw e;
                 }
 
-                fut.get(ackTimeout);
+                fut.get();
             }
             else {
                 Collection<Object> toSnd = info.add(obj);
