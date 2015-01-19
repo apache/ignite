@@ -32,7 +32,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Cache Full API Test Suite");
+        TestSuite suite = new TestSuite("Cache Full API Test Suite");
 
         // One node.
         suite.addTestSuite(GridCacheLocalFullApiSelfTest.class);

@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.dataload.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,6 +29,7 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -51,6 +52,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         // DiscoverySpi
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -123,8 +126,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
                 misses += m.misses();
             }
 
-            assertEquals(CNT/2, hits);
-            assertEquals(CNT/2, misses);
+            assertEquals(CNT / 2, hits);
+            assertEquals(CNT / 2, misses);
         }
         finally {
             stopAllGrids();
@@ -155,17 +158,21 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      */
     private static class IncrementingUpdater implements IgniteDataLoadCacheUpdater<Integer, Long> {
         /** */
-        private static final IgniteClosure<Long, Long> INC = new IgniteClosure<Long, Long>() {
-            @Override public Long apply(Long e) {
-                return e == null ? 1L : e + 1;
+        private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
+            @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
+                Long val = e.getValue();
+
+                e.setValue(val == null ? 1 : val + 1);
+
+                return null;
             }
         };
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<Integer, Long> cache,
+        @Override public void update(IgniteCache<Integer, Long> cache,
             Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
             for (Map.Entry<Integer, Long> entry : entries)
-                cache.transform(entry.getKey(), INC);
+                cache.invoke(entry.getKey(), INC);
         }
     }
 }

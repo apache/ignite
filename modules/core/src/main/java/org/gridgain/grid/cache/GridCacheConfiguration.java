@@ -259,9 +259,6 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /** Flag indicating if cached values should be additionally stored in serialized form. */
     private boolean storeValBytes = DFLT_STORE_VALUE_BYTES;
 
-    /** Refresh-ahead ratio. */
-    private double refreshAheadRatio;
-
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
@@ -342,9 +339,16 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Copy constructor.
      *
-     * @param cc Configuration to copy.
+     * @param cfg Configuration to copy.
      */
-    public GridCacheConfiguration(GridCacheConfiguration cc) {
+    public GridCacheConfiguration(CompleteConfiguration cfg) {
+        super(cfg);
+
+        if (!(cfg instanceof GridCacheConfiguration))
+            return;
+
+        GridCacheConfiguration cc = (GridCacheConfiguration)cfg;
+
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
          * ==============================================
@@ -368,6 +372,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
+        expiryPolicyFactory = cc.getExpiryPolicyFactory();
         indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
@@ -388,7 +393,6 @@ public class GridCacheConfiguration extends MutableConfiguration {
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
         qryCfg = cc.getQueryConfiguration();
-        refreshAheadRatio = cc.getRefreshAheadRatio();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
@@ -974,33 +978,6 @@ public class GridCacheConfiguration extends MutableConfiguration {
      */
     public boolean isStoreValueBytes() {
         return storeValBytes;
-    }
-
-    /**
-     * Gets refresh-ahead ratio. If non-zero, then entry will be preloaded in the background
-     * whenever it's accessed and the refresh ratio of it's total time-to-live has passed.
-     * This feature ensures that entries are always automatically re-cached whenever they are
-     * nearing expiration.
-     * <p>
-     * For example, if refresh ratio is set to {@code 0.75} and entry's time-to-live is
-     * {@code 1} minute, then if this entry is accessed any time after {@code 45} seconds
-     * (which is 0.75 of a minute), the cached value will be immediately returned, but
-     * entry will be automatically reloaded from persistent store in the background.
-     *
-     * @return Refresh-ahead ratio.
-     */
-    public double getRefreshAheadRatio() {
-        return refreshAheadRatio;
-    }
-
-    /**
-     * Sets refresh-ahead ratio for cache entries. Values other than zero specify how soon entries will be auto-reloaded
-     * from persistent store prior to expiration.
-     *
-     * @param refreshAheadRatio Refresh-ahead ratio.
-     */
-    public void setRefreshAheadRatio(double refreshAheadRatio) {
-        this.refreshAheadRatio = refreshAheadRatio;
     }
 
     /**

@@ -19,8 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
@@ -31,6 +29,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -263,9 +263,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.jcache(null);
 
-        GridCacheAffinity<Integer> aff = cache0.affinity();
+        GridCacheAffinity<Object> aff = cache(0).affinity();
 
         UUID id0 = ignite0.cluster().localNode().id();
 
@@ -273,7 +273,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         log.info("Transform from primary.");
 
-        cache0.transform(primaryKey, new TransformClosure(primaryKey));
+        cache0.invoke(primaryKey, new Processor(primaryKey));
 
         for (int i = 0; i < GRID_CNT; i++)
             checkEntry(grid(i), primaryKey, primaryKey, false);
@@ -283,7 +283,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
             log.info("Transform from backup.");
 
-            cache0.transform(backupKey, new TransformClosure(backupKey));
+            cache0.invoke(backupKey, new Processor(backupKey));
 
             for (int i = 0; i < GRID_CNT; i++)
                 checkEntry(grid(i), backupKey, backupKey, false);
@@ -293,7 +293,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         log.info("Transform from near.");
 
-        cache0.transform(nearKey, new TransformClosure(nearKey));
+        cache0.invoke(nearKey, new Processor(nearKey));
 
         for (int i = 0; i < GRID_CNT; i++) {
             UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
@@ -310,11 +310,11 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             delay();
 
-            GridCache<Integer, Integer> cache = grid(i).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(i).jcache(null);
 
             log.info("Transform [grid=" + grid(i).name() + ", val=" + val + ']');
 
-            cache.transform(nearKey, new TransformClosure(val));
+            cache.invoke(nearKey, new Processor(val));
 
             if (!aff.isPrimaryOrBackup(grid(i).localNode(), nearKey))
                 readers.add(grid(i).localNode().id());
@@ -340,53 +340,53 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.jcache(null);
 
-        GridCacheAffinity<Integer> aff = cache0.affinity();
+        GridCacheAffinity<Object> aff = ignite0.cache(null).affinity();
 
         UUID id0 = ignite0.cluster().localNode().id();
 
-        Map<Integer, TransformClosure> primaryKeys = new HashMap<>();
+        Set<Integer> primaryKeys = new HashSet<>();
 
         for (int i = 0; i < 10; i++)
-            primaryKeys.put(key(ignite0, PRIMARY), new TransformClosure(1));
+            primaryKeys.add(key(ignite0, PRIMARY));
 
         log.info("TransformAll from primary.");
 
-        cache0.transformAll(primaryKeys);
+        cache0.invokeAll(primaryKeys, new Processor(1));
 
         for (int i = 0; i < GRID_CNT; i++) {
-            for (Integer primaryKey : primaryKeys.keySet())
+            for (Integer primaryKey : primaryKeys)
                 checkEntry(grid(i), primaryKey, 1, false);
         }
 
         if (backups > 0) {
-            Map<Integer, TransformClosure> backupKeys = new HashMap<>();
+            Set<Integer> backupKeys = new HashSet<>();
 
             for (int i = 0; i < 10; i++)
-                backupKeys.put(key(ignite0, BACKUP), new TransformClosure(2));
+                backupKeys.add(key(ignite0, BACKUP));
 
             log.info("TransformAll from backup.");
 
-            cache0.transformAll(backupKeys);
+            cache0.invokeAll(backupKeys, new Processor(2));
 
             for (int i = 0; i < GRID_CNT; i++) {
-                for (Integer backupKey : backupKeys.keySet())
+                for (Integer backupKey : backupKeys)
                     checkEntry(grid(i), backupKey, 2, false);
             }
         }
 
-        Map<Integer, TransformClosure> nearKeys = new HashMap<>();
+        Set<Integer> nearKeys = new HashSet<>();
 
         for (int i = 0; i < 30; i++)
-            nearKeys.put(key(ignite0, NOT_PRIMARY_AND_BACKUP), new TransformClosure(3));
+            nearKeys.add(key(ignite0, NOT_PRIMARY_AND_BACKUP));
 
         log.info("TransformAll from near.");
 
-        cache0.transformAll(nearKeys);
+        cache0.invokeAll(nearKeys, new Processor(3));
 
         for (int i = 0; i < GRID_CNT; i++) {
-            for (Integer nearKey : nearKeys.keySet()) {
+            for (Integer nearKey : nearKeys) {
                 UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
 
                 checkEntry(grid(i), nearKey, 3, i == 0, expReaders);
@@ -395,7 +395,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, Collection<UUID>> readersMap = new HashMap<>();
 
-        for (Integer key : nearKeys.keySet())
+        for (Integer key : nearKeys)
             readersMap.put(key, new HashSet<UUID>());
 
         int val = 4;
@@ -403,22 +403,22 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             delay();
 
-            GridCache<Integer, Integer> cache = grid(i).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(i).jcache(null);
 
-            for (Integer key : nearKeys.keySet())
-                nearKeys.put(key, new TransformClosure(val));
+            for (Integer key : nearKeys)
+                nearKeys.add(key);
 
             log.info("TransformAll [grid=" + grid(i).name() + ", val=" + val + ']');
 
-            cache.transformAll(nearKeys);
+            cache.invokeAll(nearKeys, new Processor(val));
 
-            for (Integer key : nearKeys.keySet()) {
+            for (Integer key : nearKeys) {
                 if (!aff.isPrimaryOrBackup(grid(i).localNode(), key))
                     readersMap.get(key).add(grid(i).localNode().id());
             }
 
             for (int j = 0; j < GRID_CNT; j++) {
-                for (Integer key : nearKeys.keySet()) {
+                for (Integer key : nearKeys) {
                     boolean primaryNode = aff.isPrimary(grid(j).localNode(), key);
 
                     Collection<UUID> readers = readersMap.get(key);
@@ -797,21 +797,24 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
      */
-    private static class TransformClosure implements IgniteClosure<Integer, Integer> {
+    private static class Processor implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** */
         private final Integer newVal;
 
         /**
          * @param newVal New value.
          */
-        private TransformClosure(Integer newVal) {
+        private Processor(Integer newVal) {
             this.newVal = newVal;
         }
 
         /** {@inheritDoc} */
-        @Override public Integer apply(Integer val) {
-            return newVal;
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            e.setValue(newVal);
+
+            return null;
         }
     }
 }

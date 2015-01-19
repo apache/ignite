@@ -23,6 +23,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -330,6 +331,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
+            if (!tx.pessimistic()) {
+                int idx = 0;
+
+                for (IgniteTxEntry<K, V> e : dhtMapping.writes())
+                    req.ttl(idx++, e.ttl());
+
+                if (nearMapping != null) {
+                    idx = 0;
+
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
+            }
+
             if (tx.onePhaseCommit())
                 req.writeVersion(tx.writeVersion());
 
@@ -387,6 +402,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.groupLockKey(),
                     tx.subjectId(),
                     tx.taskNameHash());
+
+                if (!tx.pessimistic()) {
+                    int idx = 0;
+
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
 
                 if (tx.onePhaseCommit())
                     req.writeVersion(tx.writeVersion());

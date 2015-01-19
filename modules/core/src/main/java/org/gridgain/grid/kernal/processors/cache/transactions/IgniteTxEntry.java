@@ -22,12 +22,15 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -77,7 +80,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<IgniteClosure<V, V>> transformClosCol;
+    private Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol;
 
     /** Transform closure bytes. */
     @GridToStringExclude
@@ -137,6 +140,12 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /** Data center replication version. */
     private GridCacheVersion drVer;
 
+    /** Expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
+    /** Expiry policy transfer flag. */
+    private boolean transferExpiryPlc;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -156,8 +165,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param entry Cache entry.
      * @param drVer Data center replication version.
      */
-    public IgniteTxEntry(GridCacheContext<K, V> ctx, IgniteTxEx<K, V> tx, GridCacheOperation op, V val,
-        long ttl, long drExpireTime, GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion drVer) {
+    public IgniteTxEntry(GridCacheContext<K, V> ctx,
+        IgniteTxEx<K, V> tx,
+        GridCacheOperation op,
+        V val,
+        long ttl,
+        long drExpireTime,
+        GridCacheEntryEx<K, V> entry,
+        @Nullable GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -186,15 +201,23 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param tx Owning transaction.
      * @param op Operation.
      * @param val Value.
-     * @param transformClos Transform closure.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      * @param ttl Time to live.
      * @param entry Cache entry.
      * @param filters Put filters.
      * @param drVer Data center replication version.
      */
-    public IgniteTxEntry(GridCacheContext<K, V> ctx, IgniteTxEx<K, V> tx, GridCacheOperation op,
-        V val, IgniteClosure<V, V> transformClos, long ttl, GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filters, GridCacheVersion drVer) {
+    public IgniteTxEntry(GridCacheContext<K, V> ctx,
+        IgniteTxEx<K, V> tx,
+        GridCacheOperation op,
+        V val,
+        EntryProcessor<K, V, ?> entryProcessor,
+        Object[] invokeArgs,
+        long ttl,
+        GridCacheEntryEx<K, V> entry,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filters,
+        GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -208,8 +231,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         this.filters = filters;
         this.drVer = drVer;
 
-        if (transformClos != null)
-            addTransformClosure(transformClos);
+        if (entryProcessor != null)
+            addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
         keyBytes = entry.keyBytes();
@@ -287,13 +310,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         cp.filters = filters;
         cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
         cp.val.valueBytes(val.valueBytes());
-        cp.transformClosCol = transformClosCol;
+        cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.drExpireTime = drExpireTime;
         cp.explicitVer = explicitVer;
         cp.grpLock = grpLock;
         cp.depEnabled = depEnabled;
         cp.drVer = drVer;
+        cp.expiryPlc = expiryPlc;
 
         return cp;
     }
@@ -592,13 +616,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @param transformClos Transform closure.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      */
-    public void addTransformClosure(IgniteClosure<V, V> transformClos) {
-        if (transformClosCol  == null)
-            transformClosCol = new LinkedList<>();
+    public void addEntryProcessor(EntryProcessor<K, V, ?> entryProcessor, Object[] invokeArgs) {
+        if (entryProcessorsCol == null)
+            entryProcessorsCol = new LinkedList<>();
 
-        transformClosCol.add(transformClos);
+        entryProcessorsCol.add(new T2<EntryProcessor<K, V, ?>, Object[]>(entryProcessor, invokeArgs));
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
@@ -607,17 +632,41 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     }
 
     /**
-     * @return Collection of transform closures.
+     * @return Collection of entry processors.
      */
-    public Collection<IgniteClosure<V, V>> transformClosures() {
-        return transformClosCol;
+    public Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors() {
+        return entryProcessorsCol;
     }
 
     /**
-     * @param transformClosCol Collection of transform closures.
+     * @param val Value.
+     * @return New value.
      */
-    public void transformClosures(@Nullable Collection<IgniteClosure<V, V>> transformClosCol) {
-        this.transformClosCol = transformClosCol;
+    @SuppressWarnings("unchecked")
+    public V applyEntryProcessors(V val) {
+        for (T2<EntryProcessor<K, V, ?>, Object[]> t : entryProcessors()) {
+            try {
+                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(key, val);
+
+                EntryProcessor processor = t.get1();
+
+                processor.process(invokeEntry, t.get2());
+
+                val = invokeEntry.getValue();
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        return val;
+    }
+
+    /**
+     * @param entryProcessorsCol Collection of entry processors.
+     */
+    public void entryProcessors(@Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessorsCol) {
+        this.entryProcessorsCol = entryProcessorsCol;
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
@@ -718,22 +767,26 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /**
      * @param ctx Context.
+     * @param transferExpiry {@code True} if expire policy should be marshalled.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    public void marshal(GridCacheSharedContext<K, V> ctx, boolean transferExpiry) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (depEnabled) {
             if (keyBytes == null)
                 keyBytes = entry.getOrMarshalKeyBytes();
 
-            if (transformClosBytes == null && transformClosCol != null)
-                transformClosBytes = CU.marshal(ctx, transformClosCol);
+            if (transformClosBytes == null && entryProcessorsCol != null)
+                transformClosBytes = CU.marshal(ctx, entryProcessorsCol);
 
             if (F.isEmptyOrNulls(filters))
                 filterBytes = null;
             else if (filterBytes == null)
                 filterBytes = CU.marshal(ctx, filters);
         }
+
+        if (transferExpiry)
+            transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
 
         val.marshal(ctx, context(), depEnabled);
     }
@@ -742,6 +795,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * Unmarshalls entry.
      *
      * @param ctx Cache context.
+     * @param near Near flag.
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
@@ -763,8 +817,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
                 key = ctx.marshaller().unmarshal(keyBytes, clsLdr);
 
             // Unmarshal transform closure anyway if it exists.
-            if (transformClosBytes != null && transformClosCol == null)
-                transformClosCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+            if (transformClosBytes != null && entryProcessorsCol == null)
+                entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
 
             if (filters == null && filterBytes != null) {
                 filters = ctx.marshaller().unmarshal(filterBytes, clsLdr);
@@ -775,6 +829,20 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
 
         val.unmarshal(this.ctx, clsLdr, depEnabled);
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    public void expiry(@Nullable ExpiryPolicy expiryPlc) {
+        this.expiryPlc = expiryPlc;
+    }
+
+    /**
+     * @return Expiry policy.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /** {@inheritDoc} */
@@ -788,7 +856,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
         else {
             out.writeObject(key);
-            U.writeCollection(out, transformClosCol);
+            U.writeCollection(out, entryProcessorsCol);
             U.writeArray(out, filters);
         }
 
@@ -802,6 +870,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         CU.writeVersion(out, explicitVer);
         out.writeBoolean(grpLock);
         CU.writeVersion(out, drVer);
+
+        out.writeObject(transferExpiryPlc ? new IgniteExternalizableExpiryPolicy(expiryPlc) : null);
     }
 
     /** {@inheritDoc} */
@@ -816,7 +886,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
         else {
             key = (K)in.readObject();
-            transformClosCol = U.readCollection(in);
+            entryProcessorsCol = U.readCollection(in);
             filters = U.readEntryFilterArray(in);
         }
 
@@ -830,6 +900,8 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         explicitVer = CU.readVersion(in);
         grpLock = in.readBoolean();
         drVer = CU.readVersion(in);
+
+        expiryPlc = (ExpiryPolicy)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -986,6 +1058,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         }
 
         /**
+         * @param sharedCtx Shared cache context.
          * @param ctx Cache context.
          * @param depEnabled Deployment enabled flag.
          * @throws IgniteCheckedException If marshaling failed.

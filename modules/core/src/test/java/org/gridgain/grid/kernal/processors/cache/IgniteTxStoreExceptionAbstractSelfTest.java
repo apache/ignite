@@ -29,6 +29,8 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -430,17 +432,21 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         info("Going to transform: " + key);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable e = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).transform(key, new IgniteClosure<Object, Object>() {
-                    @Override public Object apply(Object o) {
-                        return 2;
+                grid(0).<Integer, Integer>jcache(null).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+                    @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                        e.setValue(2);
+
+                        return null;
                     }
                 });
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, CacheException.class, null);
+
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof IgniteTxRollbackException);
 
         checkValue(key, putBefore);
     }
@@ -596,41 +602,48 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             this.fail = fail;
         }
 
-
+        /** {@inheritDoc} */
         @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
             throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
+        /** {@inheritDoc} */
         @Override public void loadAll(@Nullable IgniteTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
             throws IgniteCheckedException {
         }
 
+        /** {@inheritDoc} */
         @Override public void put(@Nullable IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
+        /** {@inheritDoc} */
         @Override public void putAll(@Nullable IgniteTx tx, Map<?, ?> map) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
+        /** {@inheritDoc} */
         @Override public void remove(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
+        /** {@inheritDoc} */
         @Override public void removeAll(@Nullable IgniteTx tx, Collection<?> keys) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Store exception");
         }
 
+        /** {@inheritDoc} */
         @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
             if (fail && commit)
                 throw new IgniteCheckedException("Store exception");

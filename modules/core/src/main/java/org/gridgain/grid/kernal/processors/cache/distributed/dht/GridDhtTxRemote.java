@@ -24,9 +24,11 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -281,17 +283,25 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param op Write operation.
      * @param key Key to add to write set.
      * @param keyBytes Key bytes.
      * @param val Value.
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
-     * @param clos Transform closures.
+     * @param entryProcessors Entry processors.
+     * @param ttl TTL.
      */
-    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, IgniteTxKey<K> key, byte[] keyBytes,
-        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<IgniteClosure<V, V>> clos,
-        @Nullable GridCacheVersion drVer) {
+    public void addWrite(GridCacheContext<K, V> cacheCtx,
+        GridCacheOperation op,
+        IgniteTxKey<K> key,
+        byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        @Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors,
+        @Nullable GridCacheVersion drVer,
+        long ttl) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -299,11 +309,18 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
+        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
+            this,
+            op,
+            val,
+            ttl,
+            -1L,
+            cached,
+            drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);
-        txEntry.transformClosures(clos);
+        txEntry.entryProcessors(entryProcessors);
 
         writeMap.put(key, txEntry);
     }

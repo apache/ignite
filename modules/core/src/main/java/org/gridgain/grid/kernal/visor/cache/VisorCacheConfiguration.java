@@ -54,9 +54,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Eager ttl flag */
     private boolean eagerTtl;
 
-    /** Refresh ahead ratio. */
-    private double refreshAheadRatio;
-
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSynchronizationMode;
 
@@ -152,7 +149,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.atomicWriteOrderMode(ccfg.getAtomicWriteOrderMode());
         cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
         cfg.eagerTtl(ccfg.isEagerTtl());
-        cfg.refreshAheadRatio(ccfg.getRefreshAheadRatio());
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());
         cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
@@ -294,20 +290,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void eagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
-    }
-
-    /**
-     * @return Refresh ahead ratio.
-     */
-    public double refreshAheadRatio() {
-        return refreshAheadRatio;
-    }
-
-    /**
-     * @param refreshAheadRatio New refresh ahead ratio.
-     */
-    public void refreshAheadRatio(double refreshAheadRatio) {
-        this.refreshAheadRatio = refreshAheadRatio;
     }
 
     /**

@@ -27,6 +27,8 @@ import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -278,10 +280,11 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      *        temporary object can used for filter evaluation or transform closure execution and
      *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
+     * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param filter Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
-     * @param transformClo Transform closure to record event.
+     * @param expiryPlc Expiry policy.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -298,7 +301,8 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -397,9 +401,10 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param op Update operation.
      * @param val Value. Type depends on operation.
      * @param valBytes Value bytes. Can be non-null only if operation is UPDATE.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param primary If update is performed on primary node (the one which assigns version).
@@ -429,9 +434,10 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
         GridCacheOperation op,
         @Nullable Object val,
         @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
@@ -453,26 +459,28 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @param ver Cache version.
      * @param op Operation.
      * @param writeObj Value. Type depends on operation.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy..
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
-     * @return Tuple containing success flag and old value.
+     * @return Tuple containing success flag, old value and result for invoke operation.
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public IgniteBiTuple<Boolean, V> innerUpdateLocal(
+    public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
@@ -877,6 +885,12 @@ public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public long ttl() throws GridCacheEntryRemovedException;
+
+    /**
+     * @param ver Version.
+     * @param ttl Time to live.
+     */
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
 
     /**
      * @return Value.
