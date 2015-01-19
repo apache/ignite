@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.*;
+import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.lang.ref.*;
@@ -88,7 +89,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
                     fut.cancel();
             }
             catch (IgniteCheckedException e) {
-                log.error("Failed to close iterator.", e);
+                U.error(log, "Failed to close iterator.", e);
             }
         }
     }
@@ -102,7 +103,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
                 fut.cancel();
             }
             catch (IgniteCheckedException e) {
-                log.error("Failed to close iterator.", e);
+                U.error(log, "Failed to close iterator.", e);
             }
         }
 
