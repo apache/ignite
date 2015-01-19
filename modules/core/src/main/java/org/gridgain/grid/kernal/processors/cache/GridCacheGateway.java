@@ -87,6 +87,8 @@ public class GridCacheGateway<K, V> {
      */
     @Nullable public GridCacheProjectionImpl<K, V> enter(@Nullable GridCacheProjectionImpl<K, V> prj) {
         try {
+            ctx.itHolder().checkWeakQueue();
+
             GridCacheAdapter<K, V> cache = ctx.cache();
 
             GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
