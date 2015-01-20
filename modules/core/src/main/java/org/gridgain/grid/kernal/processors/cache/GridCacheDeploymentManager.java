@@ -298,6 +298,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 cacheCtx.near().dht().context().swap().onUndeploy(leftNodeId, ldr) :
                 cacheCtx.swap().onUndeploy(leftNodeId, ldr);
 
+            if (keys.size() == 0 || cacheCtx.system())
+                continue;
+
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
