@@ -155,10 +155,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         assertFalse(set1.isEmpty());
         assertEquals(set0, set1);
 
-        X.println("___ AVG MIN MAX SUM");
+        X.println("___ AVG MIN MAX SUM COUNT(*) COUNT(x)");
 
         for (List<?> o : qx.executeTwoStepQuery("partitioned",
-            "select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price) " +
+            "select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
+                "count(nullif(f.price, 5)) " +
                 "from FactPurchase f, \"replicated\".DimProduct p " +
                 "where p.id = f.productId " +
                 "group by f.productId, p.name").get()) {

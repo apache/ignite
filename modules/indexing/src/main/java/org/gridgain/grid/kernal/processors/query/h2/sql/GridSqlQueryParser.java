@@ -410,7 +410,7 @@ public class GridSqlQueryParser {
             for (Expression arg : f.getArgs())
                 res.addChild(parseExpression(arg));
 
-            if (f.getFunctionType() == Function.CAST)
+            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
                 res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
                     .getCreateSQL());
 

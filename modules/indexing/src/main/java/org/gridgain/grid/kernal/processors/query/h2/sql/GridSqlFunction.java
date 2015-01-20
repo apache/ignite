@@ -15,6 +15,8 @@ import org.h2.value.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.kernal.processors.query.h2.sql.GridSqlFunctionType.*;
+
 /**
  * Function.
  */
@@ -43,33 +45,46 @@ public class GridSqlFunction extends GridSqlElement {
      * @param type Function type.
      */
     public GridSqlFunction(GridSqlFunctionType type) {
-        name = type.functionName();
+        this(type, type.functionName());
+    }
 
+    /**
+     * @param type Type.
+     * @param name Name.
+     */
+    private GridSqlFunction(GridSqlFunctionType type, String name) {
+        if (name == null)
+            throw new NullPointerException();
+
+        if (type == null)
+            type = UNKNOWN_FUNCTION;
+
+        this.name = name;
         this.type = type;
-
-        if (type == GridSqlFunctionType.CONVERT)
-            throw new UnsupportedOperationException();
     }
 
     /**
      * @param name Name.
      */
     public GridSqlFunction(String name) {
-        this(TYPE_MAP.get(name));
+        this(TYPE_MAP.get(name), name);
     }
 
     /**
      * @param castType Type for {@link GridSqlFunctionType#CAST} function.
+     * @return {@code this}.
      */
-    public void setCastType(String castType) {
+    public GridSqlFunction setCastType(String castType) {
         this.castType = castType;
+
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder(name);
 
-        if (type == GridSqlFunctionType.CASE) {
+        if (type == CASE) {
             if (!children.isEmpty())
                 buff.append(" ").append(child().getSQL());
 
@@ -85,16 +100,17 @@ public class GridSqlFunction extends GridSqlElement {
 
         buff.append('(');
 
-        if (type == GridSqlFunctionType.CAST) {
+        if (type == CAST) {
             assert !F.isEmpty(castType) : castType;
             assert children().size() == 1;
 
             buff.append(child().getSQL()).append(" AS ").append(castType);
         }
-        else if (type == GridSqlFunctionType.CONVERT) {
-            throw new UnsupportedOperationException("CONVERT");
-//            buff.append(args[0].getSQL()).append(',').
-//                append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+        else if (type == CONVERT) {
+            assert !F.isEmpty(castType) : castType;
+            assert children().size() == 1;
+
+            buff.append(child().getSQL()).append(',').append(castType);
         }
         else if (type == GridSqlFunctionType.EXTRACT) {
             ValueString v = (ValueString)((GridSqlConst)child(0)).value();

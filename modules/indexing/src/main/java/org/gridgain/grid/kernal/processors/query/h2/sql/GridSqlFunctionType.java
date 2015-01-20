@@ -15,42 +15,58 @@ import org.h2.expression.*;
  * Full list of available functions see at {@link Function}
  */
 public enum GridSqlFunctionType {
-    ABS(1), CEIL(1), FLOOR(1), COS(1), PI(0), POWER(2), RAND(-1), ROUND(1),
-    CASE(-1), CAST(1), CONVERT(1), EXTRACT(2),
-    DAY_OF_MONTH(1), DAY_OF_WEEK(1), DAY_OF_YEAR(1),
-
     // Aggregate functions.
-    COUNT_ALL("COUNT(*)", 0), COUNT(1), GROUP_CONCAT(1), SUM(1), MIN(1), MAX(1), AVG(1), STDDEV_POP(1), STDDEV_SAMP(1),
-    VAR_POP(1), VAR_SAMP(1), BOOL_OR(1), BOOL_AND(1), SELECTIVITY(1), HISTOGRAM(1);
+    /** */
+    COUNT_ALL("COUNT(*)"),
+
+    /** */
+    COUNT,
+
+    /** */
+    SUM,
+
+    /** */
+    MIN,
+
+    /** */
+    MAX,
+
+    /** */
+    AVG,
+
+    /** */
+    GROUP_CONCAT,
+
+    // Functions with special handling.
+    /** */
+    CASE,
+
+    /** */
+    CAST,
+
+    /** */
+    CONVERT,
+
+    /** */
+    EXTRACT,
+
+    /** Constant for all other functions. */
+    UNKNOWN_FUNCTION;
 
     /** */
     private final String name;
 
-    /** */
-    private final int argCnt;
-
     /**
-     * @param argCnt Count.
      */
-    GridSqlFunctionType(int argCnt) {
+    GridSqlFunctionType() {
         name = name();
-        this.argCnt = argCnt;
     }
 
     /**
      * @param name Name.
-     * @param argCnt Count.
      */
-    GridSqlFunctionType(String name, int argCnt) {
+    GridSqlFunctionType(String name) {
         this.name = name;
-        this.argCnt = argCnt;
-    }
-
-    /**
-     * @return Argument count.
-     */
-    public int argumentCount() {
-        return argCnt;
     }
 
     /**
