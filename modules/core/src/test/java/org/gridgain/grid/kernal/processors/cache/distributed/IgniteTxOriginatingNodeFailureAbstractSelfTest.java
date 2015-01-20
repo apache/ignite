@@ -257,6 +257,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheStoreFactory(null);
+        cfg.setReadThrough(false);
+        cfg.setWriteThrough(false);
 
         return cfg;
     }
