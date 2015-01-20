@@ -886,7 +886,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
-                                /**update-metrics*/true,
+                                /**update-metrics*/false,
                                 /*event*/true,
                                 /*temporary*/false,
                                 subjId,
@@ -941,6 +941,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (!success)
                     break;
+                else
+                    ctx.cache().metrics0().onRead(true);
             }
 
             if (success) {

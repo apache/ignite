@@ -403,19 +403,28 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean removex(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key");
 
         ctx.denyOnLocalRead();
 
-        return (Boolean)updateAllInternal(DELETE,
-            Collections.singleton(key),
-            null,
-            null,
-            expiryPerCall(),
-            false,
-            false,
-            filter,
-            ctx.isStoreEnabled());
+        Boolean removed = (Boolean)updateAllInternal(DELETE,
+                Collections.singleton(key),
+                null,
+                null,
+                expiryPerCall(),
+                false,
+                false,
+                filter,
+                ctx.isStoreEnabled());
+
+        if (statsEnabled && removed)
+            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+        return  removed;
     }
 
     /** {@inheritDoc} */

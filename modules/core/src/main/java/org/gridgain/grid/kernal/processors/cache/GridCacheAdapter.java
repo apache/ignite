@@ -2088,9 +2088,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Nullable @Override public V put(final K key, final V val, @Nullable final GridCacheEntryEx<K, V> cached,
         final long ttl, @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
-        long start = statisticsEnabled ? System.nanoTime() : 0L;
+        long start = statsEnabled ? System.nanoTime() : 0L;
 
         A.notNull(key, "key", val, "val");
 
@@ -2113,10 +2113,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         }));
 
-        if (statisticsEnabled) {
-            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
-            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
-        }
+        if (statsEnabled)
+            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
 
         return prevValue;
     }
@@ -2540,9 +2538,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public boolean putxIfAbsent(final K key, final V val) throws IgniteCheckedException {
-        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
-        long start = statisticsEnabled ? System.nanoTime() : 0L;
+        long start = statsEnabled ? System.nanoTime() : 0L;
 
         A.notNull(key, "key", val, "val");
 
@@ -2565,7 +2563,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         });
 
-        if (statisticsEnabled && stored)
+        if (statsEnabled && stored)
             ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
 
         return stored;
@@ -2938,15 +2936,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public boolean removex(final K key, final IgnitePredicate<GridCacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
-        return removex(key, null, filter);
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        boolean removed = removex(key, null, filter);
+
+        if (statsEnabled && removed)
+            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+        return removed;
     }
 
     /** {@inheritDoc} */
     @Override public boolean removex(final K key, @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
-        long start = statisticsEnabled ? System.nanoTime() : 0L;
+        long start = statsEnabled ? System.nanoTime() : 0L;
 
         ctx.denyOnLocalRead();
 
@@ -2967,7 +2974,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         });
 
-        if (statisticsEnabled && removed)
+        if (statsEnabled && removed)
             ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return removed;
@@ -3151,9 +3158,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public boolean remove(final K key, final V val) throws IgniteCheckedException {
-        boolean statisticsEnabled = ctx.config().isStatisticsEnabled();
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
-        long start = statisticsEnabled ? System.nanoTime() : 0L;
+        long start = statsEnabled ? System.nanoTime() : 0L;
 
         ctx.denyOnLocalRead();
 
@@ -3184,7 +3191,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             }
         });
 
-        if (statisticsEnabled && removed)
+        if (statsEnabled && removed)
             ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return removed;

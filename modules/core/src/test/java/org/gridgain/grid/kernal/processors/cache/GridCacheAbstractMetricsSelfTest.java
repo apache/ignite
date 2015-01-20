@@ -35,9 +35,6 @@ import static java.util.concurrent.TimeUnit.*;
  */
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
-    public static final String CACHE_NAME = "metric_test";
-
-    /** */
     private static final int KEY_CNT = 50;
 
     /** {@inheritDoc} */
@@ -158,21 +155,16 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         jcache.put(1, 1);
 
         assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
-        assertEquals(0, cache.metrics().reads());
-
-        long start = System.nanoTime();
 
         jcache.get(1);
 
         float averageGetTime = cache.metrics().getAverageGetTime();
 
-        assert averageGetTime >= 0;
-
-        assertEquals(1, cache.metrics().reads());
+        assert averageGetTime > 0;
 
         jcache.get(2);
 
-        assert cache.metrics().getAverageGetTime() >= 0;
+        assert cache.metrics().getAverageGetTime() > 0;
     }
 
     /**
@@ -182,12 +174,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
 
+        assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
+
         jcache.put(1, 1);
         jcache.put(2, 2);
         jcache.put(3, 3);
 
         assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
-        assertEquals(0, cache.metrics().reads());
 
         Set<Integer> keys = new HashSet<>();
         keys.add(1);
@@ -196,10 +189,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         jcache.getAll(keys);
 
-        float averageGetTime = cache.metrics().getAverageGetTime();
-
-        assert averageGetTime >= 0;
-        assertEquals(3, cache.metrics().reads());
+        assert cache.metrics().getAverageGetTime() > 0;
     }
 
     /**
@@ -357,7 +347,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < keyCnt; i++) {
             assertNull("Value is not null for key: " + i, cache.get(i));
 
-            if (cache.affinity().isPrimary(grid(0).localNode(), i))
+            if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED ||
+                cache.affinity().isPrimary(grid(0).localNode(), i))
                 expReads++;
             else
                 expReads += 2;
@@ -389,6 +380,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testMissesOnEmptyCache() throws Exception {
         GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        assertEquals("Expected 0 read", 0, cache.metrics().reads());
+        assertEquals("Expected 0 miss", 0, cache.metrics().misses());
 
         Integer key =  null;
 
