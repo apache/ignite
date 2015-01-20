@@ -532,9 +532,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
             checkRemoteLocked(cache2, keys1);
 
-            lock2_2.tryLock(-1, TimeUnit.MILLISECONDS);
+            lock2_2.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
 
-            IgniteFuture<Boolean> f2 = lock2_2.future();
+            IgniteFuture<Boolean> f2 = lock2_2.enableAsync().future();
 
             assert !f2.get();
 

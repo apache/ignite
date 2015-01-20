@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -37,7 +38,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest {
     /** Cache. */
-    private GridCache<Integer, String> cache;
+    private IgniteCache<Integer, String> cache;
 
     /**
      * Start grid by default.
@@ -50,7 +51,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         Ignite ignite = grid();
 
-        cache = ignite.cache(null);
+        cache = ignite.jcache(null);
     }
 
     /** {@inheritDoc} */
@@ -83,8 +84,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testBasicLocks() throws Throwable {
-        final IgniteCache<Object, Object> cache = grid().jcache(null);
-
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
@@ -109,14 +108,10 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testMultiLocks() throws Throwable {
-        final IgniteCache<Integer, String> cache = grid().jcache(null);
-
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                Set<Integer> keys = new HashSet<Integer>();
-
-                Collections.addAll(keys, 1, 2, 3);
+                Set<Integer> keys = Sets.newHashSet(1, 2, 3);
 
                 cache.lockAll(keys).lock();
 
@@ -139,8 +134,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testSlidingKeysLocks() throws Throwable {
-        final IgniteCache<Integer, String> cache = grid().jcache(null);
-
         final AtomicInteger cnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
@@ -148,9 +141,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
             @Override public Object call() throws Exception {
                 int idx = cnt.incrementAndGet();
 
-                Set<Integer> keys = new HashSet<>();
-
-                Collections.addAll(keys, idx, idx + 1, idx + 2, idx + 3);
+                Set<Integer> keys = Sets.newHashSet(idx, idx + 1, idx + 2, idx + 3);
 
                 cache.lockAll(keys).lock();
 
@@ -173,8 +164,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testSingleLockTimeout() throws Exception {
-        final IgniteCache<Object, Object> cache = grid().jcache(null);
-
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
@@ -239,8 +228,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test fails.
      */
     public void testMultiLockTimeout() throws Exception {
-        final IgniteCache<Integer, String> cache = grid().jcache(null);
-
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
         final CountDownLatch l3 = new CountDownLatch(1);
@@ -346,8 +333,6 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If test failed.
      */
     public void testLockOrder() throws Exception {
-        final IgniteCache<Object, Object> cache = grid().jcache(null);
-
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
         final CountDownLatch l3 = new CountDownLatch(1);
@@ -380,9 +365,11 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 try {
                     l1.await();
 
-                    CacheLock lock1 = cache.enableAsync().lock(1);
+                    CacheLock lock1 = cache.lock(1);
 
-                    IgniteFuture<Boolean> f1 = cache.enableAsync().future();
+                    lock1.enableAsync().lock();
+
+                    IgniteFuture<Boolean> f1 = lock1.enableAsync().future();
 
                     try {
                         f1.get(100, TimeUnit.MILLISECONDS);
@@ -395,9 +382,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                     CacheLock lock2 = cache.lock(2);
 
-                    lock2.lock();
+                    lock2.enableAsync().lock();
 
-                    IgniteFuture<Boolean> f2 = lock2.future();
+                    IgniteFuture<Boolean> f2 = lock2.enableAsync().future();
 
                     try {
                         // Can't acquire f2 because f1 is held.

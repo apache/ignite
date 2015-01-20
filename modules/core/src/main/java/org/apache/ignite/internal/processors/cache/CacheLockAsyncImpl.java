@@ -40,7 +40,7 @@ class CacheLockAsyncImpl<K> implements CacheLock {
     private final Collection<? extends K> keys;
 
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteFuture<?>> curFut;
+    protected final ThreadLocal<IgniteFuture<?>> curFut = new ThreadLocal<>();
 
     /**
      * @param delegate Delegate.
@@ -95,10 +95,7 @@ class CacheLockAsyncImpl<K> implements CacheLock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock(long time, TimeUnit unit) {
-        if (time <= 0)
-            return tryLock();
-
-        IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
+        IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
 
         curFut.set(fut);
 
