@@ -2845,7 +2845,17 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> removeAsync(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return removeAsync(key, null, filter);
+        IgniteFuture<V> fut = removeAsync(key, null, filter);
+
+        if (ctx.cache().configuration().isStatisticsEnabled())
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                /** {@inheritDoc} */
+                @Override public void apply(IgniteFuture<V> fut) {
+                    ctx.cache().metrics0().addRemoveTimeNanos(fut.duration());
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */

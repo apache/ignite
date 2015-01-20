@@ -221,6 +221,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @throws Exception If test failed.
      */
     public void testGetPutRemove() throws Exception {
+        // TODO: GG-7578.
+        if (cache(0).configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
         runTest(
             new TestCacheRunnable() {
                 @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
@@ -316,6 +320,10 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      * @throws Exception If test failed.
      */
     public void testGetPutRemoveAsync() throws Exception {
+        // TODO: GG-7578.
+        if (cache(0).configuration().getCacheMode() == GridCacheMode.REPLICATED)
+            return;
+
         runTest(new TestCacheRunnable() {
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.lang.*;
@@ -95,6 +96,30 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             g.cache(null).configuration().setStatisticsEnabled(true);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAsyncAvgTime() throws Exception {
+        GridCache<Object, Object> cache = grid(0).cache(null);
+
+        cache.put(1, 1);
+        cache.put(2, 2);
+
+        assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
+
+        IgniteFuture<Object> fut = cache.removeAsync(1);
+
+        assertEquals(1, (int)fut.get());
+
+        assert cache.metrics().getAverageRemoveTime() > 0;
+
+        fut = cache.removeAsync(2);
+
+        assertEquals(2, (int)fut.get());
+
+        assert cache.metrics().getAverageRemoveTime() > 0;
     }
 
     /**
