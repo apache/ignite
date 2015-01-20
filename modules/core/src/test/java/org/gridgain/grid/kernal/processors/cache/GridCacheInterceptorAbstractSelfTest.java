@@ -94,8 +94,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             ccfg.setAtomicWriteOrderMode(writeOrderMode());
         }
 
-        if (!storeEnabled())
+        if (!storeEnabled()) {
             ccfg.setCacheStoreFactory(null);
+            ccfg.setReadThrough(false);
+            ccfg.setWriteThrough(false);
+        }
 
         return ccfg;
     }
