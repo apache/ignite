@@ -23,7 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -40,7 +39,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 /**
  * Cache proxy.
@@ -258,80 +256,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lock(K key) throws CacheException {
+    @Override public CacheLock lock(K key) throws CacheException {
         return lockAll(Collections.<K>singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lockAll(final Set<? extends K> keys) {
-        return new Lock() {
-            @Override public void lock() {
-                try {
-                    delegate.lockAll(keys, 0);
-                }
-                catch (GridInterruptedException ignored) {
-
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public void lockInterruptibly() throws InterruptedException {
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                try {
-                    delegate.lockAll(keys, 0);
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
-                    throw new InterruptedException();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public boolean tryLock() {
-                try {
-                    return delegate.lockAll(keys, -1);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-                try {
-                    return delegate.lockAll(keys, unit.toMillis(time));
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
-                    throw new InterruptedException();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public void unlock() {
-                try {
-                    delegate.unlockAll(keys);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @NotNull @Override public Condition newCondition() {
-                throw new UnsupportedOperationException();
-            }
-        };
+    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
+        return new CacheLockImpl<K>(delegate, keys);
     }
 
     /** {@inheritDoc} */
@@ -912,21 +843,62 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration cacheEntryLsnrConfiguration) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            ctx.continuousQueries().registerCacheEntryListener(lsnrCfg, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration cacheEntryLsnrConfiguration) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            ctx.continuousQueries().deregisterCacheEntryListener(lsnrCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return F.iterator(delegate, new C1<GridCacheEntry<K, V>, Entry<K, V>>() {
+                @Override public Entry<K, V> apply(final GridCacheEntry<K, V> e) {
+                    return new Entry<K, V>() {
+                        @Override public K getKey() {
+                            return e.getKey();
+                        }
+
+                        @Override public V getValue() {
+                            return e.getValue();
+                        }
+
+                        @Override public <T> T unwrap(Class<T> clazz) {
+                            throw new IllegalArgumentException();
+                        }
+                    };
+                }
+            }, false);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

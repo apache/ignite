@@ -819,7 +819,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cacheCtx.cache().start();
 
-
             if (log.isInfoEnabled())
                 log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
         }

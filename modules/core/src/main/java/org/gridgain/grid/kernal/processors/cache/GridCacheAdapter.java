@@ -3218,7 +3218,25 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKeys(keys);
 
-        return lockAllAsync(keys, timeout, filter).get();
+        IgniteFuture<Boolean> fut = lockAllAsync(keys, timeout, filter);
+
+        boolean isInterrupted = false;
+
+        try {
+            while (true) {
+                try {
+                    return fut.get();
+                }
+                catch (GridInterruptedException ignored) {
+                    // Interrupted status of current thread was cleared, retry to get lock.
+                    isInterrupted = true;
+                }
+            }
+        }
+        finally {
+            if (isInterrupted)
+                Thread.currentThread().interrupt();
+        }
     }
 
     /** {@inheritDoc} */
