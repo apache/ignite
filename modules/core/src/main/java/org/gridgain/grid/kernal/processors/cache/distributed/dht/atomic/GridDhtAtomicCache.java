@@ -790,6 +790,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean rawRetval,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         assert keys != null || drMap != null;
 
         if (keyCheck)
@@ -820,6 +824,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskNameHash);
+
+        if (statsEnabled) {
+            updateFut.listenAsync(new CI1<IgniteFuture<Object>>() {
+                /** {@inheritDoc} */
+                @Override public void apply(IgniteFuture<Object> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore){
+                        //No-op.
+                    }
+                }
+            });
+        }
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
             @Override public IgniteFuture<Object> apply() {

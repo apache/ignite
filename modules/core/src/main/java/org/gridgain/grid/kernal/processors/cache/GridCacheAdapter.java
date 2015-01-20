@@ -1684,12 +1684,32 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(final K key) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         IgniteFuture<V> fut = getAsync(key, true, null);
 
         if (ctx.config().getInterceptor() != null)
-            return fut.chain(new CX1<IgniteFuture<V>, V>() {
+            fut =  fut.chain(new CX1<IgniteFuture<V>, V>() {
                 @Override public V applyx(IgniteFuture<V> f) throws IgniteCheckedException {
                     return (V)ctx.config().getInterceptor().onGet(key, f.get());
+                }
+            });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                @Override public void apply(IgniteFuture<V> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore){
+                        //No-op.
+                    }
                 }
             });
 
@@ -1715,12 +1735,31 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         IgniteFuture<Map<K, V>> fut = getAllAsync(keys, true, null);
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteFuture<Map<K, V>>, Map<K, V>>() {
                 @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws IgniteCheckedException {
                     return interceptGet(keys, f.get());
+                }
+            });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Map<K, V>>>() {
+                @Override public void apply(IgniteFuture<Map<K, V>> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+                        }
+                    } catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
                 }
             });
 
@@ -2147,7 +2186,28 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> putAsync(K key, V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return putAsync(key, val, null, -1, filter);
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteFuture<V> fut = putAsync(key, val, null, -1, filter);
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                @Override public void apply(IgniteFuture<V> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
+                        }
+                    } catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2463,7 +2523,29 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxAsync(K key, V val,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
-        return putxAsync(key, val, null, -1, filter);
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteFuture<Boolean> fut = putxAsync(key, val, null, -1, filter);
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2515,6 +2597,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> putIfAbsentAsync(final K key, final V val) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2524,7 +2610,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
+        IgniteFuture<V> fut = ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noPeekArray())
                     .chain((IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>)RET2VAL);
@@ -2534,6 +2620,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "putIfAbsentAsync [key=" + key + ", val=" + val + ']';
             }
         }));
+
+        if(statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                @Override public void apply(IgniteFuture<V> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2571,6 +2675,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxIfAbsentAsync(final K key, final V val) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2580,7 +2688,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteFuture<Boolean> op(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.noPeekArray()).chain(
                     (IgniteClosure<IgniteFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
@@ -2590,6 +2698,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "putxIfAbsentAsync [key=" + key + ", val=" + val + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+                        }
+                    } catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2617,6 +2742,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> replaceAsync(final K key, final V val) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2626,7 +2755,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
+        IgniteFuture<V> fut = ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasPeekArray()).chain(
                     (IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>)RET2VAL);
@@ -2636,6 +2765,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "replaceAsync [key=" + key + ", val=" + val + ']';
             }
         }));
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                @Override public void apply(IgniteFuture<V> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2714,6 +2861,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(final K key, final V oldVal, final V newVal) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         if (keyCheck)
@@ -2725,7 +2876,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteFuture<Boolean> op(IgniteTxLocalAdapter<K, V> tx) {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled()) {
@@ -2745,6 +2896,24 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "replaceAsync [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2845,13 +3014,27 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> removeAsync(K key, IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         IgniteFuture<V> fut = removeAsync(key, null, filter);
 
-        if (ctx.cache().configuration().isStatisticsEnabled())
+        if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<V>>() {
                 /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<V> fut) {
-                    ctx.cache().metrics0().addRemoveTimeNanos(fut.duration());
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+
                 }
             });
 
@@ -2861,6 +3044,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> removeAsync(final K key, @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key");
@@ -2868,7 +3055,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKey(key);
 
-        return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
+        IgniteFuture<V> fut = ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
             @Override public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 // TODO should we invoke interceptor here?
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
@@ -2879,6 +3066,26 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "removeAsync [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<V>>() {
+                /** {@inheritDoc} */
+                @Override public void apply(IgniteFuture<V> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2924,6 +3131,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(@Nullable final Collection<? extends K> keys,
         final IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         if (F.isEmpty(keys))
             return new GridFinishedFuture<Object>(ctx.kernalContext());
 
@@ -2932,7 +3143,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         ctx.denyOnLocalRead();
 
-        return asyncOp(new AsyncInOp(keys) {
+        IgniteFuture<Object> fut = asyncOp(new AsyncInOp(keys) {
             @Override public IgniteFuture<?> inOp(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.removeAllAsync(ctx, keys, null, false, filter);
             }
@@ -2941,6 +3152,25 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "removeAllAsync [keys=" + keys + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Object>>() {
+                /** {@inheritDoc} */
+                @Override
+                public void apply(IgniteFuture<Object> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    } catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -2998,6 +3228,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removexAsync(final K key, @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key");
@@ -3005,7 +3239,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         if (keyCheck)
             validateCacheKey(key);
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteFuture<Boolean> op(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).chain(
                     (IgniteClosure<IgniteFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
@@ -3015,6 +3249,23 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "removeAsync [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    } catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -3209,6 +3460,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(final K key, final V val) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.denyOnLocalRead();
 
         A.notNull(key, "key", val, "val");
@@ -3218,7 +3473,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         validateCacheValue(val);
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteFuture<Boolean> op(IgniteTxLocalAdapter<K, V> tx) {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled()) {
@@ -3250,6 +3505,25 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 return "removeAsync [key=" + key + ", val=" + val + ']';
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                /** {@inheritDoc} */
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+
+        return fut;
     }
 
     /** {@inheritDoc} */

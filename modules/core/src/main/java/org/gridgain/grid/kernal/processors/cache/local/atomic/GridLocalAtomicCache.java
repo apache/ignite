@@ -817,23 +817,47 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         final boolean rawRetval,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         final boolean storeEnabled = ctx.isStoreEnabled();
 
         final ExpiryPolicy expiryPlc = expiryPerCall();
 
-        return asyncOp(new Callable<Object>() {
+        IgniteFuture fut = asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(DELETE,
-                    keys,
-                    null,
-                    null,
-                    expiryPlc,
-                    retval,
-                    rawRetval,
-                    filter,
-                    storeEnabled);
+                        keys,
+                        null,
+                        null,
+                        expiryPlc,
+                        retval,
+                        rawRetval,
+                        filter,
+                        storeEnabled);
             }
         });
+
+        if (statsEnabled) {
+            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
+                /** {@inheritDoc} */
+                @Override public void apply(IgniteFuture<Boolean> fut) {
+                    try {
+                        if (!fut.isCancelled()) {
+                            fut.get();
+
+                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+                        }
+                    }
+                    catch (IgniteCheckedException ignore) {
+                        //No-op.
+                    }
+                }
+            });
+        }
+
+        return fut;
     }
 
     /**

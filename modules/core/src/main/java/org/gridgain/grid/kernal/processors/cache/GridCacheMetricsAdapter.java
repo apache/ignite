@@ -249,6 +249,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      */
     public void addGetTimeNanos(long duration) {
         getTimeNanos += duration;
+
+        if (delegate != null)
+            delegate.addGetTimeNanos(duration);
     }
 
     /**
@@ -258,6 +261,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      */
     public void addPutTimeNanos(long duration) {
         putTimeNanos += duration;
+
+        if (delegate != null)
+            delegate.addPutTimeNanos(duration);
     }
 
     /**
@@ -267,6 +273,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      */
     public void addRemoveTimeNanos(long duration) {
         removeTimeNanos += duration;
+
+        if (delegate != null)
+            delegate.addRemoveTimeNanos(duration);
     }
 
     /**
@@ -277,6 +286,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     public void addRemoveAndGetTimeNanos(long duration) {
         removeTimeNanos += duration;
         getTimeNanos += duration;
+
+        if (delegate != null)
+            delegate.addRemoveAndGetTimeNanos(duration);
     }
 
     /**
@@ -287,6 +299,9 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     public void addPutAndGetTimeNanos(long duration) {
         putTimeNanos += duration;
         getTimeNanos += duration;
+
+        if (delegate != null)
+            delegate.addPutAndGetTimeNanos(duration);
     }
 
     /** {@inheritDoc} */
