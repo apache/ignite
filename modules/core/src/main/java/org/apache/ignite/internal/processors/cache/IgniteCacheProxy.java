@@ -552,10 +552,31 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public void loadAll(Set<? extends K> keys,
-        boolean replaceExistingValues,
-        @Nullable CompletionListener completionLsnr) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        boolean replaceExisting,
+        @Nullable final CompletionListener completionLsnr) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            IgniteFuture<?>  fut = ctx.cache().loadAll(keys, replaceExisting);
+
+            if (completionLsnr != null) {
+                fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> fut) {
+                        try {
+                            fut.get();
+
+                            completionLsnr.onCompletion();
+                        }
+                        catch (IgniteCheckedException e) {
+                            completionLsnr.onException(cacheException(e));
+                        }
+                    }
+                });
+            }
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1094,13 +1115,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
-        Throwable[] suppressed = e.getSuppressed();
+        if (e instanceof GridCachePartialUpdateException)
+            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
+        else if (e instanceof IgniteNullArgumentCheckedException)
+            throw new NullPointerException(e.getMessage());
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
-
-        if (e instanceof GridCachePartialUpdateException)
-            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
 
         return new CacheException(e);
     }

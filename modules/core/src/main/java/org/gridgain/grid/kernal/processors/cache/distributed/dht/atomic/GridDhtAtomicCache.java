@@ -23,6 +23,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -871,6 +872,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
+                if (key == null)
+                    return new GridFinishedFuture<>(ctx.kernalContext(), new IgniteNullArgumentCheckedException("Key is null."));
+
                 GridCacheEntryEx<K, V> entry = null;
 
                 while (true) {

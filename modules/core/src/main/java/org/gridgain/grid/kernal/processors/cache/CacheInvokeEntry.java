@@ -11,6 +11,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 
@@ -29,13 +30,20 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** */
     private boolean modified;
 
+    /** */
+    private final boolean hadVal;
+
     /**
      * @param key Key.
      * @param val Value.
      */
-    public CacheInvokeEntry(K key, V val) {
+    public CacheInvokeEntry(K key, @Nullable V val) {
+        assert key != null;
+
         this.key = key;
         this.val = val;
+
+        hadVal = val != null;
     }
 
     /** {@inheritDoc} */
@@ -76,9 +84,14 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     }
 
     /**
-     * @return {@code True} if {@link #setValue} or {@link #remove was called}.
+     * @return {@code True} if entry was modified.
      */
     public boolean modified() {
+        if (modified) {
+            if (!hadVal && val == null)
+                return false;
+        }
+
         return modified;
     }
 

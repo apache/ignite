@@ -208,7 +208,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
+    @SuppressWarnings("unchecked")
     @Nullable public V loadFromStore(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+        return (V)loadFromStore(tx, key, true);
+    }
+
+    /**
+     * Loads data from persistent store.
+     *
+     * @param tx Cache transaction.
+     * @param key Cache key.
+     * @param convert Convert flag.
+     * @return Loaded value, possibly <tt>null</tt>.
+     * @throws IgniteCheckedException If data loading failed.
+     */
+    @Nullable public Object loadFromStore(@Nullable IgniteTx tx, K key, boolean convert) throws IgniteCheckedException {
         if (store != null) {
             if (key instanceof GridCacheInternal)
                 // Never load internal keys from store as they are never persisted.
@@ -220,15 +234,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + key);
 
-            V val = null;
+            Object val = null;
 
             boolean ses = initSession(tx);
 
             try {
-                val = convert(singleThreadGate.load(key));
+                val = singleThreadGate.load(key);
             }
             catch (ClassCastException e) {
                 handleClassCastException(e);
+            }
+            catch (CacheLoaderException e) {
+                throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
                 if (ses)
@@ -238,7 +258,13 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loaded value from store [key=" + key + ", val=" + val + ']');
 
-            return cctx.portableEnabled() ? (V)cctx.marshalToPortable(val) : val;
+            if (convert) {
+                val = convert(val);
+
+                return cctx.portableEnabled() ? cctx.marshalToPortable(val) : val;
+            }
+            else
+                return val;
         }
 
         return null;
@@ -263,6 +289,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param tx Cache transaction.
+     * @param keys Cache keys.
+     * @param vis Closer to cache loaded elements.
+     * @throws IgniteCheckedException If data loading failed.
+     */
+    public void loadAllFromLocalStore(@Nullable IgniteTx tx,
+        Collection<? extends K> keys,
+        final GridInClosure3<K, V, GridCacheVersion> vis) throws IgniteCheckedException {
+        assert store != null;
+        assert locStore;
+
+        loadAllFromStore(null, keys, null, vis);
+    }
+
+    /**
      * Loads data from persistent store.
      *
      * @param tx Cache transaction.
@@ -276,76 +317,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         Collection<? extends K> keys,
         final IgniteBiInClosure<K, V> vis) throws IgniteCheckedException {
         if (store != null) {
-            if (!keys.isEmpty()) {
-                if (keys.size() == 1) {
-                    K key = F.first(keys);
-
-                    vis.apply(key, loadFromStore(tx, key));
-
-                    return true;
-                }
-
-                Collection<? extends K> keys0 = convertPortable ?
-                    F.viewReadOnly(keys, new C1<K, K>() {
-                        @Override public K apply(K k) {
-                            return (K)cctx.unwrapPortableIfNeeded(k, false);
-                        }
-                    }) :
-                    keys;
-
-                if (log.isDebugEnabled())
-                    log.debug("Loading values from store for keys: " + keys0);
-
-                boolean ses = initSession(tx);
-
-                try {
-                    if (keys.size() > singleThreadGate.loadAllThreshold()) {
-                        Map<K, Object> map = store.loadAll(keys0);
-
-                        if (map != null) {
-                            for (Map.Entry<K, Object> e : map.entrySet()) {
-                                K k = e.getKey();
-
-                                V v = convert(e.getValue());
-
-                                if (cctx.portableEnabled()) {
-                                    k = (K)cctx.marshalToPortable(k);
-                                    v = (V)cctx.marshalToPortable(v);
-                                }
-
-                                vis.apply(k, v);
-                            }
-                        }
-                    }
-                    else {
-                        singleThreadGate.loadAll(keys0, new CI2<K, Object>() {
-                            @Override public void apply(K k, Object o) {
-                                V v = convert(o);
-
-                                if (cctx.portableEnabled()) {
-                                    k = (K)cctx.marshalToPortable(k);
-                                    v = (V)cctx.marshalToPortable(v);
-                                }
-
-                                vis.apply(k, v);
-                            }
-                        });
-                    }
-                }
-                catch (ClassCastException e) {
-                    handleClassCastException(e);
-                }
-                catch (Exception e) {
-                    throw U.cast(e);
-                }
-                finally {
-                    if (ses)
-                        sesHolder.set(null);
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Loaded values from store for keys: " + keys0);
-            }
+            loadAllFromStore(null, keys, vis, null);
 
             return true;
         }
@@ -355,6 +327,105 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         return false;
+    }
+
+    /**
+     * @param tx Cache transaction.
+     * @param keys Keys to load.
+     * @param vis Key/value closure (only one of vis or verVis can be specified).
+     * @param verVis Key/value/version closure (only one of vis or verVis can be specified).
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void loadAllFromStore(@Nullable IgniteTx tx,
+        Collection<? extends K> keys,
+        final @Nullable IgniteBiInClosure<K, V> vis,
+        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis) throws IgniteCheckedException {
+        assert vis != null ^ verVis != null;
+        assert verVis == null || locStore;
+
+        final boolean convert = verVis == null;
+
+        if (!keys.isEmpty()) {
+            if (keys.size() == 1) {
+                K key = F.first(keys);
+
+                if (convert)
+                    vis.apply(key, loadFromStore(tx, key));
+                else {
+                    IgniteBiTuple<V, GridCacheVersion> t =
+                        (IgniteBiTuple<V, GridCacheVersion>)loadFromStore(tx, key, false);
+
+                    if (t != null)
+                        verVis.apply(key, t.get1(), t.get2());
+                }
+
+                return;
+            }
+
+            Collection<? extends K> keys0 = convertPortable ?
+                F.viewReadOnly(keys, new C1<K, K>() {
+                    @Override public K apply(K k) {
+                        return (K)cctx.unwrapPortableIfNeeded(k, false);
+                    }
+                }) :
+                keys;
+
+            if (log.isDebugEnabled())
+                log.debug("Loading values from store for keys: " + keys0);
+
+            boolean ses = initSession(tx);
+
+            try {
+                CI2<K, Object> c = new CI2<K, Object>() {
+                    @Override public void apply(K k, Object val) {
+                        if (convert) {
+                            V v = convert(val);
+
+                            if (cctx.portableEnabled()) {
+                                k = (K)cctx.marshalToPortable(k);
+                                v = (V)cctx.marshalToPortable(v);
+                            }
+
+                            vis.apply(k, v);
+                        }
+                        else {
+                            IgniteBiTuple<V, GridCacheVersion> v = (IgniteBiTuple<V, GridCacheVersion>)val;
+
+                            if (v != null)
+                                verVis.apply(k, v.get1(), v.get2());
+                        }
+                    }
+                };
+
+                if (keys.size() > singleThreadGate.loadAllThreshold()) {
+                    Map<K, Object> map = store.loadAll(keys0);
+
+                    if (map != null) {
+                        for (Map.Entry<K, Object> e : map.entrySet())
+                            c.apply(e.getKey(), e.getValue());
+                    }
+                }
+                else
+                    singleThreadGate.loadAll(keys0, c);
+            }
+            catch (ClassCastException e) {
+                handleClassCastException(e);
+            }
+            catch (CacheLoaderException e) {
+                throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheLoaderException(e));
+            }
+            finally {
+                if (ses)
+                    sesHolder.set(null);
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Loaded values from store for keys: " + keys0);
+        }
     }
 
     /**
