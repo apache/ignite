@@ -982,7 +982,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         try {
             ctx.itHolder().checkWeakQueue();
 
-            GridCacheQueryFuture<Map.Entry<K, V>> fut =  delegate.queries().createScanQuery(null).execute();
+            GridCacheQuery<Map.Entry<K, V>> query =  delegate.queries().createScanQuery(null);
+
+            query.includeBackups(false);
+            query.enableDedup(true);
+            query.keepAll(false);
+
+            GridCacheQueryFuture<Map.Entry<K, V>> fut = query.execute();
 
             return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Entry<K, V>, Map.Entry<K, V>>() {
                 @Override protected Entry<K, V> convert(Map.Entry<K, V> e) {
