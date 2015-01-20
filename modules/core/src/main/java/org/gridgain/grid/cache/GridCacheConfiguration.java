@@ -172,6 +172,9 @@ public class GridCacheConfiguration extends MutableConfiguration {
     @Deprecated
     public static final int DFLT_CONT_QUERY_MAX_BUF_SIZE = 1024;
 
+    /** Default value for 'readFromBackup' flag. */
+    public static final boolean DFLT_READ_FROM_BACKUP = true;
+
     /** Cache name. */
     private String name;
 
@@ -331,6 +334,12 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /** Query configuration. */
     private GridCacheQueryConfiguration qryCfg;
 
+    /**
+     * Flag indicating whether data can be read from backup.
+     * If {@code false} always get data from primary node (never from backup).
+     */
+    private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public GridCacheConfiguration() {
         /* No-op. */
@@ -408,6 +417,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        readFromBackup = cc.isReadFromBackup();
     }
 
     /**
@@ -1709,6 +1719,26 @@ public class GridCacheConfiguration extends MutableConfiguration {
      */
     public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * Gets flag indicating whether data can be read from backup.
+     * If {@code false} always get data from primary node (never from backup).
+     * Default value is defined by {@link #DFLT_READ_FROM_BACKUP}.
+     *
+     * @return {@code true} if data can be read from backup node. {@code false} if data always get from primary node
+     * (never from backup).
+     */
+    public boolean isReadFromBackup() {
+        return readFromBackup;
+    }
+
+    /**
+     * Sets read from backup flag.
+     * @param readFromBackup Value of read from backup flag.
+     */
+    public void setReadFromBackup(boolean readFromBackup) {
+        this.readFromBackup = readFromBackup;
     }
 
     /** {@inheritDoc} */
