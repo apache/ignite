@@ -27,7 +27,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicLoaderWriterTest extends IgniteCacheLoaderWriterAbstractTest {
+public class IgniteCacheAtomicLoadAllTest extends IgniteCacheLoadAllAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -44,12 +44,12 @@ public class IgniteCacheAtomicLoaderWriterTest extends IgniteCacheLoaderWriterAb
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
     }
 }

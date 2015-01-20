@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -27,7 +26,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicLoaderWriterTest extends IgniteCacheLoaderWriterAbstractTest {
+public class IgniteCacheTxLoaderWriterTest extends IgniteCacheLoaderWriterAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -40,12 +39,7 @@ public class IgniteCacheAtomicLoaderWriterTest extends IgniteCacheLoaderWriterAb
 
     /** {@inheritDoc} */
     @Override protected GridCacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */

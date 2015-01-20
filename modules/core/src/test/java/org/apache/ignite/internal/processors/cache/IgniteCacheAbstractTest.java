@@ -118,7 +118,13 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         cfg.setCacheLoaderFactory(loaderFactory());
 
+        if (cfg.getCacheLoaderFactory() != null)
+            cfg.setReadThrough(true);
+
         cfg.setCacheWriterFactory(writerFactory());
+
+        if (cfg.getCacheWriterFactory() != null)
+            cfg.setWriteThrough(true);
 
         CacheStore<?, ?> store = cacheStore();
 

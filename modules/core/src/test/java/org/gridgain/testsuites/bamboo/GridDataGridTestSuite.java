@@ -20,6 +20,7 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.expiry.*;
+import org.apache.ignite.internal.processors.cache.integration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.store.*;
@@ -334,6 +335,14 @@ public class GridDataGridTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheTxLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalLoadAllTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
+        //suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
 
         return suite;
     }

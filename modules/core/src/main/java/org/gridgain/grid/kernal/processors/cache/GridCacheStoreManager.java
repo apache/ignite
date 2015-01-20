@@ -294,7 +294,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param vis Closer to cache loaded elements.
      * @throws IgniteCheckedException If data loading failed.
      */
-    public void loadAllFromLocalStore(@Nullable IgniteTx tx,
+    public void localStoreLoadAll(@Nullable IgniteTx tx,
         Collection<? extends K> keys,
         final GridInClosure3<K, V, GridCacheVersion> vis) throws IgniteCheckedException {
         assert store != null;
