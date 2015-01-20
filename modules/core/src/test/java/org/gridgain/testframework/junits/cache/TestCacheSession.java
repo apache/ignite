@@ -57,4 +57,9 @@ public class TestCacheSession implements CacheStoreSession {
 
         return (Map<K, V>)props;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String cacheName() {
+        return null;
+    }
 }

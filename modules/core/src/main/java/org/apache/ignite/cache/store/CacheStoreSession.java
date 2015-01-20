@@ -27,12 +27,17 @@ import java.util.*;
  */
 public interface CacheStoreSession {
     /**
-     * @return Current cache transaction.
+     * @return Transaction belonging to current session.
      */
     @Nullable public IgniteTx transaction();
 
     /**
-     * @return Session properties.
+     * @return Current session properties.
      */
     public <K, V> Map<K, V> properties();
+
+    /**
+     * @return Cache name.
+     */
+    @Nullable public String cacheName();
 }

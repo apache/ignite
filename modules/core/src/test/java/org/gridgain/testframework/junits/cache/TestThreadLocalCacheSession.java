@@ -55,4 +55,11 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
 
         return ses != null ? (Map<K, V>)ses.properties() : null;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String cacheName() {
+        TestCacheSession ses = sesHolder.get();
+
+        return ses != null ? ses.cacheName() : null;
+    }
 }

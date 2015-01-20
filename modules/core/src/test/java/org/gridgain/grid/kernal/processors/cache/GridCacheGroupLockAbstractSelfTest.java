@@ -85,7 +85,11 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(new Factory<CacheStore<? super Object, ? super Object>>() {
+            @Override public CacheStore<? super Object, ? super Object> create() {
+                return store;
+            }
+        });
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
 
@@ -141,6 +145,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockPutOneKey(IgniteTxConcurrency concurrency) throws Exception {
@@ -208,6 +213,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockRemoveOneKey(IgniteTxConcurrency concurrency) throws Exception {
@@ -288,6 +294,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockGetOneKey(IgniteTxConcurrency concurrency) throws Exception {
@@ -342,17 +349,24 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         assertTrue("Failed to wait for unlock events: " + affinityKey, unlocks.awaitKeys(WAIT_TIMEOUT, affinityKey));
     }
 
-    /** @throws IgniteCheckedException */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWithExternalLockOptimistic() throws Exception {
         checkGroupLockWithExternalLock(OPTIMISTIC);
     }
 
-    /** @throws IgniteCheckedException */
+    /**
+     * @throws Exception If failed.
+     */
     public void testGroupLockWithExternalLockPessimistic() throws Exception {
         checkGroupLockWithExternalLock(PESSIMISTIC);
     }
 
-    /** @throws IgniteCheckedException */
+    /**
+     * @param concurrency Transaction concurrency mode.
+     * @throws Exception If failed.
+     */
     private void checkGroupLockWithExternalLock(final IgniteTxConcurrency concurrency) throws Exception {
         assert sanityCheckEnabled();
 
@@ -437,6 +451,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
@@ -500,6 +515,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupPartitionLock(IgniteTxConcurrency concurrency) throws Exception {
@@ -624,6 +640,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
+     * @param isolation Transaction isolation mode.
      * @throws Exception If failed.
      */
     private void checkGetPut(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
@@ -683,6 +701,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
+     * @param isolation Transaction isolation mode.
      * @throws Exception If failed.
      */
     private void checkGetPutEmptyCache(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
@@ -764,6 +784,8 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
+     * @param isolation Transaction isolation mode.
      * @throws Exception If failed.
      */
     private void checkGetRemove(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
@@ -844,6 +866,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGetAfterPut(IgniteTxConcurrency concurrency) throws Exception {
@@ -925,6 +948,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGetRepeatableRead(IgniteTxConcurrency concurrency) throws Exception {
@@ -953,6 +977,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockPutWrongKey(IgniteTxConcurrency concurrency) throws Exception {
@@ -988,6 +1013,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockRemoveWrongKey(IgniteTxConcurrency concurrency) throws Exception {
@@ -1094,6 +1120,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @param concurrency Transaction concurrency mode.
      * @throws Exception If failed.
      */
     private void checkGroupLockWriteThrough(IgniteTxConcurrency concurrency) throws Exception {
@@ -1268,15 +1295,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<? extends Object, ? extends Object>> entries) {
-            for (Cache.Entry<? extends Object, ? extends Object> e : entries)
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
+            for (Cache.Entry<?, ?> e : entries)
                 storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(Cache.Entry<?, ?> e) {
             storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();

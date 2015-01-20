@@ -89,7 +89,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 sesField.setAccessible(true);
 
-                sesField.set(cfgStore, new ThreadLocalSession());
+                sesField.set(cfgStore, new ThreadLocalSession(sesHolder));
 
                 sesEnabled = true;
             }
@@ -499,7 +499,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     log.debug("Storing values in cache store [map=" + map0 + ']');
 
                 // TODO IGNITE-42.
-                Collection<Cache.Entry<? extends K, ? extends Object>> entries = new ArrayList<>(map.size());
+                Collection<Cache.Entry<? extends K, ?>> entries = new ArrayList<>(map.size());
 
                 for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
                     entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
@@ -701,13 +701,13 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             ses = ((GridMetadataAware)tx).meta(SES_ATTR);
 
             if (ses == null) {
-                ses = new SessionData(tx);
+                ses = new SessionData(tx, cctx.name());
 
                 ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
             }
         }
         else
-            ses = new SessionData(null);
+            ses = new SessionData(null, cctx.name());
 
         sesHolder.set(ses);
 
@@ -722,13 +722,18 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         private final IgniteTx tx;
 
         /** */
+        private final String cacheName;
+
+        /** */
         private Map<Object, Object> props;
 
         /**
          * @param tx Current transaction.
+         * @param cacheName Cache name.
          */
-        private SessionData(@Nullable IgniteTx tx) {
+        private SessionData(@Nullable IgniteTx tx, @Nullable String cacheName) {
             this.tx = tx;
+            this.cacheName = cacheName;
         }
 
         /**
@@ -747,12 +752,29 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             return props;
         }
+
+        /**
+         * @return Cache name.
+         */
+        private String cacheName() {
+            return cacheName;
+        }
     }
 
     /**
      *
      */
-    private class ThreadLocalSession implements CacheStoreSession {
+    private static class ThreadLocalSession implements CacheStoreSession {
+        /** */
+        private final ThreadLocal<SessionData> sesHolder;
+
+        /**
+         * @param sesHolder Session holder.
+         */
+        private ThreadLocalSession(ThreadLocal<SessionData> sesHolder) {
+            this.sesHolder = sesHolder;
+        }
+
         /** {@inheritDoc} */
         @Nullable @Override public IgniteTx transaction() {
             SessionData ses0 = sesHolder.get();
@@ -766,6 +788,13 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? (Map<K1, V1>)ses0.properties() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String cacheName() {
+            SessionData ses0 = sesHolder.get();
+
+            return ses0 != null ? ses0.cacheName() : null;
         }
     }
 }
