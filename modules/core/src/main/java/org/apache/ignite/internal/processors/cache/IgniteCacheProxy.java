@@ -946,15 +946,33 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration cacheEntryLsnrConfiguration) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            ctx.continuousQueries().registerCacheEntryListener(lsnrCfg, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration cacheEntryLsnrConfiguration) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            ctx.continuousQueries().deregisterCacheEntryListener(lsnrCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
