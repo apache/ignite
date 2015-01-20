@@ -60,9 +60,6 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="gridName" value="node"/>
 
-        <!-- Set to local host address. -->
-        <property name="localHost" value="127.0.0.1"/>
-
         <!-- Enable rest protocol. -->
         <property name="restEnabled" value="true"/>
 
@@ -294,7 +291,9 @@
 
                 <!-- Override default IP-finder.-->
                 <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
+                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--
