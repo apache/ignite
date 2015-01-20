@@ -329,7 +329,9 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
         IgniteTx tx = transaction();
 
-        Session ses = (Session)session().properties().remove(ATTR_SES);
+        Map<String, Session> props = session().properties();
+
+        Session ses = props.remove(ATTR_SES);
 
         if (ses != null) {
             Transaction hTx = ses.getTransaction();
@@ -368,9 +370,9 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses;
 
         if (tx != null) {
-            Map<Object, Object> props = session().properties();
+            Map<String, Session> props = session().properties();
 
-            ses = (Session)props.get(ATTR_SES);
+            ses = props.get(ATTR_SES);
 
             if (ses == null) {
                 ses = sesFactory.openSession();

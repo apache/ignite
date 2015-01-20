@@ -180,9 +180,9 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
         IgniteTx tx = transaction();
 
-        Map<Object, Object> props = session().properties();
+        Map<String, Connection> props = session().properties();
 
-        Connection conn = (Connection)props.remove(ATTR_CONN);
+        Connection conn = props.remove(ATTR_CONN);
 
         if (conn != null) {
             try {
@@ -319,9 +319,9 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      */
     private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
         if (tx != null) {
-            Map<Object, Object> props = session().properties();
+            Map<String, Connection> props = session().properties();
 
-            Connection conn = (Connection)props.get(ATTR_CONN);
+            Connection conn = props.get(ATTR_CONN);
 
             if (conn == null) {
                 conn = openConnection(false);

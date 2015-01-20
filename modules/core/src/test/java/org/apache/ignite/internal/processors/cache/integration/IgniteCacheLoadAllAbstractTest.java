@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 
 import javax.cache.integration.*;
 import java.util.*;
@@ -58,8 +60,27 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
         cache.loadAll(keys, false, lsnr);
 
-        for (int i = 0; i < gridCount(); i++) {
+        GridCacheAffinity<Object> aff = cache(0).affinity();
 
+        for (int i = 0; i < gridCount(); i++) {
+            ClusterNode node = ignite(i).cluster().localNode();
+
+            IgniteCache<Integer, String> cache0 = jcache(i);
+
+            for (int key = 0; key < 1000; key++) {
+                String expVal = (keys.contains(key) && !nonExistKeys.contains(key)) ? String.valueOf(key) : null;
+
+                if (aff.isPrimaryOrBackup(node, key)) {
+                    assertEquals(expVal, cache0.localPeek(key));
+
+                    assertEquals(expVal, cache0.get(key));
+                } else {
+                    assertNull(cache0.localPeek(key));
+
+                    assertNull(cache0.get(key));
+                }
+
+            }
         }
     }
 }
