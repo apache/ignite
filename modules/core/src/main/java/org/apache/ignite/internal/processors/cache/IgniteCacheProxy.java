@@ -259,19 +259,42 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lock(K key) throws CacheException {
+    @Override public CacheLock lock(K key) throws CacheException {
         return lockAll(Collections.<K>singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public Lock lockAll(final Set<? extends K> keys) {
-        return new Lock() {
+    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
+        return new CacheLock() {
+            @Override public boolean isLocked() {
+                for (K key : keys) {
+                    if (!delegate.isLocked(key))
+                        return false;
+                }
+
+                return true;
+            }
+
+            @Override public boolean isLockedByThread() {
+                for (K key : keys) {
+                    if (!delegate.isLockedByThread(key))
+                        return false;
+                }
+
+                return true;
+            }
+
+            @Override public IgniteFuture<Boolean> lockAsync() {
+                return delegate.lockAllAsync(keys, 0);
+            }
+
+            @Override public IgniteFuture<Boolean> lockAsync(long timeout, TimeUnit unit) {
+                return delegate.lockAllAsync(keys, unit.toMillis(timeout));
+            }
+
             @Override public void lock() {
                 try {
                     delegate.lockAll(keys, 0);
-                }
-                catch (GridInterruptedException ignored) {
-
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e.getMessage(), e);
@@ -279,21 +302,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             }
 
             @Override public void lockInterruptibly() throws InterruptedException {
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                try {
-                    delegate.lockAll(keys, 0);
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
-                    throw new InterruptedException();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
+                tryLock(-1, TimeUnit.MILLISECONDS);
             }
 
             @Override public boolean tryLock() {
@@ -306,14 +315,38 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             }
 
             @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-                try {
-                    return delegate.lockAll(keys, unit.toMillis(time));
-                }
-                catch (GridInterruptedException e) {
-                    if (e.getCause() instanceof InterruptedException)
-                        throw (InterruptedException)e.getCause();
-
+                if (Thread.interrupted())
                     throw new InterruptedException();
+
+                try {
+                    if (time <= 0)
+                        return delegate.lockAll(keys, -1);
+
+                    IgniteFuture<Boolean> fut = null;
+
+                    try {
+                        fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
+
+                        return fut.get();
+                    }
+                    catch (GridInterruptedException e) {
+                        if (fut != null) {
+                            if (!fut.cancel()) {
+                                if (fut.isDone()) {
+                                    Boolean res = fut.get();
+
+                                    Thread.currentThread().interrupt();
+
+                                    return res;
+                                }
+                            }
+                        }
+
+                        if (e.getCause() instanceof InterruptedException)
+                            throw (InterruptedException)e.getCause();
+
+                        throw new InterruptedException();
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e.getMessage(), e);
