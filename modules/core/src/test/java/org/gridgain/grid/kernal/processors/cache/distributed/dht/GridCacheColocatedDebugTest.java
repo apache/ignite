@@ -378,7 +378,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        assert g0.cache(null).lock(key, 0);
+                        CacheLock lock = g0.jcache(null).lock(key);
+
+                        lock.lock();
 
                         try {
                             lockLatch.countDown();
@@ -386,7 +388,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                             U.await(unlockLatch);
                         }
                         finally {
-                            g0.cache(null).unlock(key);
+                            lock.unlock();
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -398,10 +400,14 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             U.await(lockLatch);
 
-            assert g0.cache(null).isLocked(key);
-            assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
+            assert g0.jcache(null).isLocked(key);
+            assert !g0.jcache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
-            IgniteFuture<Boolean> lockFut = g0.cache(null).lockAsync(key, 0);
+            CacheLock lock = g0.jcache(null).lock(key);
+
+            lock.enableAsync().lock();
+
+            IgniteFuture<Boolean> lockFut = lock.enableAsync().future();
 
             assert g0.cache(null).isLocked(key);
             assert !lockFut.isDone() : "Key can not be locked by current thread.";

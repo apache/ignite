@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -375,10 +376,15 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockAsync() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
-        assert cache1.lockAsync(1, 0L).get();
+        CacheLock lock1_1 = cache1.lock(1);
+        CacheLock lock2_1 = cache2.lock(1);
+
+        lock1_1.enableAsync().lock();
+
+        assert lock1_1.enableAsync().<Boolean>future().get();
 
         try {
             assert cache1.isLocked(1);
@@ -387,15 +393,17 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             assert cache2.isLocked(1);
             assert !cache2.isLockedByThread(1);
 
-            assert !cache2.lockAsync(1, -1L).get();
+            lock2_1.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
+
+            assert !lock2_1.enableAsync().<Boolean>future().get();
         }
         finally {
-            cache1.unlockAll(F.asList(1));
+            lock1_1.unlock();
         }
 
         checkUnlocked(cache1, 1);
 
-        assert cache2.lockAsync(1, 0L).get();
+        lock2_1.lock();
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -408,10 +416,12 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             assert cache2.isLocked(1);
             assert cache2.isLockedByThread(1);
 
-            assert !cache1.lockAsync(1, -1L).get();
+            lock1_1.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
+
+            assert !lock1_1.enableAsync().<Boolean>future().get();
         }
         finally {
-            cache2.unlockAll(F.asList(1));
+            lock2_1.unlock();
         }
 
         latch.await();
@@ -502,16 +512,18 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockAsyncWithKeyLists() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
-        Collection<Integer> keys1 = new ArrayList<>();
-        Collection<Integer> keys2 = new ArrayList<>();
+        Collection<Integer> keys1 = Lists.newArrayList(1, 2, 3);
+        Collection<Integer> keys2 = Lists.newArrayList(2, 3, 4);
 
-        Collections.addAll(keys1, 1, 2, 3);
-        Collections.addAll(keys2, 2, 3, 4);
+        CacheLock lock1_1 = cache1.lockAll(keys1);
+        CacheLock lock2_2 = cache2.lockAll(keys2);
 
-        IgniteFuture<Boolean> f1 = cache1.lockAllAsync(keys1, 0);
+        lock1_1.enableAsync().lock();
+
+        IgniteFuture<Boolean> f1 = lock1_1.enableAsync().future();
 
         try {
             assert f1.get();
@@ -520,7 +532,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
             checkRemoteLocked(cache2, keys1);
 
-            IgniteFuture<Boolean> f2 = cache2.lockAllAsync(keys2, -1);
+            lock2_2.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
+
+            IgniteFuture<Boolean> f2 = lock2_2.enableAsync().future();
 
             assert !f2.get();
 
@@ -532,7 +546,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             checkRemoteLocked(cache2, keys1);
         }
         finally {
-            cache1.unlockAll(keys1);
+            lock1_1.unlock();
         }
 
         checkUnlocked(cache1, keys1);
@@ -541,7 +555,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         addListener(ignite1, new UnlockListener(latch, keys2));
 
-        IgniteFuture<Boolean> f2 = cache2.lockAllAsync(keys2, 0);
+        lock2_2.enableAsync().lock();
+
+        IgniteFuture<Boolean> f2 = lock2_2.enableAsync().future();
 
         try {
             assert f2.get();
@@ -552,9 +568,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
             checkUnlocked(cache1, 1);
 
-            f1 = cache1.lockAllAsync(keys2, -1);
-
-            assert !f1.get();
+            assert !cache1.lockAll(keys2).tryLock();
 
             checkLocked(cache2, keys2);
 
@@ -564,7 +578,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             checkRemoteLocked(cache1, keys2);
         }
         finally {
-            cache2.unlockAll(keys2);
+            lock2_2.unlock();
         }
 
         latch.await();

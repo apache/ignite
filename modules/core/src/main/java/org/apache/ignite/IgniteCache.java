@@ -29,6 +29,7 @@ import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 /**
@@ -179,9 +180,27 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public void removeAll(IgnitePredicate<Entry<K, V>> filter) throws CacheException;
 
-    public Lock lock(K key);
+    /**
+     * Return a {@link CacheLock} instance associated with passed key.
+     * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     *
+     * @param key Key for lock.
+     * @return New lock instance associated with passed key.
+     * @see CacheLock#lock()
+     * @see CacheLock#tryLock(long, TimeUnit)
+     */
+    public CacheLock lock(K key);
 
-    public Lock lockAll(Set<? extends K> keys);
+    /**
+     * Return a {@link CacheLock} instance associated with passed keys.
+     * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     *
+     * @param keys Keys for lock.
+     * @return New lock instance associated with passed key.
+     * @see CacheLock#lock()
+     * @see CacheLock#tryLock(long, TimeUnit)
+     */
+    public CacheLock lockAll(Collection<? extends K> keys);
 
     /**
      * Checks if any node owns a lock for this key.
