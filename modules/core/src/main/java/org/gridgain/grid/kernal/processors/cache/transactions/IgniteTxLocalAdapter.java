@@ -465,7 +465,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     protected void batchStoreCommit(Iterable<IgniteTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
-        if (store != null && storeEnabled() && (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
+        if (store != null && store.writeThrough() && storeEnabled() &&
+            (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
                     Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;

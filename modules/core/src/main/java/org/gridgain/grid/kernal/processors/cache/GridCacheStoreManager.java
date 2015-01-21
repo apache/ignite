@@ -62,6 +62,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final boolean locStore;
 
     /** */
+    private final boolean writeThrough;
+
+    /** */
     private boolean convertPortable;
 
     /**
@@ -84,6 +87,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
         ThreadLocal<SessionData> sesHolder0 = null;
+
+        writeThrough = cfg.isWriteThrough();
 
         if (cfgStore != null) {
             try {
@@ -111,6 +116,13 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
 
         assert sesHolder != null || cfgStore == null;
+    }
+
+    /**
+     * @return {@code True} is write-through is enabled.
+     */
+    public boolean writeThrough() {
+        return writeThrough;
     }
 
     /**

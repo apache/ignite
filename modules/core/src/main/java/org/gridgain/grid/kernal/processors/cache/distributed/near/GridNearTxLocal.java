@@ -98,8 +98,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate
-     * @param storeEnabled
+     * @param invalidate Invalidate flag.
+     * @param storeEnabled Store enabled flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is a group lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
