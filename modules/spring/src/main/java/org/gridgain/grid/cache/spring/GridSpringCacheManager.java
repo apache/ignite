@@ -20,20 +20,16 @@ package org.gridgain.grid.cache.spring;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.springframework.beans.factory.*;
 import org.springframework.cache.*;
-import org.springframework.cache.support.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Implementation of Spring cache abstraction based on GridGain cache.
- * <h1>Overview</h1>
+ * <h1 class="header">Overview</h1>
  * Spring cache abstraction allows to enable caching for Java methods
  * so that the result of a method execution is stored in some storage. If
  * later the same method is called with the same set of parameters,
@@ -65,7 +61,7 @@ import java.util.*;
  *        xsi:schemaLocation="
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
- *     &lt;-- Provide configuration file path --&gt;
+ *     &lt;-- Provide configuration file path. --&gt;
  *     &lt;bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager"&gt;
  *         &lt;property name="configurationPath" value="examples/config/spring-cache.xml"/&gt;
  *     &lt;/bean>
@@ -108,7 +104,7 @@ import java.util.*;
  *        xsi:schemaLocation="
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
- *     &lt;-- Provide configuration file path --&gt;
+ *     &lt;-- Provide Grid name. --&gt;
  *     &lt;bean id="cacheManager" class="org.gridgain.grid.cache.spring.GridSpringCacheManager"&gt;
  *         &lt;property name="gridName" value="myGrid"/&gt;
  *     &lt;/bean>
@@ -133,18 +129,18 @@ import java.util.*;
  * GridGain distribution, and all these nodes will participate
  * in caching data.
  */
-public class GridSpringCacheManager implements InitializingBean, CacheManager {
+public class GridSpringCacheManager implements CacheManager, InitializingBean {
     /** Grid configuration file path. */
     private String cfgPath;
 
-    /** Grid configuration. */
+    /** Ignite configuration. */
     private IgniteConfiguration cfg;
 
     /** Grid name. */
     private String gridName;
 
-    /** Grid instance. */
-    private Ignite ignite;
+    /** Ignite instance. */
+    protected Ignite grid;
 
     /**
      * Gets configuration file path.
@@ -203,7 +199,7 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public void afterPropertiesSet() throws Exception {
-        assert ignite == null;
+        assert grid == null;
 
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
@@ -213,179 +209,33 @@ public class GridSpringCacheManager implements InitializingBean, CacheManager {
         }
 
         if (cfgPath != null)
-            ignite = Ignition.start(cfgPath);
+            grid = Ignition.start(cfgPath);
         else if (cfg != null)
-            ignite = Ignition.start(cfg);
+            grid = Ignition.start(cfg);
         else
-            ignite = Ignition.ignite(gridName);
+            grid = Ignition.ignite(gridName);
     }
 
     /** {@inheritDoc} */
     @Override public Cache getCache(String name) {
-        assert ignite != null;
+        assert grid != null;
 
-        return new SpringCache(ignite.cache(name));
+        try {
+            return new GridSpringCache(name, grid, grid.cache(name), null);
+        }
+        catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> getCacheNames() {
-        assert ignite != null;
+        assert grid != null;
 
-        return F.viewReadOnly(ignite.caches(), new IgniteClosure<GridCache<?, ?>, String>() {
+        return F.viewReadOnly(grid.caches(), new IgniteClosure<GridCache<?,?>, String>() {
             @Override public String apply(GridCache<?, ?> c) {
                 return c.name();
             }
         });
-    }
-
-    /**
-     * Cache implementation.
-     */
-    private static class SpringCache implements Cache {
-        /** */
-        private final GridCache<Object, Object> cache;
-
-        /**
-         * @param cache Cache.
-         */
-        SpringCache(GridCache<Object, Object> cache) {
-            assert cache != null;
-
-            this.cache = cache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getName() {
-            return cache.name();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getNativeCache() {
-            return cache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ValueWrapper get(Object key) {
-            try {
-                Object val = cache.get(key);
-
-                return val != null ? new SimpleValueWrapper(val) : null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to get value from cache [cacheName=" + cache.name() +
-                    ", key=" + key + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T get(Object key, Class<T> type) {
-            try {
-                Object val = cache.get(key);
-
-                if (val != null && type != null && !type.isInstance(val))
-                    throw new IllegalStateException("Cached value is not of required type [cacheName=" + cache.name() +
-                        ", key=" + key + ", val=" + val + ", requiredType=" + type + ']');
-
-                return (T)val;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to get value from cache [cacheName=" + cache.name() +
-                    ", key=" + key + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void put(Object key, Object val) {
-            try {
-                cache.putx(key, val);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to put value to cache [cacheName=" + cache.name() +
-                    ", key=" + key + ", val=" + val + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public ValueWrapper putIfAbsent(Object key, Object val) {
-            try {
-                Object old = cache.putIfAbsent(key, val);
-
-                return old != null ? new SimpleValueWrapper(old) : null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to put value to cache [cacheName=" + cache.name() +
-                    ", key=" + key + ", val=" + val + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evict(Object key) {
-            try {
-                cache.removex(key);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to remove value from cache [cacheName=" + cache.name() +
-                    ", key=" + key + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear() {
-            try {
-                Ignite ignite = cache.gridProjection().ignite();
-
-                ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache.name()));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
-            }
-        }
-    }
-
-    /**
-     * Closure that removes all entries from cache.
-     */
-    private static class ClearClosure extends CAX implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Cache name. */
-        private String cacheName;
-
-        /** Injected grid instance. */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /**
-         * For {@link Externalizable}.
-         */
-        public ClearClosure() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         */
-        private ClearClosure(String cacheName) {
-            this.cacheName = cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void applyx() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ignite.cache(cacheName);
-
-            if (cache != null)
-                cache.removeAll();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, cacheName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cacheName = U.readString(in);
-        }
     }
 }

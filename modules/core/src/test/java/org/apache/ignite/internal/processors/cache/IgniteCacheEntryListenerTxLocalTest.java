@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.expiry;
+package org.apache.ignite.internal.processors.cache;
 
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -27,25 +26,20 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicExpiryPolicyTest extends IgniteCacheExpiryPolicyAbstractTest {
+public class IgniteCacheEntryListenerTxLocalTest extends IgniteCacheEntryListenerAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
-        return PARTITIONED;
+        return LOCAL;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */

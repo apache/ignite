@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.expiry;
+package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.cache.*;
 
 /**
- *
+ * Tests expire events when {@link GridCacheConfiguration#isEagerTtl()} is disabled.
  */
-public class IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest extends
-    IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest{
+public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected boolean eagerTtl() {
+        return false;
     }
 }
