@@ -65,4 +65,25 @@
         <name>dfs.client.block.write.replace-datanode-on-failure.policy</name>
         <value>NEVER</value>
     </property>
+
+    <!--
+        Allow to write the job statistics into GGFS.
+    -->
+    <!--
+    <property>
+        <name>gridgain.counters.writer</name>
+        <value>org.gridgain.grid.kernal.processors.hadoop.counter.GridHadoopFSCounterWriter</value>
+    </property>
+    -->
+
+    <!--
+        By default data is placed into the file /user/<user_name>/<job_id>/performance
+        You can override this path with using macro ${USER} that is to injection of submitter user name.
+    -->
+    <!--
+    <property>
+        <name>gridgain.counters.fswriter.directory</name>
+        <value>/user/${USER}</value>
+    </property>
+    -->
 </configuration>
