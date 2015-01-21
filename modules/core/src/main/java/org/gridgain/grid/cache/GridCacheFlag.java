@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheConfiguration;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -60,7 +61,7 @@ public enum GridCacheFlag {
      * automatic cloning of values prior to returning so they can be directly
      * updated.
      *
-     * @see org.apache.ignite.cache.CacheConfiguration#getCloner()
+     * @see CacheConfiguration#getCloner()
      */
     CLONE,
 
@@ -79,7 +80,7 @@ public enum GridCacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see org.apache.ignite.cache.CacheConfiguration#isInvalidate()
+     * @see CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 

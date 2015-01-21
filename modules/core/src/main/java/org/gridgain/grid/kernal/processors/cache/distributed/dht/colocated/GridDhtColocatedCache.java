@@ -184,8 +184,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(keys,
-            false,
             true,
+            false,
             forcePrimary,
             topVer,
             subjId,

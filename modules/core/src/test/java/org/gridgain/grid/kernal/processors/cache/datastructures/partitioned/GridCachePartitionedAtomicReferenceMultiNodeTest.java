@@ -28,7 +28,6 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  *  AtomicReference and AtomicStamped multi node tests.
  */
 public class GridCachePartitionedAtomicReferenceMultiNodeTest extends GridCacheAtomicReferenceMultiNodeAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

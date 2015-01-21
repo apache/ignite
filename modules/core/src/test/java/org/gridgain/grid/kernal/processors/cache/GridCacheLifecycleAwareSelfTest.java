@@ -42,7 +42,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for {@link LifecycleAware} support in {@link org.apache.ignite.cache.CacheConfiguration}.
+ * Test for {@link LifecycleAware} support in {@link CacheConfiguration}.
  */
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */

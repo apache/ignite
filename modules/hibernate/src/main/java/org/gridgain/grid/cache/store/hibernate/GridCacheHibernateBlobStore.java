@@ -30,7 +30,6 @@ import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.integration.*;
 import java.io.*;
 import java.net.*;
@@ -39,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * {@link org.apache.ignite.cache.store.CacheStore} implementation backed by Hibernate. This implementation
+ * {@link CacheStore} implementation backed by Hibernate. This implementation
  * stores objects in underlying database in {@code BLOB} format.
  * <h2 class="header">Configuration</h2>
  * Either {@link #setSessionFactory(SessionFactory)} or
