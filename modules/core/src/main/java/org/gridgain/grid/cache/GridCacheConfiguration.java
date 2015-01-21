@@ -404,6 +404,7 @@ public class GridCacheConfiguration extends MutableConfiguration {
         preloadThrottle = cc.getPreloadThrottle();
         qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
+        readFromBackup = cc.isReadFromBackup();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         store = cc.getStore();
@@ -417,7 +418,6 @@ public class GridCacheConfiguration extends MutableConfiguration {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
-        readFromBackup = cc.isReadFromBackup();
     }
 
     /**
@@ -1724,10 +1724,11 @@ public class GridCacheConfiguration extends MutableConfiguration {
     /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
+     * <p>
      * Default value is defined by {@link #DFLT_READ_FROM_BACKUP}.
      *
-     * @return {@code true} if data can be read from backup node. {@code false} if data always get from primary node
-     * (never from backup).
+     * @return {@code true} if data can be read from backup node or {@code false} if data always
+     *      should be read from primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;
@@ -1735,7 +1736,8 @@ public class GridCacheConfiguration extends MutableConfiguration {
 
     /**
      * Sets read from backup flag.
-     * @param readFromBackup Value of read from backup flag.
+     *
+     * @param readFromBackup {@code true} to allow reads from backups.
      */
     public void setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
