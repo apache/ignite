@@ -992,11 +992,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid job made out of closure.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private ComputeJob job(final Callable<?> c) {
+    private <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
         if (c instanceof ComputeJobMasterLeaveAware)
-            return new C2(c);
+            return new C2<>(c);
         else {
             return new ComputeJobAdapter() {
                 @Override public Object execute() {
@@ -1020,11 +1020,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Grid job made out of closure.
      */
     @SuppressWarnings(value = {"IfMayBeConditional", "UnusedDeclaration"})
-    private ComputeJob job(final Callable<?> c, @Nullable final String cacheName, final Object affKey) {
+    private <R> ComputeJob job(final Callable<R> c, @Nullable final String cacheName, final Object affKey) {
         A.notNull(c, "job");
 
         if (c instanceof ComputeJobMasterLeaveAware)
-            return new C3(c,cacheName,affKey);
+            return new C3<>(c,cacheName,affKey);
         else {
             return new ComputeJobAdapter() {
                 /** */
@@ -1684,6 +1684,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /**
          */
+        public C1(){
+            // No-op.
+        }
+
+        /**
+         */
         public C1(IgniteClosure<T, R> job, T arg) {
             this.job = job;
             this.arg = arg;
@@ -1714,16 +1720,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C2 extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C2<R> extends GridMasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private Callable<?> c;
+        private Callable<R> c;
 
         /**
          */
-        public C2(Callable<?> c) {
+        public C2(){
+            // No-op.
+        }
+
+        /**
+         */
+        public C2(Callable<R> c) {
             this.c = c;
         }
 
@@ -1749,13 +1761,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            c = (Callable<?>) in.readObject();
+            c = (Callable<R>) in.readObject();
         }
     }
 
     /**
      */
-    private static class C3 extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C3<R> extends GridMasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1767,12 +1779,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @GridCacheAffinityKeyMapped
         private Object ak;
 
+
         /** */
-        private Callable<?> c;
+        private Callable<R> c;
 
         /**
          */
-        public C3(Callable<?> c, @Nullable String cacheName, Object affKey) {
+        public C3(){
+            // No-op.
+        }
+
+        /**
+         */
+        public C3(Callable<R> c, @Nullable String cacheName, Object affKey) {
             this.cn = cacheName;
             this.ak = affKey;
             this.c = c;
@@ -1804,7 +1823,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cn = (String) in.readObject();
             ak = in.readObject();
-            c = (Callable<?>) in.readObject();
+            c = (Callable<R>) in.readObject();
         }
     }
 
@@ -1816,6 +1835,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         private Runnable r;
+
+        /**
+         */
+        public C4(){
+            // No-op.
+        }
 
         /**
          */
@@ -1862,6 +1887,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         private Runnable r;
+
+        /**
+         */
+        public C5(){
+            // No-op.
+        }
 
         /**
          */
