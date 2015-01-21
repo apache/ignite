@@ -19,11 +19,12 @@ package org.gridgain.grid.kernal.processors.closure;
 
 import org.apache.ignite.compute.*;
 
+import java.io.Externalizable;
+
 /**
  * Job adapter implementing {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware}.
  */
-public abstract class GridMasterLeaveAwareComputeJobAdapter extends ComputeJobAdapter
-    implements ComputeJobMasterLeaveAware {
+public abstract class GridMasterLeaveAwareComputeJobAdapter extends ComputeJobAdapter implements Externalizable, ComputeJobMasterLeaveAware {
     /** */
     private static final long serialVersionUID = 0L;
 
