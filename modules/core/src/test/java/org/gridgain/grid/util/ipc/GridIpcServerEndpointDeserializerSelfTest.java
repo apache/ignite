@@ -17,13 +17,13 @@
 
 package org.gridgain.grid.util.ipc;
 
-import net.sf.json.*;
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.util.ipc.loopback.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.testframework.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -31,28 +31,28 @@ import java.util.concurrent.*;
  */
 public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbstractTest {
     /** */
-    private GridIpcSharedMemoryServerEndpoint shmemSrvEndpoint;
+    private Map<String,String> shmemSrvEndpoint;
 
     /** */
-    private GridIpcServerTcpEndpoint tcpSrvEndpoint;
+    private Map<String,String> tcpSrvEndpoint;
 
     /**
      * Initialize test stuff.
      */
     @Override protected void beforeTest() throws Exception {
-        shmemSrvEndpoint = new GridIpcSharedMemoryServerEndpoint();
-        shmemSrvEndpoint.setPort(888);
-        shmemSrvEndpoint.setSize(111);
-        shmemSrvEndpoint.setTokenDirectoryPath("test-my-path-baby");
+        shmemSrvEndpoint = new HashMap<>();
+        shmemSrvEndpoint.put("port", "888");
+        shmemSrvEndpoint.put("size", "111");
+        shmemSrvEndpoint.put("tokenDirectoryPath", "test-my-path-baby");
 
-        tcpSrvEndpoint = new GridIpcServerTcpEndpoint();
-        tcpSrvEndpoint.setPort(999);
+        tcpSrvEndpoint = new HashMap<>();
+        tcpSrvEndpoint.put("port", "999");
     }
 
     /**
      * @throws Exception In case of any exception.
      */
-    public void testDeserializeIfJsonIsNull() throws Exception {
+    public void testDeserializeIfCfgIsNull() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @SuppressWarnings("NullableProblems")
             @Override public Object call() throws Exception {
@@ -67,8 +67,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
     public void testDeserializeIfShmemAndNoTypeInfoInJson() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
-                    JSONSerializer.toJSON(shmemSrvEndpoint).toString()));
+                return GridIpcServerEndpointDeserializer.deserialize(shmemSrvEndpoint);
             }
         }, IgniteCheckedException.class, "Failed to create server endpoint (type is not specified)");
     }
@@ -79,10 +78,12 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
     public void testDeserializeIfShmemAndNoUnknownTypeInfoInJson() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                JSONObject json = (JSONObject)JSONSerializer.toJSON(shmemSrvEndpoint);
-                json.accumulate("type", "unknownEndpointType");
+                Map<String, String> endPnt = new HashMap<>();
 
-                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json.toString()));
+                endPnt.putAll(shmemSrvEndpoint);
+                endPnt.put("type", "unknownEndpointType");
+
+                return GridIpcServerEndpointDeserializer.deserialize(endPnt);
             }
         }, IgniteCheckedException.class, "Failed to create server endpoint (type is unknown): unknownEndpointType");
     }
@@ -93,8 +94,7 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
     public void testDeserializeIfLoopbackAndJsonIsLightlyBroken() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(
-                    JSONSerializer.toJSON(tcpSrvEndpoint).toString()));
+                return GridIpcServerEndpointDeserializer.deserialize(tcpSrvEndpoint);
             }
         }, IgniteCheckedException.class, null);
     }
@@ -103,58 +103,58 @@ public class GridIpcServerEndpointDeserializerSelfTest extends GridGgfsCommonAbs
      * @throws Exception In case of any exception.
      */
     public void testDeserializeIfShmemAndJsonIsOk() throws Exception {
-        String json = JSONSerializer.toJSON(shmemSrvEndpoint).toString();
+        Map<String, String> endPnt = new HashMap<>();
 
-        // Add endpoint type info into json.
-        json = "{\"type\" : \"shmem\"," + json.substring(1);
+        endPnt.putAll(shmemSrvEndpoint);
+        endPnt.put("type", "shmem");
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(endPnt);
 
         assertTrue(deserialized instanceof GridIpcSharedMemoryServerEndpoint);
 
         GridIpcSharedMemoryServerEndpoint deserializedShmemEndpoint = (GridIpcSharedMemoryServerEndpoint)deserialized;
 
-        assertEquals(shmemSrvEndpoint.getPort(), deserializedShmemEndpoint.getPort());
-        assertEquals(shmemSrvEndpoint.getSize(), deserializedShmemEndpoint.getSize());
-        assertEquals(shmemSrvEndpoint.getTokenDirectoryPath(), deserializedShmemEndpoint.getTokenDirectoryPath());
+        assertEquals(shmemSrvEndpoint.get("port"), String.valueOf(deserializedShmemEndpoint.getPort()));
+        assertEquals(shmemSrvEndpoint.get("size"), String.valueOf(deserializedShmemEndpoint.getSize()));
+        assertEquals(shmemSrvEndpoint.get("tokenDirectoryPath"), deserializedShmemEndpoint.getTokenDirectoryPath());
     }
 
     /**
      * @throws Exception In case of any exception.
      */
     public void testDeserializeIfShmemAndJsonIsOkAndDefaultValuesAreSetToFields() throws Exception {
-        shmemSrvEndpoint = new GridIpcSharedMemoryServerEndpoint();
-        shmemSrvEndpoint.setPort(8);
+        GridIpcSharedMemoryServerEndpoint defShmemSrvEndpoint = new GridIpcSharedMemoryServerEndpoint();
+        defShmemSrvEndpoint.setPort(8);
 
-        String json = JSONSerializer.toJSON(shmemSrvEndpoint).toString();
+        Map<String, String> endPnt = new HashMap<>();
 
-        // Add endpoint type info into json.
-        json = "{\"type\" : \"shmem\"," + json.substring(1);
+        endPnt.put("type", "shmem");
+        endPnt.put("port", String.valueOf(defShmemSrvEndpoint.getPort()));
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(endPnt);
 
         assertTrue(deserialized instanceof GridIpcSharedMemoryServerEndpoint);
 
         GridIpcSharedMemoryServerEndpoint deserializedShmemEndpoint = (GridIpcSharedMemoryServerEndpoint)deserialized;
 
-        assertEquals(shmemSrvEndpoint.getPort(), deserializedShmemEndpoint.getPort());
-        assertEquals(shmemSrvEndpoint.getSize(), deserializedShmemEndpoint.getSize());
-        assertEquals(shmemSrvEndpoint.getTokenDirectoryPath(), deserializedShmemEndpoint.getTokenDirectoryPath());
+        assertEquals(defShmemSrvEndpoint.getPort(), deserializedShmemEndpoint.getPort());
+        assertEquals(defShmemSrvEndpoint.getSize(), deserializedShmemEndpoint.getSize());
+        assertEquals(defShmemSrvEndpoint.getTokenDirectoryPath(), deserializedShmemEndpoint.getTokenDirectoryPath());
     }
 
     /**
      * @throws Exception In case of any exception.
      */
     public void testDeserializeIfLoopbackAndJsonIsOk() throws Exception {
-        String json = JSONSerializer.toJSON(tcpSrvEndpoint).toString();
+        Map<String, String> endPnt = new HashMap<>();
 
-        // Add endpoint type info into json.
-        json = "{\"type\" : \"tcp\"," + json.substring(1);
+        endPnt.putAll(tcpSrvEndpoint);
+        endPnt.put("type", "tcp");
 
-        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(GridGgfsTestUtils.jsonToMap(json));
+        GridIpcServerEndpoint deserialized = GridIpcServerEndpointDeserializer.deserialize(endPnt);
 
         assertTrue(deserialized instanceof GridIpcServerTcpEndpoint);
 
-        assertEquals(tcpSrvEndpoint.getPort(), deserialized.getPort());
+        assertEquals(tcpSrvEndpoint.get("port"), String.valueOf(deserialized.getPort()));
     }
 }

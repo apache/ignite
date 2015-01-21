@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.ggfs;
 
+import java.util.*;
+
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
@@ -42,8 +44,11 @@ public class GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest extends GridGgfsH
     }
 
     /** {@inheritDoc} */
-    @Override protected String primaryIpcEndpointConfiguration(String gridName) {
-        return "{type:'tcp', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
+    @Override protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
+        return new HashMap<String, String>() {{
+            put("type", "tcp");
+            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
+        }};
     }
 
     /** {@inheritDoc} */
@@ -61,7 +66,7 @@ public class GridGgfsHadoop20FileSystemLoopbackPrimarySelfTest extends GridGgfsH
     }
 
     /** {@inheritDoc} */
-    @Override protected String secondaryIpcEndpointConfiguration() {
+    @Override protected Map<String, String> secondaryIpcEndpointConfiguration() {
         assert false;
 
         return null;

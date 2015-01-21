@@ -27,7 +27,6 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 
 import java.util.*;
 
@@ -152,7 +151,10 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setName("ggfs-secondary");
         ggfsCfg.setBlockSize(512 * 1024);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:11500}"));
+        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            put("type", "tcp");
+            put("port", "11500");
+        }});
 
         GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
 
