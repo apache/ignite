@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.eviction;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 
 /**
@@ -25,7 +26,7 @@ import org.gridgain.grid.cache.*;
  * If {@link #evictAllowed(GridCacheEntry)} method returns {@code false} then eviction
  * policy will not be notified and entry will never be evicted.
  * <p>
- * Eviction filter can be configured via {@link org.apache.ignite.cache.CacheConfiguration#getEvictionFilter()}
+ * Eviction filter can be configured via {@link CacheConfiguration#getEvictionFilter()}
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
  */

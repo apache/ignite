@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * {@link org.apache.ignite.cache.store.CacheStore} implementation backed by JDBC. This implementation
+ * {@link CacheStore} implementation backed by JDBC. This implementation
  * stores objects in underlying database in {@code BLOB} format.
  * <p>
  * Store will create table {@code ENTRIES} in the database to store data.

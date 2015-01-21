@@ -51,7 +51,6 @@ public class CacheNodeWithStoreStartup {
      * @return Grid configuration.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static IgniteConfiguration configure() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 

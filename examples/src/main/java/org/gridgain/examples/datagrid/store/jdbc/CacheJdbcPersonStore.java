@@ -69,9 +69,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     @Override public void txEnd(boolean commit) {
         IgniteTx tx = transaction();
 
-        Map<Object, Object> props = session().properties();
+        Map<String, Connection> props = session().properties();
 
-        try (Connection conn = (Connection)props.remove(ATTR_NAME)) {
+        try (Connection conn = props.remove(ATTR_NAME)) {
             if (conn != null) {
                 if (commit)
                     conn.commit();

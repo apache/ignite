@@ -66,6 +66,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         return 3;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

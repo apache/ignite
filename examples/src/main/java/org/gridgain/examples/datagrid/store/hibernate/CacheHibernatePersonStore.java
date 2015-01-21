@@ -25,7 +25,6 @@ import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.integration.*;
 import java.util.*;
 
@@ -203,9 +202,9 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
         IgniteTx tx = storeSes.transaction();
 
-        Map<Object, Object> props = storeSes.properties();
+        Map<String, Session> props = storeSes.properties();
 
-        Session ses = (Session)props.remove(ATTR_SES);
+        Session ses = props.remove(ATTR_SES);
 
         if (ses != null) {
             Transaction hTx = ses.getTransaction();
@@ -243,9 +242,9 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
         Session ses;
 
         if (tx != null) {
-            Map<Object, Object> props = session().properties();
+            Map<String, Session> props = session().properties();
 
-            ses = (Session)props.get(ATTR_SES);
+            ses = props.get(ATTR_SES);
 
             if (ses == null) {
                 ses = sesFactory.openSession();

@@ -98,7 +98,6 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         ccfg.setSwapEnabled(false);
         ccfg.setQueryIndexEnabled(false);
         ccfg.setCacheStoreFactory(null);
-        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }

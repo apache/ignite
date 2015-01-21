@@ -3377,6 +3377,93 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         return ctx.tm().synchronizations();
     }
 
+    /** {@inheritDoc} */
+    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args)
+        throws IgniteCheckedException {
+        final boolean replicate = ctx.isDrEnabled();
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
+        if (ctx.store().isLocalStore()) {
+            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
+
+                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, ttl);
+
+                ctx.store().loadCache(c, args);
+
+                c.onDone();
+            }
+        }
+        else {
+            // Version for all loaded entries.
+            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
+
+            ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
+                @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
+                    throws PortableException {
+                    assert ver == null;
+
+                    loadEntry(key, val, ver0, p, topVer, replicate, ttl);
+                }
+            }, args);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @param ver Cache version.
+     * @param p Optional predicate.
+     * @param topVer Topology version.
+     * @param replicate Replication flag.
+     * @param ttl TTL.
+     */
+    private void loadEntry(K key,
+        V val,
+        GridCacheVersion ver,
+        @Nullable IgniteBiPredicate<K, V> p,
+        long topVer,
+        boolean replicate,
+        long ttl) {
+        if (p != null && !p.apply(key, val))
+            return;
+
+        if (ctx.portableEnabled()) {
+            key = (K)ctx.marshalToPortable(key);
+            val = (V)ctx.marshalToPortable(val);
+        }
+
+        GridCacheEntryEx<K, V> entry = entryEx(key, false);
+
+        try {
+            entry.initialValue(val, null, ver, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to put cache value: " + entry, e);
+        }
+        catch (GridCacheEntryRemovedException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("Got removed entry during loadCache (will ignore): " + entry);
+        }
+        finally {
+            ctx.evicts().touch(entry, topVer);
+        }
+
+        CU.unwindEvicts(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p, final long ttl, final Object[] args) {
+        return ctx.closures().callLocalSafe(
+            ctx.projectSafe(new Callable<Object>() {
+                @Nullable @Override public Object call() throws IgniteCheckedException {
+                    loadCache(p, ttl, args);
+
+                    return null;
+                }
+            }), true);
+    }
+
     /**
      * @param keys Keys.
      * @param replaceExisting Replace existing values flag.
@@ -3492,94 +3579,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 }
             });
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args)
-        throws IgniteCheckedException {
-        final boolean replicate = ctx.isDrEnabled();
-        final long topVer = ctx.affinity().affinityTopologyVersion();
-
-        if (ctx.store().isLocalStore()) {
-            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
-                ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
-
-                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, ttl);
-
-                ctx.store().loadCache(c, args);
-
-                c.onDone();
-            }
-        }
-        else {
-            // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
-
-            ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
-                @Override
-                public void applyx(K key, V val, @Nullable GridCacheVersion ver)
-                    throws PortableException {
-                    assert ver == null;
-
-                    loadEntry(key, val, ver0, p, topVer, replicate, ttl);
-                }
-            }, args);
-        }
-    }
-
-    /**
-     * @param key Key.
-     * @param val Value.
-     * @param ver Cache version.
-     * @param p Optional predicate.
-     * @param topVer Topology version.
-     * @param replicate Replication flag.
-     * @param ttl TTL.
-     */
-    private void loadEntry(K key,
-        V val,
-        GridCacheVersion ver,
-        @Nullable IgniteBiPredicate<K, V> p,
-        long topVer,
-        boolean replicate,
-        long ttl) {
-        if (p != null && !p.apply(key, val))
-            return;
-
-        if (ctx.portableEnabled()) {
-            key = (K)ctx.marshalToPortable(key);
-            val = (V)ctx.marshalToPortable(val);
-        }
-
-        GridCacheEntryEx<K, V> entry = entryEx(key, false);
-
-        try {
-            entry.initialValue(val, null, ver, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to put cache value: " + entry, e);
-        }
-        catch (GridCacheEntryRemovedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Got removed entry during loadCache (will ignore): " + entry);
-        }
-        finally {
-            ctx.evicts().touch(entry, topVer);
-        }
-
-        CU.unwindEvicts(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> loadCacheAsync(final IgniteBiPredicate<K, V> p, final long ttl, final Object[] args) {
-        return ctx.closures().callLocalSafe(
-            ctx.projectSafe(new Callable<Object>() {
-                @Nullable @Override public Object call() throws IgniteCheckedException {
-                    loadCache(p, ttl, args);
-
-                    return null;
-                }
-            }), true);
     }
 
     /** {@inheritDoc} */
@@ -4643,9 +4642,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnFlags(F.asList(LOCAL, READ));
 
         return ctx.closures().callLocalSafe(ctx.projectSafe(new Callable<V>() {
-            @Nullable
-            @Override
-            public V call() throws IgniteCheckedException {
+            @Nullable @Override public V call() throws IgniteCheckedException {
                 return reload(key, filter);
             }
         }), true);
@@ -5250,6 +5247,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Override public Void call() throws Exception {
             GridCacheAdapter<K, V> cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
 
+            assert cache != null : cacheName;
+
             cache.context().gate().enter();
 
             try {
@@ -5351,7 +5350,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      *
      */
     static class SkipStoreUpdater<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
-    /** {@inheritDoc} */
+        /** {@inheritDoc} */
         @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws IgniteCheckedException {
             cache = cache.flagsOn(SKIP_STORE);

@@ -570,29 +570,29 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
         else {
             if (store != null) {
-                Map<K, IgniteBiTuple<V, GridCacheVersion>> map0;
+                Collection<Cache.Entry<? extends K, ?>> entries;
 
                 if (convertPortable) {
-                    map0 = U.newHashMap(map.size());
+                    entries = new ArrayList<>(map.size());
 
                     for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet()) {
-                        IgniteBiTuple<V, GridCacheVersion> t = e.getValue();
+                        K k = e.getKey();
+                        Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        map0.put((K)cctx.unwrapPortableIfNeeded(e.getKey(), false),
-                            F.t((V)cctx.unwrapPortableIfNeeded(t.get1(), false), t.get2()));
+                        entries.add(new CacheEntryImpl<>(
+                                (K)cctx.unwrapPortableIfNeeded(k, false),
+                                (V)cctx.unwrapPortableIfNeeded(v, false)));
                     }
                 }
-                else
-                    map0 = map;
+                else {
+                    entries = new ArrayList<>(map.size());
+
+                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
+                        entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
+                }
 
                 if (log.isDebugEnabled())
-                    log.debug("Storing values in cache store [map=" + map0 + ']');
-
-                // TODO IGNITE-42.
-                Collection<Cache.Entry<? extends K, ?>> entries = new ArrayList<>(map.size());
-
-                for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
-                    entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
+                    log.debug("Storing values in cache store [entries=" + entries + ']');
 
                 initSession(tx);
 
@@ -619,7 +619,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
 
                 if (log.isDebugEnabled())
-                    log.debug("Stored value in cache store [map=" + map0 + ']');
+                    log.debug("Stored value in cache store [entries=" + entries + ']');
 
                 return true;
             }
