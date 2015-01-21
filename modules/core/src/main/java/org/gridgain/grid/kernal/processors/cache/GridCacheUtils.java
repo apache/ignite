@@ -34,6 +34,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -1601,7 +1602,7 @@ public class GridCacheUtils {
      * @return Expire time.
      */
     public static long toExpireTime(long ttl) {
-        assert ttl >= 0L;
+        assert ttl >= 0L : ttl;
 
         if (ttl == 0L)
             return 0L;
@@ -1655,5 +1656,27 @@ public class GridCacheUtils {
      */
     public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
         return cache.clear(key);
+    }
+
+    /**
+     * @param duration Duration.
+     * @return TTL.
+     */
+    public static long toTtl(Duration duration) {
+        if (duration == null)
+            return -1;
+
+        if (duration.getDurationAmount() == 0) {
+            if (duration.isEternal())
+                return 0;
+
+            assert duration.isZero();
+
+            return 1L;
+        }
+
+        assert duration.getTimeUnit() != null;
+
+        return duration.getTimeUnit().toMillis(duration.getDurationAmount());
     }
 }

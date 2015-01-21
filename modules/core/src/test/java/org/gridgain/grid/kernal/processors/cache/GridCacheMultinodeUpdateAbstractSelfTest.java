@@ -17,12 +17,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -59,8 +61,8 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    public void testTransform() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+    public void testInvoke() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         final Integer key = primaryKey(cache);
 
@@ -80,16 +82,16 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 @Override public Void call() throws Exception {
                     int idx = gridIdx.incrementAndGet() - 1;
 
-                    final GridCache<Integer, Integer> cache = grid(idx).cache(null);
+                    final IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
 
                     for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++)
-                        cache.transform(key, new IncClosure());
+                        cache.invoke(key, new IncProcessor());
 
                     return null;
                 }
-            }, THREADS, "transform");
+            }, THREADS, "invoke");
 
-            assertFalse("Got null in transform.", failed);
+            assertFalse("Got null in processor.", failed);
 
             expVal += ITERATIONS_PER_THREAD * THREADS;
 
@@ -111,18 +113,22 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     /**
      *
      */
-    protected static class IncClosure implements IgniteClosure<Integer, Integer> {
+    protected static class IncProcessor implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public Integer apply(Integer val) {
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            Integer val = e.getValue();
+
             if (val == null) {
                 failed = true;
 
-                System.out.println(Thread.currentThread() + " got null in transform: " + val);
+                System.out.println(Thread.currentThread() + " got null in processor: " + val);
 
                 return null;
             }
 
-            return val + 1;
+            e.setValue(val + 1);
+
+            return null;
         }
     }
 }

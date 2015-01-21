@@ -687,7 +687,11 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                }
             });
 
-            queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null, true);
+            queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null,
+                true,
+                false,
+                false,
+                true);
         }
 
         GridCacheQueueProxy queue = queuesMap.get(header.id());
@@ -743,7 +747,12 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (hdr.empty())
             return true;
 
-        GridCacheQueueAdapter.removeKeys(cctx.cache(), hdr.id(), name, hdr.collocated(), hdr.head(), hdr.tail(),
+        GridCacheQueueAdapter.removeKeys(cctx.kernalContext().cache().jcache(cctx.cache().name()),
+            hdr.id(),
+            name,
+            hdr.collocated(),
+            hdr.head(),
+            hdr.tail(),
             batchSize);
 
         return true;

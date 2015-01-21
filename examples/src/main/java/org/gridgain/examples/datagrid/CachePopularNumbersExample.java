@@ -20,11 +20,10 @@ package org.gridgain.examples.datagrid;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.dataload.*;
-import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -161,16 +160,20 @@ public class CachePopularNumbersExample {
      */
     private static class IncrementingUpdater implements IgniteDataLoadCacheUpdater<Integer, Long> {
         /** */
-        private static final IgniteClosure<Long, Long> INC = new IgniteClosure<Long, Long>() {
-            @Override public Long apply(Long e) {
-                return e == null ? 1L : e + 1;
+        private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
+            @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
+                Long val = e.getValue();
+
+                e.setValue(val == null ? 1L : val + 1);
+
+                return null;
             }
         };
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
+        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
-                cache.transform(entry.getKey(), INC);
+                cache.invoke(entry.getKey(), INC);
         }
     }
 }

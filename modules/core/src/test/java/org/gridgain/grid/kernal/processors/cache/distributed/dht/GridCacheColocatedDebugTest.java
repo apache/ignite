@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -372,7 +373,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        assert g0.cache(null).lock(key, 0);
+                        CacheLock lock = g0.jcache(null).lock(key);
+
+                        lock.lock();
 
                         try {
                             lockLatch.countDown();
@@ -380,7 +383,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                             U.await(unlockLatch);
                         }
                         finally {
-                            g0.cache(null).unlock(key);
+                            lock.unlock();
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -392,10 +395,14 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             U.await(lockLatch);
 
-            assert g0.cache(null).isLocked(key);
-            assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
+            assert g0.jcache(null).isLocked(key);
+            assert !g0.jcache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
-            IgniteFuture<Boolean> lockFut = g0.cache(null).lockAsync(key, 0);
+            CacheLock lock = g0.jcache(null).lock(key);
+
+            lock.enableAsync().lock();
+
+            IgniteFuture<Boolean> lockFut = lock.enableAsync().future();
 
             assert g0.cache(null).isLocked(key);
             assert !lockFut.isDone() : "Key can not be locked by current thread.";
@@ -877,13 +884,15 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            assert cache().lock(1, 0);
+            IgniteCache<Object, Object> cache = jcache();
 
-            assertNull(cache().put(1, "key1"));
-            assertEquals("key1", cache().put(1, "key2"));
-            assertEquals("key2", cache().get(1));
+            cache.lock(1).lock();
 
-            cache().unlock(1);
+            assertNull(cache.getAndPut(1, "key1"));
+            assertEquals("key1", cache.getAndPut(1, "key2"));
+            assertEquals("key2", cache.get(1));
+
+            cache.lock(1).unlock();
         }
         finally {
             stopAllGrids();
@@ -907,11 +916,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             Integer k1 = forPrimary(g1);
             Integer k2 = forPrimary(g2);
 
-            GridCache<Object, Object> cache = cache(0);
+            IgniteCache<Object, Object> cache = jcache(0);
 
-            assert cache.lock(k0, 0);
-            assert cache.lock(k1, 0);
-            assert cache.lock(k2, 0);
+            cache.lock(k0).lock();
+            cache.lock(k1).lock();
+            cache.lock(k2).lock();
 
             cache.put(k0, "val0");
 
@@ -921,9 +930,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             assertEquals("val1", cache.get(k1));
             assertEquals("val2", cache.get(k2));
 
-            cache.unlock(k0);
-            cache.unlock(k1);
-            cache.unlock(k2);
+            cache.lock(k0).unlock();
+            cache.lock(k1).unlock();
+            cache.lock(k2).unlock();
         }
         finally {
             stopAllGrids();

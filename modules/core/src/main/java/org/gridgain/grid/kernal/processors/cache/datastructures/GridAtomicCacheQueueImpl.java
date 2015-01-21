@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -47,7 +47,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @SuppressWarnings("unchecked")
     @Override public boolean offer(T item) throws IgniteException {
         try {
-            Long idx = transformHeader(new AddClosure(id, 1));
+            Long idx = transformHeader(new AddProcessor(id, 1));
 
             if (idx == null)
                 return false;
@@ -60,13 +60,11 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    boolean putx = cache.putx(key, item, null);
-
-                    assert putx;
+                    cache.put(key, item);
 
                     break;
                 }
-                catch (GridCachePartialUpdateException e) {
+                catch (CachePartialUpdateException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -89,7 +87,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     @Nullable @Override public T poll() throws IgniteException {
         try {
             while (true) {
-                Long idx = transformHeader(new PollClosure(id));
+                Long idx = transformHeader(new PollProcessor(id));
 
                 if (idx == null)
                     return null;
@@ -104,7 +102,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 while (true) {
                     try {
-                        T data = (T)cache.remove(key, null);
+                        T data = (T)cache.getAndRemove(key);
 
                         if (data != null)
                             return data;
@@ -113,7 +111,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                             stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
                         while (U.currentTimeMillis() < stop ) {
-                            data = (T)cache.remove(key, null);
+                            data = (T)cache.getAndRemove(key);
 
                             if (data != null)
                                 return data;
@@ -121,7 +119,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                         break;
                     }
-                    catch (GridCachePartialUpdateException e) {
+                    catch (CachePartialUpdateException e) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {
@@ -146,7 +144,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
         A.notNull(items, "items");
 
         try {
-            Long idx = transformHeader(new AddClosure(id, items.size()));
+            Long idx = transformHeader(new AddProcessor(id, items.size()));
 
             if (idx == null)
                 return false;
@@ -165,11 +163,11 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    cache.putAll(putMap, null);
+                    cache.putAll(putMap);
 
                     break;
                 }
-                catch (GridCachePartialUpdateException e) {
+                catch (CachePartialUpdateException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -190,7 +188,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(long rmvIdx) throws IgniteCheckedException {
-        Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
+        Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx));
 
         if (idx != null) {
             checkRemoved(idx);
@@ -203,20 +201,20 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    if (cache.removex(key))
+                    if (cache.remove(key))
                         return;
 
                     if (stop == 0)
                         stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
                     while (U.currentTimeMillis() < stop ) {
-                        if (cache.removex(key))
+                        if (cache.remove(key))
                             return;
                     }
 
                     break;
                 }
-                catch (GridCachePartialUpdateException e) {
+                catch (CachePartialUpdateException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -232,20 +230,20 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     }
 
     /**
-     * @param c Transform closure to be applied for queue header.
-     * @return Value computed by the transform closure.
+     * @param c EntryProcessor to be applied for queue header.
+     * @return Value computed by the entry processor.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private Long transformHeader(IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>> c)
+    @Nullable private Long transformHeader(EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long> c)
         throws IgniteCheckedException {
         int cnt = 0;
 
         while (true) {
             try {
-                return (Long)cache.transformAndCompute(queueKey, c);
+                return (Long)cache.invoke(queueKey, c);
             }
-            catch (GridCachePartialUpdateException e) {
+            catch (CachePartialUpdateException e) {
                 if (cnt++ == MAX_UPDATE_RETRIES)
                     throw e;
                 else {

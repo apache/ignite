@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
@@ -26,6 +27,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -100,48 +102,61 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     private void checkTransform(Integer key) throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNull("Unexpected value: " + val, val);
 
                 return null;
             }
         });
 
-        c.putx(key, 1);
+        c.put(key, 1);
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
                 assertEquals((Integer) 1, val);
 
-                return val + 1;
+                e.setValue(val + 1);
+
+                return null;
             }
         });
 
         assertEquals((Integer)2, c.get(key));
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
                 assertEquals((Integer)2, val);
 
-                return val;
+                e.setValue(val);
+
+                return null;
             }
         });
 
-        assertEquals((Integer) 2, c.get(key));
+        assertEquals((Integer)2, c.get(key));
 
-        c.transform(key, new C1<Integer, Integer>() {
-            @Override
-            public Integer apply(Integer val) {
+        c.invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
                 assertNotNull("Unexpected value: " + val, val);
 
-                assertEquals((Integer) 2, val);
+                assertEquals((Integer)2, val);
+
+                e.remove();
 
                 return null;
             }
@@ -317,7 +332,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (int i = 0; i < 100; i++)
             map.put(i, i);
 
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         Map<Integer, Integer> map0 = c.getAll(map.keySet());
 
@@ -332,9 +347,13 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         for (Map.Entry<Integer, Integer> e : map.entrySet())
             checkValue(e.getKey(), e.getValue());
 
-        c.transformAll(map.keySet(), new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
-                return val + 1;
+        c.invokeAll(map.keySet(), new EntryProcessor<Integer, Integer, Void>() {
+            @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
+                e.setValue(val + 1);
+
+                return null;
             }
         });
 
@@ -505,51 +524,23 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private void checkLockUnlock(Integer key) throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         Integer val = key;
 
         c.put(key, val);
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key));
 
-        assertTrue(c.lock(key, 0));
-
-        assertTrue(c.isLocked(key));
-
-        c.unlock(key);
-
-        assertFalse(c.isLocked(key));
-
-        assertNull(c.peek(key));
-
-        checkValue(key, val);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    public void _testLockUnlockFiltered() throws Exception { // TODO: 9288, enable when fixed.
-        if (atomicityMode() == ATOMIC)
-            return;
-
-        GridCache<Integer, Integer> c = grid(0).cache(null);
-
-        Integer key = primaryKey(c);
-        Integer val = key;
-
-        c.put(key, val);
-
-        assertTrue(c.lock(key, 0, new TestEntryPredicate(val)));
+        c.lock(key).lock();
 
         assertTrue(c.isLocked(key));
 
-        c.unlock(key);
+        c.lock(key).unlock();
 
         assertFalse(c.isLocked(key));
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key));
 
         checkValue(key, val);
     }

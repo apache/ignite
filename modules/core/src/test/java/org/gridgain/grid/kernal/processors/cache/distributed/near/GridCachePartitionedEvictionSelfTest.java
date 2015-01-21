@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -30,6 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
+import javax.cache.expiry.*;
+
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -91,8 +95,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param node Node.
      * @return Cache.
      */
-    private GridCacheProjection<String, Integer> cache(ClusterNode node) {
-        return G.ignite(node.id()).cache(null);
+    private IgniteCache<String, Integer> cache(ClusterNode node) {
+        return G.ignite(node.id()).jcache(null);
     }
 
     /**
@@ -167,17 +171,21 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         GridCacheAffinity<String> aff = dht0.affinity();
 
+        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
+
         for (int kv = 0; kv < KEY_CNT; kv++) {
             String key = String.valueOf(kv);
 
-            GridCacheProjection<String, Integer> c = cache(aff.mapKeyToNode(key));
+            ClusterNode node = aff.mapKeyToNode(key);
 
-            try (IgniteTx tx = c.txStart(concurrency, isolation)) {
+            IgniteCache<String, Integer> c = cache(node);
+
+            IgniteTransactions txs = G.ignite(node.id()).transactions();
+
+            try (IgniteTx tx = txs.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
-                c.put(key, kv);
-
-                c.entry(key).timeToLive(10);
+                c.withExpiryPolicy(plc).put(key, 1);
 
                 assertEquals(Integer.valueOf(kv), c.get(key));
 

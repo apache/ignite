@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -26,6 +27,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -68,6 +70,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(0, interceptor.invokeCnt.get());
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -1179,26 +1182,26 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void cacheUpdate(int grid, boolean rmv, Operation op, String key, final Integer val,
         @Nullable final Integer expOld, @Nullable final Integer expRmvRet)
         throws Exception {
-        GridCache<String, Integer> cache = cache(grid);
+        IgniteCache<String, Integer> cache = jcache(grid);
 
         if (rmv) {
             assertNull(val);
 
             switch (op) {
                 case UPDATE: {
-                    assertEquals(expRmvRet, cache.remove(key));
+                    assertEquals(expRmvRet, cache.getAndRemove(key));
 
                     break;
                 }
 
                 case UPDATEX: {
-                    cache.removex(key);
+                    cache.remove(key);
 
                     break;
                 }
 
                 case UPDATE_FILTER: {
-                    Object old = cache.remove(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
+                    Object old = cache.getAndRemoveIf(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
                         @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                             return true;
                         }
@@ -1210,9 +1213,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
-                        @Nullable @Override public Integer apply(Integer old) {
+                    cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            Integer old = e.getValue();
+
                             assertEquals(expOld, old);
+
+                            e.remove();
 
                             return null;
                         }
@@ -1228,19 +1235,19 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         else {
             switch (op) {
                 case UPDATE: {
-                    assertEquals(expOld, cache.put(key, val));
+                    assertEquals(expOld, cache.getAndPut(key, val));
 
                     break;
                 }
 
                 case UPDATEX: {
-                    cache.putx(key, val);
+                    cache.put(key, val);
 
                     break;
                 }
 
                 case UPDATE_FILTER: {
-                    Object old = cache.put(key, val, new P1<GridCacheEntry<String, Integer>>() {
+                    Object old = cache.getAndPutIf(key, val, new P1<GridCacheEntry<String, Integer>>() {
                         @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
                             return true;
                         }
@@ -1252,11 +1259,15 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
-                        @Override public Integer apply(Integer old) {
+                    cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            Integer old = e.getValue();
+
                             assertEquals(expOld, old);
 
-                            return val;
+                            e.setValue(val);
+
+                            return null;
                         }
                     });
 
@@ -1301,7 +1312,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     @SuppressWarnings("unchecked")
     private void cacheBatchUpdate(int grid, boolean rmv, Operation op, final Map<String, Integer> map)
         throws Exception {
-        GridCache<String, Integer> cache = cache(grid);
+        IgniteCache<String, Integer> cache = jcache(grid);
 
         if (rmv) {
             switch (op) {
@@ -1312,10 +1323,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transformAll(map.keySet(), new IgniteClosure<Integer, Integer>() {
-                        @Nullable
-                        @Override
-                        public Integer apply(Integer old) {
+                    cache.invokeAll(map.keySet(), new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            e.remove();
+
                             return null;
                         }
                     });
@@ -1336,17 +1347,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    Map<String, IgniteClosure<Integer, Integer>> m = new HashMap<>();
+                    cache.invokeAll(map.keySet(), new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            e.setValue(map.get(e.getKey()));
 
-                    for (final String key : map.keySet()) {
-                        m.put(key, new IgniteClosure<Integer, Integer>() {
-                            @Override public Integer apply(Integer old) {
-                                return map.get(key);
-                            }
-                        });
-                    }
-
-                    cache.transformAll(m);
+                            return null;
+                        }
+                    });
 
                     break;
                 }

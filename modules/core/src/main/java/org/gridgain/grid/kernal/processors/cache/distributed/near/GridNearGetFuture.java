@@ -99,6 +99,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
+    /** Expiry policy. */
+    private IgniteCacheExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -114,6 +117,10 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      *      called on backup node.
      * @param tx Transaction.
      * @param filters Filters.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
@@ -124,11 +131,11 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
-        assert cctx != null;
         assert !F.isEmpty(keys);
 
         this.cctx = cctx;
@@ -140,6 +147,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.subjId = subjId;
         this.taskName = taskName;
         this.deserializePortable = deserializePortable;
+        this.expiryPlc = expiryPlc;
 
         futId = IgniteUuid.randomUuid();
 
@@ -239,6 +247,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (trackable)
                 cctx.mvcc().removeFuture(this);
 
+            cache().dht().sendTtlUpdateRequest(expiryPlc);
+
             return true;
         }
 
@@ -258,7 +268,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, final long topVer) {
+    private void map(Collection<? extends K> keys,
+        Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped,
+        final long topVer) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
@@ -298,8 +310,16 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
-                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
+                    dht().getDhtAsync(n.id(),
+                        -1,
+                        mappedKeys,
+                        reload,
+                        topVer,
+                        subjId,
+                        taskName == null ? 0 : taskName.hashCode(),
+                        deserializePortable,
+                        filters,
+                        expiryPlc);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -356,7 +376,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     topVer,
                     filters,
                     subjId,
-                    taskName == null ? 0 : taskName.hashCode());
+                    taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
 
                 add(fut); // Append new future.
 
@@ -410,7 +431,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         null,
                         taskName,
-                        filters);
+                        filters,
+                        expiryPlc);
 
                 ClusterNode primary = null;
 
@@ -435,7 +457,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 subjId,
                                 null,
                                 taskName,
-                                filters);
+                                filters,
+                                expiryPlc);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -552,10 +575,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param keys Keys.
      * @param infos Entry infos.
      * @param savedVers Saved versions.
+     * @param topVer Topology version
      * @return Result map.
      */
-    private Map<K, V> loadEntries(UUID nodeId, Collection<K> keys, Collection<GridCacheEntryInfo<K, V>> infos,
-        Map<K, GridCacheVersion> savedVers, long topVer) {
+    private Map<K, V> loadEntries(UUID nodeId,
+        Collection<K> keys,
+        Collection<GridCacheEntryInfo<K, V>> infos,
+        Map<K, GridCacheVersion> savedVers,
+        long topVer) {
         boolean empty = F.isEmpty(keys);
 
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());

@@ -17,14 +17,16 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import javax.cache.expiry.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -44,15 +46,13 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
 
             IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    GridCache<Object,Object> cache = g.cache(null);
+                    IgniteCache<Object,Object> cache = g.jcache(null).
+                        withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
                     long key = 0;
 
                     while (!stop.get()) {
-                        GridCacheEntry<Object, Object> entry = cache.entry(key);
-
-                        entry.timeToLive(1000);
-                        entry.setValue(key);
+                        cache.put(key, key);
 
                         key++;
                     }

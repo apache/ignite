@@ -15,37 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-
-import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Simple cache test.
+ * Tests expire events when {@link GridCacheConfiguration#isEagerTtl()} is disabled.
  */
-public class GridCacheReplicatedRefreshAheadSelfTest extends GridCacheRefreshAheadAbstractSelfTest {
+public class IgniteCacheEntryListenerEagerTtlDisabledTest extends IgniteCacheEntryListenerTxTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        GridCacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(REPLICATED);
-
-        cc.setRefreshAheadRatio(0.5);
-
-        cc.setStore(testStore());
-
-        c.setCacheConfiguration(cc);
-
-        return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
+    @Override protected boolean eagerTtl() {
+        return false;
     }
 }

@@ -263,6 +263,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
+            attrs.remove(ATTR_TX_CONFIG);
             attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
 

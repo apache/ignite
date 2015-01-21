@@ -23,6 +23,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.Map.*;
 
@@ -87,7 +88,7 @@ import java.util.Map.*;
  * @param <K> Key type.
  * @param <V> Value type.
  */
-public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware {
+public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware, Cache.Entry<K, V> {
     /**
      * Cache projection to which this entry belongs. Note that entry and its
      * parent projections have same flags and filters.
@@ -320,27 +321,6 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * @return See {@link GridCacheProjection#putxIfAbsentAsync(Object, Object)}.
      */
     public IgniteFuture<Boolean> setxIfAbsentAsync(V val);
-
-    /**
-     * This method has the same semantic as
-     * {@link GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)} method.
-     *
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @throws IgniteCheckedException If cache update failed.
-     * @see GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)
-     */
-    public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException;
-
-    /**
-     * This method has the same semantic as
-     * {@link GridCacheProjection#transformAsync(Object, org.apache.ignite.lang.IgniteClosure)} method.
-     *
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @return Transform operation future.
-     */
-    public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer);
 
     /**
      * This method has the same semantic as

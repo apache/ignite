@@ -32,6 +32,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 
@@ -69,6 +70,21 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Internal flag. */
     private boolean internal;
 
+    /** Entry listener flag. */
+    private boolean entryLsnr;
+
+    /** Synchronous listener flag. */
+    private boolean sync;
+
+    /** {@code True} if old value is required. */
+    private boolean oldVal;
+
+    /** Task name hash code. */
+    private int taskHash;
+
+    /** Keep portable flag. */
+    private boolean keepPortable;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -85,13 +101,25 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param filter Filter.
      * @param prjPred Projection predicate.
      * @param internal If {@code true} then query is notified about internal entries updates.
+     * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
+     * @param oldVal {@code True} if old value is required.
+     * @param taskHash Task name hash code.
      */
-    GridCacheContinuousQueryHandler(@Nullable String cacheName, Object topic,
+    GridCacheContinuousQueryHandler(@Nullable String cacheName,
+        Object topic,
         IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
         @Nullable IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred, boolean internal) {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
+        boolean internal,
+        boolean entryLsnr,
+        boolean sync,
+        boolean oldVal,
+        int taskHash,
+        boolean keepPortable) {
         assert topic != null;
         assert cb != null;
+        assert !sync || entryLsnr;
 
         this.cacheName = cacheName;
         this.topic = topic;
@@ -99,6 +127,11 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.filter = filter;
         this.prjPred = prjPred;
         this.internal = internal;
+        this.entryLsnr = entryLsnr;
+        this.sync = sync;
+        this.oldVal = oldVal;
+        this.taskHash = taskHash;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -165,6 +198,17 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 if (notify) {
+                    if (!oldVal && e.hasOldValue()) {
+                        e = new GridCacheContinuousQueryEntry<>(e.context(),
+                            e.entry(),
+                            e.getKey(),
+                            e.getValue(),
+                            e.newValueBytes(),
+                            null,
+                            null,
+                            e.eventType());
+                    }
+
                     if (loc) {
                         if (!cb.apply(nodeId,
                             F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
@@ -186,14 +230,14 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                                 depMgr.prepare(e);
                             }
 
-                            ctx.continuous().addNotification(nodeId, routineId, e, topic);
+                            ctx.continuous().addNotification(nodeId, routineId, e, topic, sync);
                         }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
                         }
                     }
 
-                    if (recordEvt) {
+                    if (!entryLsnr && recordEvt) {
                         ctx.event().record(new IgniteCacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
@@ -243,26 +287,17 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
 
             @Nullable private String taskName() {
-                String taskName = null;
-
-                if (ctx.security().enabled()) {
-                    assert GridCacheContinuousQueryHandler.this instanceof GridCacheContinuousQueryHandlerV2;
-
-                    int taskHash = ((GridCacheContinuousQueryHandlerV2)GridCacheContinuousQueryHandler.this).taskHash();
-
-                    taskName = ctx.task().resolveTaskName(taskHash);
-                }
-
-                return taskName;
+                return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
         };
 
-        return manager(ctx).registerListener(nodeId, routineId, lsnr, internal);
+        return manager(ctx).registerListener(routineId, lsnr, internal, entryLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
-        manager(ctx).iterate(internal, routineId, keepPortable());
+        if (!entryLsnr)
+            manager(ctx).iterate(internal, routineId, keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -387,6 +422,16 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             out.writeObject(prjPred);
 
         out.writeBoolean(internal);
+
+        out.writeBoolean(entryLsnr);
+
+        out.writeBoolean(sync);
+
+        out.writeBoolean(oldVal);
+
+        out.writeInt(taskHash);
+
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -410,6 +455,16 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             prjPred = (IgnitePredicate<GridCacheEntry<K, V>>)in.readObject();
 
         internal = in.readBoolean();
+
+        entryLsnr = in.readBoolean();
+
+        sync = in.readBoolean();
+
+        oldVal = in.readBoolean();
+
+        taskHash = in.readInt();
+
+        keepPortable = in.readBoolean();
     }
 
     /**
@@ -420,13 +475,6 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert ctx != null;
 
         return ctx.cache().<K, V>internalCache(cacheName).context();
-    }
-
-    /**
-     * @return Keep portable flag.
-     */
-    protected boolean keepPortable() {
-        return false;
     }
 
     /**

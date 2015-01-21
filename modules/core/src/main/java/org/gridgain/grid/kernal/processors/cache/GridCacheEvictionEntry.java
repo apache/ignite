@@ -275,16 +275,6 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw unsupported();
     }
@@ -496,6 +486,14 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException{
         return cached.memorySize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */

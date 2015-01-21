@@ -716,82 +716,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
 
     /**
-     * Stores result of applying {@code valTransform} closure to the previous value associated with
-     * given key in cache. Result of closure application is guaranteed to be atomic, however, closure
-     * itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} or {@link #put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}
-     * methods, this method will not transfer the whole updated value over the network, but instead will
-     * transfer the transforming closure that will be applied on each remote node involved in transaction.
-     * It may add significant performance gain when dealing with large values as the value is much larger
-     * than the closure itself. If write-through is enabled, the stored value will be persisted to
-     * {@link GridCacheStore} via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param key Key to store in cache.
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @throws NullPointerException If either key or transform closure is {@code null}.
-     * @throws IgniteCheckedException On any error occurred while storing value in cache.
-     */
-    public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException;
-
-    /**
-     * Applies {@code transformer} closure to the previous value associated with given key in cache,
-     * closure should return {@link org.apache.ignite.lang.IgniteBiTuple} instance where first value is new value stored in cache
-     * and second value is returned as result of this method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param key Key to store in cache.
-     * @param transformer Closure to be applied to the previous value in cache.
-     * @return Value computed by the closure.
-     * @throws IgniteCheckedException On any error occurred while storing value in cache.
-     */
-    public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer) throws IgniteCheckedException;
-
-    /**
-     * Stores result of applying {@code transformer} closure to the previous value associated with
-     * given key in cache. Result of closure application is guaranteed to be atomic, however, closure
-     * itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putx(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
-     * the whole updated value over the network, but instead will transfer the transforming closure
-     * that will be applied on each remote node involved in transaction. It may add significant performance
-     * gain when dealing with large values as the value is much larger than the closure itself.
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param key Key to store in cache.
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @return Future for the transform operation.
-     * @throws NullPointerException If either key or transform closure is {@code null}.
-     */
-    public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer);
-
-    /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.
      * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
@@ -1087,60 +1011,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
-     * Stores result of applying transform closures from the given map to previous values associated
-     * with corresponding keys in cache. Execution of closure is guaranteed to be atomic,
-     * however, closure itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
-     * the whole updated value over the network, but instead will transfer the transforming closures
-     * that will be applied on each remote node involved in transaction. It may add significant
-     * performance gain when dealing with large values as the value is much larger than the closure itself.
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param m Map containing keys and closures to be applied to values.
-     * @throws IgniteCheckedException On any error occurred while storing value in cache.
-     */
-    public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException;
-
-    /**
-     * Stores result of applying the specified transform closure to previous values associated
-     * with the specified keys in cache. Execution of closure is guaranteed to be atomic,
-     * however, closure itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
-     * the whole updated value over the network, but instead will transfer the transforming closure
-     * that will be applied on each remote node involved in transaction. It may add significant
-     * performance gain when dealing with large values as the value is much larger than the closure itself.
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param keys Keys for entries, to which the transformation closure will be applied.
-     *             If the collection is {@code null} or empty, this method is no-op.
-     * @param transformer Transformation closure to be applied to each value.
-     * @throws IgniteCheckedException On any error occurred while storing value in cache.
-     */
-    public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer) throws IgniteCheckedException;
-
-    /**
      * Asynchronously stores given key-value pairs in cache. If filters are provided, then entries will
      * be stored in cache only if they pass the filter. Note that filter check is atomic,
      * so value stored in cache is guaranteed to be consistent with the filters.
@@ -1162,62 +1032,6 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      */
     public IgniteFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
-
-    /**
-     * Stores result of applying transform closures from the given map to previous values associated
-     * with corresponding keys in cache. Result of closure application is guaranteed to be atomic,
-     * however, closure itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
-     * the whole updated value over the network, but instead will transfer the transforming closures
-     * that will be applied on each remote node involved in transaction. It may add significant performance
-     * gain when dealing with large values as the value is much larger than the closure itself.
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param m Map containing keys and closures to be applied to values.
-     * @return Future for operation.
-     */
-    public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m);
-
-    /**
-     * Stores result of applying the specified transform closure to previous values associated
-     * with the specified keys in cache. Result of closure application is guaranteed to be atomic,
-     * however, closure itself can be applied more than once.
-     * <p>
-     * Note that transform closure must not throw any exceptions. If exception is thrown from {@code apply}
-     * method, the transaction will be invalidated and entries participating in transaction will be nullified.
-     * <p>
-     * Unlike {@link #putAll(Map, org.apache.ignite.lang.IgnitePredicate[])} method, this method will not transfer
-     * the whole updated value over the network, but instead will transfer the transforming closure
-     * that will be applied on each remote node involved in transaction. It may add significant
-     * performance gain when dealing with large values as the value is much larger than the closure itself.
-     * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
-     *
-     * @param keys Keys for entries, to which the transformation closure will be applied.
-     *             If the collection is {@code null} or empty, this method is no-op.
-     * @param transformer Transformation closure to be applied to each value.
-     * @return Future for operation.
-     * @throws IgniteCheckedException On any error occurred while storing value in cache.
-     */
-    public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException;
 
     /**
      * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements

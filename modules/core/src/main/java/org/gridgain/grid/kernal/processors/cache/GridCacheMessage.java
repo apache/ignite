@@ -339,8 +339,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         assert ctx != null;
 
         if (txEntries != null) {
+            boolean transferExpiry = transferExpiryPolicy();
+
             for (IgniteTxEntry<K, V> e : txEntries) {
-                e.marshal(ctx);
+                e.marshal(ctx, transferExpiry);
 
                 if (ctx.deploymentEnabled()) {
                     prepareObject(e.key(), ctx);
@@ -352,13 +354,22 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     }
 
     /**
+     * @return {@code True} if entries expire policy should be marshalled.
+     */
+    protected boolean transferExpiryPolicy() {
+        return false;
+    }
+
+    /**
      * @param txEntries Entries to unmarshal.
      * @param ctx Context.
      * @param ldr Loader.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void unmarshalTx(Iterable<IgniteTxEntry<K, V>> txEntries, boolean near,
-        GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    protected final void unmarshalTx(Iterable<IgniteTxEntry<K, V>> txEntries,
+        boolean near,
+        GridCacheSharedContext<K, V> ctx,
+        ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
@@ -366,6 +377,60 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
             for (IgniteTxEntry<K, V> e : txEntries)
                 e.unmarshal(ctx, near, ldr);
         }
+    }
+
+    /**
+     * @param args Arguments to marshal.
+     * @param ctx Context.
+     * @return Marshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected final byte[][] marshalInvokeArguments(@Nullable Object[] args,
+        GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (args == null || args.length == 0)
+            return null;
+
+        byte[][] argsBytes = new byte[args.length][];
+
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+
+            if (ctx.deploymentEnabled())
+                prepareObject(arg, ctx);
+
+            argsBytes[i] = arg == null ? null : CU.marshal(ctx, arg);
+        }
+
+        return argsBytes;
+    }
+
+
+    /**
+     * @param byteCol Collection to unmarshal.
+     * @param ctx Context.
+     * @param ldr Loader.
+     * @return Unmarshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected final Object[] unmarshalInvokeArguments(@Nullable byte[][] byteCol,
+        GridCacheSharedContext<K, V> ctx,
+        ClassLoader ldr) throws IgniteCheckedException {
+        assert ldr != null;
+        assert ctx != null;
+
+        if (byteCol == null)
+            return null;
+
+        Object[] args = new Object[byteCol.length];
+
+        IgniteMarshaller marsh = ctx.marshaller();
+
+        for (int i = 0; i < byteCol.length; i++)
+            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
+
+        return args;
     }
 
     /**

@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -71,27 +72,32 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCache() throws Exception {
+    public void testLocalLoadCache() throws Exception {
         try {
             startGridsMultiThreaded(GRID_CNT);
 
-            GridCache<Integer, String> cache = cache(0);
+            IgniteCache<Integer, String> cache = jcache(0);
 
-            cache.loadCache(null, 0, PUT_CNT);
+            cache.localLoadCache(null, PUT_CNT);
 
-            int[] parts = cache.affinity().allPartitions(grid(0).localNode());
+            GridCache<Integer, String> cache0 = cache(0);
+
+            GridCacheAffinity aff = cache0.affinity();
+
+            int[] parts = aff.allPartitions(grid(0).localNode());
 
             int cnt1 = 0;
 
-            for (int i = 0; i < PUT_CNT; i++)
-                if (U.containsIntArray(parts,  cache.affinity().partition(i)))
+            for (int i = 0; i < PUT_CNT; i++) {
+                if (U.containsIntArray(parts, aff.partition(i)))
                     cnt1++;
+            }
 
             info("Number of keys to load: " + cnt1);
 
             int cnt2 = 0;
 
-            for (GridCacheEntry<Integer, String> e : cache.entrySet()) {
+            for (GridCacheEntry<Integer, String> e : cache0.entrySet()) {
                 assert e.primary() || e.backup();
 
                 cnt2++;

@@ -176,6 +176,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
         rollbackAsync().get();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<IgniteTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
