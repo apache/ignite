@@ -212,7 +212,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             // Unwind immediately for local and replicate caches.
             // We go through preloader for proper synchronization.
-            if (cacheCtx.isLocal() || cacheCtx.isReplicated())
+            if (cacheCtx.isLocal())
                 cacheCtx.preloader().unwindUndeploys();
         }
     }
@@ -275,7 +275,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     }
                 }));
 
-            Collection<K> keys = new LinkedList<>();
+            Collection<K> keys = new ArrayList<>();
 
             for (K k : keySet)
                 keys.add(k);
@@ -298,19 +298,20 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 cacheCtx.near().dht().context().swap().onUndeploy(leftNodeId, ldr) :
                 cacheCtx.swap().onUndeploy(leftNodeId, ldr);
 
-            if (keys.size() == 0 || cacheCtx.system())
+            if (cacheCtx.system())
                 continue;
 
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
-                "Cleared all cache entries for undeployed class loader [[cacheName=" + cacheCtx.namexx() +
+                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.namexx() +
                     ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
                     ", clsLdr=" + ldr.getClass().getName() + ']',
                 "Cleared all cache entries for undeployed class loader for cache: " + cacheCtx.namexx());
             U.quietAndWarn(
                 log,
-                "  ^-- Cache auto-undeployment happens in SHARED deployment mode (to turn off, switch to CONTINUOUS mode)");
+                "  ^-- Cache auto-undeployment happens in SHARED deployment mode " +
+                    "(to turn off, switch to CONTINUOUS mode)");
             U.quietAndWarn(log, "");
         }
 
