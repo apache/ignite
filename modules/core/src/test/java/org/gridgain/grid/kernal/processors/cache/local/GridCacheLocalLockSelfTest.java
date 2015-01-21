@@ -79,39 +79,39 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If test failed.
      */
     public void testLockReentry() throws IgniteCheckedException {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         assert !cache.isLocked(1);
         assert !cache.isLockedByThread(1);
 
-        assert cache.lock(1, 0L);
+        cache.lock(1).lock();
 
         assert cache.isLocked(1);
         assert cache.isLockedByThread(1);
 
         try {
             assert cache.get(1) == null;
-            assert cache.put(1, "1") == null;
+            assert cache.getAndPut(1, "1") == null;
             assert "1".equals(cache.get(1));
 
             // Reentry.
-            assert cache.lock(1, 0L);
+            cache.lock(1).lock();
 
             assert cache.isLocked(1);
             assert cache.isLockedByThread(1);
 
             try {
-                assert "1".equals(cache.remove(1));
+                assert "1".equals(cache.getAndRemove(1));
             }
             finally {
-                cache.unlock(1);
+                cache.lock(1).unlock();
             }
 
             assert cache.isLocked(1);
             assert cache.isLockedByThread(1);
         }
         finally {
-            cache.unlock(1);
+            cache.lock(1).unlock();
         }
 
         assert !cache.isLocked(1);
@@ -122,7 +122,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLock() throws Throwable {
-        final GridCache<Integer, String> cache = ignite.cache(null);
+        final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -133,7 +133,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
-                assert cache.lock(1, 0L);
+                cache.lock(1).lock();
 
                 info("After lock for key 1");
 
@@ -154,7 +154,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Waited for latch 2");
                 }
                 finally {
-                    cache.unlock(1);
+                    cache.lock(1).unlock();
 
                     info("Unlocked entry for key 1.");
 
@@ -174,7 +174,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 info("Latch1 released.");
 
-                assert !cache.lock(1, -1L);
+                assert !cache.lock(1).tryLock();
 
                 assert cache.isLocked(1);
                 assert !cache.isLockedByThread(1);
@@ -187,7 +187,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 latch3.await();
 
-                assert cache.lock(1, -1L);
+                assert cache.lock(1).tryLock();
 
                 assert cache.isLocked(1);
                 assert cache.isLockedByThread(1);
@@ -199,7 +199,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                     info("Read value for key 1");
 
-                    assert "1".equals(cache.remove(1));
+                    assert "1".equals(cache.getAndRemove(1));
 
                     info("Removed value for key 1");
 
@@ -209,7 +209,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Checked that cache is locked for key 1");
                 }
                 finally {
-                    cache.unlock(1);
+                    cache.lock(1).unlock();
 
                     info("Unlocked cache for key 1");
                 }
@@ -238,13 +238,13 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testLockAndPut() throws Throwable {
-        final GridCache<Integer, String> cache = ignite.cache(null);
+        final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                assert cache.lock(1, 0L);
+                cache.lock(1).lock();
 
                 info("Locked cache key: 1");
 
@@ -268,7 +268,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Woke up from sleep.");
                 }
                 finally {
-                    cache.unlock(1);
+                    cache.lock(1).unlock();
 
                     info("Unlocked cache key: 1");
                 }
@@ -293,7 +293,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 info("Put key-value pair into cache: 1='2'");
 
-                assert "2".equals(cache.remove(1));
+                assert "2".equals(cache.getAndRemove(1));
 
                 info("Removed key from cache: 1");
 

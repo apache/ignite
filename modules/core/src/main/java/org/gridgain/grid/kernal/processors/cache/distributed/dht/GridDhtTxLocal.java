@@ -348,8 +348,13 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @return Future that will be completed when locks are acquired.
      */
     public IgniteFuture<IgniteTxEx<K, V>> prepareAsync(@Nullable Iterable<IgniteTxEntry<K, V>> reads,
-        @Nullable Iterable<IgniteTxEntry<K, V>> writes, Map<IgniteTxKey<K>, GridCacheVersion> verMap, long msgId,
-        IgniteUuid nearMiniId, Map<UUID, Collection<UUID>> txNodes, boolean last, Collection<UUID> lastBackups) {
+        @Nullable Iterable<IgniteTxEntry<K, V>> writes,
+        Map<IgniteTxKey<K>, GridCacheVersion> verMap,
+        long msgId,
+        IgniteUuid nearMiniId,
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean last,
+        Collection<UUID> lastBackups) {
         assert optimistic();
 
         // In optimistic mode prepare still can be called explicitly from salvageTx.

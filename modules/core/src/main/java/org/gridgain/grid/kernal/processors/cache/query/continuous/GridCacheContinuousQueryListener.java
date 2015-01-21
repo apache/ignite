@@ -33,4 +33,9 @@ interface GridCacheContinuousQueryListener<K, V> {
      * @param recordEvt Whether to record event.
      */
     public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt);
+
+    /**
+     * Listener unregistered callback.
+     */
+    public void onUnregister();
 }

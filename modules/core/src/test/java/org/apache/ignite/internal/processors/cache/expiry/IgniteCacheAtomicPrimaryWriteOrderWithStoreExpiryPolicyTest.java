@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import org.gridgain.grid.cache.store.*;
 
 /**
- * Entry time-to-live test for local cache.
+ *
  */
-public class GridCacheLocalTtlSelfTest extends GridCacheAbstractTtlSelfTest {
+public class IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest extends
+    IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest{
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return LOCAL;
+    @Override protected GridCacheStore<?, ?> cacheStore() {
+        return new TestStore();
     }
 }

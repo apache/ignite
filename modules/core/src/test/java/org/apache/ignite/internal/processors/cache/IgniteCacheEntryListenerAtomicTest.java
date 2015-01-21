@@ -15,40 +15,41 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Refresh ahead test for PARTITIONED cache.
+ *
  */
-public class GridCachePartitionedRefreshAheadSelfTest extends GridCacheRefreshAheadAbstractSelfTest {
+public class IgniteCacheEntryListenerAtomicTest extends IgniteCacheEntryListenerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        GridCacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_ASYNC);
-        cc.setBackups(1);
-
-        cc.setRefreshAheadRatio(0.5);
-
-        cc.setStore(testStore());
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+    @Override protected int gridCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
+    @Override protected GridCacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

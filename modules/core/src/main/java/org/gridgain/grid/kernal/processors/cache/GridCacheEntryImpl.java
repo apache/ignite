@@ -406,7 +406,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable @Override public V get() throws IgniteCheckedException {
-        return proxy.get(key, isNearEnabled(ctx) ? null : cached, true);
+        return proxy.get(key, isNearEnabled(ctx) ? null : cached, !ctx.keepPortable());
     }
 
     /** {@inheritDoc} */
@@ -512,16 +512,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
         return setxAsync(val, ctx.noPeekArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        transformAsync(transformer).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        return proxy.transformAsync(key, transformer, isNearEnabled(ctx) ? null : cached, ttl);
     }
 
     /** {@inheritDoc} */
@@ -749,6 +739,14 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
             this.cached = cached = entryEx(true, ctx.affinity().affinityTopologyVersion());
 
         return cached.memorySize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */

@@ -37,10 +37,12 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
@@ -937,19 +939,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            if (ttl != null) {
-                GridCacheEntry<Object, Object> entry = c.entry(key);
+            if (ttl != null && ttl > 0) {
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
-                if (entry != null) {
-                    entry.timeToLive(ttl);
-
-                    return entry.setxAsync(val);
-                }
-                else
-                    return new GridFinishedFuture<Object>(ctx, false);
+                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
-            else
-                return c.putxAsync(key, val);
+
+            return c.putxAsync(key, val);
         }
     }
 
@@ -980,16 +976,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            GridCacheEntry<Object, Object> entry = c.entry(key);
+            if (ttl != null && ttl > 0) {
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
-            if (entry != null) {
-                if (ttl != null)
-                    entry.timeToLive(ttl);
-
-                return entry.setxIfAbsentAsync(val);
+                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
-            else
-                return new GridFinishedFuture<Object>(ctx, false);
+
+            return c.putxIfAbsentAsync(key, val);
         }
     }
 
@@ -1020,16 +1013,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            GridCacheEntry<Object, Object> entry = c.entry(key);
+            if (ttl != null && ttl > 0) {
+                Duration duration = new Duration(MILLISECONDS, ttl);
 
-            if (entry != null) {
-                if (ttl != null)
-                    entry.timeToLive(ttl);
-
-                return entry.replacexAsync(val);
+                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
-            else
-                return new GridFinishedFuture<Object>(ctx, false);
+
+            return c.replacexAsync(key, val);
         }
     }
 

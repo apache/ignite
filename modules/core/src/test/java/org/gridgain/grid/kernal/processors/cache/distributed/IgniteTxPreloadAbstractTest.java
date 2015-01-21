@@ -17,14 +17,15 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -66,7 +67,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testRemoteTxPreloading() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         for (int i = 0; i < 10000; i++)
             cache.put(String.valueOf(i), 0);
@@ -94,12 +95,21 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         for (int i = 0; i < 10; i++)
             keys.add(String.valueOf(i * 1000));
 
-        cache.transformAll(keys, new C1<Integer, Integer>() {
-            @Override public Integer apply(Integer val) {
-                if (val == null)
+        cache.invokeAll(keys, new EntryProcessor<String, Integer, Void>() {
+            @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                Integer val = e.getValue();
+
+                if (val == null) {
                     keyNotLoaded = true;
 
-                return val + 1;
+                    e.setValue(1);
+
+                    return null;
+                }
+
+                e.setValue(val + 1);
+
+                return null;
             }
         });
 
@@ -143,7 +153,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         for (int i = 0; i < 10000; i++)
             map.put(String.valueOf(i), 0);
 
-        GridCache<String, Integer> cache0 = cache(0);
+        IgniteCache<String, Integer> cache0 = jcache(0);
 
         cache0.putAll(map);
 
@@ -156,18 +166,26 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
             startGrid(i);
 
-            GridCache<String, Integer> cache = cache(i);
+            IgniteCache<String, Integer> cache = jcache(i);
 
-            try (IgniteTx tx = cache.txStart(txConcurrency, IgniteTxIsolation.READ_COMMITTED)) {
-                cache.transform(TX_KEY, new C1<Integer, Integer>() {
-                    @Override public Integer apply(Integer val) {
+            IgniteTransactions txs = ignite(i).transactions();
+
+            try (IgniteTx tx = txs.txStart(txConcurrency, IgniteTxIsolation.READ_COMMITTED)) {
+                cache.invoke(TX_KEY, new EntryProcessor<String, Integer, Void>() {
+                    @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                        Integer val = e.getValue();
+
                         if (val == null) {
                             keyNotLoaded = true;
 
-                            return 1;
+                            e.setValue(1);
+
+                            return null;
                         }
 
-                        return val + 1;
+                        e.setValue(val + 1);
+
+                        return null;
                     }
                 });
 

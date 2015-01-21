@@ -37,11 +37,11 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
+    @Override public void update(IgniteCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
         throws IgniteCheckedException {
-        String cacheName = cache0.name();
+        String cacheName = cache0.getConfiguration(GridCacheConfiguration.class).getName();
 
-        GridKernalContext ctx = ((GridKernal)cache0.gridProjection().ignite()).context();
+        GridKernalContext ctx = ((GridKernal)cache0.ignite()).context();
         IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 

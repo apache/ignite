@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -95,6 +96,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
                 V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
                 return new GridDhtCacheEntry<>(ctx, topVer, key, hash, val, next, ttl, hdrId);
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.io().addHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest<K, V>>() {
+            @Override public void apply(UUID nodeId, GridCacheTtlUpdateRequest<K, V> req) {
+                processTtlUpdateRequest(req);
             }
         });
     }
@@ -424,7 +436,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, org.apache.ignite.lang.IgnitePredicate[])}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.IgniteCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -443,8 +455,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializePortable,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable,
-            forcePrimary, filter);
+        return getAllAsync(keys,
+            null,
+            /*don't check local tx. */false,
+            subjId,
+            taskName,
+            deserializePortable,
+            forcePrimary,
+            null,
+            filter);
     }
 
     /** {@inheritDoc} */
@@ -460,12 +479,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param keys Keys to get
-     * @param filter {@inheritDoc}
-     * @return {@inheritDoc}
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param filter Optional filter.
+     * @param expiry Expiry policy.
+     * @return Get future.
      */
-    IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys, @Nullable UUID subjId,
-        String taskName, boolean deserializePortable, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return getAllAsync(keys, null, /*don't check local tx. */false, subjId, taskName, deserializePortable, false,
+    IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializePortable,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiry
+        ) {
+        return getAllAsync(keys,
+            null,
+            /*don't check local tx. */false,
+            subjId,
+            taskName,
+            deserializePortable,
+            false,
+            expiry,
             filter);
     }
 
@@ -475,14 +510,35 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param keys Keys to get.
      * @param reload Reload flag.
      * @param topVer Topology version.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param deserializePortable Deserialize portable flag.
      * @param filter Optional filter.
+     * @param expiry Expiry policy.
      * @return DHT future.
      */
-    public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader, long msgId,
-        LinkedHashMap<? extends K, Boolean> keys, boolean reload, long topVer, @Nullable UUID subjId,
-        int taskNameHash, boolean deserializePortable, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx, msgId, reader, keys, reload, /*tx*/null,
-            topVer, filter, subjId, taskNameHash, deserializePortable);
+    public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader,
+        long msgId,
+        LinkedHashMap<? extends K, Boolean> keys,
+        boolean reload,
+        long topVer,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        boolean deserializePortable,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiry) {
+        GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
+            msgId,
+            reader,
+            keys,
+            reload,
+            /*tx*/null,
+            topVer,
+            filter,
+            subjId,
+            taskNameHash,
+            deserializePortable,
+            expiry);
 
         fut.init();
 
@@ -496,14 +552,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest<K, V> req) {
         assert isAffinityNode(cacheCfg);
 
+        long ttl = req.accessTtl();
+
+        final GetExpiryPolicy expiryPlc = ttl == -1L ? null : new GetExpiryPolicy(ttl);
+
         IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-            getDhtAsync(nodeId, req.messageId(), req.keys(), req.reload(), req.topologyVersion(), req.subjectId(),
-                req.taskNameHash(), false, req.filter());
+            getDhtAsync(nodeId,
+                req.messageId(),
+                req.keys(),
+                req.reload(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                false,
+                req.filter(),
+                expiryPlc);
 
         fut.listenAsync(new CI1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>>() {
             @Override public void apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> f) {
                 GridNearGetResponse<K, V> res = new GridNearGetResponse<>(ctx.cacheId(),
-                    req.futureId(), req.miniId(), req.version());
+                    req.futureId(),
+                    req.miniId(),
+                    req.version());
 
                 GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
                     (GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>>)f;
@@ -528,8 +598,144 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
                         ",req=" + req + ", res=" + res + ']', e);
                 }
+
+                sendTtlUpdateRequest(expiryPlc);
             }
         });
+    }
+
+    /**
+     * @param expiryPlc Expiry policy.
+     */
+    public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
+        if (expiryPlc != null && expiryPlc.entries() != null) {
+            ctx.closures().runLocalSafe(new Runnable() {
+                @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+                @Override public void run() {
+                    Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries = expiryPlc.entries();
+
+                    assert entries != null && !entries.isEmpty();
+
+                    Map<ClusterNode, GridCacheTtlUpdateRequest<K, V>> reqMap = new HashMap<>();
+
+                    long topVer = ctx.discovery().topologyVersion();
+
+                    for (Map.Entry<Object, IgniteBiTuple<byte[], GridCacheVersion>> e : entries.entrySet()) {
+                        List<ClusterNode> nodes = ctx.affinity().nodes((K)e.getKey(), topVer);
+
+                        for (int i = 0; i < nodes.size(); i++) {
+                            ClusterNode node = nodes.get(i);
+
+                            if (!node.isLocal()) {
+                                GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
+
+                                if (req == null) {
+                                    reqMap.put(node,
+                                        req = new GridCacheTtlUpdateRequest<>(topVer, expiryPlc.forAccess()));
+
+                                    req.cacheId(ctx.cacheId());
+                                }
+
+                                req.addEntry(e.getValue().get1(), e.getValue().get2());
+                            }
+                        }
+                    }
+
+                    Map<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> rdrs = expiryPlc.readers();
+
+                    if (rdrs != null) {
+                        assert !rdrs.isEmpty();
+
+                        for (Map.Entry<UUID, Collection<IgniteBiTuple<byte[], GridCacheVersion>>> e : rdrs.entrySet()) {
+                            ClusterNode node = ctx.node(e.getKey());
+
+                            if (node != null) {
+                                GridCacheTtlUpdateRequest<K, V> req = reqMap.get(node);
+
+                                if (req == null) {
+                                    reqMap.put(node, req = new GridCacheTtlUpdateRequest<>(topVer,
+                                        expiryPlc.forAccess()));
+
+                                    req.cacheId(ctx.cacheId());
+                                }
+
+                                for (IgniteBiTuple<byte[], GridCacheVersion> t : e.getValue())
+                                    req.addNearEntry(t.get1(), t.get2());
+                            }
+                        }
+                    }
+
+                    for (Map.Entry<ClusterNode, GridCacheTtlUpdateRequest<K, V>> req : reqMap.entrySet()) {
+                        try {
+                            ctx.io().send(req.getKey(), req.getValue());
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Failed to send TTL update request.", e);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * @param req Request.
+     */
+    private void processTtlUpdateRequest(GridCacheTtlUpdateRequest<K, V> req) {
+        if (req.keys() != null)
+            updateTtl(this, req.keys(), req.versions(), req.ttl());
+
+        if (req.nearKeys() != null) {
+            GridNearCacheAdapter<K, V> near = near();
+
+            assert near != null;
+
+            updateTtl(near, req.nearKeys(), req.nearVersions(), req.ttl());
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Entries keys.
+     * @param vers Entries versions.
+     * @param ttl TTL.
+     */
+    private void updateTtl(GridCacheAdapter<K, V> cache,
+        List<K> keys,
+        List<GridCacheVersion> vers,
+        long ttl) {
+        assert !F.isEmpty(keys);
+        assert keys.size() == vers.size();
+
+        int size = keys.size();
+
+        boolean swap = cache.context().isSwapOrOffheapEnabled();
+
+        for (int i = 0; i < size; i++) {
+            try {
+                GridCacheEntryEx<K, V> entry = null;
+
+                try {
+                    if (swap) {
+                        entry = cache.entryEx(keys.get(i));
+
+                        entry.unswap(true, false);
+                    }
+                    else
+                        entry = cache.peekEx(keys.get(i));
+
+                    if (entry != null)
+                        entry.updateTtl(vers.get(i), ttl);
+                }
+                finally {
+                    if (entry != null)
+                        cache.context().evicts().touch(entry, -1L);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to unswap entry.", e);
+            }
+        }
     }
 
     /** {@inheritDoc} */

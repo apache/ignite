@@ -15,19 +15,41 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
+import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Entry time-to-live test for partitioned cache.
+ *
  */
-public class GridCachePartitionedTtlSelfTest extends GridCacheAbstractTtlSelfTest {
+public class IgniteCacheAtomicExpiryPolicyTest extends IgniteCacheExpiryPolicyAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
+
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CLOCK;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

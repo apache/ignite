@@ -23,7 +23,7 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>apache-2.0.txt</source>
+            <source>LICENSE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
 

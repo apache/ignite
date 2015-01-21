@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -28,6 +29,7 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -221,9 +223,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        GridCache<Integer, String> cache = grid.cache(null);
+        IgniteCache<Integer, String> cache = grid.jcache(null);
 
-        assert cache.lock(key, 0);
+        cache.lock(key).lock();
 
         long start = System.currentTimeMillis();
 
@@ -243,17 +245,17 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
             }
         });
 
-        assert cache.lock(key + 1, 0);
+        cache.lock(key + 1).lock();
 
-        cache.unlock(key);
+        cache.lock(key).unlock();
 
-        assert cache.lock(key + 2, 0);
+        cache.lock(key + 2).lock();
 
-        cache.unlock(key + 1);
+        cache.lock(key + 1).unlock();
 
         assert !fut.isDone() : "Failed waiting for locks";
 
-        cache.unlock(key + 2);
+        cache.lock(key + 2).unlock();
 
         latch.await();
     }
@@ -273,9 +275,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        GridCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.jcache(null);
 
-        assert cache.lock(key, 0);
+        cache.lock(key).lock();
 
         long start;
         try {
@@ -301,7 +303,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 + fut.isDone() + ']';
         }
         finally {
-            cache.unlock(key);
+            cache.lock(key).unlock();
         }
 
         latch.await();

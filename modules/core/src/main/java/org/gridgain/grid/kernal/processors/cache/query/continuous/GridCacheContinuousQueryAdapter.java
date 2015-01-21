@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
@@ -32,6 +31,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
@@ -55,6 +55,9 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
     /** Projection predicate */
     private final IgnitePredicate<GridCacheEntry<K, V>> prjPred;
+
+    /** Keep portable flag. */
+    private final boolean keepPortable;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -97,6 +100,8 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         this.ctx = ctx;
         this.topic = topic;
         this.prjPred = prjPred;
+
+        keepPortable = ctx.keepPortable();
 
         log = ctx.logger(getClass());
     }
@@ -221,12 +226,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
     /** {@inheritDoc} */
     @Override public void execute() throws IgniteCheckedException {
-        execute(null, false);
+        execute(null, false, false, false, true);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@Nullable ClusterGroup prj) throws IgniteCheckedException {
-        execute(prj, false);
+        execute(prj, false, false, false, true);
     }
 
     /**
@@ -234,9 +239,16 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
      *
      * @param prj Grid projection.
      * @param internal If {@code true} then query notified about internal entries updates.
+     * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
+     * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
+     * @param oldVal {@code True} if old value is required.
      * @throws IgniteCheckedException If failed.
      */
-    public void execute(@Nullable ClusterGroup prj, boolean internal) throws IgniteCheckedException {
+    public void execute(@Nullable ClusterGroup prj,
+        boolean internal,
+        boolean entryLsnr,
+        boolean sync,
+        boolean oldVal) throws IgniteCheckedException {
         if (locCb == null)
             throw new IllegalStateException("Mandatory local callback is not set for the query: " + this);
 
@@ -279,12 +291,25 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
             guard.block();
 
-            GridContinuousHandler hnd = ctx.kernalContext().security().enabled() ?
-                new GridCacheContinuousQueryHandlerV2<>(ctx.name(), topic, locCb, rmtFilter, prjPred, internal,
-                    ctx.kernalContext().job().currentTaskNameHash()) :
-                new GridCacheContinuousQueryHandler<>(ctx.name(), topic, locCb, rmtFilter, prjPred, internal);
+            int taskNameHash =
+                ctx.kernalContext().security().enabled() ? ctx.kernalContext().job().currentTaskNameHash() : 0;
 
-            routineId = ctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval, autoUnsubscribe,
+            GridContinuousHandler hnd = new GridCacheContinuousQueryHandler<>(ctx.name(),
+                topic,
+                locCb,
+                rmtFilter,
+                prjPred,
+                internal,
+                entryLsnr,
+                sync,
+                oldVal,
+                taskNameHash,
+                keepPortable);
+
+            routineId = ctx.kernalContext().continuous().startRoutine(hnd,
+                bufSize,
+                timeInterval,
+                autoUnsubscribe,
                 prj.predicate()).get();
         }
         finally {

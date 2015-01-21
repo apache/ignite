@@ -119,6 +119,9 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     @GridToStringExclude
     private List<GridDistributedCacheEntry<K, V>> entries;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -133,6 +136,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter.
      */
     public GridNearLockFuture(
@@ -142,9 +146,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean read,
         boolean retval,
         long timeout,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
-        assert cctx != null;
+
         assert keys != null;
 
         this.cctx = cctx;
@@ -153,6 +158,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.accessTtl = accessTtl;
         this.filter = filter;
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
@@ -860,7 +866,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             inTx() ? tx.groupLockKey() : null,
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
-                                            inTx() ? tx.taskNameHash() : 0);
+                                            inTx() ? tx.taskNameHash() : 0,
+                                            read ? accessTtl : -1L);
 
                                         mapping.request(req);
                                     }

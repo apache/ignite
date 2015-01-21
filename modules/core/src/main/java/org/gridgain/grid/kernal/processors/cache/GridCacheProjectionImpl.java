@@ -33,6 +33,8 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -82,6 +84,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** */
     private boolean keepPortable;
 
+    /** */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -104,7 +109,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         @Nullable IgnitePredicate<? super GridCacheEntry<K, V>> entryFilter,
         @Nullable Set<GridCacheFlag> flags,
         @Nullable UUID subjId,
-        boolean keepPortable) {
+        boolean keepPortable,
+        @Nullable ExpiryPolicy expiryPlc) {
         assert parent != null;
         assert cctx != null;
 
@@ -134,6 +140,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         qry = new GridCacheQueriesImpl<>(cctx, this);
 
         this.keepPortable = keepPortable;
+
+        this.expiryPlc = expiryPlc;
     }
 
     /**
@@ -376,8 +384,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         A.notNull(subjId, "subjId");
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -424,7 +438,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             (IgnitePredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
             flags,
             subjId,
-            keepPortable);
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl((GridCacheContext<K1, V1>)cctx, prj, prj);
     }
@@ -448,8 +463,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, kvFilter,
-            noNullEntryFilter.entryFilter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -472,8 +493,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             }
         }
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            filter, flags, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            filter,
+            flags,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -491,8 +518,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         res.addAll(EnumSet.copyOf(F.asList(flags)));
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            res,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -509,8 +542,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         res.removeAll(EnumSet.copyOf(F.asList(flags)));
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this, cctx, noNullKvFilter.kvFilter,
-            noNullEntryFilter.entryFilter, res, subjId, keepPortable);
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            res,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -525,7 +564,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
                 (IgnitePredicate<GridCacheEntry>)noNullEntryFilter.entryFilter,
                 flags,
                 subjId,
-                true);
+                true,
+                expiryPlc);
 
             return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
         }
@@ -742,18 +782,44 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        A.notNull(key, "key", transformer, "valTransform");
-
-        cache.transform(key, transformer);
+    @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
+        throws IgniteCheckedException {
+        return cache.invoke(key, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        A.notNull(key, "key", transformer, "transformer");
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException {
+        return cache.invokeAll(keys, entryProcessor, args);
+    }
 
-        return cache.transformAndCompute(key, transformer);
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        return cache.invokeAsync(key, entryProcessor, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        return cache.invokeAllAsync(keys, entryProcessor, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) throws IgniteCheckedException {
+        return cache.invokeAll(map, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        return cache.invokeAllAsync(map, args);
     }
 
     /** {@inheritDoc} */
@@ -775,13 +841,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer) {
-        A.notNull(key, "key", transformer, "valTransform");
-
-        return cache.transformAsync(key, transformer);
-    }
-
-    /** {@inheritDoc} */
     @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
         return putIfAbsentAsync(key, val).get();
     }
@@ -799,12 +858,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
         return putxAsync(key, val, cctx.noPeekArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry, long ttl) {
-        return cache.transformAsync(key, transformer, entry, ttl);
     }
 
     /** {@inheritDoc} */
@@ -846,23 +899,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        if (F.isEmpty(m))
-            return;
-
-        cache.transformAll(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        if (F.isEmpty(keys))
-            return;
-
-        cache.transformAll(keys, transformer);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         m = isAll(m, true);
@@ -871,23 +907,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             return new GridFinishedFuture<>(cctx.kernalContext());
 
         return cache.putAllAsync(m, and(filter, false));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        if (F.isEmpty(m))
-            return new GridFinishedFuture<>(cctx.kernalContext());
-
-        return cache.transformAllAsync(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Set<? extends K> keys, IgniteClosure<V, V> transformer)
-        throws IgniteCheckedException {
-        if (F.isEmpty(keys))
-            return new GridFinishedFuture<>(cctx.kernalContext());
-
-        return cache.transformAllAsync(keys, transformer);
     }
 
     /** {@inheritDoc} */
@@ -1248,6 +1267,24 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public Iterator<GridCacheEntry<K, V>> iterator() {
         return cache.entrySet(entryFilter(true)).iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable ExpiryPolicy expiry() {
+        return expiryPlc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        return new GridCacheProjectionImpl<>(
+            this,
+            cctx,
+            noNullKvFilter.kvFilter,
+            noNullEntryFilter.entryFilter,
+            flags,
+            subjId,
+            true,
+            plc);
     }
 
     /** {@inheritDoc} */

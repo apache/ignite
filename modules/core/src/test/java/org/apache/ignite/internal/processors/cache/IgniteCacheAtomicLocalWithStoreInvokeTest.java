@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import org.gridgain.grid.cache.store.*;
 
 /**
- * Entry time-to-live test for replicated cache.
+ *
  */
-public class GridCacheReplicatedTtlSelfTest extends GridCacheAbstractTtlSelfTest {
+public class IgniteCacheAtomicLocalWithStoreInvokeTest extends IgniteCacheAtomicLocalInvokeTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected GridCacheStore<?, ?> cacheStore() {
+        return new TestStore();
     }
 }

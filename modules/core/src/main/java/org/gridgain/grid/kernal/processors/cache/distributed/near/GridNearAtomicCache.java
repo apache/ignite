@@ -33,6 +33,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -157,8 +158,21 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
             }
 
+            long ttl = res.nearTtl(i);
+            long expireTime = res.nearExpireTime(i);
+
+            if (ttl != -1L && expireTime == -1L)
+                expireTime = GridCacheMapEntry.toExpireTime(ttl);
+
             try {
-                processNearAtomicUpdateResponse(ver, key, val, valBytes, res.nearTtl(), req.nodeId(), req.subjectId(),
+                processNearAtomicUpdateResponse(ver,
+                    key,
+                    val,
+                    valBytes,
+                    ttl,
+                    expireTime,
+                    req.nodeId(),
+                    req.subjectId(),
                     taskName);
             }
             catch (IgniteCheckedException e) {
@@ -172,8 +186,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param key Key.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param ttl Time to live.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
      * @param nodeId Node ID.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -181,7 +198,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         K key,
         @Nullable V val,
         @Nullable byte[] valBytes,
-        Long ttl,
+        long ttl,
+        long expireTime,
         UUID nodeId,
         UUID subjId,
         String taskName
@@ -204,17 +222,18 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         op,
                         val,
                         valBytes,
+                        null,
                         /*write-through*/false,
                         /*retval*/false,
-                        ttl,
+                        /**expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,
                         /*check version*/true,
                         CU.<K, V>empty(),
                         DR_NONE,
-                        -1,
-                        -1,
+                        ttl,
+                        expireTime,
                         null,
                         false,
                         false,
@@ -286,31 +305,38 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
                         V val = req.nearValue(i);
                         byte[] valBytes = req.nearValueBytes(i);
-                        IgniteClosure<V, V> transform = req.nearTransformClosure(i);
+                        EntryProcessor<K, V, ?> entryProcessor = req.nearEntryProcessor(i);
 
-                        GridCacheOperation op = transform != null ? TRANSFORM :
+                        GridCacheOperation op = entryProcessor != null ? TRANSFORM :
                             (val != null || valBytes != null) ?
                                 UPDATE :
                                 DELETE;
+
+                        long ttl = req.nearTtl(i);
+                        long expireTime = req.nearExpireTime(i);
+
+                        if (ttl != -1L && expireTime == -1L)
+                            expireTime = GridCacheMapEntry.toExpireTime(ttl);
 
                         GridCacheUpdateAtomicResult<K, V> updRes = entry.innerUpdate(
                             ver,
                             nodeId,
                             nodeId,
                             op,
-                            op == TRANSFORM ? transform : val,
+                            op == TRANSFORM ? entryProcessor : val,
                             valBytes,
+                            op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*retval*/false,
-                            req.ttl(),
+                            null,
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
                             CU.<K, V>empty(),
                             DR_NONE,
-                            -1,
-                            -1,
+                            ttl,
+                            expireTime,
                             null,
                             false,
                             intercept,
@@ -351,9 +377,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(null,
+            keys,
+            false,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable,
+            prj != null ? prj.expiry() : null);
     }
 
     /** {@inheritDoc} */
@@ -498,32 +534,45 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(K key, IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        dht.transform(key, transformer);
+    @Override public <T> EntryProcessorResult<T> invoke(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException {
+        return dht.invoke(key, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R transformAndCompute(K key, IgniteClosure<V, IgniteBiTuple<V, R>> transformer)
-        throws IgniteCheckedException {
-        return dht.transformAndCompute(key, transformer);
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException {
+        return dht.invokeAll(keys, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(K key,
-        IgniteClosure<V, V> transformer,
-        @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl) {
-        return dht.transformAsync(key, transformer, entry, ttl);
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) {
+        return dht.invokeAllAsync(map, args);
     }
 
     /** {@inheritDoc} */
-    @Override public void transformAll(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) throws IgniteCheckedException {
-        dht.transformAll(m);
+    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws EntryProcessorException {
+        return dht.invokeAsync(key, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAllAsync(@Nullable Map<? extends K, ? extends IgniteClosure<V, V>> m) {
-        return dht.transformAllAsync(m);
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) throws IgniteCheckedException {
+        return dht.invokeAllAsync(map, args).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
+        return dht.invokeAllAsync(keys, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
@@ -606,6 +655,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean isRead,
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         return dht.lockAllAsync(keys, timeout, filter);
     }

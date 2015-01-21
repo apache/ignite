@@ -19,9 +19,8 @@ package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.dataload.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -79,18 +78,24 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         if (log.isDebugEnabled())
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
 
-        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+//        TODO IGNITE-77: restore adapter usage.
+//        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+//
+//        IgniteFuture<?> f = cache.context().preloader().startFuture();
+//
+//        if (!f.isDone())
+//            f.get();
+//
+//        if (ignoreDepOwnership)
+//            cache.context().deploy().ignoreOwnership(true);
 
-        IgniteFuture<?> f = cache.context().preloader().startFuture();
-
-        if (!f.isDone())
-            f.get();
+        IgniteCacheProxy<K, V> cache = ctx.cache().jcache(cacheName);
 
         if (ignoreDepOwnership)
             cache.context().deploy().ignoreOwnership(true);
 
         try {
-            updater.update(cache.<K, V>cache(), col);
+            updater.update(cache, col);
 
             return null;
         }

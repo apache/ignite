@@ -54,6 +54,8 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -181,6 +183,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** System cache flag. */
     private boolean sys;
 
+    /** Default expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -288,6 +293,20 @@ public class GridCacheContext<K, V> implements Externalizable {
             cacheId = 1;
 
         sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
+
+        Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
+
+        expiryPlc = factory != null ? factory.create() : null;
+
+        if (expiryPlc instanceof EternalExpiryPolicy)
+            expiryPlc = null;
+    }
+
+    /**
+     * @return Cache default {@link ExpiryPolicy}.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -1063,7 +1082,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param prj Flags to set.
      */
-    void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    public void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
         if (nearContext())
             dht().near().context().prjPerCall.set(prj);
         else
@@ -1072,6 +1091,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * Gets thread local projection.
+     *
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
@@ -1088,8 +1108,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (subjId != null)
             return subjId;
 
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        return subjectIdPerCall(subjId, projectionPerCall());
+    }
 
+    /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @param prj Optional thread local projection.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable GridCacheProjectionImpl<K, V> prj) {
         if (prj != null)
             subjId = prj.subjectId();
 
