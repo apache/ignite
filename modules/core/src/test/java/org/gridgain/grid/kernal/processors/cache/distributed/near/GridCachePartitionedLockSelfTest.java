@@ -86,15 +86,5 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
         }, CacheException.class, "Locks are not supported");
 
         CacheLock lock = g0.jcache(null).lock(1);
-
-        lock.enableAsync().tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-
-        final IgniteFuture<Boolean> lockFut1 = lock.enableAsync().future();
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return lockFut1.get();
-            }
-        }, IgniteCheckedException.class, "Locks are not supported");
     }
 }

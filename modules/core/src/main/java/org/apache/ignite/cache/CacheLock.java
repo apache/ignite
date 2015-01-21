@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -26,7 +27,7 @@ import java.util.concurrent.locks.*;
 /**
  * Lock associated with some cache keys.
  */
-public interface CacheLock extends Lock, IgniteAsyncSupport {
+public interface CacheLock extends Lock {
     /**
      * Checks if any node holds lock on at least one key associated with this {@code CacheLock}.
      * <p>
@@ -57,6 +58,10 @@ public interface CacheLock extends Lock, IgniteAsyncSupport {
     @IgniteAsyncSupported
     @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException;
 
-    /** {@inheritDoc} */
-    @Override public CacheLock enableAsync();
+    /**
+     * The method is unsupported.
+     *
+     * @return Nothing, this method is unsupported, {@link UnsupportedOperationException} will be thrown.
+     */
+    @NotNull @Override public Condition newCondition();
 }
