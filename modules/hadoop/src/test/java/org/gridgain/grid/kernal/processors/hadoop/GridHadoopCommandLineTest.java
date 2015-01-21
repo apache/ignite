@@ -312,7 +312,7 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         assertEquals(0, executeHadoopCmd("jar", examplesJar.getAbsolutePath(), "wordcount", "/input", "/output"));
 
-        IgniteFsPath path = new IgniteFsPath("/users/" + System.getProperty("user.name") + "/");
+        IgniteFsPath path = new IgniteFsPath("/user/" + System.getProperty("user.name") + "/");
 
         assertTrue(ggfs.exists(path));
 

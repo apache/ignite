@@ -31,7 +31,6 @@ import java.util.concurrent.locks.*;
 
 /**
  *
- * @param <K>
  */
 class CacheLockImpl<K> implements CacheLock {
     /** */
@@ -39,9 +38,6 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** */
     private final Collection<? extends K> keys;
-
-    /** */
-    private volatile CacheLockAsyncImpl<K> async;
 
     /**
      * @param delegate Delegate.
@@ -84,7 +80,7 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** {@inheritDoc} */
     @Override public void lockInterruptibly() throws InterruptedException {
-        tryLock(-1, TimeUnit.MILLISECONDS);
+        tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
@@ -109,7 +105,7 @@ class CacheLockImpl<K> implements CacheLock {
             IgniteFuture<Boolean> fut = null;
 
             try {
-                fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
+                fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
                 return fut.get();
             }
@@ -150,28 +146,5 @@ class CacheLockImpl<K> implements CacheLock {
     /** {@inheritDoc} */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheLock enableAsync() {
-        CacheLockAsyncImpl<K> async = this.async;
-
-        if (async == null) {
-            async = new CacheLockAsyncImpl<>(delegate, keys);
-
-            this.async = async;
-        }
-
-        return async;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 }

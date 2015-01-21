@@ -17,19 +17,17 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
-import com.google.common.collect.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -374,67 +372,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
-    public void testMultiNodeLockAsync() throws Exception {
-        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
-
-        CacheLock lock1_1 = cache1.lock(1);
-        CacheLock lock2_1 = cache2.lock(1);
-
-        lock1_1.enableAsync().lock();
-
-        assert lock1_1.enableAsync().<Boolean>future().get();
-
-        try {
-            assert cache1.isLocked(1);
-            assert cache1.isLockedByThread(1);
-
-            assert cache2.isLocked(1);
-            assert !cache2.isLockedByThread(1);
-
-            lock2_1.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
-
-            assert !lock2_1.enableAsync().<Boolean>future().get();
-        }
-        finally {
-            lock1_1.unlock();
-        }
-
-        checkUnlocked(cache1, 1);
-
-        lock2_1.lock();
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        addListener(ignite1, new UnlockListener(latch, 1));
-
-        try {
-            assert cache1.isLocked(1);
-            assert !cache1.isLockedByThread(1);
-
-            assert cache2.isLocked(1);
-            assert cache2.isLockedByThread(1);
-
-            lock1_1.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
-
-            assert !lock1_1.enableAsync().<Boolean>future().get();
-        }
-        finally {
-            lock2_1.unlock();
-        }
-
-        latch.await();
-
-        assert !cache1.isLocked(1);
-        assert !cache1.isLockedByThread(1);
-
-        checkUnlocked(cache1, 1);
-        checkUnlocked(cache2, 1);
-    }
-
-    /**
-     * @throws Exception If test fails.
-     */
     public void testMultiNodeLockWithKeyLists() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
         IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
@@ -500,87 +437,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         latch1.await();
         latch2.await();
-
-        checkUnlocked(cache1, keys1);
-        checkUnlocked(cache2, keys1);
-        checkUnlocked(cache1, keys2);
-        checkUnlocked(cache2, keys2);
-    }
-
-    /**
-     * @throws Exception If test fails.
-     */
-    public void testMultiNodeLockAsyncWithKeyLists() throws Exception {
-        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
-
-        Collection<Integer> keys1 = Lists.newArrayList(1, 2, 3);
-        Collection<Integer> keys2 = Lists.newArrayList(2, 3, 4);
-
-        CacheLock lock1_1 = cache1.lockAll(keys1);
-        CacheLock lock2_2 = cache2.lockAll(keys2);
-
-        lock1_1.enableAsync().lock();
-
-        IgniteFuture<Boolean> f1 = lock1_1.enableAsync().future();
-
-        try {
-            assert f1.get();
-
-            checkLocked(cache1, keys1);
-
-            checkRemoteLocked(cache2, keys1);
-
-            lock2_2.enableAsync().tryLock(-1, TimeUnit.MILLISECONDS);
-
-            IgniteFuture<Boolean> f2 = lock2_2.enableAsync().future();
-
-            assert !f2.get();
-
-            checkLocked(cache1, keys1);
-
-            checkUnlocked(cache1, 4);
-            checkUnlocked(cache2, 4);
-
-            checkRemoteLocked(cache2, keys1);
-        }
-        finally {
-            lock1_1.unlock();
-        }
-
-        checkUnlocked(cache1, keys1);
-
-        CountDownLatch latch = new CountDownLatch(keys2.size());
-
-        addListener(ignite1, new UnlockListener(latch, keys2));
-
-        lock2_2.enableAsync().lock();
-
-        IgniteFuture<Boolean> f2 = lock2_2.enableAsync().future();
-
-        try {
-            assert f2.get();
-
-            checkLocked(cache2, keys2);
-
-            checkRemoteLocked(cache1, keys2);
-
-            checkUnlocked(cache1, 1);
-
-            assert !cache1.lockAll(keys2).tryLock();
-
-            checkLocked(cache2, keys2);
-
-            checkUnlocked(cache1, 1);
-            checkUnlocked(cache2 , 1);
-
-            checkRemoteLocked(cache1, keys2);
-        }
-        finally {
-            lock2_2.unlock();
-        }
-
-        latch.await();
 
         checkUnlocked(cache1, keys1);
         checkUnlocked(cache2, keys1);
