@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
@@ -26,6 +34,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,6 +78,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<?> vals;
 
+    /** Optional arguments for entry processor. */
+    private Object[] invokeArgs;
+
     /** DR put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheDrInfo<V>> drPutVals;
@@ -93,8 +105,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /** Cached entry if keys size is 1. */
     private GridCacheEntryEx<K, V> cached;
 
-    /** Time to live. */
-    private final long ttl;
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPlc;
 
     /** Future map topology version. */
     private long topVer;
@@ -141,7 +153,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         futVer = null;
         retval = false;
         fastMap = false;
-        ttl = 0;
+        expiryPlc = null;
         filter = null;
         syncMode = null;
         op = null;
@@ -157,13 +169,16 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param syncMode Write synchronization mode.
      * @param keys Keys to update.
      * @param vals Values or transform closure.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param drPutVals DR put values (optional).
      * @param drRmvVals DR remove values (optional).
      * @param retval Return value require flag.
      * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param cached Cached entry if keys size is 1.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext<K, V> cctx,
@@ -172,17 +187,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridCacheOperation op,
         Collection<? extends K> keys,
         @Nullable Collection<?> vals,
+        @Nullable Object[] invokeArgs,
         @Nullable Collection<GridCacheDrInfo<V>> drPutVals,
         @Nullable Collection<GridCacheVersion> drRmvVals,
         final boolean retval,
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         final IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {
         super(cctx.kernalContext());
+
         this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
@@ -197,11 +214,12 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         this.op = op;
         this.keys = keys;
         this.vals = vals;
+        this.invokeArgs = invokeArgs;
         this.drPutVals = drPutVals;
         this.drRmvVals = drRmvVals;
         this.retval = retval;
         this.cached = cached;
-        this.ttl = ttl;
+        this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -314,6 +332,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
         Object retval = res == null ? null : rawRetval ? ret : this.retval ? ret.value() : ret.success();
 
+        if (op == TRANSFORM && retval == null)
+            retval = Collections.emptyMap();
+
         if (super.onDone(retval, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
@@ -363,7 +384,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 if (res.error() != null)
                     addFailedKeys(req.keys(), res.error());
                 else {
-                    if (req.fastMap() && req.hasPrimary())
+                    if (op == TRANSFORM) {
+                        assert !req.fastMap();
+
+                        if (res.returnValue() != null)
+                            addInvokeResults(res.returnValue());
+                    }
+                    else if (req.fastMap() && req.hasPrimary())
                         opRes = res.returnValue();
                 }
 
@@ -461,7 +488,9 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      * @param remap Flag indicating if this is partial remap for this future.
      * @param oldNodeId Old node ID if was remap.
      */
-    private void map0(GridDiscoveryTopologySnapshot topSnapshot, Collection<? extends K> keys, boolean remap,
+    private void map0(GridDiscoveryTopologySnapshot topSnapshot,
+        Collection<? extends K> keys,
+        boolean remap,
         @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
 
@@ -556,7 +585,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 op,
                 retval,
                 op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
-                ttl,
+                expiryPlc,
+                invokeArgs,
                 filter,
                 subjId,
                 taskNameHash);
@@ -662,7 +692,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                             op,
                             retval,
                             op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
-                            ttl,
+                            expiryPlc,
+                            invokeArgs,
                             filter,
                             subjId,
                             taskNameHash);
@@ -814,6 +845,24 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      */
     private void removeMapping(UUID nodeId) {
         mappings.remove(nodeId);
+    }
+
+    /**
+     * @param ret Result from single node.
+     */
+    private synchronized void addInvokeResults(GridCacheReturn<Object> ret) {
+        assert op == TRANSFORM : op;
+        assert ret.value() == null || ret.value() instanceof Map : ret.value();
+
+        if (ret.value() != null) {
+            if (opRes != null) {
+                Map<Object, Object> map = (Map<Object, Object>)opRes.value();
+
+                map.putAll((Map<Object, Object>)ret.value());
+            }
+            else
+                opRes = ret;
+        }
     }
 
     /**

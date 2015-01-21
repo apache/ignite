@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -12,10 +20,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -29,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -68,7 +76,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private GridCacheVersion ver;
 
     /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
     private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
@@ -91,6 +99,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Whether to deserialize portable objects. */
     private boolean deserializePortable;
 
+    /** Expiry policy. */
+    private IgniteCacheExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -106,21 +117,25 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      *      called on backup node.
      * @param tx Transaction.
      * @param filters Filters.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      */
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
-        @Nullable GridCacheTxLocalEx<K, V> tx,
+        @Nullable IgniteTxLocalEx<K, V> tx,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
-        assert cctx != null;
         assert !F.isEmpty(keys);
 
         this.cctx = cctx;
@@ -132,6 +147,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.subjId = subjId;
         this.taskName = taskName;
         this.deserializePortable = deserializePortable;
+        this.expiryPlc = expiryPlc;
 
         futId = IgniteUuid.randomUuid();
 
@@ -231,6 +247,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (trackable)
                 cctx.mvcc().removeFuture(this);
 
+            cache().dht().sendTtlUpdateRequest(expiryPlc);
+
             return true;
         }
 
@@ -250,7 +268,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param mapped Mappings to check for duplicates.
      * @param topVer Topology version to map on.
      */
-    private void map(Collection<? extends K> keys, Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped, final long topVer) {
+    private void map(Collection<? extends K> keys,
+        Map<ClusterNode, LinkedHashMap<K, Boolean>> mapped,
+        final long topVer) {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {
@@ -290,8 +310,16 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
                 final GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
-                    dht().getDhtAsync(n.id(), -1, mappedKeys, reload, topVer, subjId,
-                        taskName == null ? 0 : taskName.hashCode(), deserializePortable, filters);
+                    dht().getDhtAsync(n.id(),
+                        -1,
+                        mappedKeys,
+                        reload,
+                        topVer,
+                        subjId,
+                        taskName == null ? 0 : taskName.hashCode(),
+                        deserializePortable,
+                        filters,
+                        expiryPlc);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -348,7 +376,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     topVer,
                     filters,
                     subjId,
-                    taskName == null ? 0 : taskName.hashCode());
+                    taskName == null ? 0 : taskName.hashCode(),
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
 
                 add(fut); // Append new future.
 
@@ -402,7 +431,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         null,
                         taskName,
-                        filters);
+                        filters,
+                        expiryPlc);
 
                 ClusterNode primary = null;
 
@@ -427,7 +457,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 subjId,
                                 null,
                                 taskName,
-                                filters);
+                                filters,
+                                expiryPlc);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
@@ -544,10 +575,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param keys Keys.
      * @param infos Entry infos.
      * @param savedVers Saved versions.
+     * @param topVer Topology version
      * @return Result map.
      */
-    private Map<K, V> loadEntries(UUID nodeId, Collection<K> keys, Collection<GridCacheEntryInfo<K, V>> infos,
-        Map<K, GridCacheVersion> savedVers, long topVer) {
+    private Map<K, V> loadEntries(UUID nodeId,
+        Collection<K> keys,
+        Collection<GridCacheEntryInfo<K, V>> infos,
+        Map<K, GridCacheVersion> savedVers,
+        long topVer) {
         boolean empty = F.isEmpty(keys);
 
         Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -12,12 +20,13 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
@@ -32,6 +41,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  * Cache lock future.
@@ -109,6 +119,9 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     @GridToStringExclude
     private List<GridDistributedCacheEntry<K, V>> entries;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -123,6 +136,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter.
      */
     public GridNearLockFuture(
@@ -132,9 +146,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean read,
         boolean retval,
         long timeout,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
-        assert cctx != null;
+
         assert keys != null;
 
         this.cctx = cctx;
@@ -143,6 +158,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.accessTtl = accessTtl;
         this.filter = filter;
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
@@ -248,7 +264,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -296,7 +312,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         );
 
         if (inTx()) {
-            GridCacheTxEntry<K, V> txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry<K, V> txEntry = tx.entry(entry.txKey());
 
             txEntry.cached(entry, txEntry.keyBytes());
         }
@@ -769,7 +785,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                 boolean explicit = false;
 
                 for (K key : mappedKeys) {
-                    GridCacheTxKey<K> txKey = cctx.txKey(key);
+                    IgniteTxKey<K> txKey = cctx.txKey(key);
 
                     while (true) {
                         GridNearCacheEntry<K, V> entry = null;
@@ -846,17 +862,19 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             timeout,
                                             mappedKeys.size(),
                                             inTx() ? tx.size() : mappedKeys.size(),
+                                            inTx() && tx.syncCommit(),
                                             inTx() ? tx.groupLockKey() : null,
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
-                                            inTx() ? tx.taskNameHash() : 0);
+                                            inTx() ? tx.taskNameHash() : 0,
+                                            read ? accessTtl : -1L);
 
                                         mapping.request(req);
                                     }
 
                                     distributedKeys.add(key);
 
-                                    GridCacheTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
+                                    IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
 
                                     if (tx != null)
                                         tx.addKeyMapping(txKey, mapping.node());
@@ -1099,7 +1117,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req);
+                    cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                 }
                 catch (ClusterTopologyException ex) {
                     assert fut != null;
@@ -1114,7 +1132,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req);
+                            cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
                         catch (ClusterTopologyException ex) {
                             assert fut != null;

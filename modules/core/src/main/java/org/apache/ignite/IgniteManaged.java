@@ -1,18 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -36,7 +45,7 @@ import java.util.*;
  * </ul>
  * <h1 class="header">Deployment From Configuration</h1>
  * In addition to deploying managed services by calling any of the provided {@code deploy(...)} methods,
- * you can also automatically deploy services on startup by specifying them in {@link org.apache.ignite.configuration.IgniteConfiguration}
+ * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
  * GridConfiguration gridCfg = new GridConfiguration();
@@ -73,10 +82,10 @@ import java.util.*;
  * grid resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link IgniteInstanceResource}</li>
+ * <li>{@link IgniteLoggerResource}</li>
+ * <li>{@link IgniteSpringApplicationContextResource}</li>
+ * <li>{@link IgniteSpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <h1 class="header">Service Example</h1>
@@ -130,7 +139,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, org.apache.ignite.managed.ManagedService, int, int) deployMultiple(name, svc, 1, 1)} method.
+     * {@link #deployMultiple(String, ManagedService, int, int) deployMultiple(name, svc, 1, 1)} method.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -147,7 +156,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * the service on every new node.
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, org.apache.ignite.managed.ManagedService, int, int) deployMultiple(name, svc, 0, 1)} method.
+     * {@link #deployMultiple(String, ManagedService, int, int) deployMultiple(name, svc, 0, 1)} method.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -166,7 +175,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Note that in case of topology changes, due to network delays, there may be a temporary situation
      * when a service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.managed.ManagedServiceConfiguration)} method
+     * This method is analogous to the invocation of {@link #deploy(ManagedServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
      *     GridServiceConfiguration cfg = new GridServiceConfiguration();
@@ -204,7 +213,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.managed.ManagedServiceConfiguration)} method
+     * This method is analogous to the invocation of {@link #deploy(ManagedServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
      *     GridServiceConfiguration cfg = new GridServiceConfiguration();
@@ -230,17 +239,17 @@ public interface IgniteManaged extends IgniteAsyncSupport {
     /**
      * Deploys multiple instances of the service on the grid according to provided
      * configuration. GridGain will deploy a maximum amount of services equal to
-     * {@link org.apache.ignite.managed.ManagedServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
-     * making sure that there are no more than {@link org.apache.ignite.managed.ManagedServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * {@link ManagedServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
+     * making sure that there are no more than {@link ManagedServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
      * service instances running on each node. Whenever topology changes, GridGain will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
-     * If {@link org.apache.ignite.managed.ManagedServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
+     * If {@link ManagedServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
      * will deploy the service on the primary node for given affinity key. The affinity will be calculated
-     * on the cache with {@link org.apache.ignite.managed.ManagedServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * on the cache with {@link ManagedServiceConfiguration#getCacheName() cfg.getCacheName()} name.
      * <p>
-     * If {@link org.apache.ignite.managed.ManagedServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
+     * If {@link ManagedServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
      * GridGain will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
      * The node filter will be checked in addition to the underlying grid projection filter, or the
      * whole grid, if the underlying grid projection includes all grid nodes.
@@ -269,10 +278,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
-     * then {@link org.apache.ignite.managed.ManagedService#cancel(org.apache.ignite.managed.ManagedServiceContext)} method will be called on it.
+     * then {@link ManagedService#cancel(ManagedServiceContext)} method will be called on it.
      * <p>
-     * Note that GridGain cannot guarantee that the service exits from {@link org.apache.ignite.managed.ManagedService#execute(org.apache.ignite.managed.ManagedServiceContext)}
-     * method whenever {@link org.apache.ignite.managed.ManagedService#cancel(org.apache.ignite.managed.ManagedServiceContext)} is called. It is up to the user to
+     * Note that GridGain cannot guarantee that the service exits from {@link ManagedService#execute(ManagedServiceContext)}
+     * method whenever {@link ManagedService#cancel(ManagedServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).

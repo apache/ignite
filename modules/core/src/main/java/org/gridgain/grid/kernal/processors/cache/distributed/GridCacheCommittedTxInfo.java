@@ -1,15 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 
@@ -32,7 +41,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
 
     /** Recovery writes, i.e. values that have never been sent to remote nodes. */
     @GridToStringInclude
-    private Collection<GridCacheTxEntry<K, V>> recoveryWrites;
+    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -44,7 +53,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @param tx Committed cache transaction.
      */
-    public GridCacheCommittedTxInfo(GridCacheTxEx<K, V> tx) {
+    public GridCacheCommittedTxInfo(IgniteTxEx<K, V> tx) {
         assert !tx.local() || !tx.replicated();
 
         originatingTxId = tx.nearXidVersion();
@@ -72,8 +81,8 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @return Collection of recovery writes.
      */
-    public Collection<GridCacheTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites == null ? Collections.<GridCacheTxEntry<K, V>>emptyList() : recoveryWrites;
+    public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
+        return recoveryWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : recoveryWrites;
     }
 
     /** {@inheritDoc} */

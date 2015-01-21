@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.ggfs;
@@ -15,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -33,6 +42,7 @@ import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -41,8 +51,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
@@ -676,7 +686,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            try (GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -1100,7 +1110,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
-            dataCachePrj.transform(colocatedKey, new UpdateClosure(startOff, data));
+            dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
 
             return;
         }
@@ -1116,24 +1126,22 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        GridCacheTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        try {
+        try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
             Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
             boolean hasVal = false;
 
-            UpdateClosure transformClos = new UpdateClosure(startOff, data);
+            UpdateProcessor transformClos = new UpdateProcessor(startOff, data);
 
             if (vals.get(colocatedKey) != null) {
-                dataCachePrj.transform(colocatedKey, transformClos);
+                dataCachePrj.invoke(colocatedKey, transformClos);
 
                 hasVal = true;
             }
 
             if (vals.get(key) != null) {
-                dataCachePrj.transform(key, transformClos);
+                dataCachePrj.invoke(key, transformClos);
 
                 hasVal = true;
             }
@@ -1144,9 +1152,6 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     ", dataLen=" + data.length + ']');
 
             tx.commit();
-        }
-        finally {
-            tx.close();
         }
     }
 
@@ -1569,7 +1574,8 @@ public class GridGgfsDataManager extends GridGgfsManager {
      * Helper closure to update data in cache.
      */
     @GridInternal
-    private static final class UpdateClosure implements IgniteClosure<byte[], byte[]>, Externalizable {
+    private static final class UpdateProcessor implements EntryProcessor<GridGgfsBlockKey, byte[], Void>,
+        Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1583,7 +1589,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * Empty constructor required for {@link Externalizable}.
          *
          */
-        public UpdateClosure() {
+        public UpdateProcessor() {
             // No-op.
         }
 
@@ -1593,7 +1599,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
          * @param start Start position in the block to write new data from.
          * @param data Data block to write into cache.
          */
-        private UpdateClosure(int start, byte[] data) {
+        private UpdateProcessor(int start, byte[] data) {
             assert start >= 0;
             assert data != null;
             assert start + data.length >= 0 : "Too much data [start=" + start + ", data.length=" + data.length + ']';
@@ -1603,7 +1609,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] apply(byte[] e) {
+        @Override public Void process(MutableEntry<GridGgfsBlockKey, byte[]> entry, Object... args) {
+            byte[] e = entry.getValue();
+
             final int size = data.length;
 
             if (e == null || e.length == 0)
@@ -1620,7 +1628,9 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Copy data into entry.
             U.arrayCopy(data, 0, e, start, size);
 
-            return e;
+            entry.setValue(e);
+
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -1637,7 +1647,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(UpdateClosure.class, this, "start", start, "data.length", data.length);
+            return S.toString(UpdateProcessor.class, this, "start", start, "data.length", data.length);
         }
     }
 

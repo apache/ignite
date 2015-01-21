@@ -1,31 +1,43 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * {@link GridCacheQueue} implementation using transactional cache.
  */
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
+    /** */
+    private final IgniteTransactions txs;
+
     /**
      * @param queueName Queue name.
      * @param hdr Queue header.
@@ -33,6 +45,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
      */
     public GridTransactionalCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         super(queueName, hdr, cctx);
+
+        txs = cctx.kernalContext().grid().transactions();
     }
 
     /** {@inheritDoc} */
@@ -47,15 +61,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try {
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, 1));
+                    try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, 1));
 
                         if (idx != null) {
                             checkRemoved(idx);
 
-                            boolean putx = cache.putx(itemKey(idx), item, null);
-
-                            assert putx;
+                            cache.put(itemKey(idx), item);
 
                             retVal = true;
                         }
@@ -67,17 +79,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         break;
                     }
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch (ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -97,13 +113,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             T retVal;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformAndCompute(queueKey, new PollClosure(id));
+                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id));
 
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        retVal = (T)cache.remove(itemKey(idx), null);
+                        retVal = (T)cache.getAndRemove(itemKey(idx));
 
                         assert retVal != null;
                     }
@@ -114,17 +130,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to poll, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -146,8 +166,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformAndCompute(queueKey, new AddClosure(id, items.size()));
+                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size()));
 
                     if (idx != null) {
                         checkRemoved(idx);
@@ -160,7 +180,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                             idx++;
                         }
 
-                        cache.putAll(putMap, null);
+                        cache.putAll(putMap);
 
                         retVal = true;
                     }
@@ -171,17 +191,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to addAll, will retry [err=" + e + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
 
@@ -199,13 +223,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.transformAndCompute(queueKey, new RemoveClosure(id, rmvIdx));
+                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx));
 
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        boolean rmv = cache.removex(itemKey(idx));
+                        boolean rmv = cache.remove(itemKey(idx));
 
                         assert rmv;
                     }
@@ -214,17 +238,21 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (ClusterGroupEmptyException e) {
-                    throw e;
-                }
-                catch(ClusterTopologyException e) {
-                    if (cnt++ == MAX_UPDATE_RETRIES)
+                catch (CacheException e) {
+                    if (e.getCause() instanceof ClusterGroupEmptyException)
                         throw e;
-                    else {
-                        U.warn(log, "Failed to remove item, will retry [err=" + e + ", idx=" + rmvIdx + ']');
 
-                        U.sleep(RETRY_DELAY);
+                    if (e.getCause() instanceof ClusterTopologyException) {
+                        if (cnt++ == MAX_UPDATE_RETRIES)
+                            throw e;
+                        else {
+                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+
+                            U.sleep(RETRY_DELAY);
+                        }
                     }
+                    else
+                        throw e;
                 }
             }
         }

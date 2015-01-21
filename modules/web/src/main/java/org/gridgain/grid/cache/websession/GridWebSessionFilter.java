@@ -1,31 +1,44 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
+import javax.cache.*;
+import javax.cache.expiry.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -141,7 +154,10 @@ public class GridWebSessionFilter implements Filter {
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
 
     /** Cache. */
-    private GridCache<String, GridWebSession> cache;
+    private IgniteCache<String, GridWebSession> cache;
+
+    /** Transactions. */
+    private IgniteTransactions txs;
 
     /** Listener. */
     private GridWebSessionListener lsnr;
@@ -189,18 +205,20 @@ public class GridWebSessionFilter implements Filter {
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
+        txs = webSesIgnite.transactions();
+
         log = webSesIgnite.log();
 
         if (webSesIgnite == null)
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
                 gridName);
 
-        cache = webSesIgnite.cache(cacheName);
+        cache = webSesIgnite.jcache(cacheName);
 
         if (cache == null)
             throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
 
-        GridCacheConfiguration cacheCfg = cache.configuration();
+        GridCacheConfiguration cacheCfg = cache.getConfiguration(GridCacheConfiguration.class);
 
         if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
             throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
@@ -271,7 +289,7 @@ public class GridWebSessionFilter implements Filter {
 
             try {
                 if (txEnabled) {
-                    try (GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         sesId = doFilter0(httpReq, res, chain);
 
                         tx.commit();
@@ -363,6 +381,7 @@ public class GridWebSessionFilter implements Filter {
      * @param httpReq HTTP request.
      * @return Cached session.
      */
+    @SuppressWarnings("unchecked")
     private GridWebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
@@ -376,13 +395,19 @@ public class GridWebSessionFilter implements Filter {
         try {
             while (true) {
                 try {
-                    GridCacheEntry<String, GridWebSession> entry = cache.entry(sesId);
+                    IgniteCache<String, GridWebSession> cache0;
 
-                    assert entry != null;
+                    if (cached.getMaxInactiveInterval() > 0) {
+                        long ttl = cached.getMaxInactiveInterval() * 1000;
 
-                    entry.timeToLive(cached.getMaxInactiveInterval() * 1000);
+                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                    GridWebSession old = entry.setIfAbsent(cached);
+                        cache0 = cache.withExpiryPolicy(plc);
+                    }
+                    else
+                        cache0 = cache;
+
+                    GridWebSession old = cache0.getAndPutIfAbsent(sesId, cached);
 
                     if (old != null) {
                         cached = old;
@@ -393,13 +418,13 @@ public class GridWebSessionFilter implements Filter {
 
                     break;
                 }
-                catch (GridCachePartialUpdateException e) {
+                catch (CachePartialUpdateException e) {
                     if (log.isDebugEnabled())
                         log.debug(e.getMessage());
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             throw new IgniteException("Failed to save session: " + sesId, e);
         }
 

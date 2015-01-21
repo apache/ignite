@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -470,6 +478,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
         }
 
+        for (GridClientPartitionTopology<K, V> top : cctx.exchange().clientTopologies())
+            m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
+
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
@@ -545,9 +556,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
-        for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts.values()) {
-            if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
-                fut.cleanUp();
+        ExchangeFutureSet exchFuts0 = exchFuts;
+
+        if (exchFuts0 != null) {
+            for (GridDhtPartitionsExchangeFuture<K, V> fut : exchFuts0.values()) {
+                if (fut.exchangeId().topologyVersion() < exchFut.exchangeId().topologyVersion() - 10)
+                    fut.cleanUp();
+            }
         }
     }
 
@@ -587,7 +602,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (!cacheCtx.isLocal()) {
                         GridDhtPartitionTopology<K, V> top = cacheCtx.topology();
 
-                        updated |= top.update(null, msg.partitions().get(cacheCtx.cacheId())) != null;
+                        GridDhtPartitionFullMap partMap = msg.partitions().get(cacheCtx.cacheId());
+
+                        updated |= top.update(null, partMap) != null;
                     }
                 }
 
@@ -756,7 +773,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     busy = true;
 
-                    Map<Integer, GridDhtPreloaderAssignments<K, V>> assignsMap = null;
+                    Map<Integer, GridDhtPreloaderAssignments<K, V>> assignsMap = new HashMap<>();
 
                     boolean dummyReassign = exchFut.dummyReassign();
                     boolean forcePreload = exchFut.forcePreload();
@@ -791,7 +808,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (!cacheCtx.system() && cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
                                         IgniteDiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
@@ -820,17 +837,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
                             long delay = cacheCtx.config().getPreloadPartitionedDelay();
 
+                            GridDhtPreloaderAssignments<K, V> assigns = null;
+
                             // Don't delay for dummy reassigns to avoid infinite recursion.
-                            if (delay == 0 || forcePreload) {
-                                GridDhtPreloaderAssignments<K, V> assigns = cacheCtx.preloader().assign(exchFut);
+                            if (delay == 0 || forcePreload)
+                                assigns = cacheCtx.preloader().assign(exchFut);
 
-                                if (assigns != null) {
-                                    if (assignsMap == null)
-                                        assignsMap = new HashMap<>();
-
-                                    assignsMap.put(cacheCtx.cacheId(), assigns);
-                                }
-                            }
+                            assignsMap.put(cacheCtx.cacheId(), assigns);
                         }
                     }
                     finally {

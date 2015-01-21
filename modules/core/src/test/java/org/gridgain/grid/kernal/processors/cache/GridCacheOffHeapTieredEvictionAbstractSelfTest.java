@@ -1,22 +1,32 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -171,7 +181,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -182,9 +192,9 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestClosure c = testClosure(val.val, false);
+                    TestProcessor c = testClosure(val.val, false);
 
-                    cache.transform(key, c);
+                    cache.invoke(key, c);
                 }
 
                 return null;
@@ -208,7 +218,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @param acceptNull If {@code true} value can be null;
      * @return Predicate.
      */
-    private TestClosure testClosure(String expVal, boolean acceptNull) {
+    private TestProcessor testClosure(String expVal, boolean acceptNull) {
         return portableEnabled() ?
             new PortableValueClosure(expVal, acceptNull) :
             new TestValueClosure(expVal, acceptNull);
@@ -326,7 +336,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestClosure implements IgniteClosure<Object, Object> {
+    protected abstract static class TestProcessor implements EntryProcessor<Integer, Object, Void>, Serializable {
         /** */
         protected String expVal;
 
@@ -337,23 +347,29 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
          * @param expVal Expected value.
          * @param acceptNull If {@code true} value can be null;
          */
-        protected TestClosure(String expVal, boolean acceptNull) {
+        protected TestProcessor(String expVal, boolean acceptNull) {
             this.expVal = expVal;
             this.acceptNull = acceptNull;
         }
 
         /** {@inheritDoc} */
-        @Override public final Object apply(Object val) {
+        @Override public Void process(MutableEntry<Integer, Object> e, Object... args) {
+            Object val = e.getValue();
+
             if (val == null) {
                 if (!acceptNull)
                     assertNotNull(val);
 
-                return true;
+                e.setValue(true);
+
+                return null;
             }
 
             checkValue(val);
 
-            return val;
+            e.setValue(val);
+
+            return null;
         }
 
         /**
@@ -366,7 +382,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      *
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class PortableValueClosure extends TestClosure {
+    static class PortableValueClosure extends TestProcessor {
         /**
          * @param expVal Expected value.
          * @param acceptNull If {@code true} value can be null;
@@ -387,7 +403,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      *
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class TestValueClosure extends TestClosure {
+    static class TestValueClosure extends TestProcessor {
         /**
          * @param expVal Expected value.
          * @param acceptNull If {@code true} value can be null;

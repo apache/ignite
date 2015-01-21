@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.local;
@@ -12,9 +20,9 @@ package org.gridgain.grid.kernal.processors.cache.local;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -76,7 +84,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
 
     /** Transaction. */
-    private GridCacheTxLocalEx<K, V> tx;
+    private IgniteTxLocalEx<K, V> tx;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -99,7 +107,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     GridLocalLockFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
-        GridCacheTxLocalEx<K, V> tx,
+        IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {

@@ -1,19 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
+import javax.cache.processor.*;
 import java.util.concurrent.*;
 
 /**
@@ -61,55 +69,62 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
+        IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Put and return previous value.
-        String v = cache.put(1, "1");
+        String v = cache.getAndPut(1, "1");
         assert v == null;
 
         // Put and do not return previous value (all methods ending with 'x' return boolean).
         // Performs better when previous value is not needed.
-        cache.putx(2, "2");
+        cache.put(2, "2");
+
 
         // Put asynchronously (every cache operation has async counterpart).
-        IgniteFuture<String> fut = cache.putAsync(3, "3");
-
-        // Asynchronously wait for result.
-        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> fut) {
-                try {
-                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
-                }
-                catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        // TODO IGNITE-60: uncomment when implemented.
+//        IgniteFuture<String> fut = cache.putAsync(3, "3");
+//
+//        // Asynchronously wait for result.
+//        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+//            @Override public void apply(IgniteFuture<String> fut) {
+//                try {
+//                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
+//                }
+//                catch (IgniteCheckedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
 
         // Put-if-absent.
-        boolean b1 = cache.putxIfAbsent(4, "4");
-        boolean b2 = cache.putxIfAbsent(4, "44");
+        boolean b1 = cache.putIfAbsent(4, "4");
+        boolean b2 = cache.putIfAbsent(4, "44");
         assert b1 && !b2;
 
 
         // Put-with-predicate, will succeed if predicate evaluates to true.
-        cache.putx(5, "5");
-        cache.putx(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
-            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+        cache.put(5, "5");
+        cache.putIf(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
+            @Override
+            public boolean apply(GridCacheEntry<Integer, String> e) {
                 return "5".equals(e.peek()); // Update only if previous value is "5".
             }
         });
 
-        // Transform - assign new value based on previous value.
-        cache.putx(6, "6");
-        cache.transform(6, new IgniteClosure<String, String>() {
-            @Override public String apply(String v) {
-                return v + "6"; // Set new value based on previous value.
+        // Invoke - assign new value based on previous value.
+        cache.put(6, "6");
+        cache.invoke(6, new EntryProcessor<Integer, String, Void>() {
+            @Override public Void process(MutableEntry<Integer, String> entry, Object... args) {
+                String v = entry.getValue();
+
+                entry.setValue(v + "6"); // Set new value based on previous value.
+
+                return null;
             }
         });
 
         // Replace.
-        cache.putx(7, "7");
+        cache.put(7, "7");
         b1 = cache.replace(7, "7", "77");
         b2 = cache.replace(7, "7", "777");
         assert b1 & !b2;

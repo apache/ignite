@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -15,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.kernal.*;
@@ -33,6 +40,7 @@ import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.offheap.*;
 import org.gridgain.grid.kernal.processors.portable.*;
@@ -46,6 +54,8 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -170,6 +180,12 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
+    /** System cache flag. */
+    private boolean sys;
+
+    /** Default expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -275,6 +291,22 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         else
             cacheId = 1;
+
+        sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
+
+        Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
+
+        expiryPlc = factory != null ? factory.create() : null;
+
+        if (expiryPlc instanceof EternalExpiryPolicy)
+            expiryPlc = null;
+    }
+
+    /**
+     * @return Cache default {@link ExpiryPolicy}.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -307,6 +339,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @return System cache flag.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /**
@@ -516,8 +555,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param key Key to construct tx key for.
      * @return Transaction key.
      */
-    public GridCacheTxKey<K> txKey(K key) {
-        return new GridCacheTxKey<>(key, cacheId);
+    public IgniteTxKey<K> txKey(K key) {
+        return new IgniteTxKey<>(key, cacheId);
     }
 
     /**
@@ -751,7 +790,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache transaction manager.
      */
-    public GridCacheTxManager<K, V> tm() {
+    public IgniteTxManager<K, V> tm() {
          return sharedCtx.tm();
     }
 
@@ -929,8 +968,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
-     * exceptions.
+     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
      *
      * @param e Element.
      * @param p Predicates.
@@ -938,14 +976,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    public <K, V> boolean isAll(GridCacheEntryEx<K, V> e,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] p) throws IgniteCheckedException {
+    public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
+        @Nullable IgnitePredicate<GridCacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 
     /**
-     * Same as {@link GridFunc#isAll(Object, org.apache.ignite.lang.IgnitePredicate[])}, but safely unwraps
-     * exceptions.
+     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
      *
      * @param e Element.
      * @param p Predicates.
@@ -1045,7 +1082,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param prj Flags to set.
      */
-    void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    public void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
         if (nearContext())
             dht().near().context().prjPerCall.set(prj);
         else
@@ -1054,6 +1091,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * Gets thread local projection.
+     *
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
@@ -1070,8 +1108,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (subjId != null)
             return subjId;
 
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        return subjectIdPerCall(subjId, projectionPerCall());
+    }
 
+    /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @param prj Optional thread local projection.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable GridCacheProjectionImpl<K, V> prj) {
         if (prj != null)
             subjId = prj.subjectId();
 
@@ -1570,7 +1617,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @return Portable object.
-     * @throws org.apache.ignite.portables.PortableException In case of error.
+     * @throws PortableException In case of error.
      */
     @Nullable public Object marshalToPortable(@Nullable Object obj) throws PortableException {
         assert portableEnabled();
@@ -1635,7 +1682,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param col List to unwrap.
      * @return Unwrapped list.
      */
-    private ArrayList<Object> unwrapPortables(ArrayList<Object> col) {
+    private Collection<Object> unwrapPortables(ArrayList<Object> col) {
         int size = col.size();
 
         for (int i = 0; i < size; i++) {

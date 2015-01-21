@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.testsuites;
@@ -26,16 +34,11 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Cache Data Structures Test Suite");
 
-        // TODO GG-9141
-
-        if (true)
-            return suite;
-
         // Data structures.
-//        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
-//        suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
@@ -56,12 +59,13 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
+        // TODO: IGNITE-80.
+        //suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
 
-//        suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
@@ -76,8 +80,8 @@ public class GridCacheDataStructuresSelfTestSuite extends TestSuite {
         // TODO: GG-4807 Uncomment when fix
         // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
-//        suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class)); // TODO GG-9141
-//        suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class)); // TODO GG-9141
+        suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceMultiThreadedTest.class));
 

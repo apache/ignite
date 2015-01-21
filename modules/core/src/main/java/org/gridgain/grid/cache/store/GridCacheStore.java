@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.store;
@@ -12,6 +20,7 @@ package org.gridgain.grid.cache.store;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.jdbc.*;
@@ -28,10 +37,10 @@ import java.util.Date;
  * or swap storage without ever being persisted to a persistent storage.
  * <p>
  * {@link GridCacheStoreAdapter} provides default implementation for bulk operations,
- * such as {@link #loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
- * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
- * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
- * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
+ * such as {@link #loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
+ * {@link #putAll(IgniteTx, Map)}, and {@link #removeAll(IgniteTx, Collection)}
+ * by sequentially calling corresponding {@link #load(IgniteTx, Object)},
+ * {@link #put(IgniteTx, Object, Object)}, and {@link #remove(IgniteTx, Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However
  * in many cases it maybe more preferable to take advantage of database batch update
  * functionality, and therefore default adapter implementation may not be the best option.
@@ -42,7 +51,7 @@ import java.util.Date;
  *     <li>{@link GridCacheJdbcBlobStore}</li>
  * </ul>
  * <p>
- * All transactional operations of this API are provided with ongoing {@link GridCacheTx},
+ * All transactional operations of this API are provided with ongoing {@link IgniteTx},
  * if any. As transaction is {@link GridMetadataAware}, you can attach any metadata to
  * it, e.g. to recognize if several operations belong to the same transaction or not.
  * Here is an example of how attach a JDBC connection as transaction metadata:
@@ -116,7 +125,7 @@ public interface GridCacheStore<K, V> {
      * @return Loaded value or {@code null} if value was not found.
      * @throws IgniteCheckedException If load failed.
      */
-    @Nullable public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException;
+    @Nullable public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException;
 
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
@@ -151,7 +160,7 @@ public interface GridCacheStore<K, V> {
      * @param c Closure to call for every loaded element.
      * @throws IgniteCheckedException If load failed.
      */
-    public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
+    public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
         throws IgniteCheckedException;
 
     /**
@@ -163,7 +172,7 @@ public interface GridCacheStore<K, V> {
      * @param val Value to put.
      * @throws IgniteCheckedException If put failed.
      */
-    public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException;
+    public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException;
 
     /**
      * Stores given key value pairs in persistent storage. Note that if write-behind is configured
@@ -173,7 +182,7 @@ public interface GridCacheStore<K, V> {
      * @param map Values to store.
      * @throws IgniteCheckedException If store failed.
      */
-    public void putAll(@Nullable GridCacheTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException;
+    public void putAll(@Nullable IgniteTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException;
 
     /**
      * Removes the value identified by given key from persistent storage. Note that  if write-behind is
@@ -184,7 +193,7 @@ public interface GridCacheStore<K, V> {
      * @param key Key to remove.
      * @throws IgniteCheckedException If remove failed.
      */
-    public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException;
+    public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException;
 
     /**
      * Removes all vales identified by given keys from persistent storage. Note that if write-behind
@@ -195,7 +204,7 @@ public interface GridCacheStore<K, V> {
      * @param keys Keys to remove.
      * @throws IgniteCheckedException If remove failed.
      */
-    public void removeAll(@Nullable GridCacheTx tx, Collection<? extends K> keys) throws IgniteCheckedException;
+    public void removeAll(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
@@ -204,8 +213,8 @@ public interface GridCacheStore<K, V> {
      * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.
      * @throws IgniteCheckedException If commit or rollback failed. Note that commit failure in some cases
-     *      may bring cache transaction into {@link GridCacheTxState#UNKNOWN} which will
+     *      may bring cache transaction into {@link IgniteTxState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
-    public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException;
+    public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException;
 }

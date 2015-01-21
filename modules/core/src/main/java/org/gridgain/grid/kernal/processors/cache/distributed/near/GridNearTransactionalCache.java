@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -13,10 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -26,7 +36,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Near cache for transactional cache.
@@ -98,33 +108,56 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
-        GridCacheTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
+        IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(GridCacheTxLocalAdapter<K, V> tx) {
+                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
         }
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(null,
+            keys,
+            false,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable,
+            prj != null ? prj.expiry() : null);
     }
 
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param filter Filter.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      * @return Future.
      */
-    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
+    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
+        @Nullable Collection<? extends K> keys,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx.shared()), tx.resolveTaskName(), deserializePortable);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
+            keys,
+            false,
+            false,
+            tx,
+            filter,
+            CU.subjectId(tx, ctx.shared()),
+            tx.resolveTaskName(),
+            deserializePortable,
+            expiryPlc);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -214,7 +247,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         ClassLoader ldr = ctx.deploy().globalLoader();
 
         if (ldr != null) {
-            Collection<GridCacheTxKey<K>> evicted = null;
+            Collection<IgniteTxKey<K>> evicted = null;
 
             for (int i = 0; i < nearKeys.size(); i++) {
                 K key = nearKeys.get(i);
@@ -222,7 +255,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 if (key == null)
                     continue;
 
-                GridCacheTxKey<K> txKey = ctx.txKey(key);
+                IgniteTxKey<K> txKey = ctx.txKey(key);
 
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
@@ -247,17 +280,18 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 if (tx == null) {
                                     tx = new GridNearTxRemote<>(
+                                        ctx.shared(),
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
                                         req.threadId(),
                                         req.version(),
                                         null,
+                                        ctx.system(),
                                         PESSIMISTIC,
                                         req.isolation(),
                                         req.isInvalidate(),
                                         req.timeout(),
-                                        ctx.shared(),
                                         req.txSize(),
                                         req.groupLockKey(),
                                         req.subjectId(),
@@ -270,7 +304,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     tx = ctx.tm().onCreated(tx);
 
                                     if (tx == null || !ctx.tm().onStarted(tx))
-                                        throw new GridCacheTxRollbackException("Failed to acquire lock " +
+                                        throw new IgniteTxRollbackException("Failed to acquire lock " +
                                             "(transaction has been completed): " + req.version());
                                 }
 
@@ -338,7 +372,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (tx != null && evicted != null) {
                 assert !evicted.isEmpty();
 
-                for (GridCacheTxKey<K> evict : evicted)
+                for (IgniteTxKey<K> evict : evicted)
                     tx.addEvicted(evict);
             }
         }
@@ -369,11 +403,23 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        GridCacheTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        GridCacheTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
-            retval, timeout, filter);
+    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        IgniteTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        IgniteTxIsolation isolation,
+        long accessTtl,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
+            keys,
+            (GridNearTxLocal<K, V>)tx,
+            isRead,
+            retval,
+            timeout,
+            accessTtl,
+            filter);
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

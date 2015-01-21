@@ -1,18 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -29,7 +38,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     private final Map<Integer, String> map;
 
     /** Transactions. */
-    private final Collection<GridCacheTx> txs = new GridConcurrentHashSet<>();
+    private final Collection<IgniteTx> txs = new GridConcurrentHashSet<>();
 
     /** Last method called. */
     private String lastMtd;
@@ -37,13 +46,13 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     /** */
     private long ts = System.currentTimeMillis();
 
-    /** {@link #load(GridCacheTx, Object)} method call counter .*/
+    /** {@link #load(IgniteTx, Object)} method call counter .*/
     private AtomicInteger loadCnt = new AtomicInteger();
 
-    /** {@link #put(GridCacheTx, Object, Object)} method call counter .*/
+    /** {@link #put(IgniteTx, Object, Object)} method call counter .*/
     private AtomicInteger putCnt = new AtomicInteger();
 
-    /** {@link #putAll(GridCacheTx, Map)} method call counter .*/
+    /** {@link #putAll(IgniteTx, Map)} method call counter .*/
     private AtomicInteger putAllCnt = new AtomicInteger();
 
     /** Flag indicating if methods of this store should fail. */
@@ -97,7 +106,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     /**
      * @return Transactions.
      */
-    public Collection<GridCacheTx> transactions() {
+    public Collection<IgniteTx> transactions() {
         return txs;
     }
 
@@ -155,28 +164,28 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /**
-     * @return Count of {@link #load(GridCacheTx, Object)} method calls since last reset.
+     * @return Count of {@link #load(IgniteTx, Object)} method calls since last reset.
      */
     public int getLoadCount() {
         return loadCnt.get();
     }
 
     /**
-     * @return Count of {@link #put(GridCacheTx, Object, Object)} method calls since last reset.
+     * @return Count of {@link #put(IgniteTx, Object, Object)} method calls since last reset.
      */
     public int getPutCount() {
         return putCnt.get();
     }
 
     /**
-     * @return Count of {@link #putAll(GridCacheTx, Map)} method calls since last reset.
+     * @return Count of {@link #putAll(IgniteTx, Map)} method calls since last reset.
      */
     public int getPutAllCount() {
         return putAllCnt.get();
     }
 
     /** {@inheritDoc} */
-    @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+    @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "load";
@@ -207,7 +216,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(GridCacheTx tx, Collection<? extends Integer> keys,
+    @Override public void loadAll(IgniteTx tx, Collection<? extends Integer> keys,
         IgniteBiInClosure<Integer, String> c) throws IgniteCheckedException {
         checkTx(tx);
 
@@ -224,7 +233,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, Integer key, String val)
+    @Override public void put(@Nullable IgniteTx tx, Integer key, String val)
         throws IgniteCheckedException {
         checkTx(tx);
 
@@ -238,7 +247,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(GridCacheTx tx, Map<? extends Integer, ? extends String> map)
+    @Override public void putAll(IgniteTx tx, Map<? extends Integer, ? extends String> map)
         throws IgniteCheckedException {
         checkTx(tx);
 
@@ -252,7 +261,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+    @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
         checkTx(tx);
 
         lastMtd = "remove";
@@ -263,7 +272,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(GridCacheTx tx, Collection<? extends Integer> keys)
+    @Override public void removeAll(IgniteTx tx, Collection<? extends Integer> keys)
         throws IgniteCheckedException {
         checkTx(tx);
 
@@ -276,7 +285,7 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) {
+    @Override public void txEnd(IgniteTx tx, boolean commit) {
         // No-op.
     }
 
@@ -298,13 +307,13 @@ public final class GridCacheTestStore implements GridCacheStore<Integer, String>
      * @param tx Checks transaction.
      * @throws IgniteCheckedException If transaction is incorrect.
      */
-    private void checkTx(GridCacheTx tx) throws IgniteCheckedException {
+    private void checkTx(IgniteTx tx) throws IgniteCheckedException {
         if (tx == null)
             return;
 
         txs.add(tx);
 
-        GridCacheTxEx tx0 = (GridCacheTxEx)tx;
+        IgniteTxEx tx0 = (IgniteTxEx)tx;
 
         if (!tx0.local())
             throw new IgniteCheckedException("Tx is not local: " + tx);

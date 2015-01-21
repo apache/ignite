@@ -1,15 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -19,8 +28,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Group lock abstract test for partitioned cache.
@@ -62,7 +71,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    private void checkUpdateEntry(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+    private void checkUpdateEntry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
         GridCache<GridCacheAffinityKey<Integer>, Integer> cache = cache(0);
@@ -74,7 +83,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
             cache.put(new GridCacheAffinityKey<>(i, affinityKey), i);
 
         for (int i = 0; i < 3; i++) {
-            try (GridCacheTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
+            try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
                 Set<GridCacheEntry<GridCacheAffinityKey<Integer>, Integer>> set =
                     cache.entrySet(cache(0).affinity().partition(affinityKey));
 
@@ -105,7 +114,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         final GridCache<UUID, String> cache = grid(0).cache(null);
 
-        try (GridCacheTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
+        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
             0, 2)) {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

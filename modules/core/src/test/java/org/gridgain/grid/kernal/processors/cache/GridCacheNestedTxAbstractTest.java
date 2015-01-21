@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -14,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -22,8 +31,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Nested transaction emulation.
@@ -103,7 +112,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         c.put(CNTR_KEY, 0);
 
         for (int i = 0; i < 10; i++) {
-            try (GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 c.get(CNTR_KEY);
 
                 ctx.closure().callLocalSafe((new Callable<Boolean>() {
@@ -127,7 +136,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 
@@ -138,7 +147,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
-                    GridCacheTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ);
+                    IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
                         int cntr = c.get(CNTR_KEY);
@@ -163,7 +172,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                 @Override public void run() {
 
                     try {
-                        c.lock(CNTR_KEY, 0);
+                        c.lock(CNTR_KEY).lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -175,12 +184,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        try {
-                            c.unlock(CNTR_KEY);
-                        }
-                        catch (IgniteCheckedException e) {
-                            error("Failed unlock", e);
-                        }
+                        c.lock(CNTR_KEY).unlock();
                     }
                 }
             }));
@@ -206,9 +210,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockAndTx1() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
-        final GridCache<Integer, Integer> c1 = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c1 = grid(0).jcache(null);
 
         Collection<Thread> threads = new LinkedList<>();
 
@@ -221,13 +225,13 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                 @Override public void run() {
 
                     try {
-                        c.lock(CNTR_KEY, 0);
+                        c.lock(CNTR_KEY).lock();
 
                         int cntr = c.get(CNTR_KEY);
 
                         info("*** Cntr in lock thread: " + cntr);
 
-                        GridCacheTx tx = c.txStart(OPTIMISTIC, READ_COMMITTED);
+                        IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED);
 
                         try {
 
@@ -253,12 +257,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        try {
-                            c.unlock(CNTR_KEY);
-                        }
-                        catch (IgniteCheckedException e) {
-                            error("Failed unlock", e);
-                        }
+                        c.lock(CNTR_KEY).unlock();
                     }
                 }
             }));

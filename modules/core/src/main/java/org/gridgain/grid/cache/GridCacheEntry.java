@@ -1,19 +1,29 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.Map.*;
 
@@ -73,12 +83,12 @@ import java.util.Map.*;
  * Cache API supports distributed transactions. All {@code 'get(..)'}, {@code 'put(..)'}, {@code 'replace(..)'},
  * and {@code 'remove(..)'} operations are transactional and will participate in an ongoing transaction.
  * Other methods like {@code 'peek(..)'} may be transaction-aware, i.e. check in-transaction entries first, but
- * will not affect the current state of transaction. See {@link GridCacheTx} documentation for more information
+ * will not affect the current state of transaction. See {@link IgniteTx} documentation for more information
  * about transactions.
  * @param <K> Key type.
  * @param <V> Value type.
  */
-public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware {
+public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware, Cache.Entry<K, V> {
     /**
      * Cache projection to which this entry belongs. Note that entry and its
      * parent projections have same flags and filters.
@@ -314,27 +324,6 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
 
     /**
      * This method has the same semantic as
-     * {@link GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)} method.
-     *
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @throws IgniteCheckedException If cache update failed.
-     * @see GridCacheProjection#transform(Object, org.apache.ignite.lang.IgniteClosure)
-     */
-    public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException;
-
-    /**
-     * This method has the same semantic as
-     * {@link GridCacheProjection#transformAsync(Object, org.apache.ignite.lang.IgniteClosure)} method.
-     *
-     * @param transformer Closure to be applied to the previous value in cache. If this closure returns
-     *      {@code null}, the associated value will be removed from cache.
-     * @return Transform operation future.
-     */
-    public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer);
-
-    /**
-     * This method has the same semantic as
      * {@link GridCacheProjection#replace(Object, Object)} method.
      *
      * @param val See {@link GridCacheProjection#replace(Object, Object)}
@@ -481,7 +470,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions.
      * If you do need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -505,7 +494,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
@@ -529,7 +518,7 @@ public interface GridCacheEntry<K, V> extends Map.Entry<K, V>, GridMetadataAware
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
-     * {@link GridCacheTxConcurrency#PESSIMISTIC} concurrency control for transaction
+     * {@link IgniteTxConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:

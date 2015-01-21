@@ -1,14 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.continuous;
 
+import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -18,6 +27,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
+
+import static org.gridgain.grid.kernal.processors.continuous.GridContinuousMessageType.*;
 
 /**
  * Continuous processor message.
@@ -40,6 +51,9 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** Serialized message data. */
     private byte[] dataBytes;
 
+    /** Future ID for synchronous event notifications. */
+    private IgniteUuid futId;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -50,14 +64,19 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /**
      * @param type Message type.
      * @param routineId Consume ID.
+     * @param futId Future ID.
      * @param data Optional message data.
      */
-    GridContinuousMessage(GridContinuousMessageType type, UUID routineId, @Nullable Object data) {
+    GridContinuousMessage(GridContinuousMessageType type,
+        @Nullable UUID routineId,
+        @Nullable IgniteUuid futId,
+        @Nullable Object data) {
         assert type != null;
-        assert routineId != null;
+        assert routineId != null || type == MSG_EVT_ACK;
 
         this.type = type;
         this.routineId = routineId;
+        this.futId = futId;
         this.data = data;
     }
 
@@ -78,6 +97,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Message data.
      */
+    @SuppressWarnings("unchecked")
     public <T> T data() {
         return (T)data;
     }
@@ -103,14 +123,21 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
         this.dataBytes = dataBytes;
     }
 
+    /**
+     * @return Future ID for synchronous event notification.
+     */
+    @Nullable public IgniteUuid futureId() {
+        return futId;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridContinuousMessage clone = new GridContinuousMessage();
+        GridContinuousMessage _clone = new GridContinuousMessage();
 
-        clone0(clone);
+        clone0(_clone);
 
-        return clone;
+        return _clone;
     }
 
     /** {@inheritDoc} */
@@ -119,6 +146,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
         clone.type = type;
         clone.routineId = routineId;
+        clone.futId = futId;
         clone.data = data;
         clone.dataBytes = dataBytes;
     }
@@ -143,12 +171,18 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                if (!commState.putUuid(routineId))
+                if (!commState.putGridUuid(futId))
                     return false;
 
                 commState.idx++;
 
             case 2:
+                if (!commState.putUuid(routineId))
+                    return false;
+
+                commState.idx++;
+
+            case 3:
                 if (!commState.putEnum(type))
                     return false;
 
@@ -176,6 +210,16 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
+                IgniteUuid futId0 = commState.getGridUuid();
+
+                if (futId0 == GRID_UUID_NOT_READ)
+                    return false;
+
+                futId = futId0;
+
+                commState.idx++;
+
+            case 2:
                 UUID routineId0 = commState.getUuid();
 
                 if (routineId0 == UUID_NOT_READ)
@@ -185,13 +229,13 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
                 commState.idx++;
 
-            case 2:
+            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
                 byte type0 = commState.getByte();
 
-                type = GridContinuousMessageType.fromOrdinal(type0);
+                type = fromOrdinal(type0);
 
                 commState.idx++;
 

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.managers;
@@ -29,11 +37,13 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 import static java.util.Arrays.*;
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -380,24 +390,28 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl)
                         throws IgniteCheckedException {
-                        GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
+                        if (ttl > 0) {
+                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        assert e != null;
+                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                        e.timeToLive(ttl);
-
-                        return e.set(val);
+                            return cache.getAndPut(key, val);
+                        }
+                        else
+                            return ctx.cache().<K, V>cache(cacheName).put(key, val);
                     }
 
                     @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl)
                         throws IgniteCheckedException {
-                        GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
+                        if (ttl > 0) {
+                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        assert e != null;
+                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                        e.timeToLive(ttl);
-
-                        return e.setIfAbsent(val);
+                            return cache.getAndPutIfAbsent(key, val);
+                        }
+                        else
+                            return ctx.cache().<K, V>cache(cacheName).putIfAbsent(key, val);
                     }
 
                     @Nullable @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {

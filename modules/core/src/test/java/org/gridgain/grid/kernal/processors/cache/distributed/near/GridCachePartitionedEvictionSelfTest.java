@@ -1,16 +1,26 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -21,9 +31,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 
+import javax.cache.expiry.*;
+
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -82,8 +95,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param node Node.
      * @return Cache.
      */
-    private GridCacheProjection<String, Integer> cache(ClusterNode node) {
-        return G.ignite(node.id()).cache(null);
+    private IgniteCache<String, Integer> cache(ClusterNode node) {
+        return G.ignite(node.id()).jcache(null);
     }
 
     /**
@@ -145,7 +158,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
      * @param concurrency Tx concurrency.
      * @param isolation Tx isolation.
      */
-    private void doTestEviction(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation)
+    private void doTestEviction(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws Exception {
         assert concurrency != null;
         assert isolation != null;
@@ -158,17 +171,21 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         GridCacheAffinity<String> aff = dht0.affinity();
 
+        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
+
         for (int kv = 0; kv < KEY_CNT; kv++) {
             String key = String.valueOf(kv);
 
-            GridCacheProjection<String, Integer> c = cache(aff.mapKeyToNode(key));
+            ClusterNode node = aff.mapKeyToNode(key);
 
-            try (GridCacheTx tx = c.txStart(concurrency, isolation)) {
+            IgniteCache<String, Integer> c = cache(node);
+
+            IgniteTransactions txs = G.ignite(node.id()).transactions();
+
+            try (IgniteTx tx = txs.txStart(concurrency, isolation)) {
                 assert c.get(key) == null;
 
-                c.put(key, kv);
-
-                c.entry(key).timeToLive(10);
+                c.withExpiryPolicy(plc).put(key, 1);
 
                 assertEquals(Integer.valueOf(kv), c.get(key));
 

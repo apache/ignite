@@ -1,21 +1,32 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -114,18 +125,6 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
-     * @param key Key.
-     * @param transformer Transformer closure.
-     * @param entry Cached entry.
-     * @param ttl Optional time-to-lve.
-     * @return Transform operation future.
-     */
-    public IgniteFuture<?> transformAsync(K key, IgniteClosure<V, V> transformer, @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl);
-
-    /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
-     *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
      * @param filter Optional filter.
@@ -195,7 +194,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -220,7 +219,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link GridCacheStore}
-     * via {@link GridCacheStore#put(GridCacheTx, Object, Object)} method.
+     * via {@link GridCacheStore#put(IgniteTx, Object, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -242,7 +241,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -266,7 +265,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link GridCacheStore}
-     * via {@link GridCacheStore#remove(GridCacheTx, Object)} method.
+     * via {@link GridCacheStore#remove(IgniteTx, Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -380,4 +379,76 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Primary entry set.
      */
     public Set<GridCacheEntry<K, V>> primaryEntrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter);
+
+    /**
+     * @return {@link ExpiryPolicy} associated with this projection.
+     */
+    public @Nullable ExpiryPolicy expiry();
+
+    /**
+     * @param plc {@link ExpiryPolicy} to associate with this projection.
+     * @return New projection based on this one, but with the specified expiry policy.
+     */
+    public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke result.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> EntryProcessorResult<T> invoke(K key,
+         EntryProcessor<K, V, T> entryProcessor,
+         Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args);
 }

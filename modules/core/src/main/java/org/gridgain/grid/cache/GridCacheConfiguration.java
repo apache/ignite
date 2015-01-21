@@ -1,14 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.portables.PortableObject;
+import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.cloner.*;
@@ -19,25 +32,22 @@ import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
- * grid via {@link org.apache.ignite.configuration.IgniteConfiguration#getCacheConfiguration()} method. It defines all configuration
+ * grid via {@link IgniteConfiguration#getCacheConfiguration()} method. It defines all configuration
  * parameters required to start a cache within grid instance. You can have multiple caches
  * configured with different names within one grid.
  * <p>
  * Cache configuration is set on {@link
- * org.apache.ignite.configuration.IgniteConfiguration#setCacheConfiguration(GridCacheConfiguration...)} method. This adapter is a simple bean and
+ * IgniteConfiguration#setCacheConfiguration(GridCacheConfiguration...)} method. This adapter is a simple bean and
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
 @SuppressWarnings("RedundantFieldInitialization")
-public class GridCacheConfiguration {
-    /** DGC tracing logger name. */
-    public static final String DGC_TRACE_LOGGER_NAME =
-        "org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace";
-
+public class GridCacheConfiguration extends MutableConfiguration {
     /** Default atomic sequence reservation size. */
     public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
 
@@ -94,15 +104,6 @@ public class GridCacheConfiguration {
 
     /** Default preload batch size in bytes. */
     public static final int DFLT_PRELOAD_BATCH_SIZE = 512 * 1024; // 512K
-
-    /** Default distributed garbage collection frequency. */
-    public static final long DFLT_DGC_FREQUENCY = 10000;
-
-    /** Default timeout for lock not to be considered as suspicious. */
-    public static final long DFLT_DGC_SUSPECT_LOCK_TIMEOUT = 10000;
-
-    /** Default value for whether DGC should remove long running locks, or only report them. */
-    public static final boolean DFLT_DGC_REMOVE_LOCKS = true;
 
     /** Default maximum eviction queue ratio. */
     public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
@@ -258,9 +259,6 @@ public class GridCacheConfiguration {
     /** Flag indicating if cached values should be additionally stored in serialized form. */
     private boolean storeValBytes = DFLT_STORE_VALUE_BYTES;
 
-    /** Refresh-ahead ratio. */
-    private double refreshAheadRatio;
-
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
@@ -272,15 +270,6 @@ public class GridCacheConfiguration {
 
     /** Preload batch size. */
     private int preloadBatchSize = DFLT_PRELOAD_BATCH_SIZE;
-
-    /** Distributed garbage collection frequency. */
-    private long dgcFreq = DFLT_DGC_FREQUENCY;
-
-    /** Timeout after which DGC will consider remote locks as suspects. */
-    private long dgcSuspectLockTimeout = DFLT_DGC_SUSPECT_LOCK_TIMEOUT;
-
-    /** Flag indicating whether DGC should remove locks. */
-    private boolean dgcRmvLocks = DFLT_DGC_REMOVE_LOCKS;
 
     /** Off-heap memory size. */
     private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
@@ -350,9 +339,16 @@ public class GridCacheConfiguration {
     /**
      * Copy constructor.
      *
-     * @param cc Configuration to copy.
+     * @param cfg Configuration to copy.
      */
-    public GridCacheConfiguration(GridCacheConfiguration cc) {
+    public GridCacheConfiguration(CompleteConfiguration cfg) {
+        super(cfg);
+
+        if (!(cfg instanceof GridCacheConfiguration))
+            return;
+
+        GridCacheConfiguration cc = (GridCacheConfiguration)cfg;
+
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
          * ==============================================
@@ -366,9 +362,6 @@ public class GridCacheConfiguration {
         cloner = cc.getCloner();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         dfltQryTimeout = cc.getDefaultQueryTimeout();
-        dgcFreq = cc.getDgcFrequency();
-        dgcRmvLocks = cc.isDgcRemoveLocks();
-        dgcSuspectLockTimeout = cc.getDgcSuspectLockTimeout();
         distro = cc.getDistributionMode();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
@@ -379,10 +372,12 @@ public class GridCacheConfiguration {
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
+        expiryPolicyFactory = cc.getExpiryPolicyFactory();
         indexingSpiName = cc.getIndexingSpiName();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         keepPortableInStore = cc.isKeepPortableInStore();
+        listenerConfigurations = cc.listenerConfigurations;
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
@@ -399,7 +394,6 @@ public class GridCacheConfiguration {
         preloadTimeout = cc.getPreloadTimeout();
         preloadThrottle = cc.getPreloadThrottle();
         qryCfg = cc.getQueryConfiguration();
-        refreshAheadRatio = cc.getRefreshAheadRatio();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
@@ -418,8 +412,8 @@ public class GridCacheConfiguration {
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link org.apache.ignite.Ignite#cache(String) Grid.cache(null)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link org.apache.ignite.Ignite#cache(String)} method.
+     * cache which can be accessed via {@link Ignite#cache(String) Grid.cache(null)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -988,33 +982,6 @@ public class GridCacheConfiguration {
     }
 
     /**
-     * Gets refresh-ahead ratio. If non-zero, then entry will be preloaded in the background
-     * whenever it's accessed and the refresh ratio of it's total time-to-live has passed.
-     * This feature ensures that entries are always automatically re-cached whenever they are
-     * nearing expiration.
-     * <p>
-     * For example, if refresh ratio is set to {@code 0.75} and entry's time-to-live is
-     * {@code 1} minute, then if this entry is accessed any time after {@code 45} seconds
-     * (which is 0.75 of a minute), the cached value will be immediately returned, but
-     * entry will be automatically reloaded from persistent store in the background.
-     *
-     * @return Refresh-ahead ratio.
-     */
-    public double getRefreshAheadRatio() {
-        return refreshAheadRatio;
-    }
-
-    /**
-     * Sets refresh-ahead ratio for cache entries. Values other than zero specify how soon entries will be auto-reloaded
-     * from persistent store prior to expiration.
-     *
-     * @param refreshAheadRatio Refresh-ahead ratio.
-     */
-    public void setRefreshAheadRatio(double refreshAheadRatio) {
-        this.refreshAheadRatio = refreshAheadRatio;
-    }
-
-    /**
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
@@ -1101,78 +1068,6 @@ public class GridCacheConfiguration {
      */
     public void setPreloadBatchSize(int preloadBatchSize) {
         this.preloadBatchSize = preloadBatchSize;
-    }
-
-    /**
-     * Gets frequency at which distributed garbage collector will
-     * check other nodes if there are any zombie locks left over.
-     * <p>
-     * If not provided, default value is {@link GridCacheConfiguration#DFLT_DGC_FREQUENCY}.
-     *
-     * @return Frequency of distributed GC in milliseconds ({@code 0} to disable GC).
-     */
-    public long getDgcFrequency() {
-        return dgcFreq;
-    }
-
-    /**
-     * Sets frequency in milliseconds for internal distributed garbage collector. Pass {@code 0} to disable distributed
-     * garbage collection. <p> If not provided, default value is {@link GridCacheConfiguration#DFLT_DGC_FREQUENCY}.
-     *
-     * @param dgcFreq Frequency of distributed GC in milliseconds ({@code 0} to disable GC).
-     */
-    public void setDgcFrequency(long dgcFreq) {
-        this.dgcFreq = dgcFreq;
-    }
-
-    /**
-     * Gets timeout after which locks are considered to be suspicious.
-     * <p>
-     * If not provided, default value is {@link GridCacheConfiguration#DFLT_DGC_SUSPECT_LOCK_TIMEOUT}.
-     *
-     * @return Distributed GC suspect lock timeout.
-     */
-    public long getDgcSuspectLockTimeout() {
-        return dgcSuspectLockTimeout;
-    }
-
-    /**
-     * Sets suspect lock timeout in milliseconds for internal distributed garbage collector. If lock's lifetime is
-     * greater than the timeout, then lock is considered to be suspicious. <p> If not provided, default value is {@link
-     * GridCacheConfiguration#DFLT_DGC_SUSPECT_LOCK_TIMEOUT}.
-     *
-     * @param dgcSuspectLockTimeout Timeout in milliseconds.
-     */
-    public void setDgcSuspectLockTimeout(long dgcSuspectLockTimeout) {
-        this.dgcSuspectLockTimeout = dgcSuspectLockTimeout;
-    }
-
-    /**
-     * Gets system-wide flag indicating whether DGC manager should remove locks in question or only
-     * report them. Note, that this behavior could be overridden by specifically calling
-     * {@link GridCache#dgc(long, boolean, boolean)} method.
-     * <p>
-     * If {@code false} DGC manager will not release the locks that are not owned by any other node.
-     * This may be useful for debugging purposes. You may also enable DGC tracing by enabling DEBUG
-     * on {@link #DGC_TRACE_LOGGER_NAME} category.
-     * <p>
-     * If not provided, default value is {@link GridCacheConfiguration#DFLT_DGC_REMOVE_LOCKS}.
-     *
-     * @return {@code True} if DGC should remove locks.
-     * @see #DGC_TRACE_LOGGER_NAME
-     */
-    public boolean isDgcRemoveLocks() {
-        return dgcRmvLocks;
-    }
-
-    /**
-     * Sets DGC remove locks flag.
-     *
-     * @param dgcRmvLocks {@code True} to remove locks.
-     * @see #isDgcRemoveLocks()
-     */
-    public void setDgcRemoveLocks(boolean dgcRmvLocks) {
-        this.dgcRmvLocks = dgcRmvLocks;
     }
 
     /**
@@ -1343,8 +1238,8 @@ public class GridCacheConfiguration {
     /**
      * Maximum batch size for write-behind cache store operations. Store operations (get or remove)
      * are combined in a batch of this size to be passed to
-     * {@link GridCacheStore#putAll(GridCacheTx, Map)} or
-     * {@link GridCacheStore#removeAll(GridCacheTx, Collection)} methods.
+     * {@link GridCacheStore#putAll(IgniteTx, Map)} or
+     * {@link GridCacheStore#removeAll(IgniteTx, Collection)} methods.
      * <p/>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_BATCH_SIZE}.
      *
@@ -1561,7 +1456,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see org.apache.ignite.spi.indexing.IndexingSpi
+     * @see GridIndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1575,7 +1470,7 @@ public class GridCacheConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see org.apache.ignite.spi.indexing.IndexingSpi
+     * @see GridIndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;
@@ -1743,7 +1638,7 @@ public class GridCacheConfiguration {
 
     /**
      * Flag indicating whether GridGain should store portable keys and values
-     * as instances of {@link org.apache.ignite.portables.PortableObject}.
+     * as instances of {@link PortableObject}.
      *
      * @return Portable enabled flag.
      */

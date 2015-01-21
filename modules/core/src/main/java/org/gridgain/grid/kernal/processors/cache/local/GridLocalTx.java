@@ -1,18 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -21,12 +30,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Local cache transaction.
  */
-class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
+class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,20 +62,15 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         GridCacheSharedContext<K, V> ctx,
         boolean implicit,
         boolean implicitSingle,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         long timeout,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, ctx.versions().next(), implicit, implicitSingle, concurrency, isolation, timeout, false, txSize,
-            null, false, subjId, taskNameHash);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> future() {
-        return fut.get();
+        super(ctx, ctx.versions().next(), implicit, implicitSingle, false, concurrency, isolation, timeout, false, true,
+            txSize, null, false, subjId, taskNameHash);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +83,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void prepare() throws IgniteCheckedException {
         if (!state(PREPARING)) {
-            GridCacheTxState state = state();
+            IgniteTxState state = state();
 
             // If other thread is doing "prepare", then no-op.
             if (state == PREPARING || state == PREPARED || state == COMMITTING || state == COMMITTED)
@@ -103,11 +107,11 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheTxEx<K, V>> prepareAsync() {
+    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
         try {
             prepare();
 
-            return new GridFinishedFuture<GridCacheTxEx<K, V>>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTxEx<K, V>>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -142,7 +146,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<GridCacheTx> commitAsync() {
+    @Override public IgniteFuture<IgniteTx> commitAsync() {
         try {
             prepare();
         }
@@ -172,7 +176,8 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
         rollbackAsync().get();
     }
 
-    @Override public IgniteFuture<GridCacheTx> rollbackAsync() {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 
@@ -180,7 +185,7 @@ class GridLocalTx<K, V> extends GridCacheTxLocalAdapter<K, V> {
 
             state(ROLLED_BACK);
 
-            return new GridFinishedFuture<GridCacheTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTx>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

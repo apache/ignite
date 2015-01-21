@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal;
@@ -103,7 +111,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class GridGainEx {
     /** Default configuration path relative to GridGain home. */
-    private static final String DFLT_CFG = "config/default-config.xml";
+    public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named grids. */
     private static final ConcurrentMap<Object, GridNamedInstance> grids = new ConcurrentHashMap8<>();
@@ -517,15 +525,15 @@ public class GridGainEx {
      *
      * @param springCfgPath Spring config path.
      * @param gridName Grid name.
-     * @param envPtr Environment pointer.
+     * @param cfgClo Configuration closure.
      * @return Started Grid.
      * @throws IgniteCheckedException If failed.
      */
-    public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName, long envPtr)
-        throws IgniteCheckedException {
-        GridInteropProcessorAdapter.ENV_PTR.set(envPtr);
+    public static Ignite startInterop(@Nullable String springCfgPath, @Nullable String gridName,
+        IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo) throws IgniteCheckedException {
+        URL url = resolveSpringUrl(springCfgPath);
 
-        return start(springCfgPath, gridName);
+        return start(url, gridName, null, cfgClo);
     }
 
     /**
@@ -646,21 +654,7 @@ public class GridGainEx {
      */
     public static Ignite start(String springCfgPath, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        A.notNull(springCfgPath, "springCfgPath");
-
-        URL url;
-
-        try {
-            url = new URL(springCfgPath);
-        }
-        catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(springCfgPath);
-
-            if (url == null)
-                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
-                    ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
-        }
+        URL url = resolveSpringUrl(springCfgPath);
 
         return start(url, gridName, springCtx);
     }
@@ -708,6 +702,23 @@ public class GridGainEx {
      */
     public static Ignite start(URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+        return start(springCfgUrl, gridName, springCtx, null);
+    }
+
+    /**
+     * Internal Spring-based start routine.
+     *
+     * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
+     * @param gridName Grid name that will override default.
+     * @param springCtx Optional Spring application context.
+     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
+     * @return Started grid.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static Ignite start(URL springCfgUrl, @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx,
+        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
+        throws IgniteCheckedException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
@@ -743,6 +754,12 @@ public class GridGainEx {
                 if (cfg.getGridName() == null && !F.isEmpty(gridName))
                     cfg.setGridName(gridName);
 
+                if (cfgClo != null) {
+                    cfg = cfgClo.apply(cfg);
+
+                    assert cfg != null;
+                }
+
                 // Use either user defined context or our one.
                 GridNamedInstance grid = start0(
                     new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx));
@@ -770,6 +787,33 @@ public class GridGainEx {
         GridNamedInstance res = !grids.isEmpty() ? grids.get(0) : null;
 
         return res != null ? res.grid() : null;
+    }
+
+    /**
+     * Resolve Spring configuration URL.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @return URL.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
+        A.notNull(springCfgPath, "springCfgPath");
+
+        URL url;
+
+        try {
+            url = new URL(springCfgPath);
+        }
+        catch (MalformedURLException e) {
+            url = U.resolveGridGainUrl(springCfgPath);
+
+            if (url == null)
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
+                    ". Note that this path should be either absolute or a relative local file system path, " +
+                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+        }
+
+        return url;
     }
 
     /**
@@ -1381,7 +1425,7 @@ public class GridGainEx {
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
-            myCfg.setTransactionsConfiguration(new GridTransactionsConfiguration(cfg.getTransactionsConfiguration()));
+            myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();

@@ -1,19 +1,28 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -54,7 +63,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     private boolean isRead;
 
     /** Transaction isolation. */
-    private GridCacheTxIsolation isolation;
+    private IgniteTxIsolation isolation;
 
     /** Key bytes for keys to lock. */
     @GridDirectCollection(byte[].class)
@@ -67,7 +76,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** Write entries. */
     @GridToStringInclude
     @GridDirectTransient
-    private List<GridCacheTxEntry<K, V>> writeEntries;
+    private List<IgniteTxEntry<K, V>> writeEntries;
 
     /** Serialized write entries. */
     private byte[] writeEntriesBytes;
@@ -85,7 +94,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** Group lock key if this is a group-lock transaction. */
     @GridDirectTransient
-    private GridCacheTxKey grpLockKey;
+    private IgniteTxKey grpLockKey;
 
     /** Group lock key bytes. */
     private byte[] grpLockKeyBytes;
@@ -130,12 +139,12 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         GridCacheVersion lockVer,
         boolean isInTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock
     ) {
         super(lockVer, keyCnt);
@@ -230,7 +239,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
      */
-    public GridCacheTxIsolation isolation() {
+    public IgniteTxIsolation isolation() {
         return isolation;
     }
 
@@ -245,7 +254,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Write entries list.
      */
-    public List<GridCacheTxEntry<K, V>> writeEntries() {
+    public List<IgniteTxEntry<K, V>> writeEntries() {
         return writeEntries;
     }
 
@@ -271,7 +280,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     public void addKeyBytes(
         K key,
         @Nullable byte[] keyBytes,
-        @Nullable GridCacheTxEntry<K, V> writeEntry,
+        @Nullable IgniteTxEntry<K, V> writeEntry,
         boolean retVal,
         @Nullable Collection<GridCacheMvccCandidate<K>> cands,
         @Nullable GridCacheVersion drVer,
@@ -328,7 +337,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /**
      * @return Group lock key.
      */
-    @Nullable public GridCacheTxKey groupLockKey() {
+    @Nullable public IgniteTxKey groupLockKey() {
         return grpLockKey;
     }
 
@@ -701,7 +710,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
                 byte isolation0 = commState.getByte();
 
-                isolation = GridCacheTxIsolation.fromOrdinal(isolation0);
+                isolation = IgniteTxIsolation.fromOrdinal(isolation0);
 
                 commState.idx++;
 

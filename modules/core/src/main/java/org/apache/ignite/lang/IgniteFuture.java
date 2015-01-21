@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.lang;
@@ -27,7 +35,7 @@ public interface IgniteFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws org.gridgain.grid.GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
@@ -106,7 +114,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @param syncNotify Flag to turn on or off synchronous listener notification.
      */
@@ -120,7 +128,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @return Synchronous listener notification flag.
      */
@@ -135,7 +143,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @param concurNotify Flag to turn on or off concurrent listener notification.
      */
@@ -150,7 +158,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @return Concurrent listener notification flag
      */

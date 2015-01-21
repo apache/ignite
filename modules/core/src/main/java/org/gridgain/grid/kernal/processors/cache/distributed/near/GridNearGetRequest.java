@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -71,6 +79,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     @GridDirectVersion(2)
     private int taskNameHash;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -87,6 +98,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param reload Reload flag.
      * @param topVer Topology version.
      * @param filter Filter.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public GridNearGetRequest(
         int cacheId,
@@ -98,7 +112,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         long topVer,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long accessTtl
     ) {
         assert futId != null;
         assert miniId != null;
@@ -115,6 +130,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.accessTtl = accessTtl;
     }
 
     /**
@@ -178,6 +194,13 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      */
     public IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
         return filter;
+    }
+
+    /**
+     * @return New TTL to set after entry is accessed, -1 to leave unchanged.
+     */
+    public long accessTtl() {
+        return accessTtl;
     }
 
     /**
@@ -364,6 +387,12 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
+            case 12:
+                if (!commState.putLong(accessTtl))
+                    return false;
+
+                commState.idx++;
+
         }
 
         return true;
@@ -510,6 +539,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                     return false;
 
                 taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 12:
+                if (buf.remaining() < 8)
+                    return false;
+
+                accessTtl = commState.getLong();
 
                 commState.idx++;
 

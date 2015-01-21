@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
@@ -13,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -143,17 +152,17 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                     c.apply(e.getKey(), e.getValue());
             }
 
-            @Override public String load(GridCacheTx tx, Integer key) {
+            @Override public String load(IgniteTx tx, Integer key) {
                 X.println("Loading on: " + caches.indexOf(g.<Integer, String>cache(null)) + " key=" + key);
 
                 return map.get(key);
             }
 
-            @Override public void put(GridCacheTx tx, Integer key, @Nullable String val) {
+            @Override public void put(IgniteTx tx, Integer key, @Nullable String val) {
                 fail("Should not be called within the test.");
             }
 
-            @Override public void remove(GridCacheTx tx, Integer key) {
+            @Override public void remove(IgniteTx tx, Integer key) {
                 fail("Should not be called within the test.");
             }
         };

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -507,16 +515,16 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).nodes())));
 
-        GridCache<Integer, String> cache = cache(0);
+        IgniteCache<Integer, String> cache = jcache(0);
 
-        assertTrue(cache.lock(key1, 0L));
+        cache.lock(key1).lock();
 
         try {
             // Nested lock.
-            assertTrue(cache.lock(key2, 0L));
+            cache.lock(key2).lock();
 
             try {
-                assertNull(cache.put(key1, val1));
+                assertNull(cache.getAndPut(key1, val1));
 
                 assertEquals(val1, dht(0).peek(key1));
                 assertEquals(val1, dht(1).peek(key1));
@@ -529,7 +537,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(1).peekNearOnly(key1));
                 assertNull(near(2).peekNearOnly(key1));
 
-                assertTrue(cache.putx(key2, val2));
+                cache.put(key2, val2);
 
                 assertNull(dht(0).peek(key2));
                 assertEquals(val2, dht(1).peek(key2));
@@ -566,11 +574,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(2).peekEx(key2));
             }
             finally {
-                cache.unlock(key2);
+                cache.lock(key2).lock();
             }
         }
         finally {
-            cache.unlock(key1);
+            cache.lock(key1).unlock();
         }
     }
 }

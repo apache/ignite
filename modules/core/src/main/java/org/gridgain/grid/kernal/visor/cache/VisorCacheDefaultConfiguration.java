@@ -1,14 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
@@ -22,10 +31,10 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default transaction isolation. */
-    private GridCacheTxIsolation txIsolation;
+    private IgniteTxIsolation txIsolation;
 
     /** Default transaction concurrency. */
-    private GridCacheTxConcurrency txConcurrency;
+    private IgniteTxConcurrency txConcurrency;
 
     /** TTL value. */
     private long ttl;
@@ -61,28 +70,28 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     /**
      * @return Default transaction isolation.
      */
-    public GridCacheTxIsolation txIsolation() {
+    public IgniteTxIsolation txIsolation() {
         return txIsolation;
     }
 
     /**
      * @param txIsolation New default transaction isolation.
      */
-    public void txIsolation(GridCacheTxIsolation txIsolation) {
+    public void txIsolation(IgniteTxIsolation txIsolation) {
         this.txIsolation = txIsolation;
     }
 
     /**
      * @return Default transaction concurrency.
      */
-    public GridCacheTxConcurrency txConcurrency() {
+    public IgniteTxConcurrency txConcurrency() {
         return txConcurrency;
     }
 
     /**
      * @param txConcurrency New default transaction concurrency.
      */
-    public void txConcurrency(GridCacheTxConcurrency txConcurrency) {
+    public void txConcurrency(IgniteTxConcurrency txConcurrency) {
         this.txConcurrency = txConcurrency;
     }
 

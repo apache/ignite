@@ -1,18 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.processor.*;
 
 /**
  * Cache entry atomic update result.
@@ -46,14 +55,18 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
 
+    /** Value computed by entry processor. */
+    private EntryProcessorResult<?> res;
+
     /**
      * Constructor.
      *
      * @param success Success flag.
      * @param oldVal Old value.
      * @param newVal New value.
+     * @param res Value computed by the {@link EntryProcessor}.
      * @param newTtl New TTL.
-     * @param drExpireTime Explict DR expire time (if any).
+     * @param drExpireTime Explicit DR expire time (if any).
      * @param rmvVer Version for deferred delete.
      * @param drRes DR resolution result.
      * @param sndToDht Whether update should be propagated to DHT node.
@@ -61,6 +74,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable V oldVal,
         @Nullable V newVal,
+        @Nullable EntryProcessorResult<?> res,
         long newTtl,
         long drExpireTime,
         @Nullable GridCacheVersion rmvVer,
@@ -69,11 +83,19 @@ public class GridCacheUpdateAtomicResult<K, V> {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
+        this.res = res;
         this.newTtl = newTtl;
         this.drExpireTime = drExpireTime;
         this.rmvVer = rmvVer;
         this.drRes = drRes;
         this.sndToDht = sndToDht;
+    }
+
+    /**
+     * @return Value computed by the {@link EntryProcessor}.
+     */
+    @Nullable public EntryProcessorResult<?> computedResult() {
+        return res;
     }
 
     /**
@@ -98,7 +120,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
     }
 
     /**
-     * @return New TTL.
+     * @return {@code -1} if TTL did not change, otherwise new TTL.
      */
     public long newTtl() {
         return newTtl;

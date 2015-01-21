@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -13,6 +21,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -33,6 +42,9 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** Explicit lock flag. */
     private boolean explicitLock;
+
+    /** Store enabled flag. */
+    private boolean storeEnabled;
 
     /** Topology version. */
     private long topVer;
@@ -58,7 +70,9 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param threadId Thread ID.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
+     * @param sys System flag.
      * @param explicitLock Explicit lock flag.
+     * @param storeEnabled Store enabled flag.
      * @param topVer Topology version.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
@@ -73,22 +87,25 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         long threadId,
         boolean commit,
         boolean invalidate,
+        boolean sys,
         boolean syncCommit,
         boolean syncRollback,
         boolean explicitLock,
+        boolean storeEnabled,
         long topVer,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<GridCacheTxEntry<K, V>> writeEntries,
-        Collection<GridCacheTxEntry<K, V>> recoverEntries,
+        Collection<IgniteTxEntry<K, V>> writeEntries,
+        Collection<IgniteTxEntry<K, V>> recoverEntries,
         @Nullable UUID subjId,
         int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, syncCommit, syncRollback, baseVer, committedVers,
+        super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
             rolledbackVers, txSize, writeEntries, recoverEntries, null);
 
         this.explicitLock = explicitLock;
+        this.storeEnabled = storeEnabled;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -99,6 +116,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      */
     public boolean explicitLock() {
         return explicitLock;
+    }
+
+    /**
+     * @return Store enabled flag.
+     */
+    public boolean storeEnabled() {
+        return storeEnabled;
     }
 
     /**
@@ -154,6 +178,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
         _clone.miniId = miniId;
         _clone.explicitLock = explicitLock;
+        _clone.storeEnabled = storeEnabled;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
@@ -175,36 +200,41 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         }
 
         switch (commState.idx) {
-            case 20:
+            case 21:
                 if (!commState.putBoolean(explicitLock))
                     return false;
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
 
+            case 26:
+                if (!commState.putBoolean(storeEnabled))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -219,7 +249,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
             return false;
 
         switch (commState.idx) {
-            case 20:
+            case 21:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -227,7 +257,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 21:
+            case 22:
                 IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -237,7 +267,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 22:
+            case 23:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -245,7 +275,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 23:
+            case 24:
                 UUID subjId0 = commState.getUuid();
 
                 if (subjId0 == UUID_NOT_READ)
@@ -255,7 +285,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
-            case 24:
+            case 25:
                 if (buf.remaining() < 4)
                     return false;
 
@@ -263,6 +293,13 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
                 commState.idx++;
 
+            case 26:
+                if (buf.remaining() < 1)
+                    return false;
+
+                storeEnabled = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

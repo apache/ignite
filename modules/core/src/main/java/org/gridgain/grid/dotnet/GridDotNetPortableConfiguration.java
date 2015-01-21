@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.dotnet;
@@ -37,7 +45,7 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     private boolean dfltMetadataEnabled = true;
 
     /** Whether to cache deserialized value in IGridPortableObject */
-    private boolean keepDeserialized = true;
+    private boolean dfltKeepDeserialized = true;
 
     /**
      * Default constructor.
@@ -65,7 +73,7 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         dfltIdMapper = cfg.getDefaultIdMapper();
         dfltSerializer = cfg.getDefaultSerializer();
         dfltMetadataEnabled = cfg.getDefaultMetadataEnabled();
-        keepDeserialized = cfg.getKeepDeserialized();
+        dfltKeepDeserialized = cfg.getDefaultKeepDeserialized();
     }
 
     /**
@@ -155,15 +163,15 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
     /**
      * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
      */
-    public boolean getKeepDeserialized() {
-        return keepDeserialized;
+    public boolean getDefaultKeepDeserialized() {
+        return dfltKeepDeserialized;
     }
 
     /**
      * @param keepDeserialized Keep deserialized flag.
      */
-    public void setKeepDeserialized(boolean keepDeserialized) {
-        this.keepDeserialized = keepDeserialized;
+    public void setDefaultKeepDeserialized(boolean keepDeserialized) {
+        this.dfltKeepDeserialized = keepDeserialized;
     }
 
     /** {@inheritDoc} */
@@ -171,18 +179,12 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         PortableRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeCollection(typesCfg);
-
         rawWriter.writeCollection(types);
-
         rawWriter.writeString(dfltNameMapper);
-
         rawWriter.writeString(dfltIdMapper);
-
         rawWriter.writeString(dfltSerializer);
-
         rawWriter.writeBoolean(dfltMetadataEnabled);
-
-        rawWriter.writeBoolean(keepDeserialized);
+        rawWriter.writeBoolean(dfltKeepDeserialized);
     }
 
     /** {@inheritDoc} */
@@ -190,18 +192,12 @@ public class GridDotNetPortableConfiguration implements PortableMarshalAware {
         PortableRawReader rawReader = reader.rawReader();
 
         typesCfg = rawReader.readCollection();
-
         types = rawReader.readCollection();
-
         dfltNameMapper = rawReader.readString();
-
         dfltIdMapper = rawReader.readString();
-
         dfltSerializer = rawReader.readString();
-
         dfltMetadataEnabled = rawReader.readBoolean();
-
-        keepDeserialized = rawReader.readBoolean();
+        dfltKeepDeserialized = rawReader.readBoolean();
     }
 
     /** {@inheritDoc} */

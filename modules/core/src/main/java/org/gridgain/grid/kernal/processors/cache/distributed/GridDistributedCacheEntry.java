@@ -1,15 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -445,48 +454,6 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
 
     /**
      *
-     * @param cand Candidate to acquire lock for.
-     * @return Owner.
-     * @throws GridCacheEntryRemovedException If entry is removed.
-     */
-    @Nullable public GridCacheMvccCandidate<K> readyLock(
-        GridCacheMvccCandidate<K> cand) throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate<K> prev = null;
-        GridCacheMvccCandidate<K> owner = null;
-
-        V val;
-
-        synchronized (this) {
-            checkObsolete();
-
-            GridCacheMvcc<K> mvcc = mvccExtras();
-
-            if (mvcc != null) {
-                prev = mvcc.anyOwner();
-
-                boolean emptyBefore = mvcc.isEmpty();
-
-                owner = mvcc.readyLocal(cand);
-
-                boolean emptyAfter = mvcc.isEmpty();
-
-                checkCallbacks(emptyBefore, emptyAfter);
-
-                if (emptyAfter)
-                    mvccExtras(null);
-            }
-
-            val = this.val;
-        }
-
-        // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
-
-        return owner;
-    }
-
-    /**
-     *
      * @param ver Version of candidate to acquire lock for.
      * @return Owner.
      * @throws GridCacheEntryRemovedException If entry is removed.
@@ -753,7 +720,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
@@ -788,7 +755,7 @@ public class GridDistributedCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -13,7 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
@@ -28,7 +38,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link GridCacheConfiguration}.
+ * Test for {@link LifecycleAware} support in {@link GridCacheConfiguration}.
  */
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
@@ -50,7 +60,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable GridCacheTx tx, Object key) {
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) {
             return null;
         }
 
@@ -60,35 +70,35 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable GridCacheTx tx, @Nullable Collection keys,
+        @Override public void loadAll(@Nullable IgniteTx tx, @Nullable Collection keys,
             IgniteBiInClosure c) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable GridCacheTx tx, Object key,
+        @Override public void put(@Nullable IgniteTx tx, Object key,
             @Nullable Object val) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable GridCacheTx tx, @Nullable Map map) {
+        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map map) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable GridCacheTx tx, Object key) {
+        @Override public void remove(@Nullable IgniteTx tx, Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable GridCacheTx tx,
+        @Override public void removeAll(@Nullable IgniteTx tx,
             @Nullable Collection keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(GridCacheTx tx, boolean commit) {
+        @Override public void txEnd(IgniteTx tx, boolean commit) {
             // No-op.
         }
     }

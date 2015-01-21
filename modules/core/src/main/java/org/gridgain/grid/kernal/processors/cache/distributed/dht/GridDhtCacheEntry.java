@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
@@ -15,6 +23,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -223,7 +232,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter<K, V> dhtTx = (GridDhtTxLocalAdapter<K, V>)tx;
@@ -393,12 +402,13 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             if (reader == null) {
                 reader = new ReaderId<>(nodeId, msgId);
 
-                rdrs = new LinkedList<>(rdrs);
+                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() + 1);
 
+                rdrs.addAll(this.rdrs);
                 rdrs.add(reader);
 
                 // Seal.
-                rdrs = Collections.unmodifiableList(rdrs);
+                this.rdrs = Collections.unmodifiableList(rdrs);
 
                 // No transactions in ATOMIC cache.
                 if (!cctx.atomic()) {
@@ -424,7 +434,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             if (!F.isEmpty(cands)) {
                 for (GridCacheMvccCandidate<K> c : cands) {
-                    GridCacheTxEx<K, V> tx = cctx.tm().tx(c.version());
+                    IgniteTxEx<K, V> tx = cctx.tm().tx(c.version());
 
                     if (tx != null) {
                         assert tx.local();
@@ -472,15 +482,18 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
         ReaderId reader = readerId(nodeId);
 
-        if (reader == null || reader.messageId() > msgId)
+        if (reader == null || (reader.messageId() > msgId && msgId >= 0))
             return false;
 
-        rdrs = new LinkedList<>(rdrs);
+        List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size());
 
-        rdrs.remove(reader);
+        for (ReaderId<K, V> rdr : this.rdrs) {
+            if (!rdr.equals(reader))
+                rdrs.add(rdr);
+        }
 
         // Seal.
-        rdrs = Collections.unmodifiableList(rdrs);
+        this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() : Collections.unmodifiableList(rdrs);
 
         return true;
     }
@@ -490,6 +503,11 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      */
     @Override public synchronized void clearReaders() {
         rdrs = Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void clearReader(UUID nodeId) throws GridCacheEntryRemovedException {
+        removeReader(nodeId, -1);
     }
 
     /**
@@ -553,24 +571,28 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         checkObsolete();
 
         if (!rdrs.isEmpty()) {
-            List<ReaderId> rmv = null;
+            Collection<ReaderId> rmv = null;
 
             for (ReaderId reader : rdrs) {
                 if (!cctx.discovery().alive(reader.nodeId())) {
                     if (rmv == null)
-                        rmv = new LinkedList<>();
+                        rmv = new HashSet<>();
 
                     rmv.add(reader);
                 }
             }
 
             if (rmv != null) {
-                rdrs = new LinkedList<>(rdrs);
+                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() - rmv.size());
 
-                for (ReaderId rdr : rmv)
-                    rdrs.remove(rdr);
+                for (ReaderId<K, V> rdr : this.rdrs) {
+                    if (!rmv.contains(rdr))
+                        rdrs.add(rdr);
+                }
 
-                rdrs = Collections.unmodifiableList(rdrs);
+                // Seal.
+                this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() :
+                    Collections.unmodifiableList(rdrs);
             }
         }
 
@@ -705,6 +727,29 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             this.txFut = null;
 
             return txFut;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ReaderId))
+                return false;
+
+            ReaderId readerId = (ReaderId)o;
+
+            return msgId == readerId.msgId && nodeId.equals(readerId.nodeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = nodeId.hashCode();
+
+            res = 31 * res + (int)(msgId ^ (msgId >>> 32));
+
+            return res;
         }
 
         /** {@inheritDoc} */
