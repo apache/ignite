@@ -367,6 +367,9 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
 
+        // TODO: IGNITE-114.
+        // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+
         return suite;
     }
 }

@@ -44,8 +44,11 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
     }
 
     /** {@inheritDoc} */
-    @Override protected String primaryIpcEndpointConfiguration(String gridName) {
-        return "{type:'shmem', port:" + (DFLT_IPC_PORT + getTestGridIndex(gridName)) + "}";
+    @Override protected Map<String, String> primaryIpcEndpointConfiguration(final String gridName) {
+        return new HashMap<String, String>() {{
+            put("type", "shmem");
+            put("port", String.valueOf(DFLT_IPC_PORT + getTestGridIndex(gridName)));
+        }};
     }
 
     /**
